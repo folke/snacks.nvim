@@ -77,7 +77,8 @@ end
 
 ---@param count number
 ---@param cycle? boolean
-function M.jump(count, cycle)
+---@param notify? boolean
+function M.jump(count, cycle, notify)
   local words, idx = M.get()
   if not idx then
     return
@@ -89,6 +90,9 @@ function M.jump(count, cycle)
   local target = words[idx]
   if target then
     vim.api.nvim_win_set_cursor(0, target.from)
+    if notify then
+      Snacks.notify.info(("Reference %d/%d"):format(idx, #words), { id = "snacks.words.jump" })
+    end
   end
 end
 

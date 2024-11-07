@@ -28,5 +28,6 @@ Snacks.words.is_enabled(buf)
 ```lua
 ---@param count number
 ---@param cycle? boolean
-Snacks.words.jump(count, cycle)
+---@param notify? boolean
+Snacks.words.jump(count, cycle, notify)
 ```
