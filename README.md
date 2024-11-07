@@ -42,7 +42,7 @@ Install the plugin with your package manager:
 > Check the [code](https://github.com/folke/snacks.nvim/blob/main/lua/snacks/init.lua) to see what it does.
 
 > [!tip]
-> If you don't need these plugins, you can disable them, or skip `setup` alltogether.
+> If you don't need these plugins, you can disable them, or skip `setup` altogether.
 
 ```lua
 {

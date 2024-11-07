@@ -1,6 +1,6 @@
 # 🍿 lazygit
 
-Autmatically configures lazygit with a theme generated based on your Neovim colorscheme
+Automatically configures lazygit with a theme generated based on your Neovim colorscheme
 and integrate edit with the current neovim instance.
 
 ![image](https://github.com/user-attachments/assets/5e5ca232-af65-4ebc-b0ca-02bc9c33d23d)

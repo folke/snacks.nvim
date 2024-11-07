@@ -467,7 +467,7 @@ function M:win_opts()
     opts[k] = self.opts[k]
   end
   local parent = self:parent_size()
-  -- Spcial case for 0, which means 100%
+  -- Special case for 0, which means 100%
   opts.height = opts.height == 0 and parent.height or opts.height
   opts.width = opts.width == 0 and parent.width or opts.width
   opts.height = math.floor(opts.height < 1 and parent.height * opts.height or opts.height)
