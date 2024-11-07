@@ -71,11 +71,20 @@ function M.open(opts)
       local url = M.get_url(remote, opts)
       if url:find("github") and branch and branch ~= "master" and branch ~= "main" then
         url = ("%s/tree/%s"):format(url, branch)
+      elseif branch == "main" then
+        url = ("%s/tree/main"):format(url)
+      elseif branch == "master" then
+        url = ("%s/tree/master"):format(url)
       end
       if url then
         table.insert(remotes, {
           name = name,
           url = url,
+          file = vim
+            .system({ "realpath", "--relative-to=$(git rev-parse --show-toplevel)", vim.fn.expand("%:p") })
+            :wait().stdout
+            :gsub("\n", "")
+            :gsub("%.%.", ""),
         })
       end
     end
@@ -84,7 +93,7 @@ function M.open(opts)
   local function open(remote)
     if remote then
       Snacks.notify(("Opening [%s](%s)"):format(remote.name, remote.url), { title = "Git Browse" })
-      opts.open(remote.url)
+      opts.open(remote.url .. remote.file)
     end
   end
 
