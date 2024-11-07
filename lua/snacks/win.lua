@@ -429,6 +429,7 @@ function M:drop()
       height = 0,
       width = 0,
       style = "minimal",
+      border = "none",
       focusable = false,
       zindex = self.opts.zindex - 1,
       wo = {
