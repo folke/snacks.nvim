@@ -92,7 +92,7 @@ function M.jump(count, cycle)
   if target then
     vim.api.nvim_win_set_cursor(0, target.from)
     if config.notify_jump then
-      Snacks.notify.info(("Reference %d/%d"):format(idx, #words), { id = "snacks.words.jump", title = "Words" })
+      Snacks.notify.info(("Reference [%d/%d]"):format(idx, #words), { id = "snacks.words.jump", title = "Words" })
     end
   elseif config.notify_end then
     Snacks.notify.warn("No more references", { id = "snacks.words.jump", title = "Words" })
