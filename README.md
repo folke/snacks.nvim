@@ -11,6 +11,7 @@ A collection of small QoL plugins for Neovim.
 | [debug](https://github.com/folke/snacks.nvim/blob/main/docs/debug.md)               | Pretty inspect & backtraces for debugging                                                                                                                                               |       |
 | [git](https://github.com/folke/snacks.nvim/blob/main/docs/git.md)                   | Useful functions for Git                                                                                                                                                                |       |
 | [gitbrowse](https://github.com/folke/snacks.nvim/blob/main/docs/gitbrowse.md)       | Open the repo of the active file in the browser (e.g., GitHub)                                                                                                                          |       |
+| [input](https://github.com/folke/snacks.nvim/blob/main/docs/input.md)               | Better `vim.ui.input`                                                                                                                                                                   |       |
 | [lazygit](https://github.com/folke/snacks.nvim/blob/main/docs/lazygit.md)           | Open LazyGit in a float, auto-configure colorscheme and integration with Neovim                                                                                                         |       |
 | [notify](https://github.com/folke/snacks.nvim/blob/main/docs/notify.md)             | Utility functions to work with Neovim's `vim.notify`                                                                                                                                    |       |
 | [notifier](https://github.com/folke/snacks.nvim/blob/main/docs/notifier.md)         | Better and prettier `vim.notify`                                                                                                                                                        |  ‼️   |
@@ -71,6 +72,7 @@ Please refer to the readme of each plugin for their specific configuration.
 ---@class snacks.Config
 ---@field bigfile? snacks.bigfile.Config | { enabled: boolean }
 ---@field gitbrowse? snacks.gitbrowse.Config
+---@field input? snacks.input.Config
 ---@field lazygit? snacks.lazygit.Config
 ---@field notifier? snacks.notifier.Config | { enabled: boolean }
 ---@field quickfile? { enabled: boolean }
@@ -191,38 +193,38 @@ See the example below for how to configure `snacks.nvim`.
 
 <!-- hl_start -->
 
-| Highlight Group                        | Default Group                    | Description                                        |
-| -------------------------------------- | -------------------------------- | -------------------------------------------------- |
-| **SnacksNormal**                       | _NormalFloat_                        | Normal for the float window |
-| **SnacksWinBar**                   | _Title_             | Title of the window                                       |
-| **SnacksBackdrop**         | _none_               | Backdrop                                                   |
-| **SnacksNormalNC**            | _NormalFloat_               | Normal for non-current windows                                                   |
-| **SnacksWinBarNC**             | _SnacksWinBar_               | Title for non-current windows                                                   |
-| **SnacksNotifierInfo**               | _none_               | Notification window for Info                                                   |
-| **SnacksNotifierWarn**          | _none_               | Notification window for Warn                                                   |
-| **SnacksNotifierDebug**              | _none_               | Notification window for Debug                                                 |
-| **SnacksNotifierError**                | _none_               | Notification window for Error                                                   |
-| **SnacksNotifierTrace**             | _none_             | Notification window for Trace                  |
-| **SnacksNotifierIconInfo**                  | _none_                         | Icon for Info notification                       |
-| **SnacksNotifierIconWarn**            | _none_             | Icon for Warn notification                               |
-| **SnacksNotifierIconDebug**  | _none_        | Icon for Debug notification                                                   |
-| **SnacksNotifierIconError**     | _none_        | Icon for Error notification                                                   |
-| **SnacksNotifierIconTrace**      | _none_        | Icon for Trace notification                                                   |
-| **SnacksNotifierTitleInfo**        | _none_        | Title for Info notification                                                   |
-| **SnacksNotifierTitleWarn**   | _none_        | Title for Warn notification                                                   |
-| **SnacksNotifierTitleDebug**       | _none_        | Title for Debug notification                                                   |
-| **SnacksNotifierTitleError**         | _none_        | Title for Error notification                                                   |
-| **SnacksNotifierTitleTrace**      | _none_             | Title for Trace notification                    |
-| **SnacksNotifierBorderInfo**             | _none_             | Border for Info notification                               |
-| **SnacksNotifierBorderWarn**                 | _none_                          | Border for Warn notification                                 |
-| **SnacksNotifierBorderDebug**       | _none_ | Border for Debug notification                                                   |
-| **SnacksNotifierBorderError**       | _none_ | Border for Error notification                                                   |
-| **SnacksNotifierBorderTrace**    | _none_ | Border for Trace notification                                                   |
-| **SnacksNotifierFooterInfo** | _DiagnosticInfo_ | Footer for Info notification                                                   |
-| **SnacksNotifierFooterWarn**     | _DiagnosticWarn_                        | Footer for Warn notification                                                   |
-| **SnacksNotifierFooterDebug**        | _DiagnosticHint_ | Footer for Debug notification                                                   |
-| **SnacksNotifierFooterError**  | _DiagnosticError_ | Footer for Error notification                                                   |
-| **SnacksNotifierFooterTrace**       | _DiagnosticHint_ | Footer for Trace notification                                                   |
+| Highlight Group               | Default Group     | Description                    |
+| ----------------------------- | ----------------- | ------------------------------ |
+| **SnacksNormal**              | _NormalFloat_     | Normal for the float window    |
+| **SnacksWinBar**              | _Title_           | Title of the window            |
+| **SnacksBackdrop**            | _none_            | Backdrop                       |
+| **SnacksNormalNC**            | _NormalFloat_     | Normal for non-current windows |
+| **SnacksWinBarNC**            | _SnacksWinBar_    | Title for non-current windows  |
+| **SnacksNotifierInfo**        | _none_            | Notification window for Info   |
+| **SnacksNotifierWarn**        | _none_            | Notification window for Warn   |
+| **SnacksNotifierDebug**       | _none_            | Notification window for Debug  |
+| **SnacksNotifierError**       | _none_            | Notification window for Error  |
+| **SnacksNotifierTrace**       | _none_            | Notification window for Trace  |
+| **SnacksNotifierIconInfo**    | _none_            | Icon for Info notification     |
+| **SnacksNotifierIconWarn**    | _none_            | Icon for Warn notification     |
+| **SnacksNotifierIconDebug**   | _none_            | Icon for Debug notification    |
+| **SnacksNotifierIconError**   | _none_            | Icon for Error notification    |
+| **SnacksNotifierIconTrace**   | _none_            | Icon for Trace notification    |
+| **SnacksNotifierTitleInfo**   | _none_            | Title for Info notification    |
+| **SnacksNotifierTitleWarn**   | _none_            | Title for Warn notification    |
+| **SnacksNotifierTitleDebug**  | _none_            | Title for Debug notification   |
+| **SnacksNotifierTitleError**  | _none_            | Title for Error notification   |
+| **SnacksNotifierTitleTrace**  | _none_            | Title for Trace notification   |
+| **SnacksNotifierBorderInfo**  | _none_            | Border for Info notification   |
+| **SnacksNotifierBorderWarn**  | _none_            | Border for Warn notification   |
+| **SnacksNotifierBorderDebug** | _none_            | Border for Debug notification  |
+| **SnacksNotifierBorderError** | _none_            | Border for Error notification  |
+| **SnacksNotifierBorderTrace** | _none_            | Border for Trace notification  |
+| **SnacksNotifierFooterInfo**  | _DiagnosticInfo_  | Footer for Info notification   |
+| **SnacksNotifierFooterWarn**  | _DiagnosticWarn_  | Footer for Warn notification   |
+| **SnacksNotifierFooterDebug** | _DiagnosticHint_  | Footer for Debug notification  |
+| **SnacksNotifierFooterError** | _DiagnosticError_ | Footer for Error notification  |
+| **SnacksNotifierFooterTrace** | _DiagnosticHint_  | Footer for Trace notification  |
 
 <!-- hl_end -->
 

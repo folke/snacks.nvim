@@ -5,6 +5,7 @@
 ---@field debug snacks.debug
 ---@field git snacks.git
 ---@field gitbrowse snacks.gitbrowse
+---@field input snacks.input
 ---@field lazygit snacks.lazygit
 ---@field notifier snacks.notifier
 ---@field notify snacks.notify
@@ -30,6 +31,7 @@ _G.Snacks = M
 ---@class snacks.Config
 ---@field bigfile? snacks.bigfile.Config | { enabled: boolean }
 ---@field gitbrowse? snacks.gitbrowse.Config
+---@field input? snacks.input.Config
 ---@field lazygit? snacks.lazygit.Config
 ---@field notifier? snacks.notifier.Config | { enabled: boolean }
 ---@field quickfile? { enabled: boolean }
