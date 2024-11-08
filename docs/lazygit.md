@@ -12,6 +12,7 @@ and integrate edit with the current neovim instance.
 ```lua
 ---@class snacks.lazygit.Config: snacks.terminal.Opts
 ---@field args? string[]
+---@field gui? snacks.lazygit.Gui
 ---@field theme? snacks.lazygit.Theme
 {
   -- automatically configure lazygit to use the current colorscheme
@@ -30,6 +31,9 @@ and integrate edit with the current neovim instance.
     searchingActiveBorderColor = { fg = "MatchParen", bold = true },
     selectedLineBgColor        = { bg = "Visual" }, -- set to `default` to have no background colour
     unstagedChangesColor       = { fg = "DiagnosticError" },
+  },
+  gui = {
+    border = "rounded",
   },
   win = {
     style = "lazygit",

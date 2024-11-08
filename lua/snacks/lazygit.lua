@@ -20,8 +20,12 @@ local M = setmetatable({}, {
 ---@field selectedLineBgColor snacks.lazygit.Color
 ---@field unstagedChangesColor snacks.lazygit.Color
 
+---@class snacks.lazygit.Gui
+---@field border? string
+
 ---@class snacks.lazygit.Config: snacks.terminal.Opts
 ---@field args? string[]
+---@field gui? snacks.lazygit.Gui
 ---@field theme? snacks.lazygit.Theme
 local defaults = {
   -- automatically configure lazygit to use the current colorscheme
@@ -41,6 +45,9 @@ local defaults = {
     searchingActiveBorderColor = { fg = "MatchParen", bold = true },
     selectedLineBgColor        = { bg = "Visual" }, -- set to `default` to have no background colour
     unstagedChangesColor       = { fg = "DiagnosticError" },
+  },
+  gui = {
+    border = "rounded",
   },
   win = {
     style = "lazygit",
@@ -130,16 +137,27 @@ local function update_config(opts)
     end
   end
 
+  ---@type table<string, string>
+  local gui = {}
+
+  for k, v in pairs(opts.gui) do
+    gui[k] = v
+  end
+
   local config = [[
 os:
   editPreset: "nvim-remote"
 gui:
   nerdFontsVersion: 3
-  theme:
 ]]
 
   ---@type string[]
   local lines = {}
+  for k, v in pairs(gui) do
+    lines[#lines + 1] = ("  %s: %q"):format(k, v)
+  end
+
+  lines[#lines + 1] = "  theme:"
   for k, v in pairs(theme) do
     lines[#lines + 1] = ("    %s:"):format(k)
     for _, c in ipairs(v) do
