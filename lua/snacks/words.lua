@@ -12,7 +12,7 @@ local defaults = {
   notify_jump = false, -- show a notification when jumping
   notify_end = true, -- show a notification when reaching the end
   fold_open = true, -- open folds after jumping
-  set_jump_point = true, -- set jump point before jumping
+  jumplist = true, -- set jump point before jumping
   modes = { "n", "i", "c" }, -- modes to show references
 }
 
@@ -106,7 +106,7 @@ function M.jump(count, cycle)
   end
   local target = words[idx]
   if target then
-    if config.set_jump_point then
+    if config.jumplist then
       vim.cmd.normal({ "m`", bang = true })
     end
     vim.api.nvim_win_set_cursor(0, target.from)
