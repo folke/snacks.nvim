@@ -11,6 +11,8 @@ Auto-show LSP references and quickly navigate between them
 {
   enabled = true, -- enable/disable the plugin
   debounce = 200, -- time in ms to wait before updating
+  notify_jump = true, -- show a notification when jumping
+  notify_end = true, -- show a notification when reaching the end
 }
 ```
 
@@ -28,6 +30,5 @@ Snacks.words.is_enabled(buf)
 ```lua
 ---@param count number
 ---@param cycle? boolean
----@param notify? boolean
-Snacks.words.jump(count, cycle, notify)
+Snacks.words.jump(count, cycle)
 ```

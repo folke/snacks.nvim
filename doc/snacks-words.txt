@@ -18,6 +18,8 @@ Auto-show LSP references and quickly navigate between them
     {
       enabled = true, -- enable/disable the plugin
       debounce = 200, -- time in ms to wait before updating
+      notify_jump = true, -- show a notification when jumping
+      notify_end = true, -- show a notification when reaching the end
     }
 <
 
