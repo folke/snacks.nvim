@@ -53,6 +53,23 @@ with lua treesitter highlighting and the location of the caller
 Snacks.debug.inspect(...)
 ```
 
+### `Snacks.debug.log()`
+
+Log a message to the file `./debug.log`.
+- a timestamp will be added to every message.
+- accepts multiple arguments and pretty prints them.
+- if the argument is not a string, it will be printed using `vim.inspect`.
+- if the message is smaller than 120 characters, it will be printed on a single line.
+
+```lua
+Snacks.debug.log("Hello", { foo = "bar" }, 42)
+-- 2024-11-08 08:56:52 Hello { foo = "bar" } 42
+```
+
+```lua
+Snacks.debug.log(...)
+```
+
 ### `Snacks.debug.profile()`
 
 Very simple function to profile a lua function.

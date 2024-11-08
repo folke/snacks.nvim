@@ -63,4 +63,33 @@ function M.profile(fn, opts)
   Snacks.notify(((vim.uv.hrtime() - start) / 1e6 / opts.count) .. "ms")
 end
 
+-- Log a message to the file `./debug.log`.
+-- - a timestamp will be added to every message.
+-- - accepts multiple arguments and pretty prints them.
+-- - if the argument is not a string, it will be printed using `vim.inspect`.
+-- - if the message is smaller than 120 characters, it will be printed on a single line.
+--
+-- ```lua
+-- Snacks.debug.log("Hello", { foo = "bar" }, 42)
+-- -- 2024-11-08 08:56:52 Hello { foo = "bar" } 42
+-- ```
+function M.log(...)
+  local file = "./debug.log"
+  local fd = io.open(file, "a+")
+  if not fd then
+    error(("Could not open file %s for writing"):format(file))
+  end
+  local c = select("#", ...)
+  local parts = {} ---@type string[]
+  for i = 1, c do
+    local v = select(i, ...)
+    parts[i] = type(v) == "string" and v or vim.inspect(v)
+  end
+  local msg = table.concat(parts, " ")
+  msg = #msg < 120 and msg:gsub("%s+", " ") or msg
+  fd:write(os.date("%Y-%m-%d %H:%M:%S ") .. msg)
+  fd:write("\n")
+  fd:close()
+end
+
 return M

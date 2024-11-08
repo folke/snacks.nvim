@@ -31,17 +31,18 @@ local M = setmetatable({}, {
 
 --- Notification object
 ---@class snacks.notifier.Notif: snacks.notifier.Notif.opts
----@field msg string
 ---@field id number|string
+---@field msg string
 ---@field win? snacks.win
 ---@field icon string
 ---@field level snacks.notifier.level
 ---@field timeout number
 ---@field dirty? boolean
----@field shown? number timestamp in ms
----@field added number timestamp in ms
----@field added_hr number hrtime in ms
----@field layout? { top?: number, size: { width: number, height: number }}
+---@field added number timestamp with nano precision
+---@field updated number timestamp with nano precision
+---@field shown? number timestamp with nano precision
+---@field hidden? number timestamp with nano precision
+---@field layout? { top?: number, width: number, height: number }
 
 --- ### Rendering
 ---@alias snacks.notifier.render fun(buf: number, notif: snacks.notifier.Notif, ctx: snacks.notifier.ctx)
@@ -59,6 +60,14 @@ local M = setmetatable({}, {
 ---@field hl snacks.notifier.hl
 ---@field ns number
 
+--- ### History
+---@class snacks.notifier.history
+---@field filter? snacks.notifier.level|fun(notif: snacks.notifier.Notif): boolean
+---@field sort? string[] # sort fields, default: {"added"}
+local history_opts = {
+  sort = { "added" },
+}
+
 Snacks.config.style("notification", {
   border = "rounded",
   zindex = 100,
@@ -66,8 +75,23 @@ Snacks.config.style("notification", {
   wo = {
     winblend = 5,
     wrap = false,
+    conceallevel = 2,
   },
   bo = { filetype = "snacks_notif" },
+})
+
+Snacks.config.style("notification.history", {
+  border = "rounded",
+  zindex = 100,
+  width = 0.6,
+  height = 0.6,
+  minimal = false,
+  title = "Notification History",
+  title_pos = "center",
+  ft = "markdown",
+  bo = { filetype = "snacks_notif_history" },
+  wo = { winhighlight = "Normal:SnacksNotifierHistory" },
+  keys = { q = "close" },
 })
 
 ---@class snacks.notifier.Config
@@ -90,15 +114,29 @@ local defaults = {
   ---@type snacks.notifier.style
   style = "compact",
   top_down = true, -- place notifications from top to bottom
+  date_format = "%R", -- time format for notifications
 }
 
 ---@class snacks.notifier.Class
----@field queue snacks.notifier.Notif[]
+---@field queue table<string|number, snacks.notifier.Notif>
+---@field history table<string|number, snacks.notifier.Notif>
+---@field sorted? snacks.notifier.Notif[]
 ---@field opts snacks.notifier.Config
 ---@field dirty boolean
 local N = {}
 
 N.ns = vim.api.nvim_create_namespace("snacks.notifier")
+
+---@param str string
+local function cap(str)
+  return str:sub(1, 1):upper() .. str:sub(2):lower()
+end
+
+---@param name string
+---@param level? snacks.notifier.level
+local function hl(name, level)
+  return "SnacksNotifier" .. name .. (level and cap(level) or "")
+end
 
 ---@type table<string, snacks.notifier.render>
 N.styles = {
@@ -120,6 +158,33 @@ N.styles = {
       virt_text_pos = "right_align",
     })
   end,
+  history = function(buf, notif, ctx)
+    local lines = vim.split(notif.msg, "\n", { plain = true })
+    local prefix = {
+      { os.date(ctx.notifier.opts.date_format, notif.added), hl("HistoryDateTime") },
+      { notif.icon, ctx.hl.icon },
+      { notif.level:upper(), ctx.hl.title },
+      { notif.title, hl("HistoryTitle") },
+    }
+    prefix = vim.tbl_filter(function(v)
+      return (v[1] or "") ~= ""
+    end, prefix)
+    local prefix_width = 0
+    for i = 1, #prefix do
+      prefix_width = prefix_width + vim.fn.strdisplaywidth(prefix[i * 2 - 1][1]) + 1
+      table.insert(prefix, i * 2, { " " })
+    end
+    local top = vim.api.nvim_buf_line_count(buf)
+    local empty = top == 1 and #vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] == 0
+    top = empty and 0 or top
+    lines[1] = string.rep(" ", prefix_width) .. (lines[1] or "")
+    vim.api.nvim_buf_set_lines(buf, top, -1, false, lines)
+    vim.api.nvim_buf_set_extmark(buf, ctx.ns, top, 0, {
+      virt_text = prefix,
+      virt_text_pos = "overlay",
+      priority = 10,
+    })
+  end,
   -- similar to the default nvim-notify style
   fancy = function(buf, notif, ctx)
     vim.api.nvim_buf_set_lines(buf, 0, 1, false, { "", "" })
@@ -130,7 +195,7 @@ N.styles = {
       priority = 10,
     })
     vim.api.nvim_buf_set_extmark(buf, ctx.ns, 0, 0, {
-      virt_text = { { " " }, { os.date("%X", notif.added), ctx.hl.title }, { " " } },
+      virt_text = { { " " }, { os.date(ctx.notifier.opts.date_format, notif.added), ctx.hl.title }, { " " } },
       virt_text_pos = "right_align",
       priority = 10,
     })
@@ -162,10 +227,9 @@ local function normlevel(level)
     or "info"
 end
 
----@param name string
----@param level? snacks.notifier.level
-local function hl(name, level)
-  return "SnacksNotifier" .. name .. (level and (level:sub(1, 1):upper() .. level:sub(2):lower()) or "")
+local function ts()
+  local ret = assert(vim.uv.clock_gettime("realtime"))
+  return ret.sec + ret.nsec / 1e9
 end
 
 local _id = 0
@@ -181,22 +245,26 @@ function N.new(opts)
   local self = setmetatable({}, { __index = N })
   self.opts = Snacks.config.get("notifier", defaults, opts)
   self.queue = {}
-  self.dirty = false
+  self.history = {}
   self:init()
   self:start()
   return self
 end
 
 function N:init()
-  local links = {} ---@type table<string, string>
+  local links = {
+    [hl("History")] = "Normal",
+    [hl("HistoryTitle")] = "Title",
+    [hl("HistoryDateTime")] = "Special",
+  }
   for _, level in ipairs(N.level_names) do
-    local cap = level:sub(1, 1):upper() .. level:sub(2):lower()
-    cap = (cap == "Trace" or cap == "Debug") and "Hint" or cap
+    local Level = cap(level)
+    local link = vim.tbl_contains({ "Trace", "Debug" }, Level) and "NonText" or nil
     links[hl("", level)] = "Normal"
-    links[hl("Icon", level)] = "DiagnosticSign" .. cap
-    links[hl("Border", level)] = "Diagnostic" .. cap
-    links[hl("Title", level)] = "Diagnostic" .. cap
-    links[hl("Footer", level)] = "Diagnostic" .. cap
+    links[hl("Icon", level)] = link or ("DiagnosticSign" .. Level)
+    links[hl("Border", level)] = link or ("Diagnostic" .. Level)
+    links[hl("Title", level)] = link or ("Diagnostic" .. Level)
+    links[hl("Footer", level)] = link or ("Diagnostic" .. Level)
   end
   for k, v in pairs(links) do
     vim.api.nvim_set_hl(0, k, { link = v, default = true })
@@ -208,7 +276,7 @@ function N:start()
     100,
     100,
     vim.schedule_wrap(function()
-      if #self.queue == 0 then
+      if not next(self.queue) then
         return
       end
       xpcall(function()
@@ -227,66 +295,99 @@ end
 
 ---@param opts snacks.notifier.Notif.opts
 function N:add(opts)
-  local now = vim.uv.hrtime() / 1e6
+  local now = ts()
   local notif = vim.deepcopy(opts) --[[@as snacks.notifier.Notif]]
   notif.msg = notif.msg or ""
+  -- FIXME: normalize title, icon, etc to remove newlines
+  notif.title = notif.title or ""
   notif.id = notif.id or next_id()
   notif.level = normlevel(notif.level)
   notif.icon = notif.icon or self.opts.icons[notif.level]
   notif.timeout = notif.timeout or self.opts.timeout
-  notif.added = os.time()
-  notif.added_hr = now
-  if opts.id then
-    for i, n in ipairs(self.queue) do
-      if n.id == notif.id then
-        notif.shown = n.shown and now or nil -- reset shown time
-        notif.win = n.win
-        notif.layout = n.layout
-        notif.dirty = true
-        self.queue[i] = notif
-        return notif.id
-      end
-    end
+  notif.added = now
+
+  if opts.id and self.queue[opts.id] then
+    local n = self.queue[opts.id] --[[@as snacks.notifier.Notif]]
+    notif.added = n.added
+    notif.updated = now
+    notif.shown = n.shown and now or nil -- reset shown time
+    notif.win = n.win
+    notif.layout = n.layout
+    notif.dirty = true
   end
-  table.insert(self.queue, notif)
-  self.dirty = true
+  self.sorted = nil
+  self.queue[notif.id] = notif
+  self.history[notif.id] = notif
   return notif.id
 end
 
 function N:update()
-  local now = vim.uv.now()
+  local now = ts()
   --- Cleanup queue
-  ---@param notif snacks.notifier.Notif
-  self.queue = vim.tbl_filter(function(notif)
+  for id, notif in pairs(self.queue) do
     local timeout = notif.timeout or self.opts.timeout
     local keep = not notif.shown -- not shown yet
       or (notif.win and notif.win:win_valid() and vim.api.nvim_get_current_win() == notif.win.win) -- current window
       or (notif.keep and notif.keep(notif)) -- custom keep
       or (self.opts.keep and self.opts.keep(notif)) -- global keep
-      or (notif.shown + timeout > now) -- not timed out
-    if not keep and notif.win then
-      notif.win:close()
-      notif.win = nil
-      self.dirty = true
+      or (notif.shown + timeout / 1e3 > now) -- not timed out
+    if not keep then
+      self:hide(id)
     end
-    return keep
-  end, self.queue)
-  if self.dirty then
-    self:sort()
   end
-  self.dirty = false
+  self.sorted = self.sorted or self:sort()
+end
+
+---@param opts? snacks.notifier.history
+---@return snacks.notifier.Notif[]
+function N:get_history(opts)
+  ---@type snacks.notifier.history
+  opts = vim.tbl_deep_extend("force", {}, history_opts, opts or {})
+  local notifs = vim.tbl_values(self.history)
+  local filter = opts.filter
+  if type(filter) == "string" or type(filter) == "number" then
+    local level = normlevel(filter)
+    filter = function(n)
+      return n.level == level
+    end
+  end
+  notifs = filter and vim.tbl_filter(filter, notifs) or notifs
+  return self:sort(notifs, opts.sort)
+end
+
+---@param opts? snacks.notifier.history
+function N:show_history(opts)
+  local win = Snacks.win({ style = "notification.history", enter = true, show = false })
+  local buf = win:open_buf()
+  for _, notif in ipairs(self:get_history(opts)) do
+    N.styles.history(buf, notif, {
+      opts = win.opts,
+      notifier = self,
+      ns = N.ns,
+      hl = self:hl(notif),
+    })
+  end
+  return win:show()
 end
 
 ---@param id? number|string
 function N:hide(id)
-  ---@param notif snacks.notifier.Notif
-  self.queue = vim.tbl_filter(function(notif)
-    if notif.win and id == nil or notif.id == id then
-      notif.win:close()
-      return false
+  if not id then
+    for i in pairs(self.queue) do
+      self:hide(i)
     end
-    return true
-  end, self.queue)
+    return
+  end
+  local notif = self.queue[id]
+  if not notif then
+    return
+  end
+  self.queue[id], self.sorted = nil, nil
+  notif.hidden = ts()
+  if notif.win then
+    notif.win:hide()
+    notif.win = nil
+  end
 end
 
 ---@param value number
@@ -307,19 +408,25 @@ function N:get_render(style)
 end
 
 ---@param notif snacks.notifier.Notif
-function N:render(notif)
-  if type(notif.opts) == "function" then
-    notif.opts(notif)
-  end
-
+function N:hl(notif)
   ---@type snacks.notifier.hl
-  local hls = vim.tbl_extend("force", {
+  return vim.tbl_extend("force", {
     title = hl("Title", notif.level),
     icon = hl("Icon", notif.level),
     border = hl("Border", notif.level),
     footer = hl("Footer", notif.level),
     msg = hl("", notif.level),
   }, notif.hl or {})
+end
+
+---@param notif snacks.notifier.Notif
+function N:render(notif)
+  if type(notif.opts) == "function" then
+    notif.opts(notif)
+  end
+
+  ---@type snacks.notifier.hl
+  local notif_hl = self:hl(notif)
 
   local win = notif.win
     or Snacks.win({
@@ -331,11 +438,11 @@ function N:render(notif)
       noautocmd = true,
       wo = {
         winhighlight = table.concat({
-          "Normal:" .. hls.msg,
-          "NormalNC:" .. hls.msg,
-          "FloatBorder:" .. hls.border,
-          "FloatTitle:" .. hls.title,
-          "FloatFooter:" .. hls.footer,
+          "Normal:" .. notif_hl.msg,
+          "NormalNC:" .. notif_hl.msg,
+          "FloatBorder:" .. notif_hl.border,
+          "FloatTitle:" .. notif_hl.title,
+          "FloatFooter:" .. notif_hl.footer,
         }, ","),
       },
       keys = {
@@ -356,7 +463,7 @@ function N:render(notif)
     opts = win.opts,
     notifier = self,
     ns = N.ns,
-    hl = hls,
+    hl = notif_hl,
   })
   vim.bo[buf].modifiable = false
 
@@ -383,14 +490,16 @@ function N:render(notif)
   win.opts.height = height
 end
 
-function N:sort()
-  table.sort(self.queue, function(a, b)
-    for _, key in ipairs(self.opts.sort) do
+---@param fields? string[]
+---@param notifs? snacks.notifier.Notif[]
+function N:sort(notifs, fields)
+  fields = fields or self.opts.sort
+  notifs = notifs or vim.tbl_values(self.queue)
+  table.sort(notifs, function(a, b)
+    for _, key in ipairs(fields) do
       local function v(n)
         if key == "level" then
           return 10 - vim.log.levels[n[key]:upper()]
-        elseif key == "added" then
-          return n.added_hr
         end
         return n[key]
       end
@@ -401,25 +510,31 @@ function N:sort()
     end
     return false
   end)
+  return notifs
 end
 
-function N:layout()
-  local rows = {} ---@type boolean[]
-  local function mark(row, height, free)
+function N:new_layout()
+  ---@class snacks.notifier.layout
+  local layout = {}
+  layout.free = 0
+  layout.rows = {} ---@type boolean[]
+  ---@param row number
+  ---@param height number
+  ---@param free boolean
+  function layout.mark(row, height, free)
     for i = row, math.min(row + height - 1, vim.o.lines) do
-      rows[i] = free
+      layout.free = layout.free + (free and 1 or -1)
+      layout.rows[i] = free
     end
   end
-  mark(1, vim.o.lines, true)
-  mark(1, self.opts.margin.top + (vim.o.tabline == "" and 0 or 1), false)
-  mark(vim.o.lines - (self.opts.margin.bottom + (vim.o.laststatus == 0 and 0 or 1)) + 1, vim.o.lines, false)
-
-  local function find(height, row)
+  ---@param height number
+  ---@param row? number wanted row
+  function layout.find(height, row)
     local from, to, down = row or 1, vim.o.lines - height, self.opts.top_down
     for i = down and from or to, down and to or from, down and 1 or -1 do
       local ret = true
       for j = i, i + height - 1 do
-        if not rows[j] then
+        if not layout.rows[j] then
           ret = false
           break
         end
@@ -429,34 +544,46 @@ function N:layout()
       end
     end
   end
+  layout.mark(1, vim.o.lines, true)
+  layout.mark(1, self.opts.margin.top + (vim.o.tabline == "" and 0 or 1), false)
+  layout.mark(vim.o.lines - (self.opts.margin.bottom + (vim.o.laststatus == 0 and 0 or 1)) + 1, vim.o.lines, false)
+  return layout
+end
 
-  local shown = 0
-  local max_visible = vim.o.lines * (self.opts.height.min + 2)
-  for _, notif in ipairs(self.queue) do
-    local skip = shown >= max_visible
-    if not skip then
+function N:layout()
+  local layout = self:new_layout()
+  local changes = 0
+  for _, notif in ipairs(assert(self.sorted)) do
+    if layout.free < (self.opts.height.min + 2) then -- not enough space
+      if notif.win then
+        notif.shown = nil
+        notif.win:hide()
+      end
+    else
+      local prev_layout = notif.layout
+        and { top = notif.layout.top, height = notif.layout.height, width = notif.layout.width }
       if not notif.win or notif.dirty or not notif.win:buf_valid() or type(notif.opts) == "function" then
         notif.dirty = false
         self:render(notif)
-        ---@diagnostic disable-next-line: assign-type-mismatch
-        notif.layout = vim.tbl_deep_extend("force", notif.layout or {}, { size = notif.win:size() })
+        notif.layout = notif.win:size()
+        notif.layout.top = prev_layout and prev_layout.top
+        prev_layout = nil -- always re-render since opts might've changed
       end
-      notif.layout.top = find(notif.layout.size.height, notif.layout.top)
-    end
-    if not skip and notif.layout.top then
-      shown = shown + 1
-      mark(notif.layout.top, notif.layout.size.height, false)
-      notif.win.opts.row = notif.layout.top - 1
-      notif.win.opts.col = vim.o.columns - notif.layout.size.width - self.opts.margin.right
-      notif.shown = notif.shown or vim.uv.now()
-      notif.win:show()
-      notif.win:update()
-    elseif notif.win then
-      notif.shown = nil
-      notif.win:hide()
+      notif.layout.top = layout.find(notif.layout.height, notif.layout.top)
+      if notif.layout.top then
+        layout.mark(notif.layout.top, notif.layout.height, false)
+        if not vim.deep_equal(prev_layout, notif.layout) then
+          changes = changes + 1
+          notif.win.opts.row = notif.layout.top - 1
+          notif.win.opts.col = vim.o.columns - notif.layout.width - self.opts.margin.right
+          notif.shown = notif.shown or ts()
+          notif.win:show()
+          notif.win:update()
+        end
+      end
     end
   end
-  vim.cmd.redraw()
+  return changes > 0 and (vim.cmd.redraw() or true)
 end
 
 ---@param msg string
@@ -482,6 +609,16 @@ end
 ---@param id? number|string
 function M.hide(id)
   return notifier:hide(id)
+end
+
+---@param opts? snacks.notifier.history
+function M.get_history(opts)
+  return notifier:get_history(opts)
+end
+
+---@param opts? snacks.notifier.history
+function M.show_history(opts)
+  return notifier:show_history(opts)
 end
 
 return M

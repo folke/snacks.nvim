@@ -2,6 +2,10 @@
 
 ![image](https://github.com/user-attachments/assets/b89eb279-08fb-40b2-9330-9a77014b9389)
 
+## Notification History
+
+![image](https://github.com/user-attachments/assets/0dc449f4-b275-49e4-a25f-f58efcba3079)
+
 ## 💡 Examples
 
 <details><summary>Replace a notification</summary>
@@ -29,7 +33,7 @@ vim.api.nvim_create_autocmd("LspProgress", {
       id = "lsp_progress",
       title = "LSP Progress",
       opts = function(notif)
-        notif.icon = ev.data.params.value == "end" and " "
+        notif.icon = ev.data.params.value.kind == "end" and " "
           or spinner[math.floor(vim.uv.hrtime() / (1e6 * 80)) % #spinner + 1]
       end,
     })
@@ -116,6 +120,7 @@ vim.api.nvim_create_autocmd("LspProgress", {
   ---@type snacks.notifier.style
   style = "compact",
   top_down = true, -- place notifications from top to bottom
+  date_format = "%R", -- time format for notifications
 }
 ```
 
@@ -131,8 +136,27 @@ vim.api.nvim_create_autocmd("LspProgress", {
   wo = {
     winblend = 5,
     wrap = false,
+    conceallevel = 2,
   },
   bo = { filetype = "snacks_notif" },
+}
+```
+
+### `notification.history`
+
+```lua
+{
+  border = "rounded",
+  zindex = 100,
+  width = 0.6,
+  height = 0.6,
+  minimal = false,
+  title = "Notification History",
+  title_pos = "center",
+  ft = "markdown",
+  bo = { filetype = "snacks_notif_history" },
+  wo = { winhighlight = "Normal:SnacksNotifierHistory" },
+  keys = { q = "close" },
 }
 ```
 
@@ -170,17 +194,18 @@ Notification object
 
 ```lua
 ---@class snacks.notifier.Notif: snacks.notifier.Notif.opts
----@field msg string
 ---@field id number|string
+---@field msg string
 ---@field win? snacks.win
 ---@field icon string
 ---@field level snacks.notifier.level
 ---@field timeout number
 ---@field dirty? boolean
----@field shown? number timestamp in ms
----@field added number timestamp in ms
----@field added_hr number hrtime in ms
----@field layout? { top?: number, size: { width: number, height: number }}
+---@field added number timestamp with nano precision
+---@field updated number timestamp with nano precision
+---@field shown? number timestamp with nano precision
+---@field hidden? number timestamp with nano precision
+---@field layout? { top?: number, width: number, height: number }
 ```
 
 ### Rendering
@@ -219,6 +244,13 @@ Notification object
 Snacks.notifier()
 ```
 
+### `Snacks.notifier.get_history()`
+
+```lua
+---@param opts? snacks.notifier.history
+Snacks.notifier.get_history(opts)
+```
+
 ### `Snacks.notifier.hide()`
 
 ```lua
@@ -233,4 +265,11 @@ Snacks.notifier.hide(id)
 ---@param level? snacks.notifier.level|number
 ---@param opts? snacks.notifier.Notif.opts
 Snacks.notifier.notify(msg, level, opts)
+```
+
+### `Snacks.notifier.show_history()`
+
+```lua
+---@param opts? snacks.notifier.history
+Snacks.notifier.show_history(opts)
 ```
