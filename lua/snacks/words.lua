@@ -9,6 +9,8 @@ local M = {}
 local defaults = {
   enabled = true, -- enable/disable the plugin
   debounce = 200, -- time in ms to wait before updating
+  notify_jump = true, -- show a notification when jumping
+  notify_end = true, -- show a notification when reaching the end
 }
 
 local config = Snacks.config.get("words", defaults)
@@ -77,8 +79,7 @@ end
 
 ---@param count number
 ---@param cycle? boolean
----@param notify? boolean
-function M.jump(count, cycle, notify)
+function M.jump(count, cycle)
   local words, idx = M.get()
   if not idx then
     return
@@ -90,9 +91,11 @@ function M.jump(count, cycle, notify)
   local target = words[idx]
   if target then
     vim.api.nvim_win_set_cursor(0, target.from)
-    if notify then
-      Snacks.notify.info(("Reference %d/%d"):format(idx, #words), { id = "snacks.words.jump" })
+    if config.notify_jump then
+      Snacks.notify.info(("Reference %d/%d"):format(idx, #words), { id = "snacks.words.jump", title = "Words" })
     end
+  elseif config.notify_end then
+    Snacks.notify.warn("No more references", { id = "snacks.words.jump", title = "Words" })
   end
 end
 
