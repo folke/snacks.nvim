@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.2.0](https://github.com/folke/snacks.nvim/compare/v1.1.0...v1.2.0) (2024-11-08)
+
+
+### Features
+
+* **words:** add `fold_open` and `set_jump_point` config options ([#31](https://github.com/folke/snacks.nvim/issues/31)) ([5dc749b](https://github.com/folke/snacks.nvim/commit/5dc749b045e62e30a156ca8522416a6d1ca9a959))
+
+
+### Bug Fixes
+
+* **notifier:** update layout on vim resize ([7f9f691](https://github.com/folke/snacks.nvim/commit/7f9f691a12d0665146b25a44323f21e18aa46c24))
+
+
+### Performance Improvements
+
+* **win:** prevent treesitter and syntax attaching to scratch buffers ([cc80f6d](https://github.com/folke/snacks.nvim/commit/cc80f6dc1b7a286cb06c6321bfeb1046f7a59418))
+
 ## [1.1.0](https://github.com/folke/snacks.nvim/compare/v1.0.0...v1.1.0) (2024-11-08)
 
 
