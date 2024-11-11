@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.2.0](https://github.com/folke/snacks.nvim/compare/v1.1.0...v1.2.0) (2024-11-11)
+
+
+### Features
+
+* **bufdelete:** added `wipe` option. Closes [#38](https://github.com/folke/snacks.nvim/issues/38) ([5914cb1](https://github.com/folke/snacks.nvim/commit/5914cb101070956a73462dcb1c81c8462e9e77d7))
+* **lazygit:** allow overriding extra lazygit config options ([d2f4f19](https://github.com/folke/snacks.nvim/commit/d2f4f1937e6fa97a48d5839d49f1f3012067bf45))
+* **notifier:** added `refresh` option configurable ([df8c9d7](https://github.com/folke/snacks.nvim/commit/df8c9d7724ade9f3c63277f08b237ac3b32b6cfe))
+* **notifier:** added backward compatibility for nvim-notify's replace option ([9b9777e](https://github.com/folke/snacks.nvim/commit/9b9777ec3bba97b3ddb37bd824a9ef9a46955582))
+* **words:** add `fold_open` and `set_jump_point` config options ([#31](https://github.com/folke/snacks.nvim/issues/31)) ([5dc749b](https://github.com/folke/snacks.nvim/commit/5dc749b045e62e30a156ca8522416a6d1ca9a959))
+
+
+### Bug Fixes
+
+* added compatibility with Neovim &gt;= 0.9.4 ([4f99818](https://github.com/folke/snacks.nvim/commit/4f99818b0ab98510ab8987a0427afc515fb5f76b))
+* **bufdelete:** opts.wipe. See [#38](https://github.com/folke/snacks.nvim/issues/38) ([0efbb93](https://github.com/folke/snacks.nvim/commit/0efbb93e0a4405b955d574746eb57ef6d48ae386))
+* **notifier:** take title/footer into account to determine notification width. Fixes [#54](https://github.com/folke/snacks.nvim/issues/54) ([09a6f17](https://github.com/folke/snacks.nvim/commit/09a6f17eccbb551797f522403033f48e63a25f74))
+* **notifier:** update layout on vim resize ([7f9f691](https://github.com/folke/snacks.nvim/commit/7f9f691a12d0665146b25a44323f21e18aa46c24))
+* **terminal:** `gf` properly opens file ([#45](https://github.com/folke/snacks.nvim/issues/45)) ([340cc27](https://github.com/folke/snacks.nvim/commit/340cc2756e9d7ef0ae9a6f55cdfbfdca7a9defa7))
+* **terminal:** pass a list of strings to termopen to prevent splitting. Fixes [#59](https://github.com/folke/snacks.nvim/issues/59) ([458a84b](https://github.com/folke/snacks.nvim/commit/458a84bd1db856c21f234a504ec384191a9899cf))
+
+
+### Performance Improvements
+
+* **notifier:** only force redraw for new windows and for updated while search is not active. Fixes [#52](https://github.com/folke/snacks.nvim/issues/52) ([da86b1d](https://github.com/folke/snacks.nvim/commit/da86b1deff9a0b1bb66f344241fb07577b6463b8))
+* **win:** don't try highlighting snacks internal filetypes ([eb8ab37](https://github.com/folke/snacks.nvim/commit/eb8ab37f6ac421eeda2570257d2279bd12700667))
+* **win:** prevent treesitter and syntax attaching to scratch buffers ([cc80f6d](https://github.com/folke/snacks.nvim/commit/cc80f6dc1b7a286cb06c6321bfeb1046f7a59418))
+
 ## [1.1.0](https://github.com/folke/snacks.nvim/compare/v1.0.0...v1.1.0) (2024-11-08)
 
 
