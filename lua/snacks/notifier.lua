@@ -77,6 +77,7 @@ Snacks.config.style("notification", {
     winblend = 5,
     wrap = false,
     conceallevel = 2,
+    colorcolumn = "",
   },
   bo = { filetype = "snacks_notif" },
 })
