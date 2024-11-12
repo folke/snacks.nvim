@@ -499,6 +499,11 @@ function M:win_opts()
   end
   opts.row = opts.row or math.floor((parent.height - opts.height) / 2)
   opts.col = opts.col or math.floor((parent.width - opts.width) / 2)
+
+  if self:has_border() then
+    opts.row = opts.row - 1
+    opts.col = opts.col - 1
+  end
   return opts
 end
 
