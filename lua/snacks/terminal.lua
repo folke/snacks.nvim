@@ -92,7 +92,7 @@ function M.open(cmd, opts)
       cwd = opts.cwd,
       env = opts.env,
     }
-    vim.fn.termopen(cmd or { vim.o.shell }, vim.tbl_isempty(term_opts) and vim.empty_dict() or term_opts)
+    vim.fn.termopen(cmd or vim.o.shell, vim.tbl_isempty(term_opts) and vim.empty_dict() or term_opts)
   end)
 
   if opts.interactive ~= false then
