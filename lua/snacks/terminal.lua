@@ -133,6 +133,27 @@ function M.toggle(cmd, opts)
   return terminals[id]
 end
 
+--- Focus terminal window if already open. Otherwise, open terminal window.
+--- The terminal id is based on the `cmd`, `cwd`, `env` and `vim.v.count1` options.
+---@param cmd? string | string[]
+---@param opts? snacks.terminal.Opts
+function M.open_or_focus(cmd, opts)
+  opts = opts or {}
+
+  local id = vim.inspect({ cmd = cmd, cwd = opts.cwd, env = opts.env, count = vim.v.count1 })
+
+  if terminals[id] and terminals[id]:buf_valid() then
+    if terminals[id]:valid() then
+      terminals[id]:focus()
+    else
+      terminals[id]:show()
+    end
+  else
+    terminals[id] = M.open(cmd, opts)
+  end
+  return terminals[id]
+end
+
 --- Parses a shell command into a table of arguments.
 --- - spaces inside quotes (only double quotes are supported) are preserved
 --- - backslash
