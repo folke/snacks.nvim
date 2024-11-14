@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.0.0](https://github.com/folke/snacks.nvim/compare/v1.2.0...v2.0.0) (2024-11-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* **config:** plugins are no longer enabled by default. Pass any options, or set `enabled = true`.
+
+### Features
+
+* **config:** plugins are no longer enabled by default. Pass any options, or set `enabled = true`. ([797708b](https://github.com/folke/snacks.nvim/commit/797708b0384ddfd66118651c48c3b399e376cb77))
+* **health:** added health checks to plugins ([1c4c748](https://github.com/folke/snacks.nvim/commit/1c4c74828fcca382f54817f4446649b201d56557))
+* **terminal:** added `Snacks.terminal.colorize()` to replace ansi codes by colors ([519b684](https://github.com/folke/snacks.nvim/commit/519b6841c42c575aec2ffc6c79c4e0a1a13e74bd))
+
+
+### Bug Fixes
+
+* **lazygit:** not needed to use deprecated fallback for set_hl ([14f076e](https://github.com/folke/snacks.nvim/commit/14f076e039aa876ba086449a45053d847bddb3db))
+* **notifier:** disable `colorcolumn` by default ([#66](https://github.com/folke/snacks.nvim/issues/66)) ([7627b81](https://github.com/folke/snacks.nvim/commit/7627b81d9f3453bd2e979d48d3eff2787e6029e9))
+* **statuscolumn:** ensure Snacks exists when loading before plugin loaded ([97e0e1e](https://github.com/folke/snacks.nvim/commit/97e0e1ec7f1088ee026efdaa789d102461ad49d4))
+* **terminal:** properly deal with args in `vim.o.shell`. Fixes [#69](https://github.com/folke/snacks.nvim/issues/69) ([2ccb70f](https://github.com/folke/snacks.nvim/commit/2ccb70fd3a42d188c95db233bfb7469259d56fb6))
+* **win:** take border into account for window position ([#64](https://github.com/folke/snacks.nvim/issues/64)) ([f0e47fd](https://github.com/folke/snacks.nvim/commit/f0e47fd5dc3ccc71cdd8866e2ce82749d3797fbb))
+
 ## [1.2.0](https://github.com/folke/snacks.nvim/compare/v1.1.0...v1.2.0) (2024-11-11)
 
 
