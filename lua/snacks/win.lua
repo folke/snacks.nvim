@@ -395,6 +395,7 @@ function M:show()
       opts[2] = nil
       opts.mode = nil
       opts.buffer = self.buf
+      opts.nowait = true
       local rhs = spec[2]
       if type(rhs) == "function" then
         rhs = function()
