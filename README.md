@@ -44,7 +44,7 @@ Install the plugin with your package manager:
 > [!caution]
 > You need to explicitely pass options for a plugin or set `enabled = true` to enable it.
 
-> ![tip]
+> [!tip]
 > It' a good idea to run `:checkhealth snacks` to see if everything is set up correctly.
 
 ```lua
