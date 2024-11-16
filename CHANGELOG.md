@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.1.0](https://github.com/folke/snacks.nvim/compare/v2.0.0...v2.1.0) (2024-11-16)
+
+
+### Features
+
+* **notifier:** allow specifying a minimal level to show notifications. See [#82](https://github.com/folke/snacks.nvim/issues/82) ([ec9cfb3](https://github.com/folke/snacks.nvim/commit/ec9cfb36b1ea2b4bf21b5812791c8bfee3bcf322))
+* **terminal:** when terminal terminates too quickly, don't close the window and show an error message. See [#80](https://github.com/folke/snacks.nvim/issues/80) ([313954e](https://github.com/folke/snacks.nvim/commit/313954efdfb064a85df731b29fa9b86bc711044a))
+
+
+### Bug Fixes
+
+* **docs:** typo in README.md ([#78](https://github.com/folke/snacks.nvim/issues/78)) ([dc0f404](https://github.com/folke/snacks.nvim/commit/dc0f4041dcc8da860bdf84c3bf27d41a6a4debf3))
+* **example:** rename file. Closes [#76](https://github.com/folke/snacks.nvim/issues/76) ([00c7a67](https://github.com/folke/snacks.nvim/commit/00c7a674004665999fbea310a322f1e105e1cfb5))
+* **notifier:** no gap in border without title/icon ([#85](https://github.com/folke/snacks.nvim/issues/85)) ([bc80bdc](https://github.com/folke/snacks.nvim/commit/bc80bdcc62efd236617dbbd183ce5882aded2145))
+* **win:** delay when closing windows ([#81](https://github.com/folke/snacks.nvim/issues/81)) ([d3dc8e7](https://github.com/folke/snacks.nvim/commit/d3dc8e7c27a663e4b30579e4e1ca3313052d0874))
+
 ## [2.0.0](https://github.com/folke/snacks.nvim/compare/v1.2.0...v2.0.0) (2024-11-14)
 
 
