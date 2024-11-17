@@ -98,8 +98,22 @@ function M._open(opts)
   local fields = {
     branch = system({ "git", "-C", cwd, "rev-parse", "--abbrev-ref", "HEAD" }, "Failed to get current branch")[1],
     file = file and system({ "git", "-C", cwd, "ls-files", "--full-name", file }, "Failed to get git file path")[1],
-    line = file and vim.fn.line("."),
+    line = nil,
   }
+
+  -- Get visual selection range if in visual mode
+  if vim.fn.mode() == "v" or vim.fn.mode() == "V" then
+    local start_line = vim.fn.line("v")
+    local end_line = vim.fn.line(".")
+    -- Ensure start_line is always the smaller number
+    if start_line > end_line then
+      start_line, end_line = end_line, start_line
+    end
+    fields.line = file and start_line .. "-L" .. end_line
+  else
+    fields.line = file and vim.fn.line(".")
+  end
+
   opts.what = opts.what == "file" and not fields.file and "branch" or opts.what
   opts.what = opts.what == "branch" and not fields.branch and "repo" or opts.what
 
