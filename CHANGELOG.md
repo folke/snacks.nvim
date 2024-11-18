@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.2.0](https://github.com/folke/snacks.nvim/compare/v2.1.0...v2.2.0) (2024-11-18)
+
+
+### Features
+
+* **dashboard:** added new `dashboard` snack ([#77](https://github.com/folke/snacks.nvim/issues/77)) ([d540fa6](https://github.com/folke/snacks.nvim/commit/d540fa607c415b55f5a0d773f561c19cd6287de4))
+* **debug:** Snacks.debug.trace and Snacks.debug.stats for hierarchical traces (like lazy profile) ([b593598](https://github.com/folke/snacks.nvim/commit/b593598859b1bb3946671fc78ee1896d32460552))
+* **notifier:** global keep when in cmdline ([73b1e20](https://github.com/folke/snacks.nvim/commit/73b1e20d38d4d238316ed391faf3d7ad4c3e71be))
+
 ## [2.1.0](https://github.com/folke/snacks.nvim/compare/v2.0.0...v2.1.0) (2024-11-16)
 
 
