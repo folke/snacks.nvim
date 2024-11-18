@@ -142,6 +142,7 @@ Snacks.config.style("dashboard", {
     undofile = false,
   },
   wo = {
+    colorcolumn = "",
     cursorcolumn = false,
     cursorline = false,
     list = false,
