@@ -203,38 +203,49 @@ See the example below for how to configure `snacks.nvim`.
 
 <!-- hl_start -->
 
-| Highlight Group               | Default Group     | Description                    |
-| ----------------------------- | ----------------- | ------------------------------ |
-| **SnacksNormal**              | _NormalFloat_     | Normal for the float window    |
-| **SnacksWinBar**              | _Title_           | Title of the window            |
-| **SnacksBackdrop**            | _none_            | Backdrop                       |
-| **SnacksNormalNC**            | _NormalFloat_     | Normal for non-current windows |
-| **SnacksWinBarNC**            | _SnacksWinBar_    | Title for non-current windows  |
-| **SnacksNotifierInfo**        | _none_            | Notification window for Info   |
-| **SnacksNotifierWarn**        | _none_            | Notification window for Warn   |
-| **SnacksNotifierDebug**       | _none_            | Notification window for Debug  |
-| **SnacksNotifierError**       | _none_            | Notification window for Error  |
-| **SnacksNotifierTrace**       | _none_            | Notification window for Trace  |
-| **SnacksNotifierIconInfo**    | _none_            | Icon for Info notification     |
-| **SnacksNotifierIconWarn**    | _none_            | Icon for Warn notification     |
-| **SnacksNotifierIconDebug**   | _none_            | Icon for Debug notification    |
-| **SnacksNotifierIconError**   | _none_            | Icon for Error notification    |
-| **SnacksNotifierIconTrace**   | _none_            | Icon for Trace notification    |
-| **SnacksNotifierTitleInfo**   | _none_            | Title for Info notification    |
-| **SnacksNotifierTitleWarn**   | _none_            | Title for Warn notification    |
-| **SnacksNotifierTitleDebug**  | _none_            | Title for Debug notification   |
-| **SnacksNotifierTitleError**  | _none_            | Title for Error notification   |
-| **SnacksNotifierTitleTrace**  | _none_            | Title for Trace notification   |
-| **SnacksNotifierBorderInfo**  | _none_            | Border for Info notification   |
-| **SnacksNotifierBorderWarn**  | _none_            | Border for Warn notification   |
-| **SnacksNotifierBorderDebug** | _none_            | Border for Debug notification  |
-| **SnacksNotifierBorderError** | _none_            | Border for Error notification  |
-| **SnacksNotifierBorderTrace** | _none_            | Border for Trace notification  |
-| **SnacksNotifierFooterInfo**  | _DiagnosticInfo_  | Footer for Info notification   |
-| **SnacksNotifierFooterWarn**  | _DiagnosticWarn_  | Footer for Warn notification   |
-| **SnacksNotifierFooterDebug** | _DiagnosticHint_  | Footer for Debug notification  |
-| **SnacksNotifierFooterError** | _DiagnosticError_ | Footer for Error notification  |
-| **SnacksNotifierFooterTrace** | _DiagnosticHint_  | Footer for Trace notification  |
+| Highlight Group               | Default Group           | Description                    |
+| ----------------------------- | ----------------------- | ------------------------------ |
+| **SnacksNormal**              | _NormalFloat_           | Normal for the float window    |
+| **SnacksWinBar**              | _Title_                 | Title of the window            |
+| **SnacksBackdrop**            | _none_                  | Backdrop                       |
+| **SnacksNormalNC**            | _NormalFloat_           | Normal for non-current windows |
+| **SnacksWinBarNC**            | _SnacksWinBar_          | Title for non-current windows  |
+| **SnacksNotifierInfo**        | _none_                  | Notification window for Info   |
+| **SnacksNotifierWarn**        | _none_                  | Notification window for Warn   |
+| **SnacksNotifierDebug**       | _none_                  | Notification window for Debug  |
+| **SnacksNotifierError**       | _none_                  | Notification window for Error  |
+| **SnacksNotifierTrace**       | _none_                  | Notification window for Trace  |
+| **SnacksNotifierIconInfo**    | _none_                  | Icon for Info notification     |
+| **SnacksNotifierIconWarn**    | _none_                  | Icon for Warn notification     |
+| **SnacksNotifierIconDebug**   | _none_                  | Icon for Debug notification    |
+| **SnacksNotifierIconError**   | _none_                  | Icon for Error notification    |
+| **SnacksNotifierIconTrace**   | _none_                  | Icon for Trace notification    |
+| **SnacksNotifierTitleInfo**   | _none_                  | Title for Info notification    |
+| **SnacksNotifierTitleWarn**   | _none_                  | Title for Warn notification    |
+| **SnacksNotifierTitleDebug**  | _none_                  | Title for Debug notification   |
+| **SnacksNotifierTitleError**  | _none_                  | Title for Error notification   |
+| **SnacksNotifierTitleTrace**  | _none_                  | Title for Trace notification   |
+| **SnacksNotifierBorderInfo**  | _none_                  | Border for Info notification   |
+| **SnacksNotifierBorderWarn**  | _none_                  | Border for Warn notification   |
+| **SnacksNotifierBorderDebug** | _none_                  | Border for Debug notification  |
+| **SnacksNotifierBorderError** | _none_                  | Border for Error notification  |
+| **SnacksNotifierBorderTrace** | _none_                  | Border for Trace notification  |
+| **SnacksNotifierFooterInfo**  | _DiagnosticInfo_        | Footer for Info notification   |
+| **SnacksNotifierFooterWarn**  | _DiagnosticWarn_        | Footer for Warn notification   |
+| **SnacksNotifierFooterDebug** | _DiagnosticHint_        | Footer for Debug notification  |
+| **SnacksNotifierFooterError** | _DiagnosticError_       | Footer for Error notification  |
+| **SnacksNotifierFooterTrace** | _DiagnosticHint_        | Footer for Trace notification  |
+| **SnacksDashboardNormal**     | _Normal_                | Normal for the dashboard       |
+| **SnacksDashboardDesc**       | _Special_               | Description text in dashboard  |
+| **SnacksDashboardFile**       | _Special_               | Dashboard file items           |
+| **SnacksDashboardDir**        | _NonText_               | Directory items                |
+| **SnacksDashboardFooter**     | _Title_                 | Dashboard footer text          |
+| **SnacksDashboardHeader**     | _Title_                 | Dashboard header text          |
+| **SnacksDashboardIcon**       | _Special_               | Dashboard icons                |
+| **SnacksDashboardKey**        | _Number_                | Keybind text                   |
+| **SnacksDashboardTerminal**   | _SnacksDashboardNormal_ | Terminal text                  |
+| **SnacksDashboardSpecial**    | _Special_               | Special elements               |
+| **SnacksDashboardTitle**      | _Title_                 | Title text                     |
 
 <!-- hl_end -->
 
