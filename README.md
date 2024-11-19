@@ -12,6 +12,7 @@ A collection of small QoL plugins for Neovim.
 | [debug](https://github.com/folke/snacks.nvim/blob/main/docs/debug.md)               | Pretty inspect & backtraces for debugging                                                                                                                                               |       |
 | [git](https://github.com/folke/snacks.nvim/blob/main/docs/git.md)                   | Useful functions for Git                                                                                                                                                                |       |
 | [gitbrowse](https://github.com/folke/snacks.nvim/blob/main/docs/gitbrowse.md)       | Open the repo of the active file in the browser (e.g., GitHub)                                                                                                                          |       |
+| [input](https://github.com/folke/snacks.nvim/blob/main/docs/input.md)               | Better `vim.ui.input`                                                                                                                                                                   |       |
 | [lazygit](https://github.com/folke/snacks.nvim/blob/main/docs/lazygit.md)           | Open LazyGit in a float, auto-configure colorscheme and integration with Neovim                                                                                                         |       |
 | [notify](https://github.com/folke/snacks.nvim/blob/main/docs/notify.md)             | Utility functions to work with Neovim's `vim.notify`                                                                                                                                    |       |
 | [notifier](https://github.com/folke/snacks.nvim/blob/main/docs/notifier.md)         | Better and prettier `vim.notify`                                                                                                                                                        |  ‼️   |
@@ -80,6 +81,7 @@ Please refer to the readme of each plugin for their specific configuration.
 ---@class snacks.Config
 ---@field bigfile? snacks.bigfile.Config | { enabled: boolean }
 ---@field gitbrowse? snacks.gitbrowse.Config
+---@field input? snacks.input.Config
 ---@field lazygit? snacks.lazygit.Config
 ---@field notifier? snacks.notifier.Config | { enabled: boolean }
 ---@field quickfile? { enabled: boolean }
