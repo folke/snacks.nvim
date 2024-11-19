@@ -1,5 +1,35 @@
 # Changelog
 
+## [2.3.0](https://github.com/folke/snacks.nvim/compare/v2.2.0...v2.3.0) (2024-11-18)
+
+
+### Features
+
+* added dashboard health checks ([deb00d0](https://github.com/folke/snacks.nvim/commit/deb00d0ddc57d77f5f6c3e5510ba7c2f07e593eb))
+* **dashboard:** added support for mini.sessions ([c8e209e](https://github.com/folke/snacks.nvim/commit/c8e209e6be9e8d8cdee19842a99ae7b89ac4248d))
+* **dashboard:** allow opts.preset.keys to be a function with default keymaps as arg ([b7775ec](https://github.com/folke/snacks.nvim/commit/b7775ec879e14362d8e4082b7ed97a752bbb654a))
+* **dashboard:** automatically detect streaming commands and don't cache those. tty-clock, cmatrix galore. Fixes [#100](https://github.com/folke/snacks.nvim/issues/100) ([082beb5](https://github.com/folke/snacks.nvim/commit/082beb508ccf3584aebfee845c1271d9f8b8abb6))
+* **notifier:** timeout=0 keeps the notif visible till manually hidden. Closes [#102](https://github.com/folke/snacks.nvim/issues/102) ([0cf22a8](https://github.com/folke/snacks.nvim/commit/0cf22a8d87f28759c083969d67b55498e568a1b7))
+
+
+### Bug Fixes
+
+* **dashboard:** check uis for headless and stdin_tty. Fixes [#97](https://github.com/folke/snacks.nvim/issues/97). Fixes [#98](https://github.com/folke/snacks.nvim/issues/98) ([4ff08f1](https://github.com/folke/snacks.nvim/commit/4ff08f1c4d7b7b5d3e1da3b2cc9d6c341cd4dc1a))
+* **dashboard:** debug output ([c0129da](https://github.com/folke/snacks.nvim/commit/c0129da4f839fd4306627b087cb722ea54c50c18))
+* **dashboard:** disable `vim.wo.colorcolumn` ([#101](https://github.com/folke/snacks.nvim/issues/101)) ([43b4abb](https://github.com/folke/snacks.nvim/commit/43b4abb9f11a07d7130b461f9bd96b3e4e3c5b94))
+* **dashboard:** notify on errors. Fixes [#99](https://github.com/folke/snacks.nvim/issues/99) ([2ae4108](https://github.com/folke/snacks.nvim/commit/2ae410889cbe6f59fb52f40cb86b25d6f7e874e2))
+* **debug:** MYVIMRC is not always set ([735f4d8](https://github.com/folke/snacks.nvim/commit/735f4d8c9de6fcff31bce671495569f345818ea0))
+* **notifier:** also handle timeout = false / timeout = true. See [#102](https://github.com/folke/snacks.nvim/issues/102) ([99f1f49](https://github.com/folke/snacks.nvim/commit/99f1f49104d413dabee9ee45bc22366aee97056e))
+
+## [2.2.0](https://github.com/folke/snacks.nvim/compare/v2.1.0...v2.2.0) (2024-11-18)
+
+
+### Features
+
+* **dashboard:** added new `dashboard` snack ([#77](https://github.com/folke/snacks.nvim/issues/77)) ([d540fa6](https://github.com/folke/snacks.nvim/commit/d540fa607c415b55f5a0d773f561c19cd6287de4))
+* **debug:** Snacks.debug.trace and Snacks.debug.stats for hierarchical traces (like lazy profile) ([b593598](https://github.com/folke/snacks.nvim/commit/b593598859b1bb3946671fc78ee1896d32460552))
+* **notifier:** global keep when in cmdline ([73b1e20](https://github.com/folke/snacks.nvim/commit/73b1e20d38d4d238316ed391faf3d7ad4c3e71be))
+
 ## [2.1.0](https://github.com/folke/snacks.nvim/compare/v2.0.0...v2.1.0) (2024-11-16)
 
 

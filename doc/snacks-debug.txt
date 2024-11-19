@@ -3,13 +3,17 @@
 ==============================================================================
 Table of Contents                             *snacks-debug-table-of-contents*
 
-1. Module                                                |snacks-debug-module|
+1. Types                                                  |snacks-debug-types|
+2. Module                                                |snacks-debug-module|
   - Snacks.debug()                        |snacks-debug-module-snacks.debug()|
   - Snacks.debug.backtrace()    |snacks-debug-module-snacks.debug.backtrace()|
   - Snacks.debug.inspect()        |snacks-debug-module-snacks.debug.inspect()|
   - Snacks.debug.log()                |snacks-debug-module-snacks.debug.log()|
   - Snacks.debug.profile()        |snacks-debug-module-snacks.debug.profile()|
-2. Links                                                  |snacks-debug-links|
+  - Snacks.debug.stats()            |snacks-debug-module-snacks.debug.stats()|
+  - Snacks.debug.trace()            |snacks-debug-module-snacks.debug.trace()|
+  - Snacks.debug.tracemod()      |snacks-debug-module-snacks.debug.tracemod()|
+3. Links                                                  |snacks-debug-links|
 Utility functions you can use in your code.
 
 Personally, I have the code below at the top of my `init.lua`
@@ -35,7 +39,16 @@ Whatthis does:
 
 
 ==============================================================================
-1. Module                                                *snacks-debug-module*
+1. Types                                                  *snacks-debug-types*
+
+>lua
+    ---@alias snacks.debug.Trace {name: string, time: number, [number]:snacks.debug.Trace}
+    ---@alias snacks.debug.Stat {name:string, time:number, count?:number, depth?:number}
+<
+
+
+==============================================================================
+2. Module                                                *snacks-debug-module*
 
 
 `Snacks.debug()`                                              *Snacks.debug()*
@@ -93,8 +106,35 @@ Very simple function to profile a lua function. **flush**set to `true` to use
     Snacks.debug.profile(fn, opts)
 <
 
+
+`Snacks.debug.stats()`                                  *Snacks.debug.stats()*
+
+>lua
+    ---@param opts? {min?: number, show?:boolean}
+    ---@return {summary:table<string, snacks.debug.Stat>, trace:snacks.debug.Stat[], traces:snacks.debug.Trace[]}
+    Snacks.debug.stats(opts)
+<
+
+
+`Snacks.debug.trace()`                                  *Snacks.debug.trace()*
+
+>lua
+    ---@param name string?
+    Snacks.debug.trace(name)
+<
+
+
+`Snacks.debug.tracemod()`                            *Snacks.debug.tracemod()*
+
+>lua
+    ---@param modname string
+    ---@param mod? table
+    ---@param suffix? string
+    Snacks.debug.tracemod(modname, mod, suffix)
+<
+
 ==============================================================================
-2. Links                                                  *snacks-debug-links*
+3. Links                                                  *snacks-debug-links*
 
 1. *image*: https://github.com/user-attachments/assets/0517aed7-fbd0-42ee-8058-c213410d80a7
 

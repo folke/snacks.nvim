@@ -17,8 +17,14 @@ function M.get_root(path)
   path = path or 0
   path = type(path) == "number" and vim.api.nvim_buf_get_name(path) or path --[[@as string]]
   path = vim.fs.normalize(path)
-  local git_root = vim.fs.find(".git", { path = path, upward = true })[1]
-  return git_root and vim.fn.fnamemodify(git_root, ":h") or nil
+  local git_root ---@type string?
+  for dir in vim.fs.parents(path) do
+    if vim.fn.isdirectory(dir .. "/.git") == 1 then
+      git_root = dir
+      break
+    end
+  end
+  return git_root and vim.fs.normalize(git_root) or nil
 end
 
 --- Show git log for the current line.

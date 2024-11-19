@@ -119,11 +119,13 @@ local win_opts = {
   "zindex",
 }
 
-vim.api.nvim_set_hl(0, "SnacksBackdrop", { bg = "#000000", default = true })
-vim.api.nvim_set_hl(0, "SnacksNormal", { link = "NormalFloat", default = true })
-vim.api.nvim_set_hl(0, "SnacksNormalNC", { link = "NormalFloat", default = true })
-vim.api.nvim_set_hl(0, "SnacksWinBar", { link = "Title", default = true })
-vim.api.nvim_set_hl(0, "SnacksWinBarNC", { link = "SnacksWinBar", default = true })
+Snacks.util.set_hl({
+  Backdrop = { bg = "#000000" },
+  Normal = "NormalFloat",
+  NormalNC = "NormalFloat",
+  WinBar = "Title",
+  WinBarNC = "SnacksWinBar",
+}, { prefix = "Snacks", default = true })
 
 M.transparent = false
 
@@ -329,8 +331,8 @@ end
 
 function M:update()
   if self:valid() then
-    self:set_options("buf")
-    self:set_options("win")
+    Snacks.util.bo(self.buf, self.opts.bo)
+    Snacks.util.wo(self.win, self.opts.wo)
     if self:is_floating() then
       local opts = self:win_opts()
       opts.noautocmd = nil
@@ -351,7 +353,7 @@ function M:show()
   -- OPTIM: prevent treesitter or syntax highlighting to attach on FileType if it's not already enabled
   local optim_hl = not vim.b[self.buf].ts_highlight and vim.bo[self.buf].syntax == ""
   vim.b[self.buf].ts_highlight = optim_hl or vim.b[self.buf].ts_highlight
-  self:set_options("buf")
+  Snacks.util.bo(self.buf, self.opts.bo)
   vim.b[self.buf].ts_highlight = not optim_hl and vim.b[self.buf].ts_highlight or nil
 
   if self.opts.on_buf then
@@ -362,7 +364,7 @@ function M:show()
   if M.transparent then
     self.opts.wo.winblend = 0
   end
-  self:set_options("win")
+  Snacks.util.wo(self.win, self.opts.wo)
   if self.opts.on_win then
     self.opts.on_win(self)
   end
@@ -380,6 +382,31 @@ function M:show()
     group = self.augroup,
     callback = function()
       self:update()
+    end,
+  })
+  vim.api.nvim_create_autocmd("BufWinEnter", {
+    group = self.augroup,
+    callback = function()
+      if not self:win_valid() then
+        return true
+      end
+      local buf = vim.api.nvim_win_get_buf(self.win)
+      if buf == self.buf then
+        return
+      end
+      -- another buffer was opened in this window
+      -- find another window to swap with
+      for _, win in ipairs(vim.api.nvim_list_wins()) do
+        if win ~= self.win and vim.bo[vim.api.nvim_win_get_buf(win)].buftype == "" then
+          vim.schedule(function()
+            vim.api.nvim_win_set_buf(self.win, self.buf)
+            vim.api.nvim_win_set_buf(win, buf)
+            vim.api.nvim_set_current_win(win)
+            vim.cmd.stopinsert()
+          end)
+          return
+        end
+      end
     end,
   })
 
@@ -538,26 +565,6 @@ function M:border_text_width()
     ))
   end
   return ret
-end
-
----@private
----@param type "win" | "buf"
-function M:set_options(type)
-  local opts = type == "win" and self.opts.wo or self.opts.bo
-  ---@diagnostic disable-next-line: no-unknown
-  for k, v in pairs(opts or {}) do
-    ---@diagnostic disable-next-line: no-unknown
-    local ok, err = pcall(vim.api.nvim_set_option_value, k, v, type == "win" and {
-      scope = "local",
-      win = self.win,
-    } or { buf = self.buf })
-    if not ok then
-      Snacks.notify.error(
-        "Error setting option `" .. tostring(k) .. "=" .. tostring(v) .. "`\n\n" .. err,
-        { title = "Snacks Float" }
-      )
-    end
-  end
 end
 
 function M:buf_valid()

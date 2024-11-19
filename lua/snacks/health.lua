@@ -14,7 +14,7 @@ local M = setmetatable({}, {
 
 M.prefix = ""
 
-M.needs_setup = { "bigfile", "notifier", "statuscolumn", "words", "quickfile" }
+M.needs_setup = { "bigfile", "notifier", "statuscolumn", "words", "quickfile", "dashboard" }
 
 function M.check()
   M.prefix = ""
@@ -33,7 +33,8 @@ function M.check()
       local opts = Snacks.config[name] or {} --[[@as {enabled?: boolean}]]
       local needs_setup = vim.tbl_contains(M.needs_setup, name)
       if needs_setup or mod.health then
-        M.prefix = ("`Snacks.%s` "):format(name)
+        M.start(("Snacks.%s"):format(name))
+        -- M.prefix = ("`Snacks.%s` "):format(name)
         if needs_setup then
           if opts.enabled then
             M.ok("setup {enabled}")

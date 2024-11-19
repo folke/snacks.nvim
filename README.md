@@ -8,6 +8,7 @@ A collection of small QoL plugins for Neovim.
 | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---: |
 | [bigfile](https://github.com/folke/snacks.nvim/blob/main/docs/bigfile.md)           | Deal with big files                                                                                                                                                                     |  ‼️   |
 | [bufdelete](https://github.com/folke/snacks.nvim/blob/main/docs/bufdelete.md)       | Delete buffers without disrupting window layout                                                                                                                                         |       |
+| [dashboard](https://github.com/folke/snacks.nvim/blob/main/docs/dashboard.md)       | Beautiful declarative dashboards                                                                                                                                                        |  ‼️   |
 | [debug](https://github.com/folke/snacks.nvim/blob/main/docs/debug.md)               | Pretty inspect & backtraces for debugging                                                                                                                                               |       |
 | [git](https://github.com/folke/snacks.nvim/blob/main/docs/git.md)                   | Useful functions for Git                                                                                                                                                                |       |
 | [gitbrowse](https://github.com/folke/snacks.nvim/blob/main/docs/gitbrowse.md)       | Open the repo of the active file in the browser (e.g., GitHub)                                                                                                                          |       |
@@ -84,6 +85,7 @@ Please refer to the readme of each plugin for their specific configuration.
 ---@field quickfile? { enabled: boolean }
 ---@field statuscolumn? snacks.statuscolumn.Config  | { enabled: boolean }
 ---@field styles? table<string, snacks.win.Config>
+---@field dashboard? snacks.dashboard.Config  | { enabled: boolean }
 ---@field terminal? snacks.terminal.Config
 ---@field toggle? snacks.toggle.Config
 ---@field win? snacks.win.Config
@@ -91,6 +93,7 @@ Please refer to the readme of each plugin for their specific configuration.
 {
   styles = {},
   bigfile = { enabled = false },
+  dashboard = { enabled = false },
   notifier = { enabled = false },
   quickfile = { enabled = false },
   statuscolumn = { enabled = false },
@@ -116,6 +119,7 @@ See the example below for how to configure `snacks.nvim`.
   ---@type snacks.Config
   opts = {
     bigfile = { enabled = true },
+    dashboard = { enabled = true },
     notifier = {
       enabled = true,
       timeout = 3000,

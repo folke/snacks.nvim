@@ -21,7 +21,7 @@ function M.inspect(...)
       and info.source ~= caller.source
       and info.what == "Lua"
       and info.source ~= "lua"
-      and info.source ~= "@" .. vim.env.MYVIMRC
+      and info.source ~= "@" .. (vim.env.MYVIMRC or "")
     then
       caller = info
       break
@@ -91,6 +91,92 @@ function M.log(...)
   fd:write(os.date("%Y-%m-%d %H:%M:%S ") .. msg)
   fd:write("\n")
   fd:close()
+end
+
+---@alias snacks.debug.Trace {name: string, time: number, [number]:snacks.debug.Trace}
+---@alias snacks.debug.Stat {name:string, time:number, count?:number, depth?:number}
+
+---@type snacks.debug.Trace[]
+M._traces = { { name = "__TOP__", time = 0 } }
+
+---@param name string?
+function M.trace(name)
+  if name then
+    local entry = { name = name, time = uv.hrtime() } ---@type snacks.debug.Trace
+    table.insert(M._traces[#M._traces], entry)
+    table.insert(M._traces, entry)
+    return entry
+  else
+    local entry = assert(table.remove(M._traces), "trace not ended?") ---@type snacks.debug.Trace
+    entry.time = uv.hrtime() - entry.time
+    return entry
+  end
+end
+
+---@param modname string
+---@param mod? table
+---@param suffix? string
+function M.tracemod(modname, mod, suffix)
+  mod = mod or require(modname)
+  suffix = suffix or "."
+  for k, v in pairs(mod) do
+    if type(v) == "function" and k ~= "trace" then
+      mod[k] = function(...)
+        M.trace(modname .. suffix .. k)
+        local ok, ret = pcall(v, ...)
+        M.trace()
+        return ok == false and error(ret) or ret
+      end
+    end
+  end
+end
+
+---@param opts? {min?: number, show?:boolean}
+---@return {summary:table<string, snacks.debug.Stat>, trace:snacks.debug.Stat[], traces:snacks.debug.Trace[]}
+function M.stats(opts)
+  opts = opts or {}
+  local stack, lines, trace = {}, {}, {} ---@type string[], string[], snacks.debug.Stat[]
+  local summary = {} ---@type table<string, snacks.debug.Stat>
+  ---@param stat snacks.debug.Trace
+  local function collect(stat)
+    if #stack > 0 then
+      local recursive = vim.list_contains(stack, stat.name)
+      summary[stat.name] = summary[stat.name] or { time = 0, count = 0, name = stat.name }
+      summary[stat.name].time = summary[stat.name].time + (recursive and 0 or stat.time)
+      summary[stat.name].count = summary[stat.name].count + 1
+      table.insert(trace, { name = stat.name, time = stat.time or 0, depth = #stack - 1 })
+    end
+    table.insert(stack, stat.name)
+    for _, entry in ipairs(stat) do
+      collect(entry)
+    end
+    table.remove(stack)
+  end
+  collect(M._traces[1])
+
+  ---@param entries snacks.debug.Stat[]
+  local function add(entries)
+    for _, stat in ipairs(entries) do
+      local ms = math.floor(stat.time / 1e4) / 1e2
+      if ms >= (opts.min or 0) then
+        local line = ("%s- `%s`: **%.2f**ms"):format(("  "):rep(stat.depth or 0), stat.name, ms)
+        table.insert(lines, line .. (stat.count and (" ([%d])"):format(stat.count) or ""))
+      end
+    end
+  end
+
+  if opts.show ~= false then
+    lines[#lines + 1] = "# Summary"
+    summary = vim.tbl_values(summary)
+    table.sort(summary, function(a, b)
+      return a.time > b.time
+    end)
+    add(summary)
+    lines[#lines + 1] = "\n# Trace"
+    add(trace)
+    Snacks.notify.warn(lines, { title = "Traces" })
+  end
+  return { summary = summary, trace = trace, tree = M._traces }
 end
 
 return M

@@ -26,6 +26,16 @@ local query = vim.treesitter.query.parse(
         (string content: (string_content) @style_name)
         (table_constructor) @style_config)
     ) @style
+
+    ;; examples
+    (assignment_statement
+      (variable_list
+        name: (dot_index_expression
+          field: (identifier) @example_name) 
+          @_en (#lua-match? @_en "^M%.examples%.%w+"))
+      (expression_list
+        value: (table_constructor) @example_config)
+    ) @example
   ]]
 )
 
@@ -46,7 +56,8 @@ local query = vim.treesitter.query.parse(
 ---@field mod? string
 ---@field methods {name: string, args: string, comment?: string, types?: string, type: "method"|"function"}[]
 ---@field types string[]
----@field styles {name:string, opts:string}[]
+---@field examples table<string, string>
+---@field styles {name:string, opts:string, comment?:string}[]
 
 ---@param lines string[]
 function M.parse(lines)
@@ -123,6 +134,7 @@ function M.extract(lines)
       return not c:find("@private")
     end, parse.comments),
     styles = {},
+    examples = {},
   }
 
   for _, c in ipairs(parse.captures) do
@@ -137,14 +149,15 @@ function M.extract(lines)
     elseif c.name == "fun" then
       local name = c.fields.name:sub(2)
       local args = (c.fields.params or ""):sub(2, -2)
-      local comment = c.comment
       local type = name:sub(1, 1)
       name = name:sub(2)
       if not name:find("^_") then
-        table.insert(ret.methods, { name = name, args = args, comment = comment, type = type })
+        table.insert(ret.methods, { name = name, args = args, comment = c.comment, type = type })
       end
     elseif c.name == "style" then
-      table.insert(ret.styles, { name = c.fields.name, opts = c.fields.config })
+      table.insert(ret.styles, { name = c.fields.name, opts = c.fields.config, comment = c.comment })
+    elseif c.name == "example" then
+      ret.examples[c.fields.name] = c.comment .. "\n" .. c.fields.config
     end
   end
 
@@ -172,6 +185,8 @@ function M.md(str, opts)
     opts.extract_comment = true
   end
   str = str:gsub("\n%s*%-%-%s*stylua: ignore\n", "\n")
+  str = str:gsub("\n%s*debug = false,\n", "\n")
+  str = str:gsub("\n%s*debug = true,\n", "\n")
   local comments = {} ---@type string[]
   local lines = vim.split(str, "\n", { plain = true })
 
@@ -196,6 +211,16 @@ function M.md(str, opts)
   return vim.trim(table.concat(ret, "\n")) .. "\n"
 end
 
+function M.examples(name)
+  local fname = ("docs/examples/%s.lua"):format(name)
+  if not vim.uv.fs_stat(fname) then
+    return {}
+  end
+  local lines = vim.fn.readfile(fname)
+  local info = M.extract(lines)
+  return info.examples
+end
+
 ---@param name string
 ---@param info snacks.docs.Info
 function M.render(name, info)
@@ -214,6 +239,18 @@ function M.render(name, info)
     add(M.md(info.config))
   end
 
+  local examples = M.examples(name)
+  local names = vim.tbl_keys(examples)
+  table.sort(names)
+  if not vim.tbl_isempty(examples) then
+    add("## 🚀 Examples\n")
+    for _, n in ipairs(names) do
+      local example = examples[n]
+      add(("### `%s`\n"):format(n))
+      add(M.md(example))
+    end
+  end
+
   if #info.styles > 0 then
     table.sort(info.styles, function(a, b)
       return a.name < b.name
@@ -221,6 +258,9 @@ function M.render(name, info)
     add("## 🎨 Styles\n")
     for _, style in pairs(info.styles) do
       add(("### `%s`\n"):format(style.name))
+      if style.comment and style.comment ~= "" then
+        add(M.md(style.comment))
+      end
       add(M.md(style.opts))
     end
   end
@@ -320,7 +360,7 @@ function M._build()
       M.write(name, M.render(name, info))
       if name == "init" then
         local readme = table.concat(vim.fn.readfile("README.md"), "\n")
-        local example = table.concat(vim.fn.readfile("docs/example.lua"), "\n")
+        local example = table.concat(vim.fn.readfile("docs/examples/init.lua"), "\n")
         example = example:gsub(".*\nreturn {", "{", 1)
         readme = M.replace("config", readme, M.md(info.config))
         readme = M.replace("example", readme, M.md(example))

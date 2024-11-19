@@ -23,7 +23,7 @@ local uv = vim.uv or vim.loop
 ---@field level? number|snacks.notifier.level
 ---@field title? string
 ---@field icon? string
----@field timeout? number
+---@field timeout? number|boolean timeout in ms. Set to 0|false to keep until manually closed
 ---@field ft? string
 ---@field keep? fun(notif: snacks.notifier.Notif): boolean
 ---@field style? snacks.notifier.style
@@ -116,6 +116,9 @@ local defaults = {
     debug = " ",
     trace = " ",
   },
+  keep = function(notif)
+    return vim.fn.getcmdpos() > 0
+  end,
   ---@type snacks.notifier.style
   style = "compact",
   top_down = true, -- place notifications from top to bottom
@@ -282,9 +285,7 @@ function N:init()
     links[hl("Title", level)] = link or ("Diagnostic" .. Level)
     links[hl("Footer", level)] = link or ("Diagnostic" .. Level)
   end
-  for k, v in pairs(links) do
-    vim.api.nvim_set_hl(0, k, { link = v, default = true })
-  end
+  Snacks.util.set_hl(links, { default = true })
 
   -- resize handler
   vim.api.nvim_create_autocmd("VimResized", {
@@ -344,6 +345,8 @@ function N:add(opts)
   notif.id = notif.id or next_id()
   notif.level = normlevel(notif.level)
   notif.icon = notif.icon or self.opts.icons[notif.level]
+  notif.timeout = notif.timeout == false and 0 or notif.timeout
+  notif.timeout = notif.timeout == true and self.opts.timeout or notif.timeout
   notif.timeout = notif.timeout or self.opts.timeout
   notif.added = now
 
@@ -370,6 +373,7 @@ function N:update()
   for id, notif in pairs(self.queue) do
     local timeout = notif.timeout or self.opts.timeout
     local keep = not notif.shown -- not shown yet
+      or timeout == 0 -- no timeout
       or (notif.win and notif.win:win_valid() and vim.api.nvim_get_current_win() == notif.win.win) -- current window
       or (notif.keep and notif.keep(notif)) -- custom keep
       or (self.opts.keep and self.opts.keep(notif)) -- global keep

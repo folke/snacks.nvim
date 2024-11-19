@@ -120,6 +120,9 @@ vim.api.nvim_create_autocmd("LspProgress", {
     debug = " ",
     trace = " ",
   },
+  keep = function(notif)
+    return vim.fn.getcmdpos() > 0
+  end,
   ---@type snacks.notifier.style
   style = "compact",
   top_down = true, -- place notifications from top to bottom
@@ -187,7 +190,7 @@ Notification options
 ---@field level? number|snacks.notifier.level
 ---@field title? string
 ---@field icon? string
----@field timeout? number
+---@field timeout? number|boolean timeout in ms. Set to 0|false to keep until manually closed
 ---@field ft? string
 ---@field keep? fun(notif: snacks.notifier.Notif): boolean
 ---@field style? snacks.notifier.style

@@ -16,6 +16,7 @@ core:
   - changed-files:
       - any-glob-to-any-file:
           - "lua/snacks/init.lua"
+          - "lua/snacks/health.lua"
           - "plugins/**"
           - "queries/**"
           - "scripts/**"
@@ -27,6 +28,9 @@ bigfile:
 bufdelete:
   - changed-files:
       - any-glob-to-any-file: "lua/snacks/bufdelete.lua"
+dashboard:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/dashboard.lua"
 debug:
   - changed-files:
       - any-glob-to-any-file: "lua/snacks/debug.lua"

@@ -1,4 +1,4 @@
-*snacks.nvim.txt*           For Neovim           Last change: 2024 November 16
+*snacks.nvim.txt*           For Neovim           Last change: 2024 November 19
 
 ==============================================================================
 Table of Contents                              *snacks.nvim-table-of-contents*
@@ -26,7 +26,9 @@ FEATURES                                    *snacks.nvim-snacks.nvim-features*
 
   bufdelete             Deletebuffers without disrupting window layout  
 
-  debug                 Pretty inspect & backtraces for debugging       
+  dashboard             Beautiful declarative dashboards                
+
+  debug                 Prettyinspect & backtraces for debugging        
 
   git                   Useful functions for Git                        
 
@@ -126,6 +128,7 @@ Default Options ~
     ---@field quickfile? { enabled: boolean }
     ---@field statuscolumn? snacks.statuscolumn.Config  | { enabled: boolean }
     ---@field styles? table<string, snacks.win.Config>
+    ---@field dashboard? snacks.dashboard.Config  | { enabled: boolean }
     ---@field terminal? snacks.terminal.Config
     ---@field toggle? snacks.toggle.Config
     ---@field win? snacks.win.Config
@@ -133,6 +136,7 @@ Default Options ~
     {
       styles = {},
       bigfile = { enabled = false },
+      dashboard = { enabled = false },
       notifier = { enabled = false },
       quickfile = { enabled = false },
       statuscolumn = { enabled = false },
@@ -153,6 +157,7 @@ See the example below for how to configure `snacks.nvim`.
       ---@type snacks.Config
       opts = {
         bigfile = { enabled = true },
+        dashboard = { enabled = true },
         notifier = {
           enabled = true,
           timeout = 3000,
