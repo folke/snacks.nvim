@@ -1,5 +1,25 @@
 # Changelog
 
+## [2.4.0](https://github.com/folke/snacks.nvim/compare/v2.3.0...v2.4.0) (2024-11-19)
+
+
+### Features
+
+* **dashboard:** hide tabline and statusline when loading during startup ([75dc74c](https://github.com/folke/snacks.nvim/commit/75dc74c5dc933b81cde85e8bc368a384343af69f))
+* **dashboard:** when an item is wider than pane width and only one pane, then center it. See [#108](https://github.com/folke/snacks.nvim/issues/108) ([c15953e](https://github.com/folke/snacks.nvim/commit/c15953ee885cf8afb40dcd478569d7de2edae939))
+* **gitbrowse:** open also visual selection range ([#89](https://github.com/folke/snacks.nvim/issues/89)) ([c29c0d4](https://github.com/folke/snacks.nvim/commit/c29c0d48500cb976c9210bb2d42909ad203cd4aa))
+* **win:** detect alien buffers opening in managed windows and open them somewhere else. Fixes [#110](https://github.com/folke/snacks.nvim/issues/110) ([9c0d2e2](https://github.com/folke/snacks.nvim/commit/9c0d2e2e93615e70627e5c09c7bbb04e93eab2c6))
+
+
+### Bug Fixes
+
+* **dashboard:** always hide cursor ([68fcc25](https://github.com/folke/snacks.nvim/commit/68fcc258023404a0a0341a7cc93db47cd17f85f4))
+* **dashboard:** check session managers in order ([1acea8b](https://github.com/folke/snacks.nvim/commit/1acea8b94005620dad70dfde6a6344c130a57c59))
+* **dashboard:** fix race condition when sending data while closing ([4188446](https://github.com/folke/snacks.nvim/commit/4188446f86b5c6abae090eb6abca65d5d9bb8003))
+* **dashboard:** minimum one pane even when it doesn't fit the screen. Fixes [#104](https://github.com/folke/snacks.nvim/issues/104) ([be8feef](https://github.com/folke/snacks.nvim/commit/be8feef4ab584f50aaa96b69d50b3f86a35aacff))
+* **dashboard:** only check for piped stdin when in TUI. Ignore GUIs ([3311d75](https://github.com/folke/snacks.nvim/commit/3311d75f893191772a1b9525b18b94d8c3a8943a))
+* **dashboard:** remove weird preset.keys function override. Just copy defaults if you want to change them ([0b9e09c](https://github.com/folke/snacks.nvim/commit/0b9e09cbd97c178ebe5db78fd373448448c5511b))
+
 ## [2.3.0](https://github.com/folke/snacks.nvim/compare/v2.2.0...v2.3.0) (2024-11-18)
 
 
