@@ -727,7 +727,7 @@ M.sections = {}
 function M.sections.session(item)
   local plugins = {
     { "persistence.nvim", ":lua require('persistence').load()" },
-    { "persisted.nvim", ":SessionLoad" },
+    { "persisted.nvim", ":lua require('persisted').load()" },
     { "neovim-session-manager", ":SessionManager load_current_dir_session" },
     { "possession.nvim", ":PossessionLoadCwd" },
     { "mini.sessions", ":lua require('mini.sessions').read('local')" },
