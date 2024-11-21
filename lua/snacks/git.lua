@@ -20,7 +20,7 @@ function M.get_root(path)
   path = path == "" and (vim.uv or vim.loop).cwd() or path
   local git_root ---@type string?
   for dir in vim.fs.parents(path) do
-    if vim.fn.isdirectory(dir .. "/.git") == 1 then
+    if vim.fn.isdirectory(dir .. "/.git") == 1 or vim.fn.filereadable(dir .. "/.git") == 1 then
       git_root = dir
       break
     end
