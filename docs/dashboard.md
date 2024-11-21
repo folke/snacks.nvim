@@ -13,11 +13,11 @@
   - **session**: session support
   - **startup**: startup time (lazy.nvim)
   - **terminal**: colored terminal output
-- super fast `terminal` sections with autmomatic caching
+- super fast `terminal` sections with automatic caching
 
 ## 🚀 Usage
 
-The dashboards comes with a set of default sections, that
+The dashboard comes with a set of default sections, that
 can be customized with `opts.preset` or
 fully replaced with `opts.sections`.
 
