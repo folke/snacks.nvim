@@ -117,7 +117,7 @@ In the example below, both sections are equivalent.
     ---@type fun(cmd:string, opts:table)|nil
     pick = nil,
     -- Used by the `keys` section to show keymaps.
-    -- Set your curstom keymaps here.
+    -- Set your custom keymaps here.
     -- When using a function, the `items` argument are the default keymaps.
     ---@type snacks.dashboard.Item[]
     keys = {
