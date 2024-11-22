@@ -1,5 +1,32 @@
 # Changelog
 
+## [2.5.0](https://github.com/folke/snacks.nvim/compare/v2.4.0...v2.5.0) (2024-11-22)
+
+
+### Features
+
+* **dashboard:** added Snacks.dashboard.update(). Closes [#121](https://github.com/folke/snacks.nvim/issues/121) ([c770ebe](https://github.com/folke/snacks.nvim/commit/c770ebeaf7b19abad8a447ef55b48cec71e7db54))
+* **debug:** profile title ([0177079](https://github.com/folke/snacks.nvim/commit/017707955f465335900c4fd483c32df018fd3427))
+* **notifier:** show indicator when notif has more lines. Closes [#112](https://github.com/folke/snacks.nvim/issues/112) ([cf72c06](https://github.com/folke/snacks.nvim/commit/cf72c06ee61f3102bf828ee7e8dde20316310374))
+* **terminal:** added Snacks.terminal.get(). Closes [#122](https://github.com/folke/snacks.nvim/issues/122) ([7f63d4f](https://github.com/folke/snacks.nvim/commit/7f63d4fefb7ba22f6e98986f7adeb04f9f9369b1))
+* **util:** get hl color ([b0da066](https://github.com/folke/snacks.nvim/commit/b0da066536493b6ed977744e4ee91fac01fcc2a8))
+* **util:** set_hl managed ([9642695](https://github.com/folke/snacks.nvim/commit/96426953a029b12d02ad45849e086c1ee14e065b))
+
+
+### Bug Fixes
+
+* **dashboard:** `vim.pesc` for auto keys. Fixes [#134](https://github.com/folke/snacks.nvim/issues/134) ([aebffe5](https://github.com/folke/snacks.nvim/commit/aebffe535b09237b28d2c61bb3febab12bc95ae8))
+* **dashboard:** align should always set width even if no alignment is needed. Fixes [#137](https://github.com/folke/snacks.nvim/issues/137) ([54d521c](https://github.com/folke/snacks.nvim/commit/54d521cd0fde5e3ccf36716f23371707d0267768))
+* **dashboard:** better git check for advanced example. See [#126](https://github.com/folke/snacks.nvim/issues/126) ([b4a293a](https://github.com/folke/snacks.nvim/commit/b4a293aac747fbde7aafa72242a2d26dc17e325d))
+* **dashboard:** open fullscreen on relaunch ([853240b](https://github.com/folke/snacks.nvim/commit/853240bb207ed7a2366c6c63ffc38f3b26fd484f))
+* **dashboard:** randomseed needs argument on stable ([c359164](https://github.com/folke/snacks.nvim/commit/c359164872e82646e11c652fb0fbe723e58bfdd8))
+* **debug:** include `main` in caller ([33d31af](https://github.com/folke/snacks.nvim/commit/33d31af1501ec154dba6008064d17ab72ec37d00))
+* **git:** get_root should work for non file buffers ([723d8ea](https://github.com/folke/snacks.nvim/commit/723d8eac849749e9015d9e9598f99974684ca3bb))
+* **notifier:** hide existing nofif if higher prio notif arrives and no free space for lower notif ([7a061de](https://github.com/folke/snacks.nvim/commit/7a061de75f758db23cf2c2ee0822a76356b54035))
+* **quickfile:** don't load when bigfile detected. Fixes [#116](https://github.com/folke/snacks.nvim/issues/116) ([978424c](https://github.com/folke/snacks.nvim/commit/978424ce280ec85e78e9660b200aee9aa12e9ef2))
+* **sessions:** change persisted.nvim load session command ([#118](https://github.com/folke/snacks.nvim/issues/118)) ([26bec4b](https://github.com/folke/snacks.nvim/commit/26bec4b51d617cd275218e9935fdff5390c18a87))
+* **terminal:** hide on `q` instead of close ([30a0721](https://github.com/folke/snacks.nvim/commit/30a0721d56993a7125a247a07116f1a07e0efda4))
+
 ## [2.4.0](https://github.com/folke/snacks.nvim/compare/v2.3.0...v2.4.0) (2024-11-19)
 
 
