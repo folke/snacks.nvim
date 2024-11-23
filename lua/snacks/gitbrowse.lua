@@ -90,7 +90,13 @@ function M.open(opts)
 end
 
 ---@param opts? snacks.gitbrowse.Config
-function M._open(opts)
+function M.getremotes(opts)
+  pcall(M._getremotes, opts) -- errors are handled with notifications
+end
+
+---@param opts? snacks.gitbrowse.Config
+---@return {name: string, url: string}[] A list of remotes with names and resolved URLs.
+function M._getremotes(opts)
   opts = Snacks.config.get("gitbrowse", defaults, opts)
   local file = vim.api.nvim_buf_get_name(0) ---@type string?
   file = file and (uv.fs_stat(file) or {}).type == "file" and vim.fs.normalize(file) or nil
@@ -133,6 +139,14 @@ function M._open(opts)
       end
     end
   end
+
+  return remotes
+end
+
+---@param opts? snacks.gitbrowse.Config
+function M._open(opts)
+  opts = Snacks.config.get("gitbrowse", defaults, opts)
+  local remotes = M._getremotes(opts)
 
   local function open(remote)
     if remote then
