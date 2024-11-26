@@ -107,35 +107,32 @@ function M._open(opts)
   local file = vim.api.nvim_buf_get_name(0) ---@type string?
   file = file and (uv.fs_stat(file) or {}).type == "file" and vim.fs.normalize(file) or nil
   local cwd = file and vim.fn.fnamemodify(file, ":h") or vim.fn.getcwd()
-  local fields
-
   local word = vim.fn.expand("<cword>")
-  if word and is_valid_commit_hash(word) then
-    opts.what = "commit"
-    fields = { commit = word }
-  else
-    fields = {
-      branch = system({ "git", "-C", cwd, "rev-parse", "--abbrev-ref", "HEAD" }, "Failed to get current branch")[1],
-      file = file and system({ "git", "-C", cwd, "ls-files", "--full-name", file }, "Failed to get git file path")[1],
-      line = nil,
-    }
+  local fields = {
+    branch = system({ "git", "-C", cwd, "rev-parse", "--abbrev-ref", "HEAD" }, "Failed to get current branch")[1],
+    file = file and system({ "git", "-C", cwd, "ls-files", "--full-name", file }, "Failed to get git file path")[1],
+    line = nil,
+    commit = is_valid_commit_hash(word) and word,
+  }
 
-    -- Get visual selection range if in visual mode
-    if vim.fn.mode() == "v" or vim.fn.mode() == "V" then
-      local start_line = vim.fn.line("v")
-      local end_line = vim.fn.line(".")
-      -- Ensure start_line is always the smaller number
-      if start_line > end_line then
-        start_line, end_line = end_line, start_line
-      end
-      fields.line = file and start_line .. "-L" .. end_line
-    else
-      fields.line = file and vim.fn.line(".")
+  -- Get visual selection range if in visual mode
+  if vim.fn.mode() == "v" or vim.fn.mode() == "V" then
+    local start_line = vim.fn.line("v")
+    local end_line = vim.fn.line(".")
+    -- Ensure start_line is always the smaller number
+    if start_line > end_line then
+      start_line, end_line = end_line, start_line
     end
-
-    opts.what = opts.what == "file" and not fields.file and "branch" or opts.what
-    opts.what = opts.what == "branch" and not fields.branch and "repo" or opts.what
+    fields.line = file and start_line .. "-L" .. end_line
+  else
+    fields.line = file and vim.fn.line(".")
   end
+
+  opts.what = is_valid_commit_hash(word) and "commit"
+    or opts.what == "commit" and not fields.commit and "file"
+    or opts.what
+  opts.what = not is_valid_commit_hash(word) and opts.what == "file" and not fields.file and "branch" or opts.what
+  opts.what = not is_valid_commit_hash(word) and opts.what == "branch" and not fields.branch and "repo" or opts.what
 
   local remotes = {} ---@type {name:string, url:string}[]
 
