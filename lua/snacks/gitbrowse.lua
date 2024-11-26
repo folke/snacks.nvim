@@ -108,11 +108,12 @@ function M._open(opts)
   file = file and (uv.fs_stat(file) or {}).type == "file" and vim.fs.normalize(file) or nil
   local cwd = file and vim.fn.fnamemodify(file, ":h") or vim.fn.getcwd()
   local word = vim.fn.expand("<cword>")
+  local is_commit = is_valid_commit_hash(word)
   local fields = {
     branch = system({ "git", "-C", cwd, "rev-parse", "--abbrev-ref", "HEAD" }, "Failed to get current branch")[1],
     file = file and system({ "git", "-C", cwd, "ls-files", "--full-name", file }, "Failed to get git file path")[1],
     line = nil,
-    commit = is_valid_commit_hash(word) and word,
+    commit = is_commit and word,
   }
 
   -- Get visual selection range if in visual mode
@@ -128,11 +129,9 @@ function M._open(opts)
     fields.line = file and vim.fn.line(".")
   end
 
-  opts.what = is_valid_commit_hash(word) and "commit"
-    or opts.what == "commit" and not fields.commit and "file"
-    or opts.what
-  opts.what = not is_valid_commit_hash(word) and opts.what == "file" and not fields.file and "branch" or opts.what
-  opts.what = not is_valid_commit_hash(word) and opts.what == "branch" and not fields.branch and "repo" or opts.what
+  opts.what = is_commit and "commit" or opts.what == "commit" and not fields.commit and "file" or opts.what
+  opts.what = not is_commit and opts.what == "file" and not fields.file and "branch" or opts.what
+  opts.what = not is_commit and opts.what == "branch" and not fields.branch and "repo" or opts.what
 
   local remotes = {} ---@type {name:string, url:string}[]
 
