@@ -87,12 +87,13 @@ local function system(cmd, err)
 end
 
 ---@param hash string
+---@param cwd string
 ---@return boolean
-local function is_valid_commit_hash(hash)
-  if not hash:match("^[a-fA-F0-9]+$") then
+local function is_valid_commit_hash(hash, cwd)
+  if not (hash:match("^[a-fA-F0-9]+$") and #hash >= 7) then
     return false
   end
-  system({ "git", "rev-parse", "--verify", hash }, "Invalid commit hash")
+  system({ "git", "-C", cwd, "rev-parse", "--verify", hash }, "Invalid commit hash")
   return true
 end
 
@@ -108,7 +109,7 @@ function M._open(opts)
   file = file and (uv.fs_stat(file) or {}).type == "file" and vim.fs.normalize(file) or nil
   local cwd = file and vim.fn.fnamemodify(file, ":h") or vim.fn.getcwd()
   local word = vim.fn.expand("<cword>")
-  local is_commit = is_valid_commit_hash(word)
+  local is_commit = is_valid_commit_hash(word, cwd)
   local fields = {
     branch = system({ "git", "-C", cwd, "rev-parse", "--abbrev-ref", "HEAD" }, "Failed to get current branch")[1],
     file = file and system({ "git", "-C", cwd, "ls-files", "--full-name", file }, "Failed to get git file path")[1],
