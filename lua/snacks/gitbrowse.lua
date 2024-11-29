@@ -21,6 +21,12 @@ local defaults = {
   end,
   ---@type "repo" | "branch" | "file" | "commit"
   what = "file", -- what to open. not all remotes support all types
+  ---@type string?
+  branch = nil,
+  ---@type string?
+  start_line = nil,
+  ---@type string?
+  end_line = nil,
   -- patterns to transform remotes to an actual URL
   -- stylua: ignore
   remote_patterns = {
@@ -116,7 +122,8 @@ function M._open(opts)
   local word = vim.fn.expand("<cword>")
   local is_commit = is_valid_commit_hash(word, cwd)
   local fields = {
-    branch = system({ "git", "-C", cwd, "rev-parse", "--abbrev-ref", "HEAD" }, "Failed to get current branch")[1],
+    branch = opts.branch
+      or system({ "git", "-C", cwd, "rev-parse", "--abbrev-ref", "HEAD" }, "Failed to get current branch")[1],
     file = file and system({ "git", "-C", cwd, "ls-files", "--full-name", file }, "Failed to get git file path")[1],
     line = nil,
     commit = is_commit and word,
@@ -132,7 +139,8 @@ function M._open(opts)
     end
     fields.line = file and start_line .. "-L" .. end_line
   else
-    fields.line = file and vim.fn.line(".")
+    fields.line = file
+      and (opts.start_line and opts.end_line and opts.start_line .. "-L" .. opts.end_line or vim.fn.line("."))
   end
 
   opts.what = is_commit and "commit" or opts.what == "commit" and not fields.commit and "file" or opts.what
