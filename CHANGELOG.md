@@ -1,5 +1,39 @@
 # Changelog
 
+## [2.6.0](https://github.com/folke/snacks.nvim/compare/v2.5.0...v2.6.0) (2024-11-29)
+
+
+### Features
+
+* **config:** allow overriding resolved options for a plugin. See [#164](https://github.com/folke/snacks.nvim/issues/164) ([d730a13](https://github.com/folke/snacks.nvim/commit/d730a13b5519fa901114cbdd0b2d484067068cce))
+* **config:** make it easier to use examples in your config ([6e3cb7e](https://github.com/folke/snacks.nvim/commit/6e3cb7e53c0a1b314203d392dc1b7df8207a31a6))
+* **dashboard:** allow passing win=0, buf=0 to use for the dashboard instead of creating a new window ([417e07c](https://github.com/folke/snacks.nvim/commit/417e07c0d22173a0a50ed8207e913ba25b96088e))
+* **dashboard:** always render cache even when expired. Then refresh when needed. ([59f8f0d](https://github.com/folke/snacks.nvim/commit/59f8f0db99e7a2d4f6a181f02f3fe77355c016c8))
+* **gitbrowse:** add Bitbucket URL patterns ([#163](https://github.com/folke/snacks.nvim/issues/163)) ([53441c9](https://github.com/folke/snacks.nvim/commit/53441c97030dbc15b4a22d56e33054749a13750f))
+* **gitbrowse:** open commit when word is valid hash ([#161](https://github.com/folke/snacks.nvim/issues/161)) ([59c8eb3](https://github.com/folke/snacks.nvim/commit/59c8eb36ae6933dd54d87811fec22decfe4f303c))
+* **health:** check that snacks.nvim plugin spec is correctly setup ([2c7b4b7](https://github.com/folke/snacks.nvim/commit/2c7b4b7971c8b488cfc9949f402f6c0307e24fce))
+* **notifier:** added history opts.reverse ([bebd7e7](https://github.com/folke/snacks.nvim/commit/bebd7e70cdd336dcc582227c2f3bd6ea0cef60d9))
+* **win:** go back to the previous window, when closing a snacks window ([51996df](https://github.com/folke/snacks.nvim/commit/51996dfeac5f0936aa1196e90b28760eb028ac1a))
+
+
+### Bug Fixes
+
+* **config:** check correct var for single config result. Fixes [#167](https://github.com/folke/snacks.nvim/issues/167) ([45fd0ef](https://github.com/folke/snacks.nvim/commit/45fd0efe41a453f1fa54a0892d352b931d6f88bb))
+* **dashboard:** fixed mini.sessions.read. Fixes [#144](https://github.com/folke/snacks.nvim/issues/144) ([4e04b70](https://github.com/folke/snacks.nvim/commit/4e04b70ea3f6f91ae47e0fc7671e53e801171290))
+* **dashboard:** terminal commands get 5 seconds to complete to trigger caching ([f83a7b0](https://github.com/folke/snacks.nvim/commit/f83a7b0ffb13adfae55a464f4d99fe3d4b578fe6))
+* **git:** make git.get_root work for work-trees and cache git root checks. Closes [#136](https://github.com/folke/snacks.nvim/issues/136). Fixes [#115](https://github.com/folke/snacks.nvim/issues/115) ([9462273](https://github.com/folke/snacks.nvim/commit/9462273bf7c0e627da0f412c02daee907947078d))
+* **init:** use rawget when loading modules to prevent possible recursive loading with invalid module fields ([d0794dc](https://github.com/folke/snacks.nvim/commit/d0794dcf8e988cf70c8db705a6e65867ba3b6e30))
+* **notifier:** always show notifs directly when blocking ([0c7f7c5](https://github.com/folke/snacks.nvim/commit/0c7f7c5970d204d62488a4e351f1f1514a2a42e5))
+* **notifier:** gracefully handle E565 errors ([0bbc9e7](https://github.com/folke/snacks.nvim/commit/0bbc9e7ae65820bc5ee356e1321656a7106d409a))
+* **statuscolumn:** bad copy/paste!! Fixes [#152](https://github.com/folke/snacks.nvim/issues/152) ([7564a30](https://github.com/folke/snacks.nvim/commit/7564a30cad803c01f8ecc15683a280d2f0e9bdb7))
+* **statuscolumn:** never error (in case of E565 for example). Fixes [#150](https://github.com/folke/snacks.nvim/issues/150) ([cf84008](https://github.com/folke/snacks.nvim/commit/cf840087c5adf1c076b61fdd044ac960b31e4e1e))
+* **win:** handle E565 errors on close ([0b02044](https://github.com/folke/snacks.nvim/commit/0b020449ad8496c6bfd34e10bc69f807b52970f8))
+
+
+### Performance Improvements
+
+* **statuscolumn:** some small optims ([985be4a](https://github.com/folke/snacks.nvim/commit/985be4a759f6fe83e569679da431eeb7d2db5286))
+
 ## [2.5.0](https://github.com/folke/snacks.nvim/compare/v2.4.0...v2.5.0) (2024-11-22)
 
 
