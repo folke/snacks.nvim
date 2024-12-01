@@ -24,9 +24,9 @@ local defaults = {
   ---@type string?
   branch = nil,
   ---@type string?
-  start_line = nil,
+  line_start = nil,
   ---@type string?
-  end_line = nil,
+  line_end = nil,
   -- patterns to transform remotes to an actual URL
   -- stylua: ignore
   remote_patterns = {
@@ -139,10 +139,10 @@ function M._open(opts)
     if line_start > line_end then
       line_start, line_end = line_end, line_start
     end
-    fields.line = file and start_line .. "-L" .. end_line
+    fields.line = file and line_start .. "-L" .. line_end
   else
     fields.line = file
-      and (opts.start_line and opts.end_line and opts.start_line .. "-L" .. opts.end_line or vim.fn.line("."))
+      and (opts.line_start and opts.line_end and opts.line_start .. "-L" .. opts.line_end or vim.fn.line("."))
   end
 
   opts.what = is_commit and "commit" or opts.what == "commit" and not fields.commit and "file" or opts.what
