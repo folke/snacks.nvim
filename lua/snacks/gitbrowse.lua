@@ -130,12 +130,14 @@ function M._open(opts)
   }
 
   -- Get visual selection range if in visual mode
-  if vim.fn.mode() == "v" or vim.fn.mode() == "V" then
-    local start_line = vim.fn.line("v")
-    local end_line = vim.fn.line(".")
-    -- Ensure start_line is always the smaller number
-    if start_line > end_line then
-      start_line, end_line = end_line, start_line
+  if vim.fn.mode():find("[vV]") then
+    vim.fn.feedkeys(":", "nx")
+    local line_start = vim.api.nvim_buf_get_mark(0, "<")[1]
+    local line_end = vim.api.nvim_buf_get_mark(0, ">")[1]
+    vim.fn.feedkeys("gv", "nx")
+    -- Ensure line_start is always the smaller number
+    if line_start > line_end then
+      line_start, line_end = line_end, line_start
     end
     fields.line = file and start_line .. "-L" .. end_line
   else
