@@ -6,6 +6,29 @@ local M = setmetatable({}, {
   end,
 })
 
+---@param line_start string
+---@param line_end string
+---@return string
+local function get_default_range_format(line_start, line_end)
+  return line_end > line_start and line_start .. "-L" .. line_end or line_start
+end
+
+---@param remote string
+---@param formatters table<string, fun(line_start: string, line_end: string): string>
+---@param opts table< "line_start" | "line_end", string>
+---@return string
+local function format_line_range(remote, formatters, opts)
+  -- using github formatter as default
+  local formatter = formatters["github%.com"]
+  for pattern, _ in pairs(formatters) do
+    if remote:find(pattern) then
+      formatter = formatters[pattern]
+      break
+    end
+  end
+  return formatter(opts.line_start, opts.line_end)
+end
+
 local uv = vim.uv or vim.loop
 
 ---@class snacks.gitbrowse.Config
@@ -27,6 +50,10 @@ local defaults = {
   line_start = nil,
   ---@type string?
   line_end = nil,
+  ---@type table<string, fun(line_start: string, line_end: string): string?>
+  range_formatters = {
+    ["github%.com"] = get_default_range_format,
+  },
   -- patterns to transform remotes to an actual URL
   -- stylua: ignore
   remote_patterns = {
@@ -139,7 +166,9 @@ function M._open(opts)
     if line_start > line_end then
       line_start, line_end = line_end, line_start
     end
-    fields.line = file and line_start .. "-L" .. line_end
+    -- Save lines for future use
+    fields.line_start = line_start
+    fields.line_end = line_end
   else
     fields.line = file
       and (opts.line_start and opts.line_end and opts.line_start .. "-L" .. opts.line_end or vim.fn.line("."))
@@ -156,6 +185,9 @@ function M._open(opts)
     if name and remote then
       local repo = M.get_repo(remote, opts)
       if repo then
+        if fields.line_start and fields.line_end then
+          fields.line = format_line_range(repo, opts.range_formatters, fields)
+        end
         table.insert(remotes, {
           name = name,
           url = M.get_url(repo, opts):gsub("(%b{})", function(key)
