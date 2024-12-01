@@ -445,6 +445,10 @@ end
 function N:show_history(opts)
   local win = Snacks.win({ style = "notification.history", enter = true, show = false })
   local buf = win:open_buf()
+  opts = opts or {}
+  if opts.reverse == nil then
+    opts.reverse = true
+  end
   for _, notif in ipairs(self:get_history(opts)) do
     N.styles.history(buf, notif, {
       opts = win.opts,

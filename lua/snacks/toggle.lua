@@ -202,4 +202,36 @@ function M.health()
   Snacks.health[ok and "ok" or "warn"](("{which-key} is %s"):format(ok and "installed" or "not installed"))
 end
 
+function M.profiler()
+  return M.new({
+    name = "Profiler",
+    get = function()
+      return Snacks.profiler.running()
+    end,
+    set = function(state)
+      if state then
+        Snacks.profiler.start()
+      else
+        Snacks.profiler.stop()
+      end
+    end,
+  })
+end
+
+function M.profiler_highlights()
+  return M.new({
+    name = "Profiler Highlights",
+    get = function()
+      return Snacks.profiler.ui.enabled
+    end,
+    set = function(state)
+      if state then
+        Snacks.profiler.ui.show()
+      else
+        Snacks.profiler.ui.hide()
+      end
+    end,
+  })
+end
+
 return M

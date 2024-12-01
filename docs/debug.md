@@ -48,7 +48,9 @@ Snacks.debug()
 Show a notification with a pretty backtrace
 
 ```lua
-Snacks.debug.backtrace()
+---@param msg? string|string[]
+---@param opts? snacks.notify.Opts
+Snacks.debug.backtrace(msg, opts)
 ```
 
 ### `Snacks.debug.inspect()`
@@ -87,6 +89,17 @@ Very simple function to profile a lua function.
 ---@param fn fun()
 ---@param opts? {count?: number, flush?: boolean, title?: string}
 Snacks.debug.profile(fn, opts)
+```
+
+### `Snacks.debug.run()`
+
+Run the current buffer or a range of lines.
+Shows the output of `print` inlined with the code.
+Any error will be shown as a diagnostic.
+
+```lua
+---@param opts? {name?:string, buf?:number, print?:boolean}
+Snacks.debug.run(opts)
 ```
 
 ### `Snacks.debug.stats()`

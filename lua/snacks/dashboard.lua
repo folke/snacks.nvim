@@ -23,6 +23,7 @@ math.randomseed(os.time())
 ---@field section? string the name of a section to include. See `Snacks.dashboard.sections`
 ---@field [string] any section options
 ---@field key? string shortcut key
+---@field hidden? boolean when `true`, the item will not be shown, but the key will still be assigned
 ---@field autokey? boolean automatically assign a numerical key
 ---@field label? string
 ---@field desc? string
@@ -526,7 +527,7 @@ function D:find(pos, from)
 
   local ret ---@type snacks.dashboard.Item?
   for _, item in ipairs(self.items) do
-    if item._.pane == pane and item.action then
+    if item._ and item._.pane == pane and item.action then
       if ret and pos[1] < from[1] and item._.row > pos[1] then
         break
       end
@@ -545,10 +546,12 @@ function D:layout()
     math.max(1, math.floor((self._size.width + self.opts.pane_gap) / (self.opts.width + self.opts.pane_gap)))
   self.panes = {} ---@type snacks.dashboard.Item[][]
   for _, item in ipairs(self.items) do
-    local pane = item.pane or 1
-    pane = math.fmod(pane - 1, max_panes) + 1 -- distribute panes evenly
-    self.panes[pane] = self.panes[pane] or {}
-    table.insert(self.panes[pane], item)
+    if not item.hidden then
+      local pane = item.pane or 1
+      pane = math.fmod(pane - 1, max_panes) + 1 -- distribute panes evenly
+      self.panes[pane] = self.panes[pane] or {}
+      table.insert(self.panes[pane], item)
+    end
   end
   for p = 1, math.max(unpack(vim.tbl_keys(self.panes))) or 1 do
     self.panes[p] = self.panes[p] or {}
@@ -962,8 +965,8 @@ function M.sections.terminal(opts)
           pcall(vim.fn.jobstop, jid)
           return true
         end)
-        self.on("UpdatePre", close)
-        self.on("Closed", close)
+        self.on("UpdatePre", close, self.augroup)
+        self.on("Closed", close, self.augroup)
         self:trace()
       end,
       text = ("\n"):rep(height - 1),
@@ -1049,13 +1052,14 @@ function M.setup()
 
   local options = { showtabline = vim.o.showtabline, laststatus = vim.o.laststatus }
   vim.o.showtabline, vim.o.laststatus = 0, 0
-  M.open({ buf = buf, win = wins[1] }).on("Closed", function()
+  local dashboard = M.open({ buf = buf, win = wins[1] })
+  D.on("Closed", function()
     for k, v in pairs(options) do
       if vim.o[k] == 0 and v ~= 0 then
         vim.o[k] = v
       end
     end
-  end)
+  end, dashboard.augroup)
 
   if Snacks.config.dashboard.debug then
     Snacks.debug.stats({ min = 0.2 })

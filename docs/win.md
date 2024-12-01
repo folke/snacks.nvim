@@ -123,6 +123,7 @@ Snacks.win({
 ---@field opts snacks.win.Config
 ---@field augroup? number
 ---@field backdrop? snacks.win
+---@field keys snacks.win.Keys[]
 Snacks.win = {}
 ```
 

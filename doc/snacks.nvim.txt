@@ -1,4 +1,4 @@
-*snacks.nvim.txt*           For Neovim           Last change: 2024 November 29
+*snacks.nvim.txt*           For Neovim           Last change: 2024 December 01
 
 ==============================================================================
 Table of Contents                              *snacks.nvim-table-of-contents*
@@ -43,12 +43,16 @@ FEATURES                                    *snacks.nvim-snacks.nvim-features*
 
   notifier              Better and prettier vim.notify                  
 
-  quickfile             Whendoing nvim somefile.txt, it will render the 
-                        file as quickly as possible, before loading     
+  profiler              NeovimLua profiler                              
+
+  quickfile             When doing nvim somefile.txt, it will render    
+                        the file as quickly as possible, before loading 
                         your plugins.                                   
 
   rename                LSP-integratedfile renaming with support for    
                         plugins like neo-tree.nvim and mini.files.      
+
+  scratch               Scratch buffers                                 
 
   statuscolumn          Pretty statuscolumn                             
 
@@ -194,14 +198,17 @@ See the example below for how to configure `snacks.nvim`.
         }
       },
       keys = {
-        { "<leader>un", function() Snacks.notifier.hide() end, desc = "Dismiss All Notifications" },
+        { "<leader>.",  function() Snacks.scratch() end, desc = "Toggle Scratch Buffer" },
+        { "<leader>S",  function() Snacks.scratch.select() end, desc = "Select Scratch Buffer" },
+        { "<leader>n",  function() Snacks.notifier.show_history() end, desc = "Notification History" },
         { "<leader>bd", function() Snacks.bufdelete() end, desc = "Delete Buffer" },
-        { "<leader>gg", function() Snacks.lazygit() end, desc = "Lazygit" },
-        { "<leader>gb", function() Snacks.git.blame_line() end, desc = "Git Blame Line" },
-        { "<leader>gB", function() Snacks.gitbrowse() end, desc = "Git Browse" },
-        { "<leader>gf", function() Snacks.lazygit.log_file() end, desc = "Lazygit Current File History" },
-        { "<leader>gl", function() Snacks.lazygit.log() end, desc = "Lazygit Log (cwd)" },
         { "<leader>cR", function() Snacks.rename.rename_file() end, desc = "Rename File" },
+        { "<leader>gB", function() Snacks.gitbrowse() end, desc = "Git Browse" },
+        { "<leader>gb", function() Snacks.git.blame_line() end, desc = "Git Blame Line" },
+        { "<leader>gf", function() Snacks.lazygit.log_file() end, desc = "Lazygit Current File History" },
+        { "<leader>gg", function() Snacks.lazygit() end, desc = "Lazygit" },
+        { "<leader>gl", function() Snacks.lazygit.log() end, desc = "Lazygit Log (cwd)" },
+        { "<leader>un", function() Snacks.notifier.hide() end, desc = "Dismiss All Notifications" },
         { "<c-/>",      function() Snacks.terminal() end, desc = "Toggle Terminal" },
         { "<c-_>",      function() Snacks.terminal() end, desc = "which_key_ignore" },
         { "]]",         function() Snacks.words.jump(vim.v.count1) end, desc = "Next Reference", mode = { "n", "t" } },
@@ -274,6 +281,11 @@ Click to see all highlight groups ~
 
   SnacksWinBarNC              SnacksWinBar            Title for non-current
                                                       windows
+
+  SnacksScratchKey            DiagnosticVirtualText   Keymap help in the footer
+
+  SnacksScratchDesc           DiagnosticInfo          Keymap help desc in the
+                                                      footer
 
   SnacksNotifierInfo          none                    Notification window for
                                                       Info

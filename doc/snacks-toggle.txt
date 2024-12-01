@@ -12,6 +12,8 @@ Table of Contents                            *snacks-toggle-table-of-contents*
   - Snacks.toggle.line_number()|snacks-toggle-module-snacks.toggle.line_number()|
   - Snacks.toggle.new()             |snacks-toggle-module-snacks.toggle.new()|
   - Snacks.toggle.option()       |snacks-toggle-module-snacks.toggle.option()|
+  - Snacks.toggle.profiler()   |snacks-toggle-module-snacks.toggle.profiler()|
+  - Snacks.toggle.profiler_highlights()|snacks-toggle-module-snacks.toggle.profiler_highlights()|
   - Snacks.toggle.treesitter()|snacks-toggle-module-snacks.toggle.treesitter()|
   - toggle:get()                           |snacks-toggle-module-toggle:get()|
   - toggle:map()                           |snacks-toggle-module-toggle:map()|
@@ -114,6 +116,20 @@ Toggle keymaps integrated with which-key icons / colors
     ---@param option string
     ---@param opts? snacks.toggle.Config | {on?: unknown, off?: unknown}
     Snacks.toggle.option(option, opts)
+<
+
+
+`Snacks.toggle.profiler()`                          *Snacks.toggle.profiler()*
+
+>lua
+    Snacks.toggle.profiler()
+<
+
+
+`Snacks.toggle.profiler_highlights()`                   *Snacks.toggle.profiler_highlights()*
+
+>lua
+    Snacks.toggle.profiler_highlights()
 <
 
 

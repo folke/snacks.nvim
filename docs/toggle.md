@@ -90,6 +90,18 @@ Snacks.toggle.new(...)
 Snacks.toggle.option(option, opts)
 ```
 
+### `Snacks.toggle.profiler()`
+
+```lua
+Snacks.toggle.profiler()
+```
+
+### `Snacks.toggle.profiler_highlights()`
+
+```lua
+Snacks.toggle.profiler_highlights()
+```
+
 ### `Snacks.toggle.treesitter()`
 
 ```lua

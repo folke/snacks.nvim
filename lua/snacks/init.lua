@@ -13,6 +13,7 @@
 ---@field health snacks.health
 ---@field profiler snacks.profiler
 ---@field rename snacks.rename
+---@field scratch snacks.scratch
 ---@field statuscolumn snacks.statuscolumn
 ---@field terminal snacks.terminal
 ---@field toggle snacks.toggle

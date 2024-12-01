@@ -52,4 +52,49 @@ function M.bo(buf, bo)
   end
 end
 
+---@param name string
+---@param cat? string
+---@return string, string?
+function M.icon(name, cat)
+  local try = {
+    function()
+      return require("mini.icons").get(cat or "file", name)
+    end,
+    function()
+      local Icons = require("nvim-web-devicons")
+      if cat == "filetype" then
+        return Icons.get_icon_by_filetype(name, { default = false })
+      elseif cat == "file" then
+        local ext = name:match("%.(%w+)$")
+        return Icons.get_icon(name, ext, { default = false }) --[[@as string, string]]
+      elseif cat == "extension" then
+        return Icons.get_icon(nil, name, { default = false }) --[[@as string, string]]
+      end
+    end,
+  }
+  for _, fn in ipairs(try) do
+    local ret = { pcall(fn) }
+    if ret[1] and ret[2] then
+      return ret[2], ret[3]
+    end
+  end
+  return " "
+end
+
+-- Encodes a string to be used as a file name.
+---@param str string
+function M.file_encode(str)
+  return str:gsub("([^%w%-_%.\t ])", function(c)
+    return string.format("_%%%02X", string.byte(c))
+  end)
+end
+
+-- Decodes a file name to a string.
+---@param str string
+function M.file_decode(str)
+  return str:gsub("_%%(%x%x)", function(hex)
+    return string.char(tonumber(hex, 16))
+  end)
+end
+
 return M

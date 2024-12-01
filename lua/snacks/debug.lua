@@ -7,6 +7,12 @@ local M = setmetatable({}, {
 })
 
 local uv = vim.uv or vim.loop
+local ns = vim.api.nvim_create_namespace("snacks_debug")
+
+Snacks.util.set_hl({
+  Indent = "LineNr",
+  Print = "NonText",
+}, { prefix = "SnacksDebug" })
 
 -- Show a notification with a pretty printed dump of the object(s)
 -- with lua treesitter highlighting and the location of the caller
@@ -31,12 +37,115 @@ function M.inspect(...)
   Snacks.notify.warn(vim.inspect(len == 1 and obj[1] or len > 0 and obj or nil), { title = title, ft = "lua" })
 end
 
+--- Run the current buffer or a range of lines.
+--- Shows the output of `print` inlined with the code.
+--- Any error will be shown as a diagnostic.
+---@param opts? {name?:string, buf?:number, print?:boolean}
+function M.run(opts)
+  opts = vim.tbl_extend("force", { print = true }, opts or {})
+  local buf = opts.buf or 0
+  buf = buf == 0 and vim.api.nvim_get_current_buf() or buf
+  local name = opts.name or vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buf), ":t")
+
+  -- Get the lines to run
+  local lines ---@type string[]
+  if vim.fn.mode():find("[vV]") then
+    vim.fn.feedkeys(":", "nx")
+    local from = vim.api.nvim_buf_get_mark(buf, "<")
+    local to = vim.api.nvim_buf_get_mark(buf, ">")
+    lines = vim.api.nvim_buf_get_text(buf, from[1] - 1, from[2], to[1] - 1, to[2] + 1, {})
+    -- Insert empty lines to keep the line numbers
+    for _ = 1, from[1] - 1 do
+      table.insert(lines, 1, "")
+    end
+    vim.fn.feedkeys("gv", "nx")
+  else
+    lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  end
+
+  -- Clear diagnostics and extmarks
+  local function reset()
+    vim.diagnostic.reset(ns, buf)
+    vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
+  end
+  reset()
+  vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI" }, {
+    group = vim.api.nvim_create_augroup("snacks_debug_run_" .. buf, { clear = true }),
+    buffer = buf,
+    callback = reset,
+  })
+
+  -- Get the line number from the msg or stack
+  local function get_line(msg)
+    local line = msg and msg:match("^" .. vim.pesc(name) .. ":(%d+):")
+    if line then
+      return line
+    end
+    for level = 2, 20 do
+      local info = debug.getinfo(level, "Sln")
+      if info and info.source == "@" .. name then
+        return info.currentline
+      end
+    end
+  end
+
+  -- Error handler
+  local function on_error(err)
+    local line = get_line(err)
+    if line then
+      vim.diagnostic.set(ns, buf, {
+        { col = 0, lnum = line - 1, message = err, severity = vim.diagnostic.severity.ERROR },
+      })
+    end
+    M.backtrace({ err, "" }, { title = "Error in " .. name, level = vim.log.levels.ERROR })
+  end
+
+  -- Print handler
+  local function on_print(...)
+    local str = table.concat(
+      vim.tbl_map(function(v)
+        return type(v) == "string" and v or vim.inspect(v)
+      end, { ... }),
+      " "
+    )
+    ---@type string[][][]
+    local virt_lines = {}
+    for _, line in ipairs(vim.split(str, "\n", { plain = true })) do
+      table.insert(virt_lines, { { "  │ ", "SnacksDebugIndent" }, { line, "SnacksDebugPrint" } })
+    end
+    vim.api.nvim_buf_set_extmark(buf, ns, (get_line() or 1) - 1, 0, {
+      virt_lines = virt_lines,
+    })
+  end
+
+  -- Load the code
+  local chunk, err = load(table.concat(lines, "\n"), "@" .. name)
+  if not chunk then
+    return on_error(err)
+  end
+
+  -- Setup the env
+  local env = { print = opts.print and on_print or nil }
+  package.seeall(env)
+  setfenv(chunk, env)
+  xpcall(chunk, function(e)
+    on_error(e)
+  end)
+end
+
 -- Show a notification with a pretty backtrace
-function M.backtrace()
-  local trace = {}
+---@param msg? string|string[]
+---@param opts? snacks.notify.Opts
+function M.backtrace(msg, opts)
+  opts = vim.tbl_deep_extend("force", {
+    level = vim.log.levels.WARN,
+    title = "Backtrace",
+  }, opts or {})
+  ---@type string[]
+  local trace = type(msg) == "table" and msg or type(msg) == "string" and { msg } or {}
   for level = 2, 20 do
     local info = debug.getinfo(level, "Sln")
-    if info and info.what == "Lua" and info.source ~= "lua" then
+    if info and info.what ~= "C" and info.source ~= "lua" and not info.source:find("snacks[/\\]debug") then
       local line = "- `" .. vim.fn.fnamemodify(info.source:sub(2), ":p:~:.") .. "`:" .. info.currentline
       if info.name then
         line = line .. " _in_ **" .. info.name .. "**"
@@ -44,7 +153,7 @@ function M.backtrace()
       table.insert(trace, line)
     end
   end
-  Snacks.notify.warn(#trace > 0 and (table.concat(trace, "\n")) or "", { title = "Backtrace" })
+  Snacks.notify(#trace > 0 and (table.concat(trace, "\n")) or "", opts)
 end
 
 -- Very simple function to profile a lua function.

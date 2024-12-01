@@ -15,8 +15,10 @@ A collection of small QoL plugins for Neovim.
 | [lazygit](https://github.com/folke/snacks.nvim/blob/main/docs/lazygit.md)           | Open LazyGit in a float, auto-configure colorscheme and integration with Neovim                                                                                                         |       |
 | [notify](https://github.com/folke/snacks.nvim/blob/main/docs/notify.md)             | Utility functions to work with Neovim's `vim.notify`                                                                                                                                    |       |
 | [notifier](https://github.com/folke/snacks.nvim/blob/main/docs/notifier.md)         | Better and prettier `vim.notify`                                                                                                                                                        |  ‼️   |
+| [profiler](https://github.com/folke/snacks.nvim/blob/main/docs/profiler.md)         | Neovim Lua profiler                                                                                                                                                                     |       |
 | [quickfile](https://github.com/folke/snacks.nvim/blob/main/docs/quickfile.md)       | When doing `nvim somefile.txt`, it will render the file as quickly as possible, before loading your plugins.                                                                            |  ‼️   |
 | [rename](https://github.com/folke/snacks.nvim/blob/main/docs/rename.md)             | LSP-integrated file renaming with support for plugins like [neo-tree.nvim](https://github.com/nvim-neo-tree/neo-tree.nvim) and [mini.files](https://github.com/echasnovski/mini.files). |       |
+| [scratch](https://github.com/folke/snacks.nvim/blob/main/docs/scratch.md)           | Scratch buffers                                                                                                                                                                         |       |
 | [statuscolumn](https://github.com/folke/snacks.nvim/blob/main/docs/statuscolumn.md) | Pretty statuscolumn                                                                                                                                                                     |  ‼️   |
 | [terminal](https://github.com/folke/snacks.nvim/blob/main/docs/terminal.md)         | Create and toggle floating/split terminals                                                                                                                                              |       |
 | [toggle](https://github.com/folke/snacks.nvim/blob/main/docs/toggle.md)             | Toggle keymaps integrated with which-key icons / colors                                                                                                                                 |       |
@@ -156,14 +158,17 @@ See the example below for how to configure `snacks.nvim`.
     }
   },
   keys = {
-    { "<leader>un", function() Snacks.notifier.hide() end, desc = "Dismiss All Notifications" },
+    { "<leader>.",  function() Snacks.scratch() end, desc = "Toggle Scratch Buffer" },
+    { "<leader>S",  function() Snacks.scratch.select() end, desc = "Select Scratch Buffer" },
+    { "<leader>n",  function() Snacks.notifier.show_history() end, desc = "Notification History" },
     { "<leader>bd", function() Snacks.bufdelete() end, desc = "Delete Buffer" },
-    { "<leader>gg", function() Snacks.lazygit() end, desc = "Lazygit" },
-    { "<leader>gb", function() Snacks.git.blame_line() end, desc = "Git Blame Line" },
-    { "<leader>gB", function() Snacks.gitbrowse() end, desc = "Git Browse" },
-    { "<leader>gf", function() Snacks.lazygit.log_file() end, desc = "Lazygit Current File History" },
-    { "<leader>gl", function() Snacks.lazygit.log() end, desc = "Lazygit Log (cwd)" },
     { "<leader>cR", function() Snacks.rename.rename_file() end, desc = "Rename File" },
+    { "<leader>gB", function() Snacks.gitbrowse() end, desc = "Git Browse" },
+    { "<leader>gb", function() Snacks.git.blame_line() end, desc = "Git Blame Line" },
+    { "<leader>gf", function() Snacks.lazygit.log_file() end, desc = "Lazygit Current File History" },
+    { "<leader>gg", function() Snacks.lazygit() end, desc = "Lazygit" },
+    { "<leader>gl", function() Snacks.lazygit.log() end, desc = "Lazygit Log (cwd)" },
+    { "<leader>un", function() Snacks.notifier.hide() end, desc = "Dismiss All Notifications" },
     { "<c-/>",      function() Snacks.terminal() end, desc = "Toggle Terminal" },
     { "<c-_>",      function() Snacks.terminal() end, desc = "which_key_ignore" },
     { "]]",         function() Snacks.words.jump(vim.v.count1) end, desc = "Next Reference", mode = { "n", "t" } },
@@ -232,6 +237,8 @@ See the example below for how to configure `snacks.nvim`.
 | **SnacksBackdrop**            | _none_                  | Backdrop                       |
 | **SnacksNormalNC**            | _NormalFloat_           | Normal for non-current windows |
 | **SnacksWinBarNC**            | _SnacksWinBar_          | Title for non-current windows  |
+| **SnacksScratchKey**          | _DiagnosticVirtualText_ | Keymap help in the footer      |
+| **SnacksScratchDesc**         | _DiagnosticInfo_        | Keymap help desc in the footer |
 | **SnacksNotifierInfo**        | _none_                  | Notification window for Info   |
 | **SnacksNotifierWarn**        | _none_                  | Notification window for Warn   |
 | **SnacksNotifierDebug**       | _none_                  | Notification window for Debug  |

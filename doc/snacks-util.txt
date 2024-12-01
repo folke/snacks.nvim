@@ -7,6 +7,9 @@ Table of Contents                              *snacks-util-table-of-contents*
 2. Module                                                 |snacks-util-module|
   - Snacks.util.bo()                     |snacks-util-module-snacks.util.bo()|
   - Snacks.util.color()               |snacks-util-module-snacks.util.color()|
+  - Snacks.util.file_decode()   |snacks-util-module-snacks.util.file_decode()|
+  - Snacks.util.file_encode()   |snacks-util-module-snacks.util.file_encode()|
+  - Snacks.util.icon()                 |snacks-util-module-snacks.util.icon()|
   - Snacks.util.set_hl()             |snacks-util-module-snacks.util.set_hl()|
   - Snacks.util.wo()                     |snacks-util-module-snacks.util.wo()|
 
@@ -37,6 +40,36 @@ Table of Contents                              *snacks-util-table-of-contents*
     ---@param group string
     ---@param prop? string
     Snacks.util.color(group, prop)
+<
+
+
+`Snacks.util.file_decode()`                        *Snacks.util.file_decode()*
+
+Decodes a file name to a string.
+
+>lua
+    ---@param str string
+    Snacks.util.file_decode(str)
+<
+
+
+`Snacks.util.file_encode()`                        *Snacks.util.file_encode()*
+
+Encodes a string to be used as a file name.
+
+>lua
+    ---@param str string
+    Snacks.util.file_encode(str)
+<
+
+
+`Snacks.util.icon()`                                      *Snacks.util.icon()*
+
+>lua
+    ---@param name string
+    ---@param cat? string
+    ---@return string, string?
+    Snacks.util.icon(name, cat)
 <
 
 

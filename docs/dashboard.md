@@ -443,6 +443,7 @@ The other options are used with `:lua Snacks.dashboard()`
 ---@field section? string the name of a section to include. See `Snacks.dashboard.sections`
 ---@field [string] any section options
 ---@field key? string shortcut key
+---@field hidden? boolean when `true`, the item will not be shown, but the key will still be assigned
 ---@field autokey? boolean automatically assign a numerical key
 ---@field label? string
 ---@field desc? string
