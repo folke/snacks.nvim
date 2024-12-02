@@ -146,6 +146,7 @@ Snacks.config.style("dashboard", {
   bo = {
     bufhidden = "wipe",
     buftype = "nofile",
+    buflisted = false,
     filetype = "snacks_dashboard",
     swapfile = false,
     undofile = false,
