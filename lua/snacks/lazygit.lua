@@ -31,7 +31,10 @@ local defaults = {
   -- you need to double quote it: `"\"test\""`
   config = {
     os = { editPreset = "nvim-remote" },
-    gui = { nerdFontsVersion = "3" },
+    gui = {
+      -- set to an empty string "" to disable icons
+      nerdFontsVersion = "3",
+    },
   },
   theme_path = vim.fs.normalize(vim.fn.stdpath("cache") .. "/lazygit-theme.yml"),
   -- Theme for lazygit
