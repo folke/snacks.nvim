@@ -77,7 +77,7 @@ local function env(opts)
 
     if vim.v.shell_error == 0 and #lines > 1 then
       config_dir = vim.split(lines[1], "\n", { plain = true })[1]
-      vim.env.LG_CONFIG_FILE = vim.fs.normalize(config_dir .. "/config.yml" .. "," .. opts.theme_path)
+      vim.env.LG_CONFIG_FILE = (vim.env.LG_CONFIG_FILE or vim.fs.normalize(config_dir .. "/config.yml")) .. "," .. opts.theme_path
     else
       local msg = {
         "Failed to get **lazygit** config directory.",
