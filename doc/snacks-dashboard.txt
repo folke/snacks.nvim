@@ -706,8 +706,9 @@ installed.
 Add the startup section
 
 >lua
+    ---@param opts? {icon?:string}
     ---@return snacks.dashboard.Section?
-    Snacks.dashboard.sections.startup()
+    Snacks.dashboard.sections.startup(opts)
 <
 
 
