@@ -62,6 +62,9 @@ Snacks.config.style("lazygit", {})
 local dirty = true
 local config_dir ---@type string?
 
+-- store the initial LG_CONFIG_FILE value
+local LG_CONFIG_FILE = vim.env.LG_CONFIG_FILE
+
 -- re-create theme file on ColorScheme change
 vim.api.nvim_create_autocmd("ColorScheme", {
   callback = function()
@@ -77,7 +80,7 @@ local function env(opts)
 
     if vim.v.shell_error == 0 and #lines > 1 then
       config_dir = vim.split(lines[1], "\n", { plain = true })[1]
-      vim.env.LG_CONFIG_FILE = (vim.env.LG_CONFIG_FILE or vim.fs.normalize(config_dir .. "/config.yml")) .. "," .. opts.theme_path
+      vim.env.LG_CONFIG_FILE = (LG_CONFIG_FILE or vim.fs.normalize(config_dir .. "/config.yml")) .. "," .. opts.theme_path
     else
       local msg = {
         "Failed to get **lazygit** config directory.",
