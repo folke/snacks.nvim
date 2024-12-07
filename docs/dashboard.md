@@ -637,8 +637,9 @@ Snacks.dashboard.sections.session(item)
 Add the startup section
 
 ```lua
+---@param opts? {icon?:string}
 ---@return snacks.dashboard.Section?
-Snacks.dashboard.sections.startup()
+Snacks.dashboard.sections.startup(opts)
 ```
 
 ### `Snacks.dashboard.sections.terminal()`
