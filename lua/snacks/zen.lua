@@ -84,6 +84,8 @@ local function get_main(opts)
   return ret
 end
 
+local zen_win ---@type snacks.win?
+
 ---@param opts? snacks.zen.Config
 function M.zen(opts)
   local toggles = opts and opts.toggles
@@ -91,8 +93,9 @@ function M.zen(opts)
   opts.toggles = toggles or opts.toggles
 
   -- close if already open
-  if vim.w[vim.api.nvim_get_current_win()].snacks_zen then
-    vim.cmd("close")
+  if zen_win and zen_win:valid() then
+    zen_win:close()
+    zen_win = nil
     return
   end
 
@@ -122,7 +125,7 @@ function M.zen(opts)
 
   -- create window
   local win = Snacks.win(win_opts)
-  vim.w[win.win].snacks_zen = true
+  zen_win = win
 
   if show_indicator then
     zoom_indicator = Snacks.win({
