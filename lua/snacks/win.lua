@@ -612,6 +612,8 @@ function M:win_opts()
     return opts
   end
   local border_offset = self:has_border() and 2 or 0
+  opts.row = opts.row and opts.row < 0 and parent.height + opts.row - opts.height + 1 or opts.row
+  opts.col = opts.col and opts.col < 0 and parent.width + opts.col - opts.width + 1 or opts.col
   opts.row = opts.row or math.floor((parent.height - opts.height - border_offset) / 2)
   opts.col = opts.col or math.floor((parent.width - opts.width - border_offset) / 2)
 
