@@ -264,12 +264,12 @@ function M.on_scope(win, _buf, scope, prev)
       Snacks.animate.animate(
         scope.from,
         scope.to,
-        function(value, old)
+        function(value, ctx)
           if scopes and scopes:get(win) ~= scope then
             return
           end
           scope.step = value
-          Snacks.util.redraw_range(win, math.min(old, value), math.max(old, value))
+          Snacks.util.redraw_range(win, math.min(ctx.prev, value), math.max(ctx.prev, value))
         end,
         vim.tbl_extend("keep", {
           int = true,

@@ -37,6 +37,13 @@ local defaults = {
 ---@field int? boolean interpolate the value to an integer
 ---@field id? number|string unique identifier for the animation
 
+---@class snacks.animate.ctx
+---@field anim snacks.animate.Animation
+---@field prev number
+---@field done boolean
+
+---@alias snacks.animate.cb fun(value:number, ctx: snacks.animate.ctx)
+
 ---@class snacks.animate.Animation
 ---@field from number
 ---@field to number
@@ -45,17 +52,16 @@ local defaults = {
 ---@field value number
 ---@field start number
 ---@field int boolean
----@field cb fun(value: number, prev?: number)
+---@field cb snacks.animate.cb
 
 local uv = vim.uv or vim.loop
 local _id = 0
 local active = {} ---@type table<number|string, snacks.animate.Animation>
 local timer = assert(uv.new_timer())
-local todo = {} ---@type table<number|string, {anim:snacks.animate.Animation, values:number[]}>
 
 ---@param from number
 ---@param to number
----@param cb fun(value: number, prev?: number)
+---@param cb snacks.animate.cb
 ---@param opts? snacks.animate.Opts
 function M.animate(from, to, cb, opts)
   opts = Snacks.config.get("animate", defaults, opts) --[[@as snacks.animate.Opts]]
@@ -88,32 +94,31 @@ function M.animate(from, to, cb, opts)
   M.start()
 end
 
+---@param anim snacks.animate.Animation
+---@return number value, boolean done
+function M.value(anim)
+  local elapsed = (uv.hrtime() - anim.start) / 1e6 -- ms
+  local b, c, d = anim.from, anim.to - anim.from, anim.duration
+  local t, done = math.min(elapsed, d), elapsed >= d
+  local value = done and b + c or anim.easing(t, b, c, d)
+  value = anim.int and (value + (2 ^ 52 + 2 ^ 51) - (2 ^ 52 + 2 ^ 51)) or value
+  return value, done
+end
+
 function M.step()
   for a, anim in pairs(active) do
-    local elapsed = (uv.hrtime() - anim.start) / 1e6 -- ms
-    local b, c, d = anim.from, anim.to - anim.from, anim.duration
-    local t = math.min(elapsed, d)
-    local value = t == d and b + c or anim.easing(t, b, c, d)
-    value = anim.int and math.floor(value) or value
+    local value, done = M.value(anim)
     local prev = anim.value
-    if prev ~= value then
-      todo[a] = { anim = anim, values = { value, prev } }
+    if prev ~= value or done then
+      anim.cb(value, { anim = anim, prev = prev, done = done })
       anim.value = value
     end
-    if t >= d then
+    if done then
       active[a] = nil
     end
   end
   if vim.tbl_isempty(active) then
     timer:stop()
-  end
-  if not vim.tbl_isempty(todo) then
-    vim.schedule(function()
-      for _, a in pairs(todo) do
-        a.anim.cb(a.values[1], a.values[2])
-      end
-      todo = {}
-    end)
   end
 end
 
@@ -123,7 +128,7 @@ function M.start()
   end
   local opts = Snacks.config.get("animate", defaults)
   local ms = 1000 / (opts and opts.fps or 30)
-  timer:start(0, ms, M.step)
+  timer:start(0, ms, vim.schedule_wrap(M.step))
 end
 
 return M
