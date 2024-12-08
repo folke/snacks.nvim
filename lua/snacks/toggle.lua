@@ -295,4 +295,17 @@ function M.dim()
   })
 end
 
+function M.scroll()
+  return M.new({
+    id = "scroll",
+    name = "Smooth Scroll",
+    get = function()
+      return vim.g.snacks_scroll ~= false
+    end,
+    set = function(state)
+      vim.g.snacks_scroll = state
+    end,
+  })
+end
+
 return M
