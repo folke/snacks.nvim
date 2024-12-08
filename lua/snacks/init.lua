@@ -23,6 +23,7 @@ local config = {
   indent = { enabled = false },
   notifier = { enabled = false },
   quickfile = { enabled = false },
+  scroll = { enabled = false },
   statuscolumn = { enabled = false },
   styles = {},
   words = { enabled = false },
@@ -120,7 +121,7 @@ function M.setup(opts)
       nested = true,
       callback = function()
         for _, snack in ipairs(snacks) do
-          if M.config[snack].enabled then
+          if M.config[snack] and M.config[snack].enabled then
             M[snack].setup()
           end
         end
