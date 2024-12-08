@@ -17,6 +17,10 @@ local defaults = {
     duration = { step = 20, total = 250 },
     easing = "linear",
   },
+  -- what buffers to animate
+  filter = function(buf)
+    return vim.g.snacks_scroll ~= false and vim.b[buf].snacks_scroll ~= false
+  end,
   debug = false,
 }
 
@@ -27,6 +31,9 @@ local debug_timer = assert((vim.uv or vim.loop).new_timer())
 
 local function get_state(win)
   local buf = vim.api.nvim_win_get_buf(win)
+  if not config.filter(buf) then
+    return
+  end
   local view = vim.api.nvim_win_call(win, vim.fn.winsaveview) ---@type vim.fn.winsaveview.ret
   view = { topline = view.topline, lnum = view.lnum } --[[@as snacks.scroll.View]]
   states[win] = (states[win] and states[win].buf == buf) and states[win]
@@ -82,6 +89,9 @@ end
 ---@param win number
 function M.update(win)
   local state = get_state(win)
+  if not state then
+    return
+  end
 
   if state.animating then
     -- triggered by the animation
