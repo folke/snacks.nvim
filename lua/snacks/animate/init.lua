@@ -18,9 +18,11 @@ local M = setmetatable({}, {
 -- are included)
 ---@alias snacks.animate.easing.Fn fun(t: number, b: number, c: number, d: number): number
 
+--- Duration can be specified as the total duration or the duration per step.
+--- When both are specified, the minimum of both is used.
 ---@class snacks.animate.Duration
----@field step? number ms per step. If total is also set, this is the maximum duration
----@field total? number maximum duration in ms
+---@field step? number duration per step in ms
+---@field total? number total duration in ms
 
 ---@class snacks.animate.Config
 ---@field easing? snacks.animate.easing|snacks.animate.easing.Fn
@@ -28,7 +30,7 @@ local defaults = {
   ---@type snacks.animate.Duration|number
   duration = 20, -- ms per step
   easing = "linear",
-  fps = 30, -- frames per second. Global setting for all animations
+  fps = 60, -- frames per second. Global setting for all animations
 }
 
 ---@class snacks.animate.Opts: snacks.animate.Config
@@ -49,7 +51,7 @@ local uv = vim.uv or vim.loop
 local _id = 0
 local active = {} ---@type table<number|string, snacks.animate.Animation>
 local timer = assert(uv.new_timer())
-local cbs = {} ---@type table<function, number[]>
+local todo = {} ---@type table<number|string, {anim:snacks.animate.Animation, values:number[]}>
 
 ---@param from number
 ---@param to number
@@ -95,7 +97,7 @@ function M.step()
     value = anim.int and math.floor(value) or value
     local prev = anim.value
     if prev ~= value then
-      cbs[anim.cb] = { value, prev }
+      todo[a] = { anim = anim, values = { value, prev } }
       anim.value = value
     end
     if t >= d then
@@ -105,12 +107,12 @@ function M.step()
   if vim.tbl_isempty(active) then
     timer:stop()
   end
-  if not vim.tbl_isempty(cbs) then
+  if not vim.tbl_isempty(todo) then
     vim.schedule(function()
-      for cb, values in pairs(cbs) do
-        cb(values[1], values[2])
+      for _, a in pairs(todo) do
+        a.anim.cb(a.values[1], a.values[2])
       end
-      cbs = {}
+      todo = {}
     end)
   end
 end
