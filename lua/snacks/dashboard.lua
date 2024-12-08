@@ -156,6 +156,7 @@ Snacks.config.style("dashboard", {
     colorcolumn = "",
     cursorcolumn = false,
     cursorline = false,
+    foldmethod = "manual",
     list = false,
     number = false,
     relativenumber = false,
