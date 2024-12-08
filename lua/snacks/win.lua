@@ -42,6 +42,7 @@ local M = setmetatable({}, {
 ---@field on_buf? fun(self: snacks.win) Callback after opening the buffer
 ---@field on_win? fun(self: snacks.win) Callback after opening the window
 ---@field fixbuf? boolean don't allow other buffers to be opened in this window
+---@field text? string|string[]|fun():(string[]|string) Initial lines to set in the buffer
 local defaults = {
   show = true,
   fixbuf = true,
@@ -285,6 +286,12 @@ function M:open_buf()
     self.buf = self.opts.buf
   else
     self.buf = vim.api.nvim_create_buf(false, true)
+    local text = type(self.opts.text) == "function" and self.opts.text() or self.opts.text
+    text = type(text) == "string" and { text } or text
+    if text then
+      ---@cast text string[]
+      vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, text)
+    end
   end
   if vim.bo[self.buf].filetype == "" and not self.opts.bo.filetype then
     self.opts.bo.filetype = "snacks_win"
