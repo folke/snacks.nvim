@@ -88,7 +88,7 @@ end
 
 ---@generic T: snacks.scope.Scope
 ---@param self T
----@return T?
+---@return T
 function Scope:with_edge()
   error("not implemented")
 end
@@ -110,6 +110,10 @@ end
 
 function Scope:size()
   return self.to - self.from + 1
+end
+
+function Scope:size_with_edge()
+  return self:with_edge():size()
 end
 
 ---@class snacks.scope.IndentScope: snacks.scope.Scope
@@ -202,6 +206,7 @@ function TSScope:fix()
 end
 
 function TSScope:with_edge()
+  -- FIXME: this is incorrect if the scope is already at the edge
   local prev = vim.fn.prevnonblank(self.from - 1)
   local parent, ret = self:parent(), self
   while parent do
@@ -300,7 +305,7 @@ function M.get(opts)
   if ret then
     local s = ret --- @type snacks.scope.Scope?
     while s do
-      if ret:size() >= min_size and s:size() > max_size then
+      if ret:size_with_edge() >= min_size and s:size_with_edge() > max_size then
         break
       end
       ret, s = s, s:parent()
