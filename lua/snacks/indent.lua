@@ -49,7 +49,8 @@ local defaults = {
     -- char = "·",
     hl = "SnacksIndentBlank", ---@type string|string[] hl group for blank spaces
   },
-  enabled = function(buf)
+  -- filter for buffers to enable indent guides
+  filter = function(buf)
     return vim.g.snacks_indent ~= false and vim.b[buf].snacks_indent ~= false and vim.bo[buf].buftype == ""
   end,
   priority = 200,
@@ -303,7 +304,7 @@ function M.enable()
   if M.enabled then
     return
   end
-  config = Snacks.config.get("scope", defaults)
+  config = Snacks.config.get("indent", defaults)
 
   if config.debug then
     M.debug()
@@ -318,7 +319,7 @@ function M.enable()
   -- setup decoration provider
   vim.api.nvim_set_decoration_provider(ns, {
     on_win = function(_, win, buf, top, bottom)
-      if M.enabled and config.enabled(buf) then
+      if M.enabled and config.filter(buf) then
         M.on_win(win, buf, top + 1, bottom + 1)
       end
     end,

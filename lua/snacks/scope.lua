@@ -17,7 +17,7 @@ local defaults = {
   max_size = nil,
   siblings = false, -- expand single line scopes with single line siblings
   -- what buffers to attach to
-  enabled = function(buf)
+  filter = function(buf)
     return vim.bo[buf].buftype == ""
   end,
   -- debounce scope detection in ms
@@ -359,7 +359,7 @@ end
 --- Check if the scope has changed in the window / buffer
 function Listener:check(win)
   local buf = vim.api.nvim_win_get_buf(win)
-  if not self.opts.enabled(buf) then
+  if not self.opts.filter(buf) then
     return
   end
 

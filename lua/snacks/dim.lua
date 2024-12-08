@@ -25,7 +25,8 @@ local defaults = {
       total = 300, -- maximum duration
     },
   },
-  enabled = function(buf)
+  -- what buffers to dim
+  filter = function(buf)
     return vim.g.snacks_dim ~= false and vim.b[buf].snacks_dim ~= false and vim.bo[buf].buftype == ""
   end,
 }
@@ -84,7 +85,7 @@ function M.enable(opts)
   -- setup decoration provider
   vim.api.nvim_set_decoration_provider(ns, {
     on_win = function(_, win, buf, top, bottom)
-      if M.enabled and opts.enabled(buf) then
+      if M.enabled and opts.filter(buf) then
         M.on_win(win, buf, top + 1, bottom + 1)
       end
     end,
