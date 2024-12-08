@@ -51,6 +51,23 @@ Snacks.config.style("zen", {
   },
 })
 
+-- fullscreen indicator
+-- only shown when the window is maximized
+Snacks.config.style("zoom_indicator", {
+  text = "▍ zoom  󰊓  ",
+  minimal = true,
+  enter = false,
+  focusable = false,
+  height = 1,
+  row = 0,
+  col = -1,
+  backdrop = false,
+})
+
+Snacks.util.set_hl({
+  Icon = "DiagnosticWarn",
+}, { prefix = "SnacksZen", default = true })
+
 ---@param opts? {statusline: boolean, tabline: boolean}
 local function get_main(opts)
   opts = opts or {}
@@ -83,6 +100,9 @@ function M.zen(opts)
   local buf = vim.api.nvim_get_current_buf()
   local win_opts = Snacks.win.resolve({ style = "zen" }, opts.win, { buf = buf })
 
+  local zoom_indicator ---@type snacks.win?
+  local show_indicator = false
+
   -- calculate window size
   if win_opts.height == 0 and (opts.show.statusline or opts.show.tabline) then
     local main = get_main(opts.show)
@@ -95,11 +115,27 @@ function M.zen(opts)
       win_opts.backdrop.win.row = win_opts.row
       win_opts.backdrop.win.height = win_opts.height
     end
+    if win_opts.width == 0 then
+      show_indicator = true
+    end
   end
 
   -- create window
   local win = Snacks.win(win_opts)
   vim.w[win.win].snacks_zen = true
+
+  if show_indicator then
+    zoom_indicator = Snacks.win({
+      show = false,
+      style = "zoom_indicator",
+      zindex = win.opts.zindex + 1,
+      wo = { winhighlight = "NormalFloat:SnacksZenIcon" },
+    })
+    zoom_indicator:open_buf()
+    local lines = vim.api.nvim_buf_get_lines(zoom_indicator.buf, 0, -1, false)
+    zoom_indicator.opts.width = vim.api.nvim_strwidth(lines[1] or "")
+    zoom_indicator:show()
+  end
 
   -- set toggle states
   ---@type {toggle: snacks.toggle.Class, state: unknown}[]
@@ -117,6 +153,9 @@ function M.zen(opts)
     group = win.augroup,
     pattern = tostring(win.win),
     callback = vim.schedule_wrap(function()
+      if zoom_indicator then
+        zoom_indicator:close()
+      end
       for _, state in ipairs(states) do
         state.toggle:set(state.state)
       end
