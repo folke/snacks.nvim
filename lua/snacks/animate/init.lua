@@ -58,6 +58,7 @@ local uv = vim.uv or vim.loop
 local _id = 0
 local active = {} ---@type table<number|string, snacks.animate.Animation>
 local timer = assert(uv.new_timer())
+local scheduled = false
 
 ---@param from number
 ---@param to number
@@ -88,7 +89,7 @@ function M.animate(from, to, cb, opts)
     int = opts.int or false,
     duration = duration --[[@as number]],
     easing = easing,
-    start = uv.hrtime(),
+    start = 0,
     cb = cb,
   }
   M.start()
@@ -97,6 +98,7 @@ end
 ---@param anim snacks.animate.Animation
 ---@return number value, boolean done
 function M.value(anim)
+  anim.start = anim.start == 0 and uv.hrtime() or anim.start
   local elapsed = (uv.hrtime() - anim.start) / 1e6 -- ms
   local b, c, d = anim.from, anim.to - anim.from, anim.duration
   local t, done = math.min(elapsed, d), elapsed >= d
@@ -106,19 +108,34 @@ function M.value(anim)
 end
 
 function M.step()
-  for a, anim in pairs(active) do
+  if vim.tbl_isempty(active) then
+    return timer:stop()
+  end
+
+  local update = false
+  for _, anim in pairs(active) do
     local value, done = M.value(anim)
-    local prev = anim.value
-    if prev ~= value or done then
-      anim.cb(value, { anim = anim, prev = prev, done = done })
-      anim.value = value
-    end
-    if done then
-      active[a] = nil
+    if anim.value ~= value or done then
+      update = true
     end
   end
-  if vim.tbl_isempty(active) then
-    timer:stop()
+
+  if update and not scheduled then
+    scheduled = true
+    vim.schedule(function()
+      scheduled = false
+      for a, anim in pairs(active) do
+        local value, done = M.value(anim)
+        local prev = anim.value
+        if prev ~= value or done then
+          anim.cb(value, { anim = anim, prev = prev, done = done })
+          anim.value = value
+        end
+        if done then
+          active[a] = nil
+        end
+      end
+    end)
   end
 end
 
@@ -128,7 +145,7 @@ function M.start()
   end
   local opts = Snacks.config.get("animate", defaults)
   local ms = 1000 / (opts and opts.fps or 30)
-  timer:start(0, ms, vim.schedule_wrap(M.step))
+  timer:start(0, ms, M.step)
 end
 
 return M
