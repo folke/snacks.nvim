@@ -228,8 +228,12 @@ end
 function TSScope:with_edge()
   -- FIXME: this is incorrect if the scope is already at the edge
   local prev = vim.fn.prevnonblank(self.from - 1)
+  local next = vim.fn.nextnonblank(self.from + 1)
+  if vim.fn.indent(next) > self.indent then
+    return self
+  end
   local parent, ret = self:parent(), self
-  while parent do
+  while parent and parent.indent < self.indent do
     if parent.from >= prev then
       ret = parent
     end
