@@ -124,4 +124,28 @@ function M.is_transparent()
   return transparent
 end
 
+--- Redraw the range of lines in the window.
+--- Optimized for Neovim >= 0.10
+---@param win number
+---@param from number -- 1-indexed, inclusive
+---@param to number -- 1-indexed, inclusive
+function M.redraw_range(win, from, to)
+  if vim.api.nvim__redraw then
+    vim.api.nvim__redraw({ win = win, range = { math.floor(from - 1), math.floor(to) }, valid = true, flush = false })
+  else
+    vim.cmd([[redraw!]])
+  end
+end
+
+--- Redraw the window.
+--- Optimized for Neovim >= 0.10
+---@param win number
+function M.redraw(win)
+  if vim.api.nvim__redraw then
+    vim.api.nvim__redraw({ win = win, valid = false, flush = false })
+  else
+    vim.cmd([[redraw!]])
+  end
+end
+
 return M

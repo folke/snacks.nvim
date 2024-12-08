@@ -22,6 +22,7 @@ local M = setmetatable({}, {
 ---@field bg? string
 ---@field blend? number
 ---@field transparent? boolean defaults to true
+---@field win? snacks.win.Config overrides the backdrop window config
 
 ---@class snacks.win.Config: vim.api.keyset.win_config
 ---@field style? string merges with config from `Snacks.config.styles[style]`
@@ -41,6 +42,7 @@ local M = setmetatable({}, {
 ---@field on_buf? fun(self: snacks.win) Callback after opening the buffer
 ---@field on_win? fun(self: snacks.win) Callback after opening the window
 ---@field fixbuf? boolean don't allow other buffers to be opened in this window
+---@field text? string|string[]|fun():(string[]|string) Initial lines to set in the buffer
 local defaults = {
   show = true,
   fixbuf = true,
@@ -284,6 +286,12 @@ function M:open_buf()
     self.buf = self.opts.buf
   else
     self.buf = vim.api.nvim_create_buf(false, true)
+    local text = type(self.opts.text) == "function" and self.opts.text() or self.opts.text
+    text = type(text) == "string" and { text } or text
+    if text then
+      ---@cast text string[]
+      vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, text)
+    end
   end
   if vim.bo[self.buf].filetype == "" and not self.opts.bo.filetype then
     self.opts.bo.filetype = "snacks_win"
@@ -526,7 +534,7 @@ function M:drop()
     return
   end
 
-  local bg, winblend = backdrop.bg, backdrop.blend
+  local bg, winblend = backdrop.bg or "#000000", backdrop.blend
   if not backdrop.transparent then
     bg = Snacks.util.blend(Snacks.util.color("Normal", "bg"), bg, winblend / 100)
     winblend = 0
@@ -535,7 +543,7 @@ function M:drop()
   local group = ("SnacksBackdrop_%s"):format(bg:sub(2))
   vim.api.nvim_set_hl(0, group, { bg = bg })
 
-  self.backdrop = M.new({
+  self.backdrop = M.new(M.resolve({
     enter = false,
     backdrop = false,
     relative = "editor",
@@ -553,7 +561,7 @@ function M:drop()
       buftype = "nofile",
       filetype = "snacks_win_backdrop",
     },
-  })
+  }, backdrop.win))
   vim.api.nvim_create_autocmd("WinClosed", {
     group = self.augroup,
     pattern = self.win .. "",
@@ -604,6 +612,8 @@ function M:win_opts()
     return opts
   end
   local border_offset = self:has_border() and 2 or 0
+  opts.row = opts.row and opts.row < 0 and parent.height + opts.row - opts.height + 1 or opts.row
+  opts.col = opts.col and opts.col < 0 and parent.width + opts.col - opts.width + 1 or opts.col
   opts.row = opts.row or math.floor((parent.height - opts.height - border_offset) / 2)
   opts.col = opts.col or math.floor((parent.width - opts.width - border_offset) / 2)
 

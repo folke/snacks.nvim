@@ -366,27 +366,79 @@ function M.write(name, lines)
 end
 
 function M._build()
+  local plugins = {} ---@type {name:string, config:boolean}[]
   local skip = { "docs", "health" }
+  local files = {} ---@type table<string, string>
+
   for file, t in vim.fs.dir("lua/snacks", { depth = 1 }) do
     local name = vim.fn.fnamemodify(file, ":t:r")
     if not vim.tbl_contains(skip, name) then
       file = t == "directory" and ("%s/init.lua"):format(file) or file
-      print(name .. ".md")
-      local path = ("lua/snacks/%s"):format(file)
-      local lines = vim.fn.readfile(path)
-      local info = M.extract(lines)
-      M.write(name, M.render(name, info))
-      if name == "init" then
-        local readme = table.concat(vim.fn.readfile("README.md"), "\n")
-        local example = table.concat(vim.fn.readfile("docs/examples/init.lua"), "\n")
-        example = example:gsub(".*\nreturn {", "{", 1)
-        readme = M.replace("config", readme, M.md(info.config))
-        readme = M.replace("example", readme, M.md(example))
-        vim.fn.writefile(vim.split(readme, "\n"), "README.md")
-      end
+      files[name] = file
     end
   end
+
+  for name, file in pairs(files) do
+    print(name .. ".md")
+    local path = ("lua/snacks/%s"):format(file)
+    local lines = vim.fn.readfile(path)
+    local info = M.extract(lines)
+    if name ~= "init" and name ~= "types" then
+      table.insert(plugins, { name = name, config = info.config and true or false })
+    end
+    M.write(name, M.render(name, info))
+  end
+
+  table.sort(plugins, function(a, b)
+    return a.name < b.name
+  end)
+
+  do
+    local path = "lua/snacks/init.lua"
+    local lines = vim.fn.readfile(path)
+    local info = M.extract(lines)
+    local readme = table.concat(vim.fn.readfile("README.md"), "\n")
+    local example = table.concat(vim.fn.readfile("docs/examples/init.lua"), "\n")
+    lines = {}
+    lines[1] = "---@class snacks.Config"
+    for _, plugin in ipairs(plugins) do
+      if plugin.config then
+        local line = ("---@field %s? snacks.%s.Config"):format(plugin.name, plugin.name)
+        table.insert(lines, line)
+      end
+    end
+    local config_lines = vim.split(info.config or "", "\n")
+    table.remove(config_lines, 1)
+    vim.list_extend(lines, config_lines)
+    info.config = table.concat(lines, "\n")
+
+    M.write("init", M.render("init", info))
+    example = example:gsub(".*\nreturn {", "{", 1)
+    readme = M.replace("config", readme, M.md(info.config))
+    readme = M.replace("example", readme, M.md(example))
+    vim.fn.writefile(vim.split(readme, "\n"), "README.md")
+  end
+
   vim.cmd.checktime()
+
+  -- types.lua
+
+  local lines = {} ---@type string[]
+  lines[#lines + 1] = "---@meta _"
+  lines[#lines + 1] = ""
+  lines[#lines + 1] = "---@class snacks.plugins"
+  for _, plugin in ipairs(plugins) do
+    lines[#lines + 1] = ("---@field %s snacks.%s"):format(plugin.name, plugin.name)
+  end
+  lines[#lines + 1] = ""
+  lines[#lines + 1] = "---@class snacks.plugins.Config"
+  for _, plugin in ipairs(plugins) do
+    if plugin.config then
+      lines[#lines + 1] = ("---@field %s? snacks.%s.Config"):format(plugin.name, plugin.name)
+    end
+  end
+
+  vim.fn.writefile(lines, "lua/snacks/types.lua")
 end
 
 function M.fix_titles()

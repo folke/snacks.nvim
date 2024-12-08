@@ -9,6 +9,9 @@ Table of Contents                            *snacks-toggle-table-of-contents*
 4. Module                                               |snacks-toggle-module|
   - Snacks.toggle()                     |snacks-toggle-module-snacks.toggle()|
   - Snacks.toggle.diagnostics()|snacks-toggle-module-snacks.toggle.diagnostics()|
+  - Snacks.toggle.dim()             |snacks-toggle-module-snacks.toggle.dim()|
+  - Snacks.toggle.get()             |snacks-toggle-module-snacks.toggle.get()|
+  - Snacks.toggle.indent()       |snacks-toggle-module-snacks.toggle.indent()|
   - Snacks.toggle.inlay_hints()|snacks-toggle-module-snacks.toggle.inlay_hints()|
   - Snacks.toggle.line_number()|snacks-toggle-module-snacks.toggle.line_number()|
   - Snacks.toggle.new()             |snacks-toggle-module-snacks.toggle.new()|
@@ -16,10 +19,6 @@ Table of Contents                            *snacks-toggle-table-of-contents*
   - Snacks.toggle.profiler()   |snacks-toggle-module-snacks.toggle.profiler()|
   - Snacks.toggle.profiler_highlights()|snacks-toggle-module-snacks.toggle.profiler_highlights()|
   - Snacks.toggle.treesitter()|snacks-toggle-module-snacks.toggle.treesitter()|
-  - toggle:get()                           |snacks-toggle-module-toggle:get()|
-  - toggle:map()                           |snacks-toggle-module-toggle:map()|
-  - toggle:set()                           |snacks-toggle-module-toggle:set()|
-  - toggle:toggle()                     |snacks-toggle-module-toggle:toggle()|
 5. Links                                                 |snacks-toggle-links|
 Toggle keymaps integrated with which-key icons / colors
 
@@ -72,6 +71,7 @@ Toggle keymaps integrated with which-key icons / colors
 
 >lua
     ---@class snacks.toggle.Opts: snacks.toggle.Config
+    ---@field id? string
     ---@field name string
     ---@field get fun():boolean
     ---@field set fun(state:boolean)
@@ -81,17 +81,11 @@ Toggle keymaps integrated with which-key icons / colors
 ==============================================================================
 4. Module                                               *snacks-toggle-module*
 
->lua
-    ---@class snacks.toggle
-    ---@field opts snacks.toggle.Opts
-    Snacks.toggle = {}
-<
-
 
 `Snacks.toggle()`                                            *Snacks.toggle()*
 
 >lua
-    ---@type fun(... :snacks.toggle.Opts): snacks.toggle
+    ---@type fun(... :snacks.toggle.Opts): snacks.toggle.Class
     Snacks.toggle()
 <
 
@@ -101,6 +95,29 @@ Toggle keymaps integrated with which-key icons / colors
 >lua
     ---@param opts? snacks.toggle.Config
     Snacks.toggle.diagnostics(opts)
+<
+
+
+`Snacks.toggle.dim()`                                    *Snacks.toggle.dim()*
+
+>lua
+    Snacks.toggle.dim()
+<
+
+
+`Snacks.toggle.get()`                                    *Snacks.toggle.get()*
+
+>lua
+    ---@param id string
+    ---@return snacks.toggle.Class?
+    Snacks.toggle.get(id)
+<
+
+
+`Snacks.toggle.indent()`                              *Snacks.toggle.indent()*
+
+>lua
+    Snacks.toggle.indent()
 <
 
 
@@ -124,7 +141,6 @@ Toggle keymaps integrated with which-key icons / colors
 
 >lua
     ---@param ... snacks.toggle.Opts
-    ---@return snacks.toggle
     Snacks.toggle.new(...)
 <
 
@@ -157,37 +173,6 @@ Toggle keymaps integrated with which-key icons / colors
 >lua
     ---@param opts? snacks.toggle.Config
     Snacks.toggle.treesitter(opts)
-<
-
-
-TOGGLE:GET()                               *snacks-toggle-module-toggle:get()*
-
->lua
-    toggle:get()
-<
-
-
-TOGGLE:MAP()                               *snacks-toggle-module-toggle:map()*
-
->lua
-    ---@param keys string
-    ---@param opts? vim.keymap.set.Opts | { mode: string|string[]}
-    toggle:map(keys, opts)
-<
-
-
-TOGGLE:SET()                               *snacks-toggle-module-toggle:set()*
-
->lua
-    ---@param state boolean
-    toggle:set(state)
-<
-
-
-TOGGLE:TOGGLE()                         *snacks-toggle-module-toggle:toggle()*
-
->lua
-    toggle:toggle()
 <
 
 ==============================================================================

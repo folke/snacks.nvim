@@ -49,6 +49,7 @@ Toggle keymaps integrated with which-key icons / colors
 
 ```lua
 ---@class snacks.toggle.Opts: snacks.toggle.Config
+---@field id? string
 ---@field name string
 ---@field get fun():boolean
 ---@field set fun(state:boolean)
@@ -56,16 +57,10 @@ Toggle keymaps integrated with which-key icons / colors
 
 ## 📦 Module
 
-```lua
----@class snacks.toggle
----@field opts snacks.toggle.Opts
-Snacks.toggle = {}
-```
-
 ### `Snacks.toggle()`
 
 ```lua
----@type fun(... :snacks.toggle.Opts): snacks.toggle
+---@type fun(... :snacks.toggle.Opts): snacks.toggle.Class
 Snacks.toggle()
 ```
 
@@ -74,6 +69,26 @@ Snacks.toggle()
 ```lua
 ---@param opts? snacks.toggle.Config
 Snacks.toggle.diagnostics(opts)
+```
+
+### `Snacks.toggle.dim()`
+
+```lua
+Snacks.toggle.dim()
+```
+
+### `Snacks.toggle.get()`
+
+```lua
+---@param id string
+---@return snacks.toggle.Class?
+Snacks.toggle.get(id)
+```
+
+### `Snacks.toggle.indent()`
+
+```lua
+Snacks.toggle.indent()
 ```
 
 ### `Snacks.toggle.inlay_hints()`
@@ -94,7 +109,6 @@ Snacks.toggle.line_number(opts)
 
 ```lua
 ---@param ... snacks.toggle.Opts
----@return snacks.toggle
 Snacks.toggle.new(...)
 ```
 
@@ -123,31 +137,4 @@ Snacks.toggle.profiler_highlights()
 ```lua
 ---@param opts? snacks.toggle.Config
 Snacks.toggle.treesitter(opts)
-```
-
-### `toggle:get()`
-
-```lua
-toggle:get()
-```
-
-### `toggle:map()`
-
-```lua
----@param keys string
----@param opts? vim.keymap.set.Opts | { mode: string|string[]}
-toggle:map(keys, opts)
-```
-
-### `toggle:set()`
-
-```lua
----@param state boolean
-toggle:set(state)
-```
-
-### `toggle:toggle()`
-
-```lua
-toggle:toggle()
 ```

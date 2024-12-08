@@ -1,25 +1,4 @@
----@class Snacks
----@field bigfile snacks.bigfile
----@field bufdelete snacks.bufdelete
----@field config snacks.config
----@field dashboard snacks.dashboard
----@field debug snacks.debug
----@field git snacks.git
----@field gitbrowse snacks.gitbrowse
----@field lazygit snacks.lazygit
----@field notifier snacks.notifier
----@field notify snacks.notify
----@field quickfile snacks.quickfile
----@field health snacks.health
----@field profiler snacks.profiler
----@field rename snacks.rename
----@field scratch snacks.scratch
----@field statuscolumn snacks.statuscolumn
----@field terminal snacks.terminal
----@field toggle snacks.toggle
----@field util snacks.util
----@field win snacks.win
----@field words snacks.words
+---@class Snacks: snacks.plugins
 local M = {}
 
 setmetatable(M, {
@@ -36,26 +15,17 @@ _G.Snacks = M
 ---@field example? string
 ---@field config? fun(opts: table, defaults: table)
 
----@class snacks.Config
----@field bigfile? snacks.bigfile.Config | { enabled: boolean }
----@field gitbrowse? snacks.gitbrowse.Config
----@field lazygit? snacks.lazygit.Config
----@field notifier? snacks.notifier.Config | { enabled: boolean }
----@field quickfile? { enabled: boolean }
----@field statuscolumn? snacks.statuscolumn.Config  | { enabled: boolean }
+---@class snacks.Config: snacks.plugins.Config
 ---@field styles? table<string, snacks.win.Config>
----@field dashboard? snacks.dashboard.Config  | { enabled: boolean }
----@field terminal? snacks.terminal.Config
----@field toggle? snacks.toggle.Config
----@field win? snacks.win.Config
----@field words? snacks.words.Config
 local config = {
-  styles = {},
   bigfile = { enabled = false },
   dashboard = { enabled = false },
+  indent = { enabled = false },
   notifier = { enabled = false },
   quickfile = { enabled = false },
+  scroll = { enabled = false },
   statuscolumn = { enabled = false },
+  styles = {},
   words = { enabled = false },
 }
 
@@ -139,9 +109,9 @@ function M.setup(opts)
 
   local events = {
     BufReadPre = { "bigfile" },
-    BufReadPost = { "quickfile" },
+    BufReadPost = { "quickfile", "indent" },
     LspAttach = { "words" },
-    UIEnter = { "dashboard" },
+    UIEnter = { "dashboard", "scroll" },
   }
 
   for event, snacks in pairs(events) do
@@ -151,7 +121,7 @@ function M.setup(opts)
       nested = true,
       callback = function()
         for _, snack in ipairs(snacks) do
-          if M.config[snack].enabled then
+          if M.config[snack] and M.config[snack].enabled then
             M[snack].setup()
           end
         end

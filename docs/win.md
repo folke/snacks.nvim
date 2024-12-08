@@ -136,6 +136,7 @@ Snacks.win({
 ---@field bg? string
 ---@field blend? number
 ---@field transparent? boolean defaults to true
+---@field win? snacks.win.Config overrides the backdrop window config
 ```
 
 ## 📦 Module

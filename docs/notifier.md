@@ -117,6 +117,7 @@ vim.api.nvim_create_autocmd("LspProgress", {
 
 ```lua
 ---@class snacks.notifier.Config
+---@field enabled? boolean
 ---@field keep? fun(notif: snacks.notifier.Notif): boolean # global keep function
 {
   timeout = 3000, -- default timeout in ms

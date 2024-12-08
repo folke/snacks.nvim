@@ -100,6 +100,7 @@ Snacks.config.style("notification.history", {
 })
 
 ---@class snacks.notifier.Config
+---@field enabled? boolean
 ---@field keep? fun(notif: snacks.notifier.Notif): boolean # global keep function
 local defaults = {
   timeout = 3000, -- default timeout in ms
