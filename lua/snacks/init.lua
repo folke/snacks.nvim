@@ -110,7 +110,7 @@ function M.setup(opts)
     BufReadPre = { "bigfile" },
     BufReadPost = { "quickfile", "indent" },
     LspAttach = { "words" },
-    UIEnter = { "dashboard" },
+    UIEnter = { "dashboard", "scroll" },
   }
 
   for event, snacks in pairs(events) do
