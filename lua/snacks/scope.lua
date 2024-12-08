@@ -160,6 +160,10 @@ function IndentScope:find(opts)
     next_i, next_l = Scope.get_indent(vim.fn.nextnonblank(line + 1))
   end
 
+  if line == 0 then
+    return
+  end
+
   -- adjust line to the nearest indent block
   if prev_i <= indent and next_i > indent then
     line = next_l
