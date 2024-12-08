@@ -196,7 +196,23 @@ end
 local TSScope = setmetatable({}, Scope)
 TSScope.__index = TSScope
 
+-- Expand the scope to fill the range of the node
+function TSScope:fill()
+  local n = self.node
+  local u, _, d = n:range()
+  while n do
+    local uu, _, dd = n:range()
+    if uu == u and dd == d then
+      self.node = n
+    else
+      break
+    end
+    n = n:parent()
+  end
+end
+
 function TSScope:fix()
+  self:fill()
   self.from, _, self.to = self.node:range()
   self.from, self.to = self.from + 1, self.to + 1
   self.indent = math.huge
