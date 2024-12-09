@@ -295,6 +295,23 @@ function M.dim()
   })
 end
 
+function M.words()
+  return M.new({
+    id = "words",
+    name = "LSP Words",
+    get = function()
+      return Snacks.words.enabled
+    end,
+    set = function(state)
+      if state then
+        Snacks.words.enable()
+      else
+        Snacks.words.disable()
+      end
+    end,
+  })
+end
+
 function M.scroll()
   return M.new({
     id = "scroll",
