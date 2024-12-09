@@ -1052,14 +1052,17 @@ function M.sections.terminal(opts)
 end
 
 --- Add the startup section
+---@param opts? {icon?:string}
 ---@return snacks.dashboard.Section?
-function M.sections.startup()
+function M.sections.startup(opts)
+  opts = opts or {}
   M.lazy_stats = M.lazy_stats and M.lazy_stats.startuptime > 0 and M.lazy_stats or require("lazy.stats").stats()
   local ms = (math.floor(M.lazy_stats.startuptime * 100 + 0.5) / 100)
+  local icon = opts.icon or '⚡ '
   return {
     align = "center",
     text = {
-      { "⚡ Neovim loaded ", hl = "footer" },
+      { icon .. "Neovim loaded ", hl = "footer" },
       { M.lazy_stats.loaded .. "/" .. M.lazy_stats.count, hl = "special" },
       { " plugins in ", hl = "footer" },
       { ms .. "ms", hl = "special" },
