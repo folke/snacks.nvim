@@ -18,6 +18,7 @@
 ---@field rename snacks.rename
 ---@field scope snacks.scope
 ---@field scratch snacks.scratch
+---@field scroll snacks.scroll
 ---@field statuscolumn snacks.statuscolumn
 ---@field terminal snacks.terminal
 ---@field toggle snacks.toggle
@@ -39,6 +40,7 @@
 ---@field quickfile? snacks.quickfile.Config
 ---@field scope? snacks.scope.Config
 ---@field scratch? snacks.scratch.Config
+---@field scroll? snacks.scroll.Config
 ---@field statuscolumn? snacks.statuscolumn.Config
 ---@field terminal? snacks.terminal.Config
 ---@field toggle? snacks.toggle.Config

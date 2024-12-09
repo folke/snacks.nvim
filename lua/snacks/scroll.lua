@@ -5,16 +5,18 @@ local M = {}
 
 ---@class snacks.scroll.State
 ---@field buf number
----@field animating? boolean
 ---@field view snacks.scroll.View
 ---@field current snacks.scroll.View
 ---@field target snacks.scroll.View
+---@field scrolloff number
+---@field mousescroll number
+---@field height number
 
 ---@class snacks.scroll.Config
 ---@field animate snacks.animate.Config
 local defaults = {
   animate = {
-    duration = { step = 20, total = 250 },
+    duration = { step = 10, total = 250 },
     easing = "linear",
   },
   -- what buffers to animate
@@ -25,7 +27,7 @@ local defaults = {
 }
 
 local states = {} ---@type table<number, snacks.scroll.State>
-local stats = { targets = 0, animating = 0 }
+local stats = { targets = 0, animating = 0, reset = 0, skipped = 0 }
 local config = Snacks.config.get("scroll", defaults)
 local debug_timer = assert((vim.uv or vim.loop).new_timer())
 
@@ -36,8 +38,18 @@ local function get_state(win)
   end
   local view = vim.api.nvim_win_call(win, vim.fn.winsaveview) ---@type vim.fn.winsaveview.ret
   view = { topline = view.topline, lnum = view.lnum } --[[@as snacks.scroll.View]]
-  states[win] = (states[win] and states[win].buf == buf) and states[win]
-    or { animating = false, target = vim.deepcopy(view), current = vim.deepcopy(view), buf = buf }
+  if not (states[win] and states[win].buf == buf) then
+    ---@diagnostic disable-next-line: missing-fields
+    states[win] = {
+      animating = false,
+      target = vim.deepcopy(view),
+      current = vim.deepcopy(view),
+      buf = buf,
+    }
+  end
+  states[win].scrolloff = vim.wo[win].scrolloff
+  states[win].mousescroll = tonumber(vim.o.mousescroll:match("ver:(%d+)")) or 1
+  states[win].height = vim.api.nvim_win_get_height(win)
   states[win].view = view
   return states[win]
 end
@@ -93,10 +105,8 @@ function M.update(win)
     return
   end
 
-  if state.animating then
-    -- triggered by the animation
-    state.animating = false
-    stats.animating = stats.animating + 1
+  if math.abs(state.view.topline - state.current.topline) <= state.mousescroll then
+    stats.skipped = stats.skipped + 1
     state.current = vim.deepcopy(state.view)
     return
   end
@@ -105,12 +115,25 @@ function M.update(win)
     if not vim.api.nvim_win_is_valid(win) then
       return
     end
-    -- if changes and changes.topline then
-    --   dd(changes.topline)
-    -- end
+
     state.current = changes and vim.tbl_extend("force", state.current, changes) or state.current
-    -- don't process scroll events from animating
-    state.animating = state.current.topline ~= state.view.topline
+
+    -- adjust lnum for scrolloff when not at target topline
+    if state.target.topline == state.current.topline then
+      state.current.lnum = state.target.lnum
+    else
+      state.current.lnum = math.max(
+        state.current.topline + state.scrolloff,
+        math.min(state.current.lnum, state.current.topline + state.height - 1 - state.scrolloff)
+      )
+    end
+
+    if changes then
+      stats.animating = stats.animating + 1
+    else
+      stats.reset = stats.reset + 1
+    end
+
     -- always restore view, since it might be a lnum change
     vim.api.nvim_win_call(win, function()
       vim.fn.winrestview(state.current)
@@ -118,7 +141,6 @@ function M.update(win)
   end
 
   stats.targets = stats.targets + 1
-  -- record new target
   state.target = vim.deepcopy(state.view)
   update() -- reset to current state
 
