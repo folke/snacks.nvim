@@ -90,22 +90,17 @@ function M.setup(opts)
     return vim.notify("snacks.nvim is already setup", vim.log.levels.ERROR, { title = "snacks.nvim" })
   end
   M.did_setup = true
-  opts = opts or {}
-  -- enable all by default when config is passed
-  for k in pairs(opts) do
-    opts[k].enabled = opts[k].enabled == nil or opts[k].enabled
-  end
-  config = vim.tbl_deep_extend("force", config, opts or {})
 
   if vim.fn.has("nvim-0.9.4") ~= 1 then
     return vim.notify("snacks.nvim requires Neovim >= 0.9.4", vim.log.levels.ERROR, { title = "snacks.nvim" })
   end
 
-  if vim.v.vim_did_enter == 1 and M.config.dashboard.enabled then
-    M.dashboard.setup()
+  -- enable all by default when config is passed
+  opts = opts or {}
+  for k in pairs(opts) do
+    opts[k].enabled = opts[k].enabled == nil or opts[k].enabled
   end
-
-  local group = vim.api.nvim_create_augroup("snacks", { clear = true })
+  config = vim.tbl_deep_extend("force", config, opts or {})
 
   local events = {
     BufReadPre = { "bigfile" },
@@ -114,20 +109,27 @@ function M.setup(opts)
     UIEnter = { "dashboard", "scroll" },
   }
 
-  for event, snacks in pairs(events) do
-    vim.api.nvim_create_autocmd(event, {
-      group = group,
-      once = true,
-      nested = true,
-      callback = function()
-        for _, snack in ipairs(snacks) do
-          if M.config[snack] and M.config[snack].enabled then
-            M[snack].setup()
-          end
-        end
-      end,
-    })
+  local function load(event)
+    for _, snack in ipairs(events[event] or {}) do
+      if M.config[snack] and M.config[snack].enabled then
+        (M[snack].setup or M[snack].enable)()
+      end
+    end
+    events[event] = nil
   end
+
+  if vim.v.vim_did_enter == 1 then
+    load("UIEnter")
+  end
+
+  vim.api.nvim_create_autocmd(vim.tbl_keys(events), {
+    group = vim.api.nvim_create_augroup("snacks", { clear = true }),
+    once = true,
+    nested = true,
+    callback = function(ev)
+      load(ev.event)
+    end,
+  })
 
   if M.config.statuscolumn.enabled then
     vim.o.statuscolumn = [[%!v:lua.require'snacks.statuscolumn'.get()]]
