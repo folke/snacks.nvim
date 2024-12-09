@@ -26,6 +26,8 @@ local defaults = {
   debug = false,
 }
 
+M.enabled = false
+
 local states = {} ---@type table<number, snacks.scroll.State>
 local stats = { targets = 0, animating = 0, reset = 0, skipped = 0 }
 local config = Snacks.config.get("scroll", defaults)
@@ -55,8 +57,22 @@ local function get_state(win)
 end
 
 function M.setup()
+  M.enable()
+end
+
+function M.enable()
+  if M.enabled then
+    return
+  end
+  M.enabled = true
+  states = {}
   if config.debug then
     M.debug()
+  end
+
+  -- get initial state for all windows
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    get_state(win)
   end
 
   local group = vim.api.nvim_create_augroup("snacks_scroll", { clear = true })
@@ -95,6 +111,15 @@ function M.setup()
       end
     end,
   })
+end
+
+function M.disable()
+  if not M.enabled then
+    return
+  end
+  M.enabled = false
+  states = {}
+  vim.api.nvim_del_augroup_by_name("snacks_scroll")
 end
 
 --- Check if we need to animate the scroll

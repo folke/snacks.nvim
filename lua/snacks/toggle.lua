@@ -300,10 +300,14 @@ function M.scroll()
     id = "scroll",
     name = "Smooth Scroll",
     get = function()
-      return vim.g.snacks_scroll ~= false
+      return Snacks.scroll.enabled
     end,
     set = function(state)
-      vim.g.snacks_scroll = state
+      if state then
+        Snacks.scroll.enable()
+      else
+        Snacks.scroll.disable()
+      end
     end,
   })
 end
