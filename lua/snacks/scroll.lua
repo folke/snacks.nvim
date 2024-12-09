@@ -4,6 +4,7 @@ local M = {}
 ---@alias snacks.scroll.View {topline:number, lnum:number}
 
 ---@class snacks.scroll.State
+---@field win number
 ---@field buf number
 ---@field view snacks.scroll.View
 ---@field current snacks.scroll.View
@@ -16,7 +17,7 @@ local M = {}
 ---@field animate snacks.animate.Config
 local defaults = {
   animate = {
-    duration = { step = 10, total = 250 },
+    duration = { step = 15, total = 250 },
     easing = "linear",
   },
   -- what buffers to animate
@@ -33,6 +34,8 @@ local stats = { targets = 0, animating = 0, reset = 0, skipped = 0 }
 local config = Snacks.config.get("scroll", defaults)
 local debug_timer = assert((vim.uv or vim.loop).new_timer())
 
+-- get the state for a window.
+-- when the state doesn't exist, its target is the current view
 local function get_state(win)
   local buf = vim.api.nvim_win_get_buf(win)
   if not config.filter(buf) then
@@ -43,7 +46,7 @@ local function get_state(win)
   if not (states[win] and states[win].buf == buf) then
     ---@diagnostic disable-next-line: missing-fields
     states[win] = {
-      animating = false,
+      win = win,
       target = vim.deepcopy(view),
       current = vim.deepcopy(view),
       buf = buf,
@@ -102,7 +105,7 @@ function M.enable()
       for win, changes in pairs(vim.v.event) do
         win = tonumber(win)
         if win and changes.topline ~= 0 then
-          M.update(win)
+          M.check(win)
         end
       end
     end,
@@ -118,52 +121,61 @@ function M.disable()
   vim.api.nvim_del_augroup_by_name("snacks_scroll")
 end
 
+--- Update the window state
+---@param state snacks.scroll.State
+---@param changes? {topline?:number, lnum?:number}
+local function update(state, changes)
+  if not vim.api.nvim_win_is_valid(state.win) then
+    return
+  end
+
+  if changes then
+    state.current = vim.tbl_extend("force", state.current, changes)
+  end
+
+  -- adjust lnum for scrolloff when not at target topline
+  if state.target.topline == state.current.topline then
+    state.current.lnum = state.target.lnum
+  else
+    state.current.lnum = math.max(
+      state.current.topline + state.scrolloff,
+      math.min(state.current.lnum, state.current.topline + state.height - 1 - state.scrolloff)
+    )
+  end
+
+  if changes then
+    stats.animating = stats.animating + 1
+  else
+    stats.reset = stats.reset + 1
+  end
+
+  -- apply the changes
+  vim.api.nvim_win_call(state.win, function()
+    vim.fn.winrestview(state.current)
+  end)
+end
+
 --- Check if we need to animate the scroll
 ---@param win number
-function M.update(win)
+function M.check(win)
   local state = get_state(win)
   if not state then
     return
   end
 
+  -- if delta is 0, then we're animating.
+  -- also skip if the difference is less than the mousescroll value,
+  -- since most terminals support smooth mouse scrolling.
   if math.abs(state.view.topline - state.current.topline) <= state.mousescroll then
     stats.skipped = stats.skipped + 1
     state.current = vim.deepcopy(state.view)
     return
   end
 
-  local function update(changes)
-    if not vim.api.nvim_win_is_valid(win) then
-      return
-    end
-
-    state.current = changes and vim.tbl_extend("force", state.current, changes) or state.current
-
-    -- adjust lnum for scrolloff when not at target topline
-    if state.target.topline == state.current.topline then
-      state.current.lnum = state.target.lnum
-    else
-      state.current.lnum = math.max(
-        state.current.topline + state.scrolloff,
-        math.min(state.current.lnum, state.current.topline + state.height - 1 - state.scrolloff)
-      )
-    end
-
-    if changes then
-      stats.animating = stats.animating + 1
-    else
-      stats.reset = stats.reset + 1
-    end
-
-    -- always restore view, since it might be a lnum change
-    vim.api.nvim_win_call(win, function()
-      vim.fn.winrestview(state.current)
-    end)
-  end
-
+  -- new target
   stats.targets = stats.targets + 1
   state.target = vim.deepcopy(state.view)
-  update() -- reset to current state
+  update(state) -- reset to current state
 
   -- animate topline/lnum to target
   for _, field in ipairs({ "topline", "lnum" }) do
@@ -171,7 +183,7 @@ function M.update(win)
       state.current[field],
       state.target[field],
       function(value)
-        update({ [field] = value })
+        update(state, { [field] = value })
       end,
       vim.tbl_extend("keep", {
         int = true,
@@ -181,27 +193,24 @@ function M.update(win)
   end
 end
 
+---@private
 function M.debug()
   if debug_timer:is_active() then
-    debug_timer:stop()
-    return
+    return debug_timer:stop()
   end
   local last = {}
-  local _states = {}
   debug_timer:start(50, 50, function()
-    if not vim.deep_equal(stats, last) then
-      last = vim.deepcopy(stats)
-      Snacks.notify(vim.inspect(stats), { ft = "lua", id = "snacks_scroll_debug", title = "Snacks Scroll Debug Stats" })
-    end
-    for win, state in pairs(states) do
-      if not vim.deep_equal(_states[win], state) then
-        Snacks.notify(
-          vim.inspect(state),
-          { ft = "lua", id = "snacks_scroll_debug_" .. win, title = "Snacks Scroll Debug " .. win }
-        )
+    local data = vim.tbl_extend("force", { stats = stats }, states)
+    for key, value in pairs(data) do
+      if not vim.deep_equal(last[key], value) then
+        Snacks.notify(vim.inspect(value), {
+          ft = "lua",
+          id = "snacks_scroll_debug_" .. key,
+          title = "Snacks Scroll Debug " .. key,
+        })
       end
     end
-    _states = vim.deepcopy(states)
+    last = vim.deepcopy(data)
   end)
 end
 
