@@ -1,8 +1,8 @@
 ---@class snacks.animate
----@overload fun(from: number, to: number, cb: fun(value: number, prev?: number), opts?: snacks.animate.Opts)
+---@overload fun(from: number, to: number, cb: snacks.animate.cb, opts?: snacks.animate.Opts): snacks.animate.Animation
 local M = setmetatable({}, {
   __call = function(M, ...)
-    return M.animate(...)
+    return M.add(...)
   end,
 })
 
@@ -44,31 +44,67 @@ local defaults = {
 
 ---@alias snacks.animate.cb fun(value:number, ctx: snacks.animate.ctx)
 
----@class snacks.animate.Animation
----@field from number
----@field to number
----@field duration number
----@field easing snacks.animate.easing.Fn
----@field value number
----@field start number
----@field int boolean
----@field cb snacks.animate.cb
-
 local uv = vim.uv or vim.loop
 local _id = 0
 local active = {} ---@type table<number|string, snacks.animate.Animation>
 local timer = assert(uv.new_timer())
 local scheduled = false
 
+---@class snacks.animate.Animation
+---@field id number|string unique identifier
+---@field opts snacks.animate.Opts
+---@field from number start value
+---@field to number end value
+---@field duration number total duration in ms
+---@field easing snacks.animate.easing.Fn
+---@field value number current value
+---@field start number start time in ms
+---@field cb snacks.animate.cb
+local Animation = {}
+Animation.__index = Animation
+
+---@return number value, boolean done
+function Animation:next()
+  self.start = self.start == 0 and uv.hrtime() or self.start
+  local elapsed = (uv.hrtime() - self.start) / 1e6 -- ms
+  local b, c, d = self.from, self.to - self.from, self.duration
+  local t, done = math.min(elapsed, d), elapsed >= d
+  local value = done and b + c or self.easing(t, b, c, d)
+  value = self.opts.int and (value + (2 ^ 52 + 2 ^ 51) - (2 ^ 52 + 2 ^ 51)) or value
+  return value, done
+end
+
+---@return boolean done
+function Animation:update()
+  local value, done = self:next()
+  local prev = self.value
+  if prev ~= value or done then
+    self.cb(value, { anim = self, prev = prev, done = done })
+    self.value = value
+  end
+  return done
+end
+
+function Animation:dirty()
+  local value, done = self:next()
+  return self.value ~= value or done
+end
+
+function Animation:del()
+  active[self.id] = nil
+end
+
+--- Add an animation
 ---@param from number
 ---@param to number
 ---@param cb snacks.animate.cb
 ---@param opts? snacks.animate.Opts
-function M.animate(from, to, cb, opts)
+function M.add(from, to, cb, opts)
   opts = Snacks.config.get("animate", defaults, opts) --[[@as snacks.animate.Opts]]
+
+  -- calculate duration
   local d = type(opts.duration) == "table" and opts.duration or { step = opts.duration }
   ---@cast d snacks.animate.Duration
-
   local duration = 0
   if d.step then
     duration = d.step * math.abs(to - from)
@@ -77,61 +113,60 @@ function M.animate(from, to, cb, opts)
     duration = d.total
   end
 
+  -- resolve easing function
   local easing = opts.easing or "linear"
   easing = type(easing) == "string" and require("snacks.animate.easing")[easing] or easing
   ---@cast easing snacks.animate.easing.Fn
 
   _id = _id + 1
-  active[opts.id or _id] = {
+  ---@type snacks.animate.Animation
+  local ret = setmetatable({
+    id = opts.id or _id,
+    opts = opts,
     from = from,
     to = to,
     value = from,
-    int = opts.int or false,
     duration = duration --[[@as number]],
     easing = easing,
     start = 0,
     cb = cb,
-  }
+  }, Animation)
+  active[ret.id] = ret
   M.start()
+  return ret
 end
 
----@param anim snacks.animate.Animation
----@return number value, boolean done
-function M.value(anim)
-  anim.start = anim.start == 0 and uv.hrtime() or anim.start
-  local elapsed = (uv.hrtime() - anim.start) / 1e6 -- ms
-  local b, c, d = anim.from, anim.to - anim.from, anim.duration
-  local t, done = math.min(elapsed, d), elapsed >= d
-  local value = done and b + c or anim.easing(t, b, c, d)
-  value = anim.int and (value + (2 ^ 52 + 2 ^ 51) - (2 ^ 52 + 2 ^ 51)) or value
-  return value, done
+--- Delete an animation
+---@param id number|string
+function M.del(id)
+  active[id] = nil
 end
 
+--- Step the animations and stop loop if no animations are active
+---@private
 function M.step()
-  if vim.tbl_isempty(active) then
+  if scheduled then -- no need to check this step
+    return
+  elseif vim.tbl_isempty(active) then
     return timer:stop()
   end
 
+  -- check if any animation needs to be updated
   local update = false
   for _, anim in pairs(active) do
-    local value, done = M.value(anim)
-    if anim.value ~= value or done then
+    if anim:dirty() then
       update = true
+      break
     end
   end
 
-  if update and not scheduled then
+  if update then
+    -- schedule an update
     scheduled = true
     vim.schedule(function()
       scheduled = false
       for a, anim in pairs(active) do
-        local value, done = M.value(anim)
-        local prev = anim.value
-        if prev ~= value or done then
-          anim.cb(value, { anim = anim, prev = prev, done = done })
-          anim.value = value
-        end
-        if done then
+        if anim:update() then
           active[a] = nil
         end
       end
@@ -139,6 +174,8 @@ function M.step()
   end
 end
 
+--- Start the animation loop
+---@private
 function M.start()
   if timer:is_active() then
     return

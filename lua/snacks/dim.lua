@@ -105,12 +105,12 @@ function M.enable(opts)
           }
         end
 
-        Snacks.animate.animate(scopes_anim[win].from, scope.from, function(v)
+        Snacks.animate(scopes_anim[win].from, scope.from, function(v)
           scopes_anim[win].from = v
           Snacks.util.redraw(win)
         end, vim.tbl_extend("keep", { int = true, id = "snacks_dim_from_" .. win }, opts.animate))
 
-        Snacks.animate.animate(scopes_anim[win].to, scope.to, function(v)
+        Snacks.animate(scopes_anim[win].to, scope.to, function(v)
           scopes_anim[win].to = v
           Snacks.util.redraw(win)
         end, vim.tbl_extend("keep", { int = true, id = "snacks_dim_to_" .. win }, opts.animate))

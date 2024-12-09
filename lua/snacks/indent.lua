@@ -261,7 +261,7 @@ function M.on_scope(win, _buf, scope, prev)
   if scope then
     scope.step = scope.from
     if M.animating then
-      Snacks.animate.animate(
+      Snacks.animate(
         scope.from,
         scope.to,
         function(value, ctx)

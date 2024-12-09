@@ -179,7 +179,7 @@ function M.check(win)
 
   -- animate topline/lnum to target
   for _, field in ipairs({ "topline", "lnum" }) do
-    Snacks.animate.animate(
+    Snacks.animate(
       state.current[field],
       state.target[field],
       function(value)
