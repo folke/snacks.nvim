@@ -367,7 +367,7 @@ end
 
 function M._build()
   local plugins = {} ---@type {name:string, config:boolean}[]
-  local skip = { "docs", "health" }
+  local skip = { "docs", "icons" }
   local files = {} ---@type table<string, string>
 
   for file, t in vim.fs.dir("lua/snacks", { depth = 1 }) do

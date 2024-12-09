@@ -18,6 +18,7 @@
 ---@field dim snacks.dim
 ---@field git snacks.git
 ---@field gitbrowse snacks.gitbrowse
+---@field health snacks.health
 ---@field indent snacks.indent
 ---@field lazygit snacks.lazygit
 ---@field notifier snacks.notifier

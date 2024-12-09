@@ -83,6 +83,7 @@ function M.config.style(name, defaults)
 end
 
 M.did_setup = false
+M.did_setup_after_vim_enter = false
 
 ---@param opts snacks.Config?
 function M.setup(opts)
@@ -119,6 +120,7 @@ function M.setup(opts)
   end
 
   if vim.v.vim_did_enter == 1 then
+    M.did_setup_after_vim_enter = true
     load("UIEnter")
   end
 
