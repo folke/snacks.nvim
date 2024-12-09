@@ -1084,6 +1084,12 @@ function M.setup()
     return
   end
 
+  -- don't open dashboard if Neovim was invoked for example `nvim +'Octo issue edit 1'`
+  if vim.api.nvim_buf_get_name(0) ~= "" then
+    M.status.reason = "buffer has a name"
+    return
+  end
+
   -- there should be only one non-floating window and it should be the first buffer
   local wins = vim.tbl_filter(function(win)
     return vim.api.nvim_win_get_config(win).relative == ""
