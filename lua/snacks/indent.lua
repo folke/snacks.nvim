@@ -106,9 +106,10 @@ local function get_extmark(indent, ctx)
   stats.extmarks = stats.extmarks + 1
 
   local sw = ctx.shiftwidth
-  indent = indent - ctx.leftcol -- visible indents
+  indent = math.floor(indent / sw) * sw -- align to shiftwidth
+  indent = indent - ctx.leftcol -- adjust for visible indents
   local rem = indent % sw -- remaining spaces of the first partially visible indent
-  indent = math.floor(indent / sw) -- full indents
+  indent = math.floor(indent / sw) -- full visible indents
 
   -- hide if indent is 0 and no remaining spaces
   if indent < 1 and rem == 0 then
