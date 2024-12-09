@@ -459,6 +459,7 @@ The other options are used with `:lua Snacks.dashboard()`
     colorcolumn = "",
     cursorcolumn = false,
     cursorline = false,
+    foldmethod = "manual",
     list = false,
     number = false,
     relativenumber = false,

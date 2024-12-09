@@ -132,9 +132,21 @@ Snacks.toggle.profiler()
 Snacks.toggle.profiler_highlights()
 ```
 
+### `Snacks.toggle.scroll()`
+
+```lua
+Snacks.toggle.scroll()
+```
+
 ### `Snacks.toggle.treesitter()`
 
 ```lua
 ---@param opts? snacks.toggle.Config
 Snacks.toggle.treesitter(opts)
+```
+
+### `Snacks.toggle.words()`
+
+```lua
+Snacks.toggle.words()
 ```

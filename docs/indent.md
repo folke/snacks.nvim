@@ -66,7 +66,8 @@
     -- char = "·",
     hl = "SnacksIndentBlank", ---@type string|string[] hl group for blank spaces
   },
-  enabled = function(buf)
+  -- filter for buffers to enable indent guides
+  filter = function(buf)
     return vim.g.snacks_indent ~= false and vim.b[buf].snacks_indent ~= false and vim.bo[buf].buftype == ""
   end,
   priority = 200,
@@ -146,10 +147,4 @@ Render the scope overlappping the given range
 ---@param scope snacks.indent.Scope
 ---@param ctx snacks.indent.ctx
 Snacks.indent.render(scope, ctx)
-```
-
-### `Snacks.indent.setup()`
-
-```lua
-Snacks.indent.setup()
 ```

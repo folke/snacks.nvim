@@ -31,7 +31,7 @@
   max_size = nil,
   siblings = false, -- expand single line scopes with single line siblings
   -- what buffers to attach to
-  enabled = function(buf)
+  filter = function(buf)
     return vim.bo[buf].buftype == ""
   end,
   -- debounce scope detection in ms

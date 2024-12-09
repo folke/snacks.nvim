@@ -34,6 +34,7 @@
 ---@field quickfile? snacks.quickfile.Config
 ---@field scope? snacks.scope.Config
 ---@field scratch? snacks.scratch.Config
+---@field scroll? snacks.scroll.Config
 ---@field statuscolumn? snacks.statuscolumn.Config
 ---@field terminal? snacks.terminal.Config
 ---@field toggle? snacks.toggle.Config
@@ -47,6 +48,7 @@
   indent = { enabled = false },
   notifier = { enabled = false },
   quickfile = { enabled = false },
+  scroll = { enabled = false },
   statuscolumn = { enabled = false },
   styles = {},
   words = { enabled = false },

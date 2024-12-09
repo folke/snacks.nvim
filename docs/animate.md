@@ -27,7 +27,7 @@
   ---@type snacks.animate.Duration|number
   duration = 20, -- ms per step
   easing = "linear",
-  fps = 30, -- frames per second. Global setting for all animations
+  fps = 60, -- frames per second. Global setting for all animations
 }
 ```
 
@@ -48,10 +48,13 @@ are included)
 ---@alias snacks.animate.easing.Fn fun(t: number, b: number, c: number, d: number): number
 ```
 
+Duration can be specified as the total duration or the duration per step.
+When both are specified, the minimum of both is used.
+
 ```lua
 ---@class snacks.animate.Duration
----@field step? number ms per step. If total is also set, this is the maximum duration
----@field total? number maximum duration in ms
+---@field step? number duration per step in ms
+---@field total? number total duration in ms
 ```
 
 ```lua
@@ -61,15 +64,14 @@ are included)
 ```
 
 ```lua
----@class snacks.animate.Animation
----@field from number
----@field to number
----@field duration number
----@field easing snacks.animate.easing.Fn
----@field value number
----@field start number
----@field int boolean
----@field cb fun(value: number, prev?: number)
+---@class snacks.animate.ctx
+---@field anim snacks.animate.Animation
+---@field prev number
+---@field done boolean
+```
+
+```lua
+---@alias snacks.animate.cb fun(value:number, ctx: snacks.animate.ctx)
 ```
 
 ## 📦 Module
@@ -77,28 +79,27 @@ are included)
 ### `Snacks.animate()`
 
 ```lua
----@type fun(from: number, to: number, cb: fun(value: number, prev?: number), opts?: snacks.animate.Opts)
+---@type fun(from: number, to: number, cb: snacks.animate.cb, opts?: snacks.animate.Opts): snacks.animate.Animation
 Snacks.animate()
 ```
 
-### `Snacks.animate.animate()`
+### `Snacks.animate.add()`
+
+Add an animation
 
 ```lua
 ---@param from number
 ---@param to number
----@param cb fun(value: number, prev?: number)
+---@param cb snacks.animate.cb
 ---@param opts? snacks.animate.Opts
-Snacks.animate.animate(from, to, cb, opts)
+Snacks.animate.add(from, to, cb, opts)
 ```
 
-### `Snacks.animate.start()`
+### `Snacks.animate.del()`
+
+Delete an animation
 
 ```lua
-Snacks.animate.start()
-```
-
-### `Snacks.animate.step()`
-
-```lua
-Snacks.animate.step()
+---@param id number|string
+Snacks.animate.del(id)
 ```

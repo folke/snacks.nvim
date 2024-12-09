@@ -7,6 +7,7 @@ Table of Contents                               *snacks-zen-table-of-contents*
 2. Config                                                  |snacks-zen-config|
 3. Styles                                                  |snacks-zen-styles|
   - zen                                                |snacks-zen-styles-zen|
+  - zoom_indicator                          |snacks-zen-styles-zoom_indicator|
 4. Module                                                  |snacks-zen-module|
   - Snacks.zen()                              |snacks-zen-module-snacks.zen()|
   - Snacks.zen.zen()                      |snacks-zen-module-snacks.zen.zen()|
@@ -86,6 +87,24 @@ ZEN                                                    *snacks-zen-styles-zen*
       wo = {
         winhighlight = "NormalFloat:Normal",
       },
+    }
+<
+
+
+ZOOM_INDICATOR                              *snacks-zen-styles-zoom_indicator*
+
+fullscreen indicator only shown when the window is maximized
+
+>lua
+    {
+      text = "▍ zoom  󰊓  ",
+      minimal = true,
+      enter = false,
+      focusable = false,
+      height = 1,
+      row = 0,
+      col = -1,
+      backdrop = false,
     }
 <
 

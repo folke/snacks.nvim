@@ -73,6 +73,24 @@
 }
 ```
 
+### `zoom_indicator`
+
+fullscreen indicator
+only shown when the window is maximized
+
+```lua
+{
+  text = "▍ zoom  󰊓  ",
+  minimal = true,
+  enter = false,
+  focusable = false,
+  height = 1,
+  row = 0,
+  col = -1,
+  backdrop = false,
+}
+```
+
 ## 📦 Module
 
 ### `Snacks.zen()`

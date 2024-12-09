@@ -18,7 +18,9 @@ Table of Contents                            *snacks-toggle-table-of-contents*
   - Snacks.toggle.option()       |snacks-toggle-module-snacks.toggle.option()|
   - Snacks.toggle.profiler()   |snacks-toggle-module-snacks.toggle.profiler()|
   - Snacks.toggle.profiler_highlights()|snacks-toggle-module-snacks.toggle.profiler_highlights()|
+  - Snacks.toggle.scroll()       |snacks-toggle-module-snacks.toggle.scroll()|
   - Snacks.toggle.treesitter()|snacks-toggle-module-snacks.toggle.treesitter()|
+  - Snacks.toggle.words()         |snacks-toggle-module-snacks.toggle.words()|
 5. Links                                                 |snacks-toggle-links|
 Toggle keymaps integrated with which-key icons / colors
 
@@ -168,11 +170,25 @@ Toggle keymaps integrated with which-key icons / colors
 <
 
 
+`Snacks.toggle.scroll()`                              *Snacks.toggle.scroll()*
+
+>lua
+    Snacks.toggle.scroll()
+<
+
+
 `Snacks.toggle.treesitter()`                      *Snacks.toggle.treesitter()*
 
 >lua
     ---@param opts? snacks.toggle.Config
     Snacks.toggle.treesitter(opts)
+<
+
+
+`Snacks.toggle.words()`                                *Snacks.toggle.words()*
+
+>lua
+    Snacks.toggle.words()
 <
 
 ==============================================================================

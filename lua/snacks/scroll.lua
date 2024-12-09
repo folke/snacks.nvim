@@ -157,6 +157,7 @@ end
 
 --- Check if we need to animate the scroll
 ---@param win number
+---@private
 function M.check(win)
   local state = get_state(win)
   if not state then

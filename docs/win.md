@@ -59,6 +59,7 @@ Snacks.win({
 ---@field on_buf? fun(self: snacks.win) Callback after opening the buffer
 ---@field on_win? fun(self: snacks.win) Callback after opening the window
 ---@field fixbuf? boolean don't allow other buffers to be opened in this window
+---@field text? string|string[]|fun():(string[]|string) Initial lines to set in the buffer
 {
   show = true,
   fixbuf = true,

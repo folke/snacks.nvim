@@ -40,7 +40,8 @@
       total = 300, -- maximum duration
     },
   },
-  enabled = function(buf)
+  -- what buffers to dim
+  filter = function(buf)
     return vim.g.snacks_dim ~= false and vim.b[buf].snacks_dim ~= false and vim.bo[buf].buftype == ""
   end,
 }
