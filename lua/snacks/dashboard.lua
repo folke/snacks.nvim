@@ -1035,6 +1035,7 @@ function M.sections.terminal(opts)
         })
         local hl = opts.hl and hl_groups[opts.hl] or opts.hl or "SnacksDashboardTerminal"
         Snacks.util.wo(win, { winhighlight = "TermCursorNC:" .. hl .. ",NormalFloat:" .. hl })
+        Snacks.util.bo(buf, { filetype = Snacks.config.styles.dashboard.bo.filetype })
         local close = vim.schedule_wrap(function()
           stopped = true
           pcall(vim.api.nvim_win_close, win, true)
