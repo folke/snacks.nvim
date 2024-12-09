@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.7.1](https://github.com/folke/snacks.nvim/compare/v2.7.0...v2.7.1) (2024-12-09)
+
+
+### Bug Fixes
+
+* **dashboard:** don't open with startup option args ([#222](https://github.com/folke/snacks.nvim/issues/222)) ([6b78172](https://github.com/folke/snacks.nvim/commit/6b78172864ef94cd5f2ab184c0f98cf36f5a8e74))
+
 ## [2.7.0](https://github.com/folke/snacks.nvim/compare/v2.6.0...v2.7.0) (2024-12-07)
 
 
