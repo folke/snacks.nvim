@@ -56,10 +56,6 @@ local function get_state(win)
   return states[win]
 end
 
-function M.setup()
-  M.enable()
-end
-
 function M.enable()
   if M.enabled then
     return

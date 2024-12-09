@@ -295,10 +295,6 @@ function M.debug()
   end)
 end
 
-function M.setup()
-  M.enable()
-end
-
 --- Enable indent guides
 function M.enable()
   if M.enabled then
