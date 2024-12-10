@@ -188,6 +188,9 @@ function M.new(opts)
     opts.wo.winfixheight = not vertical
     opts.wo.winfixwidth = vertical
   end
+  if opts.relative == "win" then
+    opts.win = opts.win or vim.api.nvim_get_current_win()
+  end
 
   self.keys = {}
   for key, spec in pairs(opts.keys) do
