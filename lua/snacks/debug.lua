@@ -12,7 +12,7 @@ local ns = vim.api.nvim_create_namespace("snacks_debug")
 Snacks.util.set_hl({
   Indent = "LineNr",
   Print = "NonText",
-}, { prefix = "SnacksDebug" })
+}, { prefix = "SnacksDebug", default = true })
 
 -- Show a notification with a pretty printed dump of the object(s)
 -- with lua treesitter highlighting and the location of the caller

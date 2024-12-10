@@ -86,7 +86,7 @@ Snacks.util.set_hl({
   ["6"] = "DiagnosticHint",
   ["7"] = "DiagnosticWarn",
   ["8"] = "DiagnosticError",
-}, { prefix = "SnacksIndent" })
+}, { prefix = "SnacksIndent", default = true })
 
 ---@param level number
 ---@param hl string|string[]

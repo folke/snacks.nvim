@@ -17,11 +17,12 @@ vim.api.nvim_create_autocmd("ColorScheme", {
 ---@param groups snacks.util.hl
 ---@param opts? { prefix?:string, default?:boolean, managed?:boolean }
 function M.set_hl(groups, opts)
+  opts = opts or {}
   for hl_group, hl in pairs(groups) do
-    hl_group = opts and opts.prefix and opts.prefix .. hl_group or hl_group
+    hl_group = opts.prefix and opts.prefix .. hl_group or hl_group
     hl = type(hl) == "string" and { link = hl } or hl --[[@as vim.api.keyset.highlight]]
-    hl.default = not (opts and opts.default == false)
-    if not (opts and opts.managed == false) then
+    hl.default = opts.default
+    if opts.managed ~= false then
       hl_groups[hl_group] = hl
     end
     vim.api.nvim_set_hl(0, hl_group, hl)
