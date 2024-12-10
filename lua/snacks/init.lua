@@ -107,7 +107,7 @@ function M.setup(opts)
     BufReadPre = { "bigfile" },
     BufReadPost = { "quickfile", "indent" },
     LspAttach = { "words" },
-    UIEnter = { "dashboard", "scroll" },
+    UIEnter = { "dashboard", "scroll", "input" },
   }
 
   local function load(event)

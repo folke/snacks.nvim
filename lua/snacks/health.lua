@@ -14,7 +14,17 @@ local M = setmetatable({}, {
 
 M.prefix = ""
 
-M.needs_setup = { "bigfile", "notifier", "statuscolumn", "words", "quickfile", "dashboard", "indent", "scroll" }
+M.needs_setup = {
+  "bigfile",
+  "dashboard",
+  "indent",
+  "input",
+  "notifier",
+  "quickfile",
+  "scroll",
+  "statuscolumn",
+  "words",
+}
 
 function M.check()
   M.prefix = ""
