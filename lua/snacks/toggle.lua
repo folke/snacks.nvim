@@ -333,4 +333,20 @@ function M.scroll()
   })
 end
 
+function M.zen()
+  ---@type snacks.win?
+  local zen_win = nil
+
+  return M.new({
+    id = "zen",
+    name = "Zen Mode",
+    get = function()
+      return zen_win and zen_win:valid() or false
+    end,
+    set = function()
+      zen_win = Snacks.zen()
+    end,
+  })
+end
+
 return M
