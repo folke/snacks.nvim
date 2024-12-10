@@ -74,7 +74,7 @@ scratch buffer.
       Snacks.toggle.profiler_highlights():map("<leader>ph")
     end,
     keys = {
-      { "<leader>ps", function() Snacks.profiler.scratch() end, desc = "Profiler Scratch Bufer" },
+      { "<leader>ps", function() Snacks.profiler.scratch() end, desc = "Profiler Scratch Buffer" },
     }
   },
   -- optional lualine component to show captured events
