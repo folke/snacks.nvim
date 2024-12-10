@@ -70,7 +70,7 @@ Snacks.util.set_hl({
   Footer = "FloatFooter",
   Key = "DiagnosticVirtualTextInfo",
   Desc = "DiagnosticInfo",
-}, { prefix = "SnacksScratch" })
+}, { prefix = "SnacksScratch", default = true })
 
 Snacks.config.style("scratch", {
   width = 100,

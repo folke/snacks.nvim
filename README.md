@@ -80,25 +80,33 @@ Please refer to the readme of each plugin for their specific configuration.
 
 ```lua
 ---@class snacks.Config
----@field bigfile? snacks.bigfile.Config | { enabled: boolean }
+---@field animate? snacks.animate.Config
+---@field bigfile? snacks.bigfile.Config
+---@field dashboard? snacks.dashboard.Config
+---@field dim? snacks.dim.Config
 ---@field gitbrowse? snacks.gitbrowse.Config
+---@field indent? snacks.indent.Config
 ---@field lazygit? snacks.lazygit.Config
----@field notifier? snacks.notifier.Config | { enabled: boolean }
----@field quickfile? { enabled: boolean }
----@field statuscolumn? snacks.statuscolumn.Config  | { enabled: boolean }
----@field styles? table<string, snacks.win.Config>
----@field dashboard? snacks.dashboard.Config  | { enabled: boolean }
+---@field notifier? snacks.notifier.Config
+---@field profiler? snacks.profiler.Config
+---@field quickfile? snacks.quickfile.Config
+---@field scope? snacks.scope.Config
+---@field scratch? snacks.scratch.Config
+---@field statuscolumn? snacks.statuscolumn.Config
 ---@field terminal? snacks.terminal.Config
 ---@field toggle? snacks.toggle.Config
 ---@field win? snacks.win.Config
 ---@field words? snacks.words.Config
+---@field zen? snacks.zen.Config
+---@field styles? table<string, snacks.win.Config>
 {
-  styles = {},
   bigfile = { enabled = false },
   dashboard = { enabled = false },
+  indent = { enabled = false },
   notifier = { enabled = false },
   quickfile = { enabled = false },
   statuscolumn = { enabled = false },
+  styles = {},
   words = { enabled = false },
 }
 ```
@@ -144,6 +152,7 @@ See the example below for how to configure `snacks.nvim`.
   opts = {
     bigfile = { enabled = true },
     dashboard = { enabled = true },
+    indent = { enabled = true },
     notifier = {
       enabled = true,
       timeout = 3000,
@@ -158,6 +167,8 @@ See the example below for how to configure `snacks.nvim`.
     }
   },
   keys = {
+    { "<leader>z",  function() Snacks.zen() end, desc = "Toggle Zen Mode" },
+    { "<leader>Z",  function() Snacks.zen.zoom() end, desc = "Toggle Zoom" },
     { "<leader>.",  function() Snacks.scratch() end, desc = "Toggle Scratch Buffer" },
     { "<leader>S",  function() Snacks.scratch.select() end, desc = "Select Scratch Buffer" },
     { "<leader>n",  function() Snacks.notifier.show_history() end, desc = "Notification History" },
@@ -215,6 +226,8 @@ See the example below for how to configure `snacks.nvim`.
         Snacks.toggle.treesitter():map("<leader>uT")
         Snacks.toggle.option("background", { off = "light", on = "dark", name = "Dark Background" }):map("<leader>ub")
         Snacks.toggle.inlay_hints():map("<leader>uh")
+        Snacks.toggle.indent():map("<leader>ug")
+        Snacks.toggle.dim():map("<leader>uD")
       end,
     })
   end,

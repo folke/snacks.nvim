@@ -12,7 +12,7 @@ local ns = vim.api.nvim_create_namespace("snacks_debug")
 Snacks.util.set_hl({
   Indent = "LineNr",
   Print = "NonText",
-}, { prefix = "SnacksDebug" })
+}, { prefix = "SnacksDebug", default = true })
 
 -- Show a notification with a pretty printed dump of the object(s)
 -- with lua treesitter highlighting and the location of the caller
@@ -135,7 +135,7 @@ function M.run(opts)
   end
 
   -- Setup the env
-  local env = { print = opts.print and on_print or nil }
+  local env = { print = opts.print and vim.schedule_wrap(on_print) or nil }
   package.seeall(env)
   setfenv(chunk, env)
   xpcall(chunk, function(e)

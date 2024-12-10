@@ -239,7 +239,7 @@ function M.colors()
   for i = 1, M.shades do
     hl_groups[("Hot%02d"):format(i)] = { bg = Snacks.util.blend(red, bg, i / (M.shades + 1)) }
   end
-  Snacks.util.set_hl(hl_groups, { prefix = "SnacksProfiler", managed = false })
+  Snacks.util.set_hl(hl_groups, { prefix = "SnacksProfiler", managed = false, default = true })
   vim.api.nvim_create_autocmd("ColorScheme", {
     group = vim.api.nvim_create_augroup("snacks_profiler_colors", { clear = true }),
     callback = M.colors,

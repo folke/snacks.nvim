@@ -17,11 +17,12 @@ vim.api.nvim_create_autocmd("ColorScheme", {
 ---@param groups snacks.util.hl
 ---@param opts? { prefix?:string, default?:boolean, managed?:boolean }
 function M.set_hl(groups, opts)
+  opts = opts or {}
   for hl_group, hl in pairs(groups) do
-    hl_group = opts and opts.prefix and opts.prefix .. hl_group or hl_group
+    hl_group = opts.prefix and opts.prefix .. hl_group or hl_group
     hl = type(hl) == "string" and { link = hl } or hl --[[@as vim.api.keyset.highlight]]
-    hl.default = not (opts and opts.default == false)
-    if not (opts and opts.managed == false) then
+    hl.default = opts.default
+    if opts.managed ~= false then
       hl_groups[hl_group] = hl
     end
     vim.api.nvim_set_hl(0, hl_group, hl)
@@ -122,6 +123,30 @@ function M.is_transparent()
     })
   end
   return transparent
+end
+
+--- Redraw the range of lines in the window.
+--- Optimized for Neovim >= 0.10
+---@param win number
+---@param from number -- 1-indexed, inclusive
+---@param to number -- 1-indexed, inclusive
+function M.redraw_range(win, from, to)
+  if vim.api.nvim__redraw then
+    vim.api.nvim__redraw({ win = win, range = { math.floor(from - 1), math.floor(to) }, valid = true, flush = false })
+  else
+    vim.cmd([[redraw!]])
+  end
+end
+
+--- Redraw the window.
+--- Optimized for Neovim >= 0.10
+---@param win number
+function M.redraw(win)
+  if vim.api.nvim__redraw then
+    vim.api.nvim__redraw({ win = win, valid = false, flush = false })
+  else
+    vim.cmd([[redraw!]])
+  end
 end
 
 return M

@@ -68,6 +68,28 @@ Snacks.util.icon(name, cat)
 Snacks.util.is_transparent()
 ```
 
+### `Snacks.util.redraw()`
+
+Redraw the window.
+Optimized for Neovim >= 0.10
+
+```lua
+---@param win number
+Snacks.util.redraw(win)
+```
+
+### `Snacks.util.redraw_range()`
+
+Redraw the range of lines in the window.
+Optimized for Neovim >= 0.10
+
+```lua
+---@param win number
+---@param from number -- 1-indexed, inclusive
+---@param to number -- 1-indexed, inclusive
+Snacks.util.redraw_range(win, from, to)
+```
+
 ### `Snacks.util.set_hl()`
 
 Ensures the hl groups are always set, even after a colorscheme change.

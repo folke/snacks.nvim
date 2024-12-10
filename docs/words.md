@@ -24,8 +24,8 @@ Auto-show LSP references and quickly navigate between them
 
 ```lua
 ---@class snacks.words.Config
+---@field enabled? boolean
 {
-  enabled = true, -- enable/disable the plugin
   debounce = 200, -- time in ms to wait before updating
   notify_jump = false, -- show a notification when jumping
   notify_end = true, -- show a notification when reaching the end
@@ -41,6 +41,18 @@ Auto-show LSP references and quickly navigate between them
 
 ```lua
 Snacks.words.clear()
+```
+
+### `Snacks.words.disable()`
+
+```lua
+Snacks.words.disable()
+```
+
+### `Snacks.words.enable()`
+
+```lua
+Snacks.words.enable()
 ```
 
 ### `Snacks.words.is_enabled()`
