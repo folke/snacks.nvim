@@ -57,10 +57,10 @@ Install the plugin with your package manager:
 > Check the [code](https://github.com/folke/snacks.nvim/blob/main/lua/snacks/init.lua) to see what it does.
 
 > [!caution]
-> You need to explicitely pass options for a plugin or set `enabled = true` to enable it.
+> You need to explicitly pass options for a plugin or set `enabled = true` to enable it.
 
 > [!tip]
-> It' a good idea to run `:checkhealth snacks` to see if everything is set up correctly.
+> It's a good idea to run `:checkhealth snacks` to see if everything is set up correctly.
 
 ```lua
 {
