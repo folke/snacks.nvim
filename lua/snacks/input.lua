@@ -78,6 +78,7 @@ function M.input(opts, on_confirm)
   end
 
   opts = Snacks.config.get("input", defaults, opts) --[[@as snacks.input.Opts]]
+  opts.prompt = opts.prompt:gsub(":%s*$", "")
 
   opts.win = Snacks.win.resolve("input", opts.win, {
     enter = true,
