@@ -38,7 +38,7 @@ Similar plugins:
   },
   -- what buffers to animate
   filter = function(buf)
-    return vim.g.snacks_scroll ~= false and vim.b[buf].snacks_scroll ~= false
+    return vim.g.snacks_scroll ~= false and vim.b[buf].snacks_scroll ~= false and vim.bo[buf].buftype ~= "terminal"
   end,
 }
 ```
@@ -51,15 +51,14 @@ Similar plugins:
 
 ```lua
 ---@class snacks.scroll.State
+---@field anim? snacks.animate.Animation
 ---@field win number
 ---@field buf number
----@field view snacks.scroll.View
----@field current snacks.scroll.View
----@field target snacks.scroll.View
----@field cursor number[]
+---@field view vim.fn.winsaveview.ret
+---@field current vim.fn.winsaveview.ret
+---@field target vim.fn.winsaveview.ret
 ---@field scrolloff number
----@field mousescroll number
----@field height number
+---@field virtualedit? string
 ```
 
 ## 📦 Module

@@ -12,6 +12,7 @@ M.animating = false
 ---@field enabled? boolean
 local defaults = {
   indent = {
+    enabled = true, -- enable indent guides
     char = "│",
     blank = " ",
     -- blank = "∙",
@@ -32,7 +33,7 @@ local defaults = {
   },
   ---@class snacks.indent.Scope.Config: snacks.scope.Config
   scope = {
-    enabled = true,
+    enabled = true, -- enable highlighting the current scope
     -- animate scopes. Enabled by default for Neovim >= 0.10
     -- Works on older versions but has to trigger redraws during animation.
     ---@type snacks.animate.Config|{enabled?: boolean}
@@ -85,10 +86,10 @@ local defaults = {
 
 local config = Snacks.config.get("scope", defaults)
 local ns = vim.api.nvim_create_namespace("snacks_indent")
-local cache_indents = {} ---@type table<number, {changedtick:number, indents:number[]}>
 local cache_extmarks = {} ---@type table<string, vim.api.keyset.set_extmark|false>
 local debug_timer = assert((vim.uv or vim.loop).new_timer())
 local cache_underline = {} ---@type table<string, boolean>
+local states = {} ---@type table<number, snacks.indent.State>
 local scopes ---@type snacks.scope.Listener?
 local stats = {
   indents = 0,
@@ -131,17 +132,17 @@ end
 --- Get the virtual text for the indent guide with
 --- the given indent level, left column and shiftwidth
 ---@param indent number
----@param ctx snacks.indent.ctx
-local function get_extmark(indent, ctx)
-  local key = indent .. ":" .. ctx.leftcol .. ":" .. ctx.shiftwidth
+---@param state snacks.indent.State
+local function get_extmark(indent, state)
+  local key = indent .. ":" .. state.leftcol .. ":" .. state.shiftwidth
   if cache_extmarks[key] ~= nil then
     return cache_extmarks[key]
   end
   stats.extmarks = stats.extmarks + 1
 
-  local sw = ctx.shiftwidth
+  local sw = state.shiftwidth
   indent = math.floor(indent / sw) * sw -- align to shiftwidth
-  indent = indent - ctx.leftcol -- adjust for visible indents
+  indent = indent - state.leftcol -- adjust for visible indents
   local rem = indent % sw -- remaining spaces of the first partially visible indent
   indent = math.floor(indent / sw) -- full visible indents
 
@@ -151,7 +152,7 @@ local function get_extmark(indent, ctx)
     return false
   end
 
-  local hidden = math.ceil(ctx.leftcol / sw) -- level of the last hidden indent
+  local hidden = math.ceil(state.leftcol / sw) -- level of the last hidden indent
   local blank = config.indent.blank:rep(sw - vim.api.nvim_strwidth(config.indent.char))
 
   local text = {} ---@type string[][]
@@ -172,6 +173,35 @@ local function get_extmark(indent, ctx)
   return cache_extmarks[key]
 end
 
+---@param win number
+---@param buf number
+---@param top number
+---@param bottom number
+local function get_state(win, buf, top, bottom)
+  local prev, changedtick = states[win], vim.b[buf].changedtick ---@type snacks.indent.State?, number
+  if not (prev and prev.buf == buf and prev.changedtick == changedtick) then
+    prev = nil
+  end
+  ---@class snacks.indent.State
+  ---@field indents table<number, number>
+  ---@field blanks table<number, boolean>
+  local state = {
+    win = win,
+    buf = buf,
+    changedtick = changedtick,
+    is_current = win == vim.api.nvim_get_current_win(),
+    top = top,
+    bottom = bottom,
+    leftcol = vim.api.nvim_buf_call(buf, vim.fn.winsaveview).leftcol --[[@as number]],
+    shiftwidth = vim.bo[buf].shiftwidth,
+    indents = prev and prev.indents or { [0] = 0 },
+    blanks = prev and prev.blanks or {},
+  }
+  state.shiftwidth = state.shiftwidth == 0 and vim.bo[buf].tabstop or state.shiftwidth
+  states[win] = state
+  return state
+end
+
 --- Called during every redraw cycle, so it should be fast.
 --- Everything that can be cached should be cached.
 ---@param win number
@@ -180,10 +210,7 @@ end
 ---@param bottom number -- 1-indexed
 ---@private
 function M.on_win(win, buf, top, bottom)
-  cache_indents[buf] = cache_indents[buf]
-      and cache_indents[buf].changedtick == vim.b[buf].changedtick
-      and cache_indents[buf]
-    or { changedtick = vim.b[buf].changedtick, indents = { [0] = 0 } }
+  local state = get_state(win, buf, top, bottom)
 
   local scope = scopes and scopes:get(win) --[[@as snacks.indent.Scope?]]
   local indent_col = 0 -- the start column of the indent guides
@@ -194,27 +221,16 @@ function M.on_win(win, buf, top, bottom)
       return
     end
     indent_col = scope.indent or 0
-    top = math.max(top, scope.from)
-    bottom = math.min(bottom, scope.to)
+    state.top = math.max(state.top, scope.from)
+    state.bottom = math.min(state.bottom, scope.to)
   end
 
-  ---@class snacks.indent.ctx
-  local ctx = {
-    is_current = win == vim.api.nvim_get_current_win(),
-    top = top,
-    bottom = bottom,
-    leftcol = vim.api.nvim_buf_call(buf, vim.fn.winsaveview).leftcol --[[@as number]],
-    shiftwidth = vim.bo[buf].shiftwidth,
-    indents = cache_indents[buf].indents,
-  }
-  ctx.shiftwidth = ctx.shiftwidth == 0 and vim.bo[buf].tabstop or ctx.shiftwidth
-
-  local show_indent = not config.indent.only_current or ctx.is_current
-  local show_scope = config.scope.enabled and (not config.scope.only_current or ctx.is_current)
-  local show_chunk = config.chunk.enabled and (not config.chunk.only_current or ctx.is_current)
+  local show_indent = config.indent.enabled and (not config.indent.only_current or state.is_current)
+  local show_scope = config.scope.enabled and (not config.scope.only_current or state.is_current)
+  local show_chunk = config.chunk.enabled and (not config.chunk.only_current or state.is_current)
 
   -- Calculate and render indents
-  local indents = cache_indents[buf].indents
+  local indents = state.indents
   vim.api.nvim_buf_call(buf, function()
     for l = top, bottom do
       local indent = indents[l]
@@ -223,6 +239,7 @@ function M.on_win(win, buf, top, bottom)
         local next = vim.fn.nextnonblank(l)
         -- Indent for a blank line is the minimum of the previous and next non-blank line
         if next ~= l then
+          state.blanks[l] = true
           local prev = vim.fn.prevnonblank(l)
           indents[prev] = indents[prev] or vim.fn.indent(prev)
           indents[next] = indents[next] or vim.fn.indent(next)
@@ -232,7 +249,7 @@ function M.on_win(win, buf, top, bottom)
         end
         indents[l] = indent
       end
-      local opts = show_indent and indent > 0 and get_extmark(indent - indent_col, ctx)
+      local opts = show_indent and indent > 0 and get_extmark(indent - indent_col, state)
       if opts then
         vim.api.nvim_buf_set_extmark(buf, ns, l - 1, indent_col, opts)
       end
@@ -241,26 +258,26 @@ function M.on_win(win, buf, top, bottom)
 
   -- Render scope
   if scope and scope:size() > 1 then
-    show_chunk = show_chunk and (scope.indent or 0) >= ctx.shiftwidth
+    show_chunk = show_chunk and (scope.indent or 0) >= state.shiftwidth
     if show_chunk then
-      M.render_chunk(scope, ctx)
+      M.render_chunk(scope, state)
     elseif show_scope then
-      M.render_scope(scope, ctx)
+      M.render_scope(scope, state)
     end
   end
 end
 
 --- Render the scope overlappping the given range
 ---@param scope snacks.indent.Scope
----@param ctx snacks.indent.ctx
+---@param state snacks.indent.State
 ---@private
-function M.render_scope(scope, ctx)
+function M.render_scope(scope, state)
   local indent = (scope.indent or 2)
   local hl = get_hl(scope.indent + 1, config.scope.hl)
   local to = M.animating and scope.step or scope.to
-  local col = indent - ctx.leftcol
+  local col = indent - state.leftcol
 
-  if config.scope.underline and scope.from >= ctx.top and scope.from <= ctx.bottom then
+  if config.scope.underline and scope.from >= state.top and scope.from <= state.bottom then
     vim.api.nvim_buf_set_extmark(scope.buf, ns, scope.from - 1, math.max(col, 0), {
       end_col = #vim.api.nvim_buf_get_lines(scope.buf, scope.from - 1, scope.from, false)[1],
       hl_group = get_underline_hl(hl),
@@ -275,9 +292,9 @@ function M.render_scope(scope, ctx)
     return
   end
 
-  for l = math.max(scope.from, ctx.top), math.min(to, ctx.bottom) do
-    local i = ctx.indents[l]
-    if i and i > indent then
+  for l = math.max(scope.from, state.top), math.min(to, state.bottom) do
+    local i = state.indents[l]
+    if i and i > indent or state.blanks[l] then
       vim.api.nvim_buf_set_extmark(scope.buf, ns, l - 1, 0, {
         virt_text = { { config.scope.char, hl } },
         virt_text_pos = "overlay",
@@ -293,11 +310,11 @@ end
 
 --- Render the scope overlappping the given range
 ---@param scope snacks.indent.Scope
----@param ctx snacks.indent.ctx
+---@param state snacks.indent.State
 ---@private
-function M.render_chunk(scope, ctx)
+function M.render_chunk(scope, state)
   local indent = (scope.indent or 2)
-  local col = indent - ctx.leftcol - ctx.shiftwidth
+  local col = indent - state.leftcol - state.shiftwidth
   if col < 0 then -- scope is hidden
     return
   end
@@ -319,8 +336,8 @@ function M.render_chunk(scope, ctx)
     })
   end
 
-  for l = math.max(scope.from, ctx.top), math.min(to, ctx.bottom) do
-    local i = ctx.indents[l] - ctx.leftcol
+  for l = math.max(scope.from, state.top), math.min(to, state.bottom) do
+    local i = state.indents[l] - state.leftcol
     if l == scope.from then -- top line
       add(l, char.corner_top .. (char.horizontal):rep(i - col - 1))
     elseif l == scope.to then -- bottom line
@@ -348,6 +365,7 @@ function M.on_scope(win, _buf, scope, prev)
     Snacks.util.redraw_range(win, prev.from, prev.to)
   end
   if scope then
+    scope.win = win
     scope.step = scope.from
     if M.animating then
       Snacks.animate(
@@ -430,9 +448,9 @@ function M.enable()
   vim.api.nvim_create_autocmd({ "WinClosed", "BufDelete", "BufWipeout" }, {
     group = group,
     callback = function()
-      for buf in pairs(cache_indents) do
-        if not vim.api.nvim_buf_is_valid(buf) then
-          cache_indents[buf] = nil
+      for win in pairs(states) do
+        if not vim.api.nvim_win_is_valid(win) then
+          states[win] = nil
         end
       end
     end,
@@ -459,7 +477,7 @@ function M.disable()
   end
   vim.api.nvim_del_augroup_by_name("snacks_indent")
   debug_timer:stop()
-  cache_indents = {}
+  states = {}
   stats = { indents = 0, extmarks = 0, scope = 0 }
   vim.cmd([[redraw!]])
 end

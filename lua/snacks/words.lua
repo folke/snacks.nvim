@@ -91,7 +91,7 @@ function M.is_enabled(buf)
   clients = vim.tbl_filter(function(client)
     return client.supports_method("textDocument/documentHighlight", { bufnr = buf })
   end, clients)
-  return config.enabled and vim.tbl_contains(config.modes, mode) and #clients > 0
+  return M.enabled and vim.tbl_contains(config.modes, mode) and #clients > 0
 end
 
 ---@private

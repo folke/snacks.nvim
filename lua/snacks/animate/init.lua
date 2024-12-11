@@ -94,7 +94,7 @@ function Animation:dirty()
   return self.value ~= value or done
 end
 
-function Animation:del()
+function Animation:stop()
   active[self.id] = nil
 end
 
