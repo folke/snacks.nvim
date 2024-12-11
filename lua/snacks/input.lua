@@ -80,6 +80,10 @@ function M.input(opts, on_confirm)
 
   opts = Snacks.config.get("input", defaults, opts) --[[@as snacks.input.Opts]]
   opts.prompt = opts.prompt:gsub(":%s*$", "")
+  local statuscolumn = " %#" .. opts.icon_hl .. "#" .. opts.icon .. " "
+  if not opts.icon or opts.icon == "" then
+    statuscolumn = " "
+  end
 
   opts.win = Snacks.win.resolve("input", opts.win, {
     enter = true,
@@ -89,7 +93,7 @@ function M.input(opts, on_confirm)
       completefunc = "v:lua.Snacks.input.complete",
       omnifunc = "v:lua.Snacks.input.complete",
     },
-    wo = { statuscolumn = " %#" .. opts.icon_hl .. "#" .. opts.icon .. " " },
+    wo = { statuscolumn = statuscolumn },
     actions = {
       cancel = function(self)
         confirm()
