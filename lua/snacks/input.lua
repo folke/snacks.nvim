@@ -45,6 +45,7 @@ Snacks.config.style("input", {
     winhighlight = "NormalFloat:SnacksInputNormal,FloatBorder:SnacksInputBorder,FloatTitle:SnacksInputTitle",
     cursorline = false,
   },
+  bo = { filetype = "snacks_input" },
   keys = {
     i_esc = { "<esc>", { "cmp_close", "cancel" }, mode = "i" },
     -- i_esc = { "<esc>", "stopinsert", mode = "i" },
