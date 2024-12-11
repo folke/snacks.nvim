@@ -334,17 +334,18 @@ function M.scroll()
 end
 
 function M.zen()
-  ---@type snacks.win?
-  local zen_win = nil
-
   return M.new({
     id = "zen",
     name = "Zen Mode",
     get = function()
-      return zen_win and zen_win:valid() or false
+      return Snacks.zen.win and Snacks.zen.win:valid() or false
     end,
-    set = function()
-      zen_win = Snacks.zen()
+    set = function(state)
+      if state then
+        Snacks.zen()
+      elseif Snacks.zen.win then
+        Snacks.zen.win:close()
+      end
     end,
   })
 end
