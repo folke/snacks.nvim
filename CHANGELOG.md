@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.9.0](https://github.com/folke/snacks.nvim/compare/v2.8.0...v2.9.0) (2024-12-12)
+
+
+### Features
+
+* **animate:** allow disabling all animations globally or per buffer ([25c290d](https://github.com/folke/snacks.nvim/commit/25c290d7c093f0c57473ffcccf56780b6d58dd37))
+* **animate:** allow toggling buffer-local / global animations with or without id ([50912dc](https://github.com/folke/snacks.nvim/commit/50912dc2fd926a49e3574d7029aed11fae3fb45b))
+* **dashboard:** add dashboard startuptime icon option ([#214](https://github.com/folke/snacks.nvim/issues/214)) ([63506d5](https://github.com/folke/snacks.nvim/commit/63506d5168d2bb7679026cab80df1adfe3cd98b8))
+* **indent:** animation styles `out`, `up_down`, `up`, `down` ([0a9b013](https://github.com/folke/snacks.nvim/commit/0a9b013ff13f6d1a550af2eac366c73d25e55e0a))
+* **indent:** don't animate indents when new scope overlaps with the previous one, taking white-space into account. See [#264](https://github.com/folke/snacks.nvim/issues/264) ([9b4a859](https://github.com/folke/snacks.nvim/commit/9b4a85905aaa114e04a9371585953e96b3095f93))
+* **indent:** move animate settings top-level, since they impact both scope and chunk ([baf8c18](https://github.com/folke/snacks.nvim/commit/baf8c180d9dda5797b4da538f7af122f4349f554))
+* **toggle:** added zoom toggle ([3367705](https://github.com/folke/snacks.nvim/commit/336770581348c137bc2cb3967cc2af90b2ff51a2))
+* **toggle:** return toggle after map ([4f22016](https://github.com/folke/snacks.nvim/commit/4f22016b4b765f3335ae7682fb5b3b79b414ecbd))
+* **util:** get var either from buffer or global ([4243912](https://github.com/folke/snacks.nvim/commit/42439123c4fbc088fbe0bdd636a6bdc501794491))
+
+
+### Bug Fixes
+
+* **indent:** make sure cursor line is in scope for the `out` style. Fixes [#264](https://github.com/folke/snacks.nvim/issues/264) ([39c009f](https://github.com/folke/snacks.nvim/commit/39c009fe0b45243ccbbd372e659dcbd9409a68df))
+* **indent:** when at edge of two blocks, prefer the one below. See [#231](https://github.com/folke/snacks.nvim/issues/231) ([2457d91](https://github.com/folke/snacks.nvim/commit/2457d913dc92835da12fc071b43bce3a03d31470))
+
 ## [2.8.0](https://github.com/folke/snacks.nvim/compare/v2.7.0...v2.8.0) (2024-12-11)
 
 
