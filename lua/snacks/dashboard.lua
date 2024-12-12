@@ -1066,7 +1066,7 @@ function M.sections.startup(opts)
   opts = opts or {}
   M.lazy_stats = M.lazy_stats and M.lazy_stats.startuptime > 0 and M.lazy_stats or require("lazy.stats").stats()
   local ms = (math.floor(M.lazy_stats.startuptime * 100 + 0.5) / 100)
-  local icon = opts.icon or '⚡ '
+  local icon = opts.icon or "⚡ "
   return {
     align = "center",
     text = {
