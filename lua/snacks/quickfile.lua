@@ -2,6 +2,11 @@
 ---@class snacks.quickfile
 local M = {}
 
+M.meta = {
+  desc = "When doing `nvim somefile.txt`, it will render the file as quickly as possible, before loading your plugins.",
+  needs_setup = true,
+}
+
 ---@class snacks.quickfile.Config
 local defaults = {
   -- any treesitter langs to exclude

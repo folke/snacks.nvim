@@ -1,6 +1,10 @@
 ---@class snacks.util
 local M = {}
 
+M.meta = {
+  desc = "Utility functions for Snacks _(library)_",
+}
+
 ---@alias snacks.util.hl table<string, string|vim.api.keyset.highlight>
 
 local hl_groups = {} ---@type table<string, vim.api.keyset.highlight>
@@ -17,25 +21,27 @@ vim.api.nvim_create_autocmd("ColorScheme", {
 ---@param groups snacks.util.hl
 ---@param opts? { prefix?:string, default?:boolean, managed?:boolean }
 function M.set_hl(groups, opts)
+  opts = opts or {}
   for hl_group, hl in pairs(groups) do
-    hl_group = opts and opts.prefix and opts.prefix .. hl_group or hl_group
+    hl_group = opts.prefix and opts.prefix .. hl_group or hl_group
     hl = type(hl) == "string" and { link = hl } or hl --[[@as vim.api.keyset.highlight]]
-    hl.default = not (opts and opts.default == false)
-    if not (opts and opts.managed == false) then
+    hl.default = opts.default
+    if opts.managed ~= false then
       hl_groups[hl_group] = hl
     end
     vim.api.nvim_set_hl(0, hl_group, hl)
   end
 end
 
----@param group string
----@param prop? string
+---@param group string hl group to get color from
+---@param prop? string property to get. Defaults to "fg"
 function M.color(group, prop)
   prop = prop or "fg"
   local hl = vim.api.nvim_get_hl(0, { name = group, link = false })
   return hl[prop] and string.format("#%06x", hl[prop])
 end
 
+--- Set window-local options.
 ---@param win number
 ---@param wo vim.wo
 function M.wo(win, wo)
@@ -44,6 +50,7 @@ function M.wo(win, wo)
   end
 end
 
+--- Set buffer-local options.
 ---@param buf number
 ---@param bo vim.bo
 function M.bo(buf, bo)
@@ -52,8 +59,9 @@ function M.bo(buf, bo)
   end
 end
 
+--- Get an icon from `mini.icons` or `nvim-web-devicons`.
 ---@param name string
----@param cat? string
+---@param cat? string defaults to "file"
 ---@return string, string?
 function M.icon(name, cat)
   local try = {
@@ -111,6 +119,7 @@ function M.blend(fg, bg, alpha)
 end
 
 local transparent ---@type boolean?
+--- Check if the colorscheme is transparent.
 function M.is_transparent()
   if transparent == nil then
     transparent = M.color("Normal", "bg") == nil
@@ -122,6 +131,70 @@ function M.is_transparent()
     })
   end
   return transparent
+end
+
+--- Redraw the range of lines in the window.
+--- Optimized for Neovim >= 0.10
+---@param win number
+---@param from number -- 1-indexed, inclusive
+---@param to number -- 1-indexed, inclusive
+function M.redraw_range(win, from, to)
+  if vim.api.nvim__redraw then
+    vim.api.nvim__redraw({ win = win, range = { math.floor(from - 1), math.floor(to) }, valid = true, flush = false })
+  else
+    vim.cmd([[redraw!]])
+  end
+end
+
+--- Redraw the window.
+--- Optimized for Neovim >= 0.10
+---@param win number
+function M.redraw(win)
+  if vim.api.nvim__redraw then
+    vim.api.nvim__redraw({ win = win, valid = false, flush = false })
+  else
+    vim.cmd([[redraw!]])
+  end
+end
+
+local mod_timer = assert((vim.uv or vim.loop).new_timer())
+local mod_cb = {} ---@type table<string, fun(modname:string)[]>
+
+---@return boolean waiting
+local function mod_check()
+  for modname, cbs in pairs(mod_cb) do
+    if package.loaded[modname] then
+      mod_cb[modname] = nil
+      for _, cb in ipairs(cbs) do
+        cb(modname)
+      end
+    end
+  end
+  return next(mod_cb) ~= nil
+end
+
+--- Call a function when a module is loaded.
+--- The callback is called immediately if the module is already loaded.
+--- Otherwise, it is called when the module is loaded.
+---@param modname string
+---@param cb fun(modname:string)
+function M.on_module(modname, cb)
+  mod_cb[modname] = mod_cb[modname] or {}
+  table.insert(mod_cb[modname], cb)
+  if mod_check() then
+    mod_timer:start(
+      100,
+      100,
+      vim.schedule_wrap(function()
+        return not mod_check() and mod_timer:stop()
+      end)
+    )
+  end
+end
+
+---@param str string
+function M.keycode(str)
+  return vim.api.nvim_replace_termcodes(str, true, true, true)
 end
 
 return M

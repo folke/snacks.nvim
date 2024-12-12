@@ -32,6 +32,7 @@ The default implementation enables `syntax` for the buffer and disables
 
 ```lua
 ---@class snacks.bigfile.Config
+---@field enabled? boolean
 {
   notify = true, -- show notification when big file detected
   size = 1.5 * 1024 * 1024, -- 1.5MB

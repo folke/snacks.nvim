@@ -6,6 +6,10 @@ local M = setmetatable({}, {
   end,
 })
 
+M.meta = {
+  desc = "Open the current file, branch, commit, or repo in a browser (e.g. GitHub, GitLab, Bitbucket)",
+}
+
 local uv = vim.uv or vim.loop
 
 ---@class snacks.gitbrowse.Config

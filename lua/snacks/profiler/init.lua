@@ -95,6 +95,10 @@ require("snacks")
 ---@field picker snacks.profiler.picker
 local M = {}
 
+M.meta = {
+  desc = "Neovim lua profiler",
+}
+
 local mods = { core = true, loc = true, tracer = true, ui = true, picker = true }
 setmetatable(M, {
   __index = function(t, k)
@@ -144,7 +148,7 @@ local defaults = {
     pattern = nil, -- pattern to match for the autocmd
     pick = true, -- show a picker after starting the profiler (uses the `startup` preset)
   },
-  ---@type table<string, snacks.profiler.Pick|fun():snacks.profiler.Pick>
+  ---@type table<string, snacks.profiler.Pick|fun():snacks.profiler.Pick?>
   presets = {
     startup = { min_time = 1, sort = false },
     on_stop = {},
@@ -319,10 +323,19 @@ end
 ---@param opts? snacks.profiler.Pick.spec
 function M.pick(opts)
   load()
-  opts = type(opts) == "function" and opts() or opts or {}
+  if type(opts) == "function" then
+    opts = opts()
+    if not opts then
+      return
+    end
+  end
+  opts = opts or {}
   if opts.preset then
     local preset = M.config.presets[opts.preset]
-    preset = type(preset) == "function" and preset() or preset
+    preset = type(preset) == "function" and preset()
+    if not preset then
+      return
+    end
     opts = vim.tbl_deep_extend("force", {}, preset, opts)
   end
   ---@cast opts snacks.profiler.Pick

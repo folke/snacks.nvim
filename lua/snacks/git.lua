@@ -1,6 +1,10 @@
 ---@class snacks.git
 local M = {}
 
+M.meta = {
+  desc = "Git utilities",
+}
+
 Snacks.config.style("blame_line", {
   width = 0.6,
   height = 0.6,

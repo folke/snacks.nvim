@@ -13,21 +13,26 @@ local M = setmetatable({}, {
   end,
 })
 
+M.meta = {
+  desc = "Create and manage floating windows or splits",
+}
+
 ---@class snacks.win.Keys: vim.api.keyset.keymap
 ---@field [1]? string
----@field [2]? string|fun(self: snacks.win): any
+---@field [2]? string|string[]|fun(self: snacks.win): string?
 ---@field mode? string|string[]
 
 ---@class snacks.win.Backdrop
 ---@field bg? string
 ---@field blend? number
 ---@field transparent? boolean defaults to true
+---@field win? snacks.win.Config overrides the backdrop window config
 
 ---@class snacks.win.Config: vim.api.keyset.win_config
 ---@field style? string merges with config from `Snacks.config.styles[style]`
 ---@field show? boolean Show the window immediately (default: true)
----@field height? number|fun():number Height of the window. Use <1 for relative height. 0 means full height. (default: 0.9)
----@field width? number|fun():number Width of the window. Use <1 for relative width. 0 means full width. (default: 0.9)
+---@field height? number|fun(self:snacks.win):number Height of the window. Use <1 for relative height. 0 means full height. (default: 0.9)
+---@field width? number|fun(self:snacks.win):number Width of the window. Use <1 for relative width. 0 means full width. (default: 0.9)
 ---@field minimal? boolean Disable a bunch of options to make the window minimal (default: true)
 ---@field position? "float"|"bottom"|"top"|"left"|"right"
 ---@field buf? number If set, use this buffer instead of creating a new one
@@ -41,6 +46,8 @@ local M = setmetatable({}, {
 ---@field on_buf? fun(self: snacks.win) Callback after opening the buffer
 ---@field on_win? fun(self: snacks.win) Callback after opening the window
 ---@field fixbuf? boolean don't allow other buffers to be opened in this window
+---@field text? string|string[]|fun():(string[]|string) Initial lines to set in the buffer
+---@field actions? table<string, fun(self: snacks.win):(boolean|string?)> Actions that can be used in key mappings
 local defaults = {
   show = true,
   fixbuf = true,
@@ -185,12 +192,15 @@ function M.new(opts)
     opts.wo.winfixheight = not vertical
     opts.wo.winfixwidth = vertical
   end
+  if opts.relative == "win" then
+    opts.win = opts.win or vim.api.nvim_get_current_win()
+  end
 
   self.keys = {}
   for key, spec in pairs(opts.keys) do
     if spec then
       if type(spec) == "string" then
-        spec = { key, self[spec] and self[spec] or spec, desc = spec }
+        spec = { key, spec, desc = spec }
       elseif type(spec) == "function" then
         spec = { key, spec }
       end
@@ -204,6 +214,28 @@ function M.new(opts)
     self:show()
   end
   return self
+end
+
+---@param actions string|string[]
+---@return fun(): boolean|string?
+function M:action(actions)
+  actions = type(actions) == "string" and { actions } or actions
+  ---@cast actions string[]
+  return function()
+    for _, action in ipairs(actions) do
+      if self.opts.actions and self.opts.actions[action] then
+        local ret = self.opts.actions[action](self)
+        if ret then
+          return type(ret) == "string" and ret or nil
+        end
+      elseif self[action] then
+        self[action](self)
+        return
+      else
+        return action
+      end
+    end
+  end
 end
 
 function M:focus()
@@ -284,6 +316,12 @@ function M:open_buf()
     self.buf = self.opts.buf
   else
     self.buf = vim.api.nvim_create_buf(false, true)
+    local text = type(self.opts.text) == "function" and self.opts.text() or self.opts.text
+    text = type(text) == "string" and { text } or text
+    if text then
+      ---@cast text string[]
+      vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, text)
+    end
   end
   if vim.bo[self.buf].filetype == "" and not self.opts.bo.filetype then
     self.opts.bo.filetype = "snacks_win"
@@ -477,10 +515,12 @@ function M:show()
     opts.buffer = self.buf
     opts.nowait = true
     local rhs = spec[2]
-    if type(rhs) == "function" then
-      rhs = function()
-        return spec[2](self)
-      end
+    local is_action = type(rhs) == "string" or type(rhs) == "table"
+    if is_action then
+      opts.expr = true
+    end
+    rhs = is_action and self:action(rhs) or function()
+      return spec[2](self)
     end
     ---@cast spec snacks.win.Keys
     vim.keymap.set(spec.mode or "n", spec[1], rhs, opts)
@@ -526,16 +566,20 @@ function M:drop()
     return
   end
 
-  local bg, winblend = backdrop.bg, backdrop.blend
+  local bg, winblend = backdrop.bg or "#000000", backdrop.blend
   if not backdrop.transparent then
-    bg = Snacks.util.blend(Snacks.util.color("Normal", "bg"), bg, winblend / 100)
+    if Snacks.util.is_transparent() then
+      bg = nil
+    else
+      bg = Snacks.util.blend(Snacks.util.color("Normal", "bg"), bg, winblend / 100)
+    end
     winblend = 0
   end
 
-  local group = ("SnacksBackdrop_%s"):format(bg:sub(2))
+  local group = ("SnacksBackdrop_%s"):format(bg and bg:sub(2) or "T")
   vim.api.nvim_set_hl(0, group, { bg = bg })
 
-  self.backdrop = M.new({
+  self.backdrop = M.new(M.resolve({
     enter = false,
     backdrop = false,
     relative = "editor",
@@ -553,7 +597,7 @@ function M:drop()
       buftype = "nofile",
       filetype = "snacks_win_backdrop",
     },
-  })
+  }, backdrop.win))
   vim.api.nvim_create_autocmd("WinClosed", {
     group = self.augroup,
     pattern = self.win .. "",
@@ -592,8 +636,8 @@ function M:win_opts()
     opts[k] = self.opts[k]
   end
   local parent = self:parent_size()
-  opts.height = type(opts.height) == "function" and opts.height() or opts.height
-  opts.width = type(opts.width) == "function" and opts.width() or opts.width
+  opts.height = type(opts.height) == "function" and opts.height(self) or opts.height
+  opts.width = type(opts.width) == "function" and opts.width(self) or opts.width
   -- Special case for 0, which means 100%
   opts.height = opts.height == 0 and parent.height or opts.height
   opts.width = opts.width == 0 and parent.width or opts.width
@@ -604,8 +648,14 @@ function M:win_opts()
     return opts
   end
   local border_offset = self:has_border() and 2 or 0
+  opts.row = opts.row and opts.row < 0 and parent.height + opts.row - opts.height + 1 or opts.row
+  opts.col = opts.col and opts.col < 0 and parent.width + opts.col - opts.width + 1 or opts.col
   opts.row = opts.row or math.floor((parent.height - opts.height - border_offset) / 2)
   opts.col = opts.col or math.floor((parent.width - opts.width - border_offset) / 2)
+
+  if vim.fn.has("nvim-0.10") == 0 then
+    opts.footer, opts.footer_pos = nil, nil
+  end
 
   return opts
 end

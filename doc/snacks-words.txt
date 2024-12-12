@@ -7,6 +7,8 @@ Table of Contents                             *snacks-words-table-of-contents*
 2. Config                                                |snacks-words-config|
 3. Module                                                |snacks-words-module|
   - Snacks.words.clear()            |snacks-words-module-snacks.words.clear()|
+  - Snacks.words.disable()        |snacks-words-module-snacks.words.disable()|
+  - Snacks.words.enable()          |snacks-words-module-snacks.words.enable()|
   - Snacks.words.is_enabled()  |snacks-words-module-snacks.words.is_enabled()|
   - Snacks.words.jump()              |snacks-words-module-snacks.words.jump()|
 Auto-show LSP references and quickly navigate between them
@@ -35,8 +37,8 @@ Auto-show LSP references and quickly navigate between them
 
 >lua
     ---@class snacks.words.Config
+    ---@field enabled? boolean
     {
-      enabled = true, -- enable/disable the plugin
       debounce = 200, -- time in ms to wait before updating
       notify_jump = false, -- show a notification when jumping
       notify_end = true, -- show a notification when reaching the end
@@ -55,6 +57,20 @@ Auto-show LSP references and quickly navigate between them
 
 >lua
     Snacks.words.clear()
+<
+
+
+`Snacks.words.disable()`                              *Snacks.words.disable()*
+
+>lua
+    Snacks.words.disable()
+<
+
+
+`Snacks.words.enable()`                                *Snacks.words.enable()*
+
+>lua
+    Snacks.words.enable()
 <
 
 

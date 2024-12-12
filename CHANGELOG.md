@@ -1,5 +1,158 @@
 # Changelog
 
+## [2.8.0](https://github.com/folke/snacks.nvim/compare/v2.7.0...v2.8.0) (2024-12-11)
+
+
+### Features
+
+* **animate:** added animate plugin ([971229e](https://github.com/folke/snacks.nvim/commit/971229e8a93dab7dc73fe379110cdb47a7fd1387))
+* **animate:** added animation context to callbacks ([1091280](https://github.com/folke/snacks.nvim/commit/109128087709fe5cba39e6983b8722b60cce8120))
+* **dim:** added dim plugin ([4dda551](https://github.com/folke/snacks.nvim/commit/4dda5516e88a64c2b387727662d4ecd645582c55))
+* **indent:** added indent plugin ([2c4021c](https://github.com/folke/snacks.nvim/commit/2c4021c4663ff4fe5da5b95c3e06a4f6eb416502))
+* **indent:** allow disabling indent guides. See [#230](https://github.com/folke/snacks.nvim/issues/230) ([4a4ad63](https://github.com/folke/snacks.nvim/commit/4a4ad633dc9f864532716af4387b5e035d57768c))
+* **indent:** allow disabling scope highlighting ([99207ee](https://github.com/folke/snacks.nvim/commit/99207ee44d3a2b4d14c915b08407bae708749235))
+* **indent:** optional rendering of scopes as chunks. Closes [#230](https://github.com/folke/snacks.nvim/issues/230) ([109a0d2](https://github.com/folke/snacks.nvim/commit/109a0d207eeee49e13a6640131b44383e31d0b0f))
+* **input:** added `input` snack ([70902ee](https://github.com/folke/snacks.nvim/commit/70902eee9e5aca7791450c6065dd51bed4651f24))
+* **profiler:** on_close can now be a function ([48a5879](https://github.com/folke/snacks.nvim/commit/48a58792a0dd2e3c9249cfa4b1df73a8ea86a290))
+* **scope:** added scope plugin ([63a279c](https://github.com/folke/snacks.nvim/commit/63a279c4e2e84ed02b5a2a6c2f84d68daf8f906a))
+* **scope:** fill the range for treesitter scopes ([38ed01b](https://github.com/folke/snacks.nvim/commit/38ed01b5a229fc0c41b07dde08e9119de9ff1c4e))
+* **scope:** text objects and jumping for scopes. Closes [#231](https://github.com/folke/snacks.nvim/issues/231) ([8faafb3](https://github.com/folke/snacks.nvim/commit/8faafb34831c48f3ff777d6bd0ced1c68c8ab82f))
+* **scroll:** added smooth scrolling plugin ([38a5ccc](https://github.com/folke/snacks.nvim/commit/38a5ccc3a6436ba67fba71f6a2a9693ee1c2f142))
+* **scroll:** allow disabling scroll globally or for some buffers ([04f15c1](https://github.com/folke/snacks.nvim/commit/04f15c1ba29afa6d1b085eb0d85a654c88be8fde))
+* **scroll:** use `on_key` to track mouse scrolling ([26c3e49](https://github.com/folke/snacks.nvim/commit/26c3e4960f37320bcd418ec18f859b0e24d1e7d8))
+* **scroll:** user virtual columns while scrolling ([fefa6fd](https://github.com/folke/snacks.nvim/commit/fefa6fd6920a2f8a6e717ae856c14e32d5d76ddb))
+* **snacks:** zen mode ([c509ea5](https://github.com/folke/snacks.nvim/commit/c509ea52b7b3487e3d904d9f3d55d20ad136facb))
+* **toggle:** add which-key mappings when which-key loads ([c9f494b](https://github.com/folke/snacks.nvim/commit/c9f494bd9a4729722186d2631ca91192ffc19b40))
+* **toggle:** add zen mode toggle ([#243](https://github.com/folke/snacks.nvim/issues/243)) ([9454ba3](https://github.com/folke/snacks.nvim/commit/9454ba35f8c6ad3baeda4132fe1e5c96a5850960))
+* **toggle:** added toggle for smooth scroll ([aeec09c](https://github.com/folke/snacks.nvim/commit/aeec09c5413c87df7ca827bd6b7c3fbf0f4d2909))
+* **toggle:** toggles for new plugins ([bddae83](https://github.com/folke/snacks.nvim/commit/bddae83141d9e18b23a5d7a9ccc52c76ad736ca2))
+* **util:** added Snacks.util.on_module to execute a callback when a module loads (or immediately when already loaded) ([f540b7b](https://github.com/folke/snacks.nvim/commit/f540b7b6cc10223adcbd6d9747155a076ddfa9a4))
+* **util:** set_hl no longer sets default=true when not specified ([d6309c6](https://github.com/folke/snacks.nvim/commit/d6309c62b8e5910407449975b9e333c2699d06d0))
+* **win:** added actions to easily combine actions in keymaps ([46362a5](https://github.com/folke/snacks.nvim/commit/46362a5a9c2583094bd0416dd6dea17996eaecf9))
+* **win:** allow configuring initial text to display in the buffer ([003ea8d](https://github.com/folke/snacks.nvim/commit/003ea8d6edcf6d813bfdc143ffe4fa6cc55c0ea5))
+* **win:** allow customizing backdrop window ([cdb495c](https://github.com/folke/snacks.nvim/commit/cdb495cb8f7b801d9d731cdfa2c6f92fadf1317d))
+* **win:** col/row can be negative calculated on height/end of parent ([bd49d2f](https://github.com/folke/snacks.nvim/commit/bd49d2f32e567cbe42adf0bd8582b7829de6c1dc))
+* **words:** added toggle for words ([bd7cf03](https://github.com/folke/snacks.nvim/commit/bd7cf038234a84b48d1c1f09dffae9e64910ff7e))
+* **zen:** `zz` when entering zen mode ([b5cb90f](https://github.com/folke/snacks.nvim/commit/b5cb90f91dedaa692c4da1dfa216d13e58ad219d))
+* **zen:** added zen plugin ([afb89ea](https://github.com/folke/snacks.nvim/commit/afb89ea159a20e1241656af5aa46f638327d2f5a))
+* **zen:** added zoom indicator ([8459e2a](https://github.com/folke/snacks.nvim/commit/8459e2adc090aaf59865a60836c360744d82ed0a))
+
+
+### Bug Fixes
+
+* **compat:** fixes for Neovim &lt; 0.10 ([33fbb30](https://github.com/folke/snacks.nvim/commit/33fbb309f8c21c8ec30b99fe323a5cc55c84c5bc))
+* **dashboard:** add filetype to terminal sections ([#215](https://github.com/folke/snacks.nvim/issues/215)) ([9c68a54](https://github.com/folke/snacks.nvim/commit/9c68a54af652ff69348848dad62c4cd901da59a0))
+* **dashboard:** don't open with startup option args ([#222](https://github.com/folke/snacks.nvim/issues/222)) ([6b78172](https://github.com/folke/snacks.nvim/commit/6b78172864ef94cd5f2ab184c0f98cf36f5a8e74))
+* **dashboard:** override foldmethod ([47ad2a7](https://github.com/folke/snacks.nvim/commit/47ad2a7bfa49c3eb5c20083de82a39f59fb8f17a))
+* **debug:** schedule wrap print ([3a107af](https://github.com/folke/snacks.nvim/commit/3a107afbf8dffabf6c2754750c51d740707b76af))
+* **dim:** check if win still exist when animating. Closes [#259](https://github.com/folke/snacks.nvim/issues/259) ([69018d0](https://github.com/folke/snacks.nvim/commit/69018d070c9a0db76abc0f34539287e1c181a5d4))
+* **health:** health checks ([72eba84](https://github.com/folke/snacks.nvim/commit/72eba841801928b00a1f1f74e1f976a31534a674))
+* **indent:** always align indents with shiftwidth ([1de6c15](https://github.com/folke/snacks.nvim/commit/1de6c152883b576524201a465e1b8a09622a6041))
+* **indent:** always render underline regardless of leftcol ([4e96e69](https://github.com/folke/snacks.nvim/commit/4e96e692e8a3c6c67f9c9b2971b6fa263461054b))
+* **indent:** always use scope hl to render underlines. Fixes [#234](https://github.com/folke/snacks.nvim/issues/234) ([8723945](https://github.com/folke/snacks.nvim/commit/8723945183aac31671d1fa27481c90dc7c665c02))
+* **indent:** better way of dealing with indents on blank lines. See [#246](https://github.com/folke/snacks.nvim/issues/246) ([c129683](https://github.com/folke/snacks.nvim/commit/c1296836f5c36e75b508aae9a76aa0931058feec))
+* **indent:** expand scopes to inlude end_pos based on the end_pos scope. See [#231](https://github.com/folke/snacks.nvim/issues/231) ([897f801](https://github.com/folke/snacks.nvim/commit/897f8019248009eca191185cf7094e04c9371a85))
+* **indent:** gradually increase scope when identical to visual selection for text objects ([bc7f96b](https://github.com/folke/snacks.nvim/commit/bc7f96bdee77368d4ddae2613823f085266529ab))
+* **indent:** properly deal with empty lines when highlighting scopes. Fixes [#246](https://github.com/folke/snacks.nvim/issues/246). Fixes [#245](https://github.com/folke/snacks.nvim/issues/245) ([d04cf1d](https://github.com/folke/snacks.nvim/commit/d04cf1dc4f332bade99c300283380bf0893f1996))
+* **indent:** set max_size=1 for textobjects and jumps by default. See [#231](https://github.com/folke/snacks.nvim/issues/231) ([5f217bc](https://github.com/folke/snacks.nvim/commit/5f217bca6adc88a5dc6aa55e5bf0580b95025a52))
+* **indent:** set shiftwidth to tabstop when 0 ([782b6ee](https://github.com/folke/snacks.nvim/commit/782b6ee3fca35ede62b8dba866a9ad5c50edfdce))
+* **indent:** underline. See [#234](https://github.com/folke/snacks.nvim/issues/234) ([51f9569](https://github.com/folke/snacks.nvim/commit/51f95693aedcde10e65c8121c6fd1293a3ac3819))
+* **indent:** use correct config options ([5352198](https://github.com/folke/snacks.nvim/commit/5352198b5a59968c871b962fa15f1d7ca4eb7b52))
+* **init:** enabled check ([519a45b](https://github.com/folke/snacks.nvim/commit/519a45bfe5df7fdf5aea0323e978e20eb52e15bc))
+* **init:** set input disabled by default. Fixes [#227](https://github.com/folke/snacks.nvim/issues/227) ([e9d0993](https://github.com/folke/snacks.nvim/commit/e9d099322fca1bb7b35e781230e4a7478ded86bf))
+* **input:** health check. Fixes [#239](https://github.com/folke/snacks.nvim/issues/239) ([acf743f](https://github.com/folke/snacks.nvim/commit/acf743fcfc4e0e42e1c9fe5c06f677849fa38e8b))
+* **input:** set current win before executing callback. Fixes [#257](https://github.com/folke/snacks.nvim/issues/257) ([c17c1b2](https://github.com/folke/snacks.nvim/commit/c17c1b2f6c99f0ed4f3ab8f00bf32bb39f9d0186))
+* **input:** set current win in `vim.schedule` so that it works properly from `expr` keymaps. Fixes [#257](https://github.com/folke/snacks.nvim/issues/257) ([8c2410c](https://github.com/folke/snacks.nvim/commit/8c2410c2de0a86c095177a831993f8eea78a63b6))
+* **input:** update window position in the context of the parent window to make sure position=cursor works as expected. Fixes [#254](https://github.com/folke/snacks.nvim/issues/254) ([6c27ff2](https://github.com/folke/snacks.nvim/commit/6c27ff2a365c961831c7620365dd87fa8d8ad633))
+* **input:** various minor visual fixes ([#252](https://github.com/folke/snacks.nvim/issues/252)) ([e01668c](https://github.com/folke/snacks.nvim/commit/e01668c36771c0c1424a2ce3ab26a09cbb43d472))
+* **notifier:** toggle show history. Fixes [#197](https://github.com/folke/snacks.nvim/issues/197) ([8b58b55](https://github.com/folke/snacks.nvim/commit/8b58b55e40221ca5124f156f47e46185310fbe1c))
+* **scope:** better edge detection for treesitter scopes ([6b02a09](https://github.com/folke/snacks.nvim/commit/6b02a09e5e81e4e38a42e0fcc2d7f0350404c228))
+* **scope:** return `nil` when buffer is empty for indent scope ([4aa378a](https://github.com/folke/snacks.nvim/commit/4aa378a35e8f3d3771410344525cc4bc9ac50e8a))
+* **scope:** take edges into account for min_size ([e2e6c86](https://github.com/folke/snacks.nvim/commit/e2e6c86d214029bfeae5d50929aee72f7059b7b7))
+* **scope:** typo for textobject ([0324125](https://github.com/folke/snacks.nvim/commit/0324125ca1e5a5e6810d28ea81bb2c7c0af1dc16))
+* **scroll:** better toggle ([3dcaad8](https://github.com/folke/snacks.nvim/commit/3dcaad8d0aacc1a736f75fee5719adbf80cbbfa2))
+* **scroll:** disable scroll by default for terminals ([7b5a78a](https://github.com/folke/snacks.nvim/commit/7b5a78a5c76cdf2c73abbeef47ac14bb8ccbee72))
+* **scroll:** don't animate invalid windows ([41ca13d](https://github.com/folke/snacks.nvim/commit/41ca13d119b328872ed1da9c8f458c5c24962d31))
+* **scroll:** don't bother setting cursor when scrolloff is larger than half of viewport. Fixes [#240](https://github.com/folke/snacks.nvim/issues/240) ([0ca9ca7](https://github.com/folke/snacks.nvim/commit/0ca9ca79926b3bf473172eee7072fa2838509fba))
+* **scroll:** move scrollbind check to M.check ([7211ec0](https://github.com/folke/snacks.nvim/commit/7211ec08ce01da754544f66e965effb13fd22fd3))
+* **scroll:** only animate the current window when scrollbind is active ([c9880ce](https://github.com/folke/snacks.nvim/commit/c9880ce872ca000d17ae8d62b10e913045f54735))
+* **scroll:** set cursor to correct position when target is reached. Fixes [#236](https://github.com/folke/snacks.nvim/issues/236) ([4209929](https://github.com/folke/snacks.nvim/commit/4209929e6d4f67d3d216d1ab5f52dc387c8e27c2))
+* **scroll:** use actual scrolling to perform the scroll to properly deal with folds etc. Fixes [#236](https://github.com/folke/snacks.nvim/issues/236) ([280a09e](https://github.com/folke/snacks.nvim/commit/280a09e4eef08157eface8398295eb7fa3f9a08d))
+* **win:** ensure win is set when relative=win ([5d472b8](https://github.com/folke/snacks.nvim/commit/5d472b833b7f925033fea164de0ab9e389e31bef))
+* **words:** incorrect enabled check. Fixes [#247](https://github.com/folke/snacks.nvim/issues/247) ([9c8f3d5](https://github.com/folke/snacks.nvim/commit/9c8f3d531874ebd20eebe259f5c30cea575a1bba))
+* **zen:** properly close existing zen window on toggle ([14da56e](https://github.com/folke/snacks.nvim/commit/14da56ee9791143ef2503816fb93f8bd2bf0b58d))
+* **zen:** return after closing. Fixes [#259](https://github.com/folke/snacks.nvim/issues/259) ([b13eaf6](https://github.com/folke/snacks.nvim/commit/b13eaf6bd9089d8832c79f4088e72affc449c8ee))
+* **zen:** when Normal is transparent, show an opaque transparent backdrop. Fixes [#235](https://github.com/folke/snacks.nvim/issues/235) ([d93de7a](https://github.com/folke/snacks.nvim/commit/d93de7af6916d2c734c9420624b8703236f386ff))
+
+
+### Performance Improvements
+
+* **animate:** check for animation easing updates ouside the main loop and schedule an update when needed ([03c0774](https://github.com/folke/snacks.nvim/commit/03c0774e8555a38267624309d4f00a30e351c4be))
+* **input:** lazy-load `vim.ui.input` ([614df63](https://github.com/folke/snacks.nvim/commit/614df63acfb5ce9b1ac174ea4f09e545a086af4d))
+* **util:** redraw helpers ([9fb88c6](https://github.com/folke/snacks.nvim/commit/9fb88c67b60cbd9d4a56f9aadcb9285929118518))
+
+## [2.7.0](https://github.com/folke/snacks.nvim/compare/v2.6.0...v2.7.0) (2024-12-07)
+
+
+### Features
+
+* **bigfile:** disable matchparen, set foldmethod=manual, set conceallevel=0 ([891648a](https://github.com/folke/snacks.nvim/commit/891648a483b6f5410ec9c8b74890d5a00b50fa4c))
+* **dashbard:** explude files from stdpath data/cache/state in recent files and projects ([b99bc64](https://github.com/folke/snacks.nvim/commit/b99bc64ef910cd075e4ab9cf0914e99e1a1d61c1))
+* **dashboard:** allow items to be hidden, but still create the keymaps etc ([7a47eb7](https://github.com/folke/snacks.nvim/commit/7a47eb76df2fd36bfcf3ed5c4da871542e1386be))
+* **dashboard:** allow terminal sections to have actions. Closes [#189](https://github.com/folke/snacks.nvim/issues/189) ([78f44f7](https://github.com/folke/snacks.nvim/commit/78f44f720b1b0609930581965f4f92649efae95b))
+* **dashboard:** hide title if section has no items. Fixes [#184](https://github.com/folke/snacks.nvim/issues/184) ([d370be6](https://github.com/folke/snacks.nvim/commit/d370be6d6966a298725901abad4bec90264859af))
+* **dashboard:** make buffer not listed ([#191](https://github.com/folke/snacks.nvim/issues/191)) ([42d6277](https://github.com/folke/snacks.nvim/commit/42d62775d82b7af4dbe001b04be6a8a6e461e8ec))
+* **dashboard:** when a section has a title, use that for action and key. If not put it in the section. Fixes [#189](https://github.com/folke/snacks.nvim/issues/189) ([045a17d](https://github.com/folke/snacks.nvim/commit/045a17da069aae6221b2b3eae8610c2aa5ca03ea))
+* **debug:** added `Snacks.debug.run()` to execute the buffer or selection with inlined print and errors ([e1fe4f5](https://github.com/folke/snacks.nvim/commit/e1fe4f5afed5c679fd2eed3486f17e8c0994b982))
+* **gitbrowse:** added `line_count`. See [#186](https://github.com/folke/snacks.nvim/issues/186) ([f03727c](https://github.com/folke/snacks.nvim/commit/f03727c77f739503fd297dd12a826c2aca3490f9))
+* **gitbrowse:** opts.notify ([a856952](https://github.com/folke/snacks.nvim/commit/a856952ab24757f4eaf4ae2e1728d097f1866681))
+* **gitbrowse:** url pattern can now also be a function ([0a48c2e](https://github.com/folke/snacks.nvim/commit/0a48c2e726e6ca90370260a05618f45345dbb66a))
+* **notifier:** reverse notif history by default for `show_history` ([5a50738](https://github.com/folke/snacks.nvim/commit/5a50738b8e952519658570f31ff5f24e06882f18))
+* **scratch:** `opts.ft` can now be a function and defaults to the ft of the current buffer or markdown ([652303e](https://github.com/folke/snacks.nvim/commit/652303e6de5fa746709979425f4bed763e3fcbfa))
+* **scratch:** change keymap to execute buffer/selection to `&lt;cr&gt;` ([7db0ed4](https://github.com/folke/snacks.nvim/commit/7db0ed4239a2f67c0ca288aaac21bc6aa65212a7))
+* **scratch:** use `Snacks.debug.run()` to execute buffer/selection ([32c46b4](https://github.com/folke/snacks.nvim/commit/32c46b4e2f61c026e41b3fa128d01b0e89da106c))
+* **snacks:** added `Snacks.profiler` ([8088799](https://github.com/folke/snacks.nvim/commit/808879951f960399844c89efef9aec1724f83402))
+* **snacks:** added new `scratch` snack ([1cec695](https://github.com/folke/snacks.nvim/commit/1cec695fefb6e42ee644cfaf282612c213009aed))
+* **toggle:** toggles for the profiler ([999ae07](https://github.com/folke/snacks.nvim/commit/999ae07808858df08d30eb099a8dbce401527008))
+* **util:** encode/decode a string to be used as a filename ([e6f6397](https://github.com/folke/snacks.nvim/commit/e6f63970de2225ad44ed08af7ffd8a0f37d8fc58))
+* **util:** simple function to get an icon ([7c29848](https://github.com/folke/snacks.nvim/commit/7c29848e89861b40e751cc15c557cf1e574acf66))
+* **win:** added `opts.fixbuf` to configure fixed window buffers ([1f74d1c](https://github.com/folke/snacks.nvim/commit/1f74d1ce77d2015e2802027c93b9e0bcd548e4d1))
+* **win:** backdrop can now be made opaque ([681b9c9](https://github.com/folke/snacks.nvim/commit/681b9c9d650e7b01a5e54567656f646fbd3b8d46))
+* **win:** width/height can now be a function ([964d7ae](https://github.com/folke/snacks.nvim/commit/964d7ae99af1f45949175e1494562a796e2ef99b))
+
+
+### Bug Fixes
+
+* **dashboard:** calculate proper offset when item has no text ([6e3b954](https://github.com/folke/snacks.nvim/commit/6e3b9546de4871a696652cfcee6768c39e7b8ee9))
+* **dashboard:** prevent possible duplicate recent files. Fixes [#171](https://github.com/folke/snacks.nvim/issues/171) ([93b254d](https://github.com/folke/snacks.nvim/commit/93b254d65845aa44ad1e01000c26e1faf5efb9a6))
+* **dashboard:** take hidden items into account when calculating padding. Fixes [#194](https://github.com/folke/snacks.nvim/issues/194) ([736ce44](https://github.com/folke/snacks.nvim/commit/736ce447e8815eb231271abf7d49d8fa7d96e225))
+* **dashboard:** take indent into account when calculating terminal width ([cda695e](https://github.com/folke/snacks.nvim/commit/cda695e53ffb34c7569dc3536134c9e432b2a1c1))
+* **dashboard:** truncate file names when too long. Fixes [#183](https://github.com/folke/snacks.nvim/issues/183) ([4bdf7da](https://github.com/folke/snacks.nvim/commit/4bdf7daece384ab8a5472e6effd5fd6167a5ce6a))
+* **debug:** better way of getting visual selection. See [#190](https://github.com/folke/snacks.nvim/issues/190) ([af41cb0](https://github.com/folke/snacks.nvim/commit/af41cb088d3ff8da9dede9fbdd5c81860bc37e64))
+* **gitbrowse:** opts.notify ([2436557](https://github.com/folke/snacks.nvim/commit/243655796e4adddf58ce581f1b86a283130ecf41))
+* **gitbrowse:** removed debug ([f894952](https://github.com/folke/snacks.nvim/commit/f8949523ed3f27f976e5346051a6658957d9492a))
+* **gitbrowse:** use line_start and line_end directly in patterns. Closes [#186](https://github.com/folke/snacks.nvim/issues/186) ([adf0433](https://github.com/folke/snacks.nvim/commit/adf0433e8fca3fbc7287ac7b05f01f10ac354283))
+* **profiler:** startup opts ([85f5132](https://github.com/folke/snacks.nvim/commit/85f51320b2662830a6435563668a04ab21686178))
+* **scratch:** always set filetype on the buffer. Fixes [#179](https://github.com/folke/snacks.nvim/issues/179) ([6db50cf](https://github.com/folke/snacks.nvim/commit/6db50cfe2d1b333512e8175d072a2f82e796433d))
+* **scratch:** floating window title/footer hl groups ([6c25ab1](https://github.com/folke/snacks.nvim/commit/6c25ab1108d12ef3642e97e3757710e69782cbd1))
+* **scratch:** make sure win.opts.keys exists. See [#190](https://github.com/folke/snacks.nvim/issues/190) ([50bd510](https://github.com/folke/snacks.nvim/commit/50bd5103ba0a15294b1a931fda14900e7fd10161))
+* **scratch:** sort keys. Fixes [#193](https://github.com/folke/snacks.nvim/issues/193) ([0df7a08](https://github.com/folke/snacks.nvim/commit/0df7a08b01b037e434efe7cd25e7d4608a282a92))
+* **scratch:** weirdness with visual selection and inclusive/exclusive. See [#190](https://github.com/folke/snacks.nvim/issues/190) ([f955f08](https://github.com/folke/snacks.nvim/commit/f955f082e09683d02df3fd0f8b621b938f38e6aa))
+* **statuscolumn:** add virtnum and relnum to cache key. See [#198](https://github.com/folke/snacks.nvim/issues/198) ([3647ca7](https://github.com/folke/snacks.nvim/commit/3647ca7d8a47362a01b539f5b6efc2d5339b5e8e))
+* **statuscolumn:** don't show signs on virtual ligns. See [#198](https://github.com/folke/snacks.nvim/issues/198) ([f5fb59c](https://github.com/folke/snacks.nvim/commit/f5fb59cc4c62e25745bbefd2ef55665a67196245))
+* **util:** better support for nvim-web-devicons ([ddaa2aa](https://github.com/folke/snacks.nvim/commit/ddaa2aaba59bbd05c03992bfb295c98ccd3b3e50))
+* **util:** make sure to always return an icon ([ca7188c](https://github.com/folke/snacks.nvim/commit/ca7188c531350fe313c211ad60a59d642749f93e))
+* **win:** allow resolving nil window option values. Fixes [#179](https://github.com/folke/snacks.nvim/issues/179) ([0043fa9](https://github.com/folke/snacks.nvim/commit/0043fa9ee142b63ab653507f2e6f45395e8a23d5))
+* **win:** don't force close modified buffers ([d517b11](https://github.com/folke/snacks.nvim/commit/d517b11cabf94bf833d020c7a0781122d0f48c06))
+* **win:** update opts.wo for padding instead of vim.wo directly ([446f502](https://github.com/folke/snacks.nvim/commit/446f50208fe823787ce60a8b216a622a4b6b63dd))
+* **win:** update window local options when the buffer changes ([630d96c](https://github.com/folke/snacks.nvim/commit/630d96cf1f0403352580f2d119fc3b3ba29e33a4))
+
+
+### Performance Improvements
+
+* **dashboard:** properly cleanup autocmds ([8e6d977](https://github.com/folke/snacks.nvim/commit/8e6d977ec985a1b3f12a53741df82881a7835f9a))
+* **statuscolumn:** optimize caching ([d972bc0](https://github.com/folke/snacks.nvim/commit/d972bc0a471fbf3067a115924a4add852d15f5f0))
+
 ## [2.6.0](https://github.com/folke/snacks.nvim/compare/v2.5.0...v2.6.0) (2024-11-29)
 
 

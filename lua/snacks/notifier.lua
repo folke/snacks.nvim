@@ -6,6 +6,11 @@ local M = setmetatable({}, {
   end,
 })
 
+M.meta = {
+  desc = "Pretty `vim.notify`",
+  needs_setup = true,
+}
+
 local uv = vim.uv or vim.loop
 
 --- Render styles:
@@ -100,6 +105,7 @@ Snacks.config.style("notification.history", {
 })
 
 ---@class snacks.notifier.Config
+---@field enabled? boolean
 ---@field keep? fun(notif: snacks.notifier.Notif): boolean # global keep function
 local defaults = {
   timeout = 3000, -- default timeout in ms
@@ -443,6 +449,10 @@ end
 
 ---@param opts? snacks.notifier.history
 function N:show_history(opts)
+  if vim.bo.filetype == "snacks_notif_history" then
+    vim.cmd("close")
+    return
+  end
   local win = Snacks.win({ style = "notification.history", enter = true, show = false })
   local buf = win:open_buf()
   opts = opts or {}

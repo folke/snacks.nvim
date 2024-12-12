@@ -7,20 +7,25 @@ return {
   opts = {
     bigfile = { enabled = true },
     dashboard = { enabled = true },
+    indent = { enabled = true },
+    input = { enabled = true },
     notifier = {
       enabled = true,
       timeout = 3000,
     },
     quickfile = { enabled = true },
+    scroll = { enabled = true },
     statuscolumn = { enabled = true },
     words = { enabled = true },
     styles = {
       notification = {
-        wo = { wrap = true } -- Wrap notifications
+        -- wo = { wrap = true } -- Wrap notifications
       }
     }
   },
   keys = {
+    { "<leader>z",  function() Snacks.zen() end, desc = "Toggle Zen Mode" },
+    { "<leader>Z",  function() Snacks.zen.zoom() end, desc = "Toggle Zoom" },
     { "<leader>.",  function() Snacks.scratch() end, desc = "Toggle Scratch Buffer" },
     { "<leader>S",  function() Snacks.scratch.select() end, desc = "Select Scratch Buffer" },
     { "<leader>n",  function() Snacks.notifier.show_history() end, desc = "Notification History" },
@@ -78,6 +83,8 @@ return {
         Snacks.toggle.treesitter():map("<leader>uT")
         Snacks.toggle.option("background", { off = "light", on = "dark", name = "Dark Background" }):map("<leader>ub")
         Snacks.toggle.inlay_hints():map("<leader>uh")
+        Snacks.toggle.indent():map("<leader>ug")
+        Snacks.toggle.dim():map("<leader>uD")
       end,
     })
   end,

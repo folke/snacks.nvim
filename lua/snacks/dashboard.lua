@@ -6,6 +6,11 @@ local M = setmetatable({}, {
   end,
 })
 
+M.meta = {
+  desc = " Beautiful declarative dashboards",
+  needs_setup = true,
+}
+
 local uv = vim.uv or vim.loop
 math.randomseed(os.time())
 
@@ -66,6 +71,7 @@ math.randomseed(os.time())
 ---@field width number
 
 ---@class snacks.dashboard.Config
+---@field enabled? boolean
 ---@field sections snacks.dashboard.Section
 ---@field formats table<string, snacks.dashboard.Text|fun(item:snacks.dashboard.Item, ctx:snacks.dashboard.Format.ctx):snacks.dashboard.Text>
 local defaults = {
@@ -155,6 +161,7 @@ Snacks.config.style("dashboard", {
     colorcolumn = "",
     cursorcolumn = false,
     cursorline = false,
+    foldmethod = "manual",
     list = false,
     number = false,
     relativenumber = false,
@@ -1035,6 +1042,7 @@ function M.sections.terminal(opts)
         })
         local hl = opts.hl and hl_groups[opts.hl] or opts.hl or "SnacksDashboardTerminal"
         Snacks.util.wo(win, { winhighlight = "TermCursorNC:" .. hl .. ",NormalFloat:" .. hl })
+        Snacks.util.bo(buf, { filetype = Snacks.config.styles.dashboard.bo.filetype })
         local close = vim.schedule_wrap(function()
           stopped = true
           pcall(vim.api.nvim_win_close, win, true)
@@ -1084,6 +1092,12 @@ function M.setup()
   -- don't open the dashboard if there are any arguments
   if vim.fn.argc(-1) > 0 then
     M.status.reason = "argc(-1) > 0"
+    return
+  end
+
+  -- don't open dashboard if Neovim was invoked for example `nvim +'Octo issue edit 1'`
+  if vim.api.nvim_buf_get_name(0) ~= "" then
+    M.status.reason = "buffer has a name"
     return
   end
 

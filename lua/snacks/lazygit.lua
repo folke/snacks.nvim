@@ -6,6 +6,10 @@ local M = setmetatable({}, {
   end,
 })
 
+M.meta = {
+  desc = "Open LazyGit in a float, auto-configure colorscheme and integration with Neovim",
+}
+
 ---@alias snacks.lazygit.Color {fg?:string, bg?:string, bold?:boolean}
 
 ---@class snacks.lazygit.Theme: table<number, snacks.lazygit.Color>
