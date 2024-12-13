@@ -1,5 +1,29 @@
 # Changelog
 
+## [2.10.0](https://github.com/folke/snacks.nvim/compare/v2.9.0...v2.10.0) (2024-12-13)
+
+
+### Features
+
+* **animate:** add done to animation object ([ec73346](https://github.com/folke/snacks.nvim/commit/ec73346b7d4a25e440538141d5b8c68e42a1047d))
+* **lazygit:** respect existing LG_CONFIG_FILE when setting config paths ([#208](https://github.com/folke/snacks.nvim/issues/208)) ([ef114c0](https://github.com/folke/snacks.nvim/commit/ef114c0efede3339221df5bc5b250aa9f8328b8d))
+* **scroll:** added spamming detection and disable animations when user is spamming keys :) ([c58605f](https://github.com/folke/snacks.nvim/commit/c58605f8b3abf974e984ca5483cbe6ab9d2afc6e))
+* **scroll:** improve smooth scrolling when user is spamming keys ([5532ba0](https://github.com/folke/snacks.nvim/commit/5532ba07be1306eb05c727a27368a8311bae3eeb))
+* **zen:** added on_open / on_close callbacks ([5851de1](https://github.com/folke/snacks.nvim/commit/5851de157a08c96a0ca15580ced2ea53063fd65d))
+* **zen:** make zen/zoom mode work for floating windows. Closes [#5028](https://github.com/folke/snacks.nvim/issues/5028) ([05bb957](https://github.com/folke/snacks.nvim/commit/05bb95739a362f8bec382f164f07c53137244627))
+
+
+### Bug Fixes
+
+* **dashboard:** set cursor to non-hidden actionable items. Fixes [#273](https://github.com/folke/snacks.nvim/issues/273) ([7c7b18f](https://github.com/folke/snacks.nvim/commit/7c7b18fdeeb7e228463b41d805cb47327f3d03f1))
+* **indent:** fix rendering issues when `only_scope` is set for indent. Fixes [#268](https://github.com/folke/snacks.nvim/issues/268) ([370703d](https://github.com/folke/snacks.nvim/commit/370703da81a19db9d8bf41bb518e7b6959e53cea))
+* **indent:** only render adjusted top/bottom. See [#268](https://github.com/folke/snacks.nvim/issues/268) ([54294cb](https://github.com/folke/snacks.nvim/commit/54294cba6a17ec048a63837fa341e6a663f3217d))
+* **notifier:** set `modifiable=false` for notifier history ([12e68a3](https://github.com/folke/snacks.nvim/commit/12e68a33b5a1fd3648a7a558ef027fbb245125f7))
+* **scope:** change from/to selection to make more sense ([e8dd394](https://github.com/folke/snacks.nvim/commit/e8dd394c01699276e8f7214957625222c30c8e9e))
+* **scope:** possible loop? See [#278](https://github.com/folke/snacks.nvim/issues/278) ([ac6a748](https://github.com/folke/snacks.nvim/commit/ac6a74823b29cc1839df82fc839b81400ca80d45))
+* **scratch:** normalize filename ([5200a8b](https://github.com/folke/snacks.nvim/commit/5200a8baa59a96e73786c11192282d2d3e10deeb))
+* **scroll:** don't animate scroll distance 1 ([a986851](https://github.com/folke/snacks.nvim/commit/a986851a74512683c3331fa72a220751026fd611))
+
 ## [2.9.0](https://github.com/folke/snacks.nvim/compare/v2.8.0...v2.9.0) (2024-12-12)
 
 
