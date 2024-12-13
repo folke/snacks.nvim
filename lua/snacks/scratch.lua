@@ -8,6 +8,10 @@ local M = setmetatable({}, {
   end,
 })
 
+M.meta = {
+  desc = "Scratch buffers with a persistent file",
+}
+
 ---@class snacks.scratch.File
 ---@field file string full path to the scratch buffer
 ---@field stat uv.fs_stat.result File stat result
@@ -70,7 +74,7 @@ Snacks.util.set_hl({
   Footer = "FloatFooter",
   Key = "DiagnosticVirtualTextInfo",
   Desc = "DiagnosticInfo",
-}, { prefix = "SnacksScratch" })
+}, { prefix = "SnacksScratch", default = true })
 
 Snacks.config.style("scratch", {
   width = 100,
@@ -184,8 +188,9 @@ function M.open(opts)
 
     vim.fn.mkdir(opts.root, "p")
     local fname = Snacks.util.file_encode(table.concat(filekey, "|") .. "." .. ft)
-    file = vim.fs.normalize(opts.root .. "/" .. fname)
+    file = opts.root .. "/" .. fname
   end
+  file = vim.fs.normalize(file)
 
   local icon, icon_hl = unpack(type(opts.icon) == "table" and opts.icon or { opts.icon, nil })
   ---@cast icon string
@@ -246,7 +251,7 @@ function M.open(opts)
     return a[1] < b[1]
   end)
   for _, key in ipairs(ret.keys) do
-    local keymap = vim.fn.keytrans(vim.keycode(key[1]))
+    local keymap = vim.fn.keytrans(Snacks.util.keycode(key[1]))
     table.insert(ret.opts.footer, { " " })
     table.insert(ret.opts.footer, { " " .. keymap .. " ", "SnacksScratchKey" })
     table.insert(ret.opts.footer, { " " .. (key.desc or keymap) .. " ", "SnacksScratchDesc" })

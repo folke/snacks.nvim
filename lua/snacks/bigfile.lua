@@ -2,7 +2,13 @@
 ---@class snacks.bigfile
 local M = {}
 
+M.meta = {
+  desc = "Deal with big files",
+  needs_setup = true,
+}
+
 ---@class snacks.bigfile.Config
+---@field enabled? boolean
 local defaults = {
   notify = true, -- show notification when big file detected
   size = 1.5 * 1024 * 1024, -- 1.5MB

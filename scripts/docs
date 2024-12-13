@@ -2,7 +2,7 @@
 
 set -e
 
-nvim -u tests/minit.lua --headless +'lua require("snacks.docs").build()' +qa
+nvim -u tests/minit.lua --headless +'lua require("snacks.meta.docs").build()' +qa
 
 echo -e "\n\nGenerating Vim Help"
 
@@ -22,4 +22,4 @@ for f in docs/*.md; do
     --shift-heading-level-by -1
 done
 
-nvim -u tests/minit.lua --headless +'lua require("snacks.docs").fix_titles()' +qa
+nvim -u tests/minit.lua --headless +'lua require("snacks.meta.docs").fix_titles()' +qa

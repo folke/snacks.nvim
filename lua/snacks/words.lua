@@ -1,12 +1,17 @@
 ---@class snacks.words
 local M = {}
 
+M.meta = {
+  desc = "Auto-show LSP references and quickly navigate between them",
+  needs_setup = true,
+}
+
 ---@private
 ---@alias LspWord {from:{[1]:number, [2]:number}, to:{[1]:number, [2]:number}} 1-0 indexed
 
 ---@class snacks.words.Config
+---@field enabled? boolean
 local defaults = {
-  enabled = true, -- enable/disable the plugin
   debounce = 200, -- time in ms to wait before updating
   notify_jump = false, -- show a notification when jumping
   notify_end = true, -- show a notification when reaching the end
@@ -15,12 +20,17 @@ local defaults = {
   modes = { "n", "i", "c" }, -- modes to show references
 }
 
+M.enabled = false
+
 local config = Snacks.config.get("words", defaults)
 local ns = vim.api.nvim_create_namespace("vim_lsp_references")
 local timer = (vim.uv or vim.loop).new_timer()
 
----@private
-function M.setup()
+function M.enable()
+  if M.enabled then
+    return
+  end
+  M.enabled = true
   local group = vim.api.nvim_create_augroup("snacks_words", { clear = true })
 
   vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI", "ModeChanged" }, {
@@ -35,6 +45,17 @@ function M.setup()
       end
     end,
   })
+end
+
+function M.disable()
+  if not M.enabled then
+    return
+  end
+  M.enabled = false
+  vim.api.nvim_del_augroup_by_name("snacks_words")
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
+  end
 end
 
 function M.clear()
@@ -70,7 +91,7 @@ function M.is_enabled(buf)
   clients = vim.tbl_filter(function(client)
     return client.supports_method("textDocument/documentHighlight", { bufnr = buf })
   end, clients)
-  return config.enabled and vim.tbl_contains(config.modes, mode) and #clients > 0
+  return M.enabled and vim.tbl_contains(config.modes, mode) and #clients > 0
 end
 
 ---@private

@@ -49,6 +49,7 @@ Toggle keymaps integrated with which-key icons / colors
 
 ```lua
 ---@class snacks.toggle.Opts: snacks.toggle.Config
+---@field id? string
 ---@field name string
 ---@field get fun():boolean
 ---@field set fun(state:boolean)
@@ -56,17 +57,17 @@ Toggle keymaps integrated with which-key icons / colors
 
 ## 📦 Module
 
-```lua
----@class snacks.toggle
----@field opts snacks.toggle.Opts
-Snacks.toggle = {}
-```
-
 ### `Snacks.toggle()`
 
 ```lua
----@type fun(... :snacks.toggle.Opts): snacks.toggle
+---@type fun(... :snacks.toggle.Opts): snacks.toggle.Class
 Snacks.toggle()
+```
+
+### `Snacks.toggle.animate()`
+
+```lua
+Snacks.toggle.animate()
 ```
 
 ### `Snacks.toggle.diagnostics()`
@@ -74,6 +75,26 @@ Snacks.toggle()
 ```lua
 ---@param opts? snacks.toggle.Config
 Snacks.toggle.diagnostics(opts)
+```
+
+### `Snacks.toggle.dim()`
+
+```lua
+Snacks.toggle.dim()
+```
+
+### `Snacks.toggle.get()`
+
+```lua
+---@param id string
+---@return snacks.toggle.Class?
+Snacks.toggle.get(id)
+```
+
+### `Snacks.toggle.indent()`
+
+```lua
+Snacks.toggle.indent()
 ```
 
 ### `Snacks.toggle.inlay_hints()`
@@ -94,7 +115,6 @@ Snacks.toggle.line_number(opts)
 
 ```lua
 ---@param ... snacks.toggle.Opts
----@return snacks.toggle
 Snacks.toggle.new(...)
 ```
 
@@ -118,6 +138,12 @@ Snacks.toggle.profiler()
 Snacks.toggle.profiler_highlights()
 ```
 
+### `Snacks.toggle.scroll()`
+
+```lua
+Snacks.toggle.scroll()
+```
+
 ### `Snacks.toggle.treesitter()`
 
 ```lua
@@ -125,29 +151,20 @@ Snacks.toggle.profiler_highlights()
 Snacks.toggle.treesitter(opts)
 ```
 
-### `toggle:get()`
+### `Snacks.toggle.words()`
 
 ```lua
-toggle:get()
+Snacks.toggle.words()
 ```
 
-### `toggle:map()`
+### `Snacks.toggle.zen()`
 
 ```lua
----@param keys string
----@param opts? vim.keymap.set.Opts | { mode: string|string[]}
-toggle:map(keys, opts)
+Snacks.toggle.zen()
 ```
 
-### `toggle:set()`
+### `Snacks.toggle.zoom()`
 
 ```lua
----@param state boolean
-toggle:set(state)
-```
-
-### `toggle:toggle()`
-
-```lua
-toggle:toggle()
+Snacks.toggle.zoom()
 ```

@@ -8,6 +8,17 @@ local M = setmetatable({}, {
   end,
 })
 
+M.meta = {
+  desc = "Pretty status column",
+  needs_setup = true,
+}
+
+-- Numbers in Neovim are weird
+-- They show when either number or relativenumber is true
+local LINE_NR = "%=%{%(&number || &relativenumber) && v:virtnum == 0 ? ("
+  .. (vim.fn.has("nvim-0.11") == 1 and '"%l"' or 'v:relnum == 0 ? (&number ? "%l" : "%r") : (&relativenumber ? "%r" : "%l")')
+  .. ') : ""%} '
+
 ---@class snacks.statuscolumn.Config
 ---@field enabled? boolean
 local defaults = {
@@ -129,7 +140,7 @@ function M.line_signs(win, buf, lnum)
 
   -- Get fold signs
   vim.api.nvim_win_call(win, function()
-    if vim.fn.foldclosed(vim.v.lnum) >= 0 then
+    if vim.fn.foldclosed(lnum) >= 0 then
       signs[#signs + 1] = { text = vim.opt.fillchars:get().foldclose or "", texthl = "Folded", type = "fold" }
     elseif config.folds.open and tostring(vim.treesitter.foldexpr(vim.v.lnum)):sub(1, 1) == ">" then
       signs[#signs + 1] = { text = vim.opt.fillchars:get().foldopen or "", type = "fold" }
@@ -165,62 +176,45 @@ function M._get()
     M.setup()
   end
   local win = vim.g.statusline_winid
-  local buf = vim.api.nvim_win_get_buf(win)
-  local is_file = vim.bo[buf].buftype == ""
-  local show_signs = vim.wo[win].signcolumn ~= "no" and vim.v.virtnum == 0
-
-  local components = { "", "", "" } -- left, middle, right
+  local show_signs = vim.v.virtnum == 0 and vim.wo[win].signcolumn ~= "no"
+  local components = { "", LINE_NR, "" } -- left, middle, right
 
   if show_signs then
+    local buf = vim.api.nvim_win_get_buf(win)
+    local is_file = vim.bo[buf].buftype == ""
     local signs = M.line_signs(win, buf, vim.v.lnum)
 
-    ---@param types snacks.statuscolumn.Sign.type[]
-    local function find(types)
-      for _, t in ipairs(types) do
-        for _, s in ipairs(signs) do
-          if s.type == t then
-            return s
+    if #signs > 0 then
+      local signs_by_type = {} ---@type table<snacks.statuscolumn.Sign.type,snacks.statuscolumn.Sign>
+      for _, s in ipairs(signs) do
+        signs_by_type[s.type] = signs_by_type[s.type] or s
+      end
+
+      ---@param types snacks.statuscolumn.Sign.type[]
+      local function find(types)
+        for _, t in ipairs(types) do
+          if signs_by_type[t] then
+            return signs_by_type[t]
           end
         end
       end
-    end
+      local left, right = find(config.left), find(config.right)
 
-    local left = find(config.left)
-    local right = find(config.right)
-
-    if config.folds.git_hl then
-      local git = find({ "git" })
-      if git and left and left.type == "fold" then
-        left.texthl = git.texthl
+      if config.folds.git_hl then
+        local git = signs_by_type.git
+        if git and left and left.type == "fold" then
+          left.texthl = git.texthl
+        end
+        if git and right and right.type == "fold" then
+          right.texthl = git.texthl
+        end
       end
-      if git and right and right.type == "fold" then
-        right.texthl = git.texthl
-      end
-    end
-
-    components[1] = left and M.icon(left) or "  " -- left
-    components[3] = is_file and (right and M.icon(right) or "  ") or "" -- right
-  end
-
-  -- Numbers in Neovim are weird
-  -- They show when either number or relativenumber is true
-  local is_num = vim.wo[win].number
-  local is_relnum = vim.wo[win].relativenumber
-  if (is_num or is_relnum) and vim.v.virtnum == 0 then
-    if vim.fn.has("nvim-0.11") == 1 then
-      components[2] = "%l" -- 0.11 handles both the current and other lines with %l
+      components[1] = left and M.icon(left) or "  " -- left
+      components[3] = is_file and (right and M.icon(right) or "  ") or "" -- right
     else
-      if vim.v.relnum == 0 then
-        components[2] = is_num and "%l" or "%r" -- the current line
-      else
-        components[2] = is_relnum and "%r" or "%l" -- other lines
-      end
+      components[1] = "  "
+      components[3] = is_file and "  " or ""
     end
-    components[2] = "%=" .. components[2] .. " " -- right align
-  end
-
-  if vim.v.virtnum ~= 0 then
-    components[2] = "%= "
   end
 
   return table.concat(components, "")
@@ -229,7 +223,7 @@ end
 function M.get()
   local win = vim.g.statusline_winid
   local buf = vim.api.nvim_win_get_buf(win)
-  local key = ("%d:%d:%d:%d:%d"):format(win, buf, vim.v.lnum, vim.v.virtnum, vim.v.relnum)
+  local key = ("%d:%d:%d:%d"):format(win, buf, vim.v.lnum, vim.v.virtnum and 1 or 0)
   if cache[key] then
     return cache[key]
   end

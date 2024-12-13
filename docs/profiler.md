@@ -190,7 +190,7 @@ All other fields equal to `true` will match if the trace has a value for that fi
     pattern = nil, -- pattern to match for the autocmd
     pick = true, -- show a picker after starting the profiler (uses the `startup` preset)
   },
-  ---@type table<string, snacks.profiler.Pick|fun():snacks.profiler.Pick>
+  ---@type table<string, snacks.profiler.Pick|fun():snacks.profiler.Pick?>
   presets = {
     startup = { min_time = 1, sort = false },
     on_stop = {},

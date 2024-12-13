@@ -6,6 +6,10 @@ local M = setmetatable({}, {
   end,
 })
 
+M.meta = {
+  desc = "Utility functions to work with Neovim's `vim.notify`",
+}
+
 ---@alias snacks.notify.Opts snacks.notifier.Notif.opts|{once?: boolean}
 
 ---@param msg string|string[]

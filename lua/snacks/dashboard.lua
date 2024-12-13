@@ -6,6 +6,11 @@ local M = setmetatable({}, {
   end,
 })
 
+M.meta = {
+  desc = " Beautiful declarative dashboards",
+  needs_setup = true,
+}
+
 local uv = vim.uv or vim.loop
 math.randomseed(os.time())
 
@@ -66,6 +71,7 @@ math.randomseed(os.time())
 ---@field width number
 
 ---@class snacks.dashboard.Config
+---@field enabled? boolean
 ---@field sections snacks.dashboard.Section
 ---@field formats table<string, snacks.dashboard.Text|fun(item:snacks.dashboard.Item, ctx:snacks.dashboard.Format.ctx):snacks.dashboard.Text>
 local defaults = {
@@ -155,6 +161,7 @@ Snacks.config.style("dashboard", {
     colorcolumn = "",
     cursorcolumn = false,
     cursorline = false,
+    foldmethod = "manual",
     list = false,
     number = false,
     relativenumber = false,
@@ -705,14 +712,10 @@ function D:update()
     buffer = self.buf,
     callback = function()
       local item = self:find(vim.api.nvim_win_get_cursor(self.win), last)
-      if not item then -- can happen for panes without actionable items
-        for _, it in ipairs(self.items) do
-          if it.action then
-            item = it
-            break
-          end
-        end
-      end
+      -- can happen for panes without actionable items
+      item = item or vim.tbl_filter(function(it)
+        return it.action and it._
+      end, self.items)[1]
       if item then
         local col = self.lines[item._.row]:find("[%w%d%p]", item._.col + 1)
         col = col or (item._.col + 1 + (item.indent and (item.indent + 1) or 0))
@@ -1035,6 +1038,7 @@ function M.sections.terminal(opts)
         })
         local hl = opts.hl and hl_groups[opts.hl] or opts.hl or "SnacksDashboardTerminal"
         Snacks.util.wo(win, { winhighlight = "TermCursorNC:" .. hl .. ",NormalFloat:" .. hl })
+        Snacks.util.bo(buf, { filetype = Snacks.config.styles.dashboard.bo.filetype })
         local close = vim.schedule_wrap(function()
           stopped = true
           pcall(vim.api.nvim_win_close, win, true)
@@ -1052,14 +1056,17 @@ function M.sections.terminal(opts)
 end
 
 --- Add the startup section
+---@param opts? {icon?:string}
 ---@return snacks.dashboard.Section?
-function M.sections.startup()
+function M.sections.startup(opts)
+  opts = opts or {}
   M.lazy_stats = M.lazy_stats and M.lazy_stats.startuptime > 0 and M.lazy_stats or require("lazy.stats").stats()
   local ms = (math.floor(M.lazy_stats.startuptime * 100 + 0.5) / 100)
+  local icon = opts.icon or "⚡ "
   return {
     align = "center",
     text = {
-      { "⚡ Neovim loaded ", hl = "footer" },
+      { icon .. "Neovim loaded ", hl = "footer" },
       { M.lazy_stats.loaded .. "/" .. M.lazy_stats.count, hl = "special" },
       { " plugins in ", hl = "footer" },
       { ms .. "ms", hl = "special" },
@@ -1081,6 +1088,12 @@ function M.setup()
   -- don't open the dashboard if there are any arguments
   if vim.fn.argc(-1) > 0 then
     M.status.reason = "argc(-1) > 0"
+    return
+  end
+
+  -- don't open dashboard if Neovim was invoked for example `nvim +'Octo issue edit 1'`
+  if vim.api.nvim_buf_get_name(0) ~= "" then
+    M.status.reason = "buffer has a name"
     return
   end
 

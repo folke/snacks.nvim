@@ -1,11 +1,14 @@
 ---@class snacks.toggle
----@field opts snacks.toggle.Opts
----@overload fun(... :snacks.toggle.Opts): snacks.toggle
+---@overload fun(... :snacks.toggle.Opts): snacks.toggle.Class
 local M = setmetatable({}, {
-  __call = function(t, ...)
-    return t.new(...)
+  __call = function(M, ...)
+    return M.new(...)
   end,
 })
+
+M.meta = {
+  desc = "Toggle keymaps integrated with which-key icons / colors",
+}
 
 ---@class snacks.toggle.Config
 ---@field icon? string|{ enabled: string, disabled: string }
@@ -26,20 +29,41 @@ local defaults = {
   },
 }
 
+---@type table<string, snacks.toggle.Class>
+M.toggles = {}
+
 ---@class snacks.toggle.Opts: snacks.toggle.Config
+---@field id? string
 ---@field name string
 ---@field get fun():boolean
 ---@field set fun(state:boolean)
 
+---@class snacks.toggle.Class
+---@field opts snacks.toggle.Opts
+local Toggle = {}
+Toggle.__index = Toggle
+
 ---@param ... snacks.toggle.Opts
----@return snacks.toggle
 function M.new(...)
-  local self = setmetatable({}, { __index = M })
+  ---@type snacks.toggle.Class
+  local self = setmetatable({}, Toggle)
   self.opts = Snacks.config.get("toggle", defaults, ...) --[[@as snacks.toggle.Opts]]
+  local id = self.opts.id or self.opts.name:lower():gsub("%W+", "_"):gsub("_+$", ""):gsub("^_+", "")
+  self.opts.id = id
+  M.toggles[id] = self
   return self
 end
 
-function M:get()
+---@param id string
+---@return snacks.toggle.Class?
+function M.get(id)
+  if not M.toggles[id] and M[id] then
+    M[id]()
+  end
+  return M.toggles[id]
+end
+
+function Toggle:get()
   local ok, ret = pcall(self.opts.get)
   if not ok then
     Snacks.notify.error({
@@ -52,7 +76,7 @@ function M:get()
 end
 
 ---@param state boolean
-function M:set(state)
+function Toggle:set(state)
   local ok, err = pcall(self.opts.set, state) ---@type boolean, string?
   if not ok then
     Snacks.notify.error({
@@ -62,7 +86,7 @@ function M:set(state)
   end
 end
 
-function M:toggle()
+function Toggle:toggle()
   local state = not self:get()
   self:set(state)
   if self.opts.notify then
@@ -75,7 +99,7 @@ end
 
 ---@param keys string
 ---@param opts? vim.keymap.set.Opts | { mode: string|string[]}
-function M:map(keys, opts)
+function Toggle:map(keys, opts)
   opts = opts or {}
   local mode = opts.mode or "n"
   opts.mode = nil
@@ -83,12 +107,15 @@ function M:map(keys, opts)
   self.opts.map(mode, keys, function()
     self:toggle()
   end, opts)
-  if self.opts.which_key and pcall(require, "which-key") then
-    self:_wk(keys, mode)
+  if self.opts.which_key then
+    Snacks.util.on_module("which-key", function()
+      self:_wk(keys, mode)
+    end)
   end
+  return self
 end
 
-function M:_wk(keys, mode)
+function Toggle:_wk(keys, mode)
   require("which-key").add({
     {
       keys,
@@ -114,6 +141,7 @@ function M.option(option, opts)
   local on = opts.on == nil and true or opts.on
   local off = opts.off ~= nil and opts.off or false
   return M.new({
+    id = option,
     name = option,
     get = function()
       return vim.opt_local[option]:get() == on
@@ -127,6 +155,7 @@ end
 ---@param opts? snacks.toggle.Config
 function M.treesitter(opts)
   return M.new({
+    id = "treesitter",
     name = "Treesitter Highlight",
     get = function()
       return vim.b.ts_highlight
@@ -141,6 +170,7 @@ end
 function M.line_number(opts)
   local number, relativenumber = true, true
   return M.new({
+    id = "line_number",
     name = "Line Numbers",
     get = function()
       return vim.opt_local.number:get() or vim.opt_local.relativenumber:get()
@@ -159,6 +189,7 @@ end
 ---@param opts? snacks.toggle.Config
 function M.inlay_hints(opts)
   return M.new({
+    id = "inlay_hints",
     name = "Inlay Hints",
     get = function()
       return vim.lsp.inlay_hint.is_enabled({ bufnr = 0 })
@@ -172,6 +203,7 @@ end
 ---@param opts? snacks.toggle.Config
 function M.diagnostics(opts)
   return M.new({
+    id = "diagnostics",
     name = "Diagnostics",
     get = function()
       local enabled = false
@@ -204,6 +236,7 @@ end
 
 function M.profiler()
   return M.new({
+    id = "profiler",
     name = "Profiler",
     get = function()
       return Snacks.profiler.running()
@@ -220,6 +253,7 @@ end
 
 function M.profiler_highlights()
   return M.new({
+    id = "profiler_highlights",
     name = "Profiler Highlights",
     get = function()
       return Snacks.profiler.ui.enabled
@@ -230,6 +264,121 @@ function M.profiler_highlights()
       else
         Snacks.profiler.ui.hide()
       end
+    end,
+  })
+end
+
+function M.indent()
+  return M.new({
+    id = "indent",
+    name = "Indent Guides",
+    get = function()
+      return Snacks.indent.enabled
+    end,
+    set = function(state)
+      if state then
+        Snacks.indent.enable()
+      else
+        Snacks.indent.disable()
+      end
+    end,
+  })
+end
+
+function M.dim()
+  return M.new({
+    id = "dim",
+    name = "Dimming",
+    get = function()
+      return Snacks.dim.enabled
+    end,
+    set = function(state)
+      if state then
+        Snacks.dim.enable()
+      else
+        Snacks.dim.disable()
+      end
+    end,
+  })
+end
+
+function M.words()
+  return M.new({
+    id = "words",
+    name = "LSP Words",
+    get = function()
+      return Snacks.words.enabled
+    end,
+    set = function(state)
+      if state then
+        Snacks.words.enable()
+      else
+        Snacks.words.disable()
+      end
+    end,
+  })
+end
+
+function M.scroll()
+  return M.new({
+    id = "scroll",
+    name = "Smooth Scroll",
+    get = function()
+      return Snacks.scroll.enabled
+    end,
+    set = function(state)
+      if state then
+        Snacks.scroll.enable()
+      else
+        Snacks.scroll.disable()
+      end
+    end,
+  })
+end
+
+function M.zen()
+  return M.new({
+    id = "zen",
+    name = "Zen Mode",
+    get = function()
+      return Snacks.zen.win and Snacks.zen.win:valid() or false
+    end,
+    set = function(state)
+      if state then
+        Snacks.zen()
+      elseif Snacks.zen.win then
+        Snacks.zen.win:close()
+      end
+    end,
+  })
+end
+
+function M.zoom()
+  return M.new({
+    id = "zoom",
+    name = "Zoom Mode",
+    get = function()
+      return Snacks.zen.win and Snacks.zen.win:valid() or false
+    end,
+    set = function(state)
+      if state then
+        Snacks.zen.zoom()
+      elseif Snacks.zen.win then
+        Snacks.zen.win:close()
+      end
+    end,
+  })
+end
+
+function M.animate()
+  return M.new({
+    id = "animate",
+    name = "Animations",
+    get = function()
+      return vim.g.snacks_animate ~= false
+    end,
+    set = function(state)
+      vim.g.snacks_animate = state
     end,
   })
 end

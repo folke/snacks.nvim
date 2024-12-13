@@ -117,6 +117,7 @@ vim.api.nvim_create_autocmd("LspProgress", {
 
 ```lua
 ---@class snacks.notifier.Config
+---@field enabled? boolean
 ---@field keep? fun(notif: snacks.notifier.Notif): boolean # global keep function
 {
   timeout = 3000, -- default timeout in ms
@@ -183,7 +184,7 @@ vim.api.nvim_create_autocmd("LspProgress", {
   title = " Notification History ",
   title_pos = "center",
   ft = "markdown",
-  bo = { filetype = "snacks_notif_history" },
+  bo = { filetype = "snacks_notif_history", modifiable = false },
   wo = { winhighlight = "Normal:SnacksNotifierHistory" },
   keys = { q = "close" },
 }

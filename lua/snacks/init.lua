@@ -1,25 +1,4 @@
----@class Snacks
----@field bigfile snacks.bigfile
----@field bufdelete snacks.bufdelete
----@field config snacks.config
----@field dashboard snacks.dashboard
----@field debug snacks.debug
----@field git snacks.git
----@field gitbrowse snacks.gitbrowse
----@field lazygit snacks.lazygit
----@field notifier snacks.notifier
----@field notify snacks.notify
----@field quickfile snacks.quickfile
----@field health snacks.health
----@field profiler snacks.profiler
----@field rename snacks.rename
----@field scratch snacks.scratch
----@field statuscolumn snacks.statuscolumn
----@field terminal snacks.terminal
----@field toggle snacks.toggle
----@field util snacks.util
----@field win snacks.win
----@field words snacks.words
+---@class Snacks: snacks.plugins
 local M = {}
 
 setmetatable(M, {
@@ -36,26 +15,19 @@ _G.Snacks = M
 ---@field example? string
 ---@field config? fun(opts: table, defaults: table)
 
----@class snacks.Config
----@field bigfile? snacks.bigfile.Config | { enabled: boolean }
----@field gitbrowse? snacks.gitbrowse.Config
----@field lazygit? snacks.lazygit.Config
----@field notifier? snacks.notifier.Config | { enabled: boolean }
----@field quickfile? { enabled: boolean }
----@field statuscolumn? snacks.statuscolumn.Config  | { enabled: boolean }
+---@class snacks.Config: snacks.plugins.Config
 ---@field styles? table<string, snacks.win.Config>
----@field dashboard? snacks.dashboard.Config  | { enabled: boolean }
----@field terminal? snacks.terminal.Config
----@field toggle? snacks.toggle.Config
----@field win? snacks.win.Config
----@field words? snacks.words.Config
 local config = {
-  styles = {},
   bigfile = { enabled = false },
   dashboard = { enabled = false },
+  indent = { enabled = false },
+  input = { enabled = false },
   notifier = { enabled = false },
   quickfile = { enabled = false },
+  scope = { enabled = false },
+  scroll = { enabled = false },
   statuscolumn = { enabled = false },
+  styles = {},
   words = { enabled = false },
 }
 
@@ -113,6 +85,7 @@ function M.config.style(name, defaults)
 end
 
 M.did_setup = false
+M.did_setup_after_vim_enter = false
 
 ---@param opts snacks.Config?
 function M.setup(opts)
@@ -120,44 +93,47 @@ function M.setup(opts)
     return vim.notify("snacks.nvim is already setup", vim.log.levels.ERROR, { title = "snacks.nvim" })
   end
   M.did_setup = true
-  opts = opts or {}
-  -- enable all by default when config is passed
-  for k in pairs(opts) do
-    opts[k].enabled = opts[k].enabled == nil or opts[k].enabled
-  end
-  config = vim.tbl_deep_extend("force", config, opts or {})
 
   if vim.fn.has("nvim-0.9.4") ~= 1 then
     return vim.notify("snacks.nvim requires Neovim >= 0.9.4", vim.log.levels.ERROR, { title = "snacks.nvim" })
   end
 
-  if vim.v.vim_did_enter == 1 and M.config.dashboard.enabled then
-    M.dashboard.setup()
+  -- enable all by default when config is passed
+  opts = opts or {}
+  for k in pairs(opts) do
+    opts[k].enabled = opts[k].enabled == nil or opts[k].enabled
   end
-
-  local group = vim.api.nvim_create_augroup("snacks", { clear = true })
+  config = vim.tbl_deep_extend("force", config, opts or {})
 
   local events = {
     BufReadPre = { "bigfile" },
-    BufReadPost = { "quickfile" },
+    BufReadPost = { "quickfile", "indent" },
     LspAttach = { "words" },
-    UIEnter = { "dashboard" },
+    UIEnter = { "dashboard", "scroll", "input", "scope" },
   }
 
-  for event, snacks in pairs(events) do
-    vim.api.nvim_create_autocmd(event, {
-      group = group,
-      once = true,
-      nested = true,
-      callback = function()
-        for _, snack in ipairs(snacks) do
-          if M.config[snack].enabled then
-            M[snack].setup()
-          end
-        end
-      end,
-    })
+  local function load(event)
+    for _, snack in ipairs(events[event] or {}) do
+      if M.config[snack] and M.config[snack].enabled then
+        (M[snack].setup or M[snack].enable)()
+      end
+    end
+    events[event] = nil
   end
+
+  if vim.v.vim_did_enter == 1 then
+    M.did_setup_after_vim_enter = true
+    load("UIEnter")
+  end
+
+  vim.api.nvim_create_autocmd(vim.tbl_keys(events), {
+    group = vim.api.nvim_create_augroup("snacks", { clear = true }),
+    once = true,
+    nested = true,
+    callback = function(ev)
+      load(ev.event)
+    end,
+  })
 
   if M.config.statuscolumn.enabled then
     vim.o.statuscolumn = [[%!v:lua.require'snacks.statuscolumn'.get()]]

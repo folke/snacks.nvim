@@ -6,6 +6,10 @@ local M = setmetatable({}, {
   end,
 })
 
+M.meta = {
+  desc = "Delete buffers without disrupting window layout",
+}
+
 ---@class snacks.bufdelete.Opts
 ---@field buf? number Buffer to delete. Defaults to the current buffer
 ---@field force? boolean Delete the buffer even if it is modified

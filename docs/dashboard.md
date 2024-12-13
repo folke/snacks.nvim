@@ -119,6 +119,7 @@ In the example below, both sections are equivalent.
 
 ```lua
 ---@class snacks.dashboard.Config
+---@field enabled? boolean
 ---@field sections snacks.dashboard.Section
 ---@field formats table<string, snacks.dashboard.Text|fun(item:snacks.dashboard.Item, ctx:snacks.dashboard.Format.ctx):snacks.dashboard.Text>
 {
@@ -458,6 +459,7 @@ The other options are used with `:lua Snacks.dashboard()`
     colorcolumn = "",
     cursorcolumn = false,
     cursorline = false,
+    foldmethod = "manual",
     list = false,
     number = false,
     relativenumber = false,
@@ -637,8 +639,9 @@ Snacks.dashboard.sections.session(item)
 Add the startup section
 
 ```lua
+---@param opts? {icon?:string}
 ---@return snacks.dashboard.Section?
-Snacks.dashboard.sections.startup()
+Snacks.dashboard.sections.startup(opts)
 ```
 
 ### `Snacks.dashboard.sections.terminal()`

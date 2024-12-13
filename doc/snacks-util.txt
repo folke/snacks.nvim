@@ -12,7 +12,12 @@ Table of Contents                              *snacks-util-table-of-contents*
   - Snacks.util.file_encode()   |snacks-util-module-snacks.util.file_encode()|
   - Snacks.util.icon()                 |snacks-util-module-snacks.util.icon()|
   - Snacks.util.is_transparent()|snacks-util-module-snacks.util.is_transparent()|
+  - Snacks.util.keycode()           |snacks-util-module-snacks.util.keycode()|
+  - Snacks.util.on_module()       |snacks-util-module-snacks.util.on_module()|
+  - Snacks.util.redraw()             |snacks-util-module-snacks.util.redraw()|
+  - Snacks.util.redraw_range() |snacks-util-module-snacks.util.redraw_range()|
   - Snacks.util.set_hl()             |snacks-util-module-snacks.util.set_hl()|
+  - Snacks.util.var()                   |snacks-util-module-snacks.util.var()|
   - Snacks.util.wo()                     |snacks-util-module-snacks.util.wo()|
 
 ==============================================================================
@@ -39,6 +44,8 @@ Table of Contents                              *snacks-util-table-of-contents*
 
 `Snacks.util.bo()`                                          *Snacks.util.bo()*
 
+Set buffer-local options.
+
 >lua
     ---@param buf number
     ---@param bo vim.bo
@@ -49,8 +56,8 @@ Table of Contents                              *snacks-util-table-of-contents*
 `Snacks.util.color()`                                    *Snacks.util.color()*
 
 >lua
-    ---@param group string
-    ---@param prop? string
+    ---@param group string hl group to get color from
+    ---@param prop? string property to get. Defaults to "fg"
     Snacks.util.color(group, prop)
 <
 
@@ -77,9 +84,11 @@ Encodes a string to be used as a file name.
 
 `Snacks.util.icon()`                                      *Snacks.util.icon()*
 
+Get an icon from `mini.icons` or `nvim-web-devicons`.
+
 >lua
     ---@param name string
-    ---@param cat? string
+    ---@param cat? string defaults to "file"
     ---@return string, string?
     Snacks.util.icon(name, cat)
 <
@@ -87,8 +96,53 @@ Encodes a string to be used as a file name.
 
 `Snacks.util.is_transparent()`                  *Snacks.util.is_transparent()*
 
+Check if the colorscheme is transparent.
+
 >lua
     Snacks.util.is_transparent()
+<
+
+
+`Snacks.util.keycode()`                                *Snacks.util.keycode()*
+
+>lua
+    ---@param str string
+    Snacks.util.keycode(str)
+<
+
+
+`Snacks.util.on_module()`                            *Snacks.util.on_module()*
+
+Call a function when a module is loaded. The callback is called immediately if
+the module is already loaded. Otherwise, it is called when the module is
+loaded.
+
+>lua
+    ---@param modname string
+    ---@param cb fun(modname:string)
+    Snacks.util.on_module(modname, cb)
+<
+
+
+`Snacks.util.redraw()`                                  *Snacks.util.redraw()*
+
+Redraw the window. Optimized for Neovim >= 0.10
+
+>lua
+    ---@param win number
+    Snacks.util.redraw(win)
+<
+
+
+`Snacks.util.redraw_range()`                      *Snacks.util.redraw_range()*
+
+Redraw the range of lines in the window. Optimized for Neovim >= 0.10
+
+>lua
+    ---@param win number
+    ---@param from number -- 1-indexed, inclusive
+    ---@param to number -- 1-indexed, inclusive
+    Snacks.util.redraw_range(win, from, to)
 <
 
 
@@ -103,7 +157,23 @@ Ensures the hl groups are always set, even after a colorscheme change.
 <
 
 
+`Snacks.util.var()`                                        *Snacks.util.var()*
+
+Get a buffer or global variable.
+
+>lua
+    ---@generic T
+    ---@param buf? number
+    ---@param name string
+    ---@param default? T
+    ---@return T
+    Snacks.util.var(buf, name, default)
+<
+
+
 `Snacks.util.wo()`                                          *Snacks.util.wo()*
+
+Set window-local options.
 
 >lua
     ---@param win number
