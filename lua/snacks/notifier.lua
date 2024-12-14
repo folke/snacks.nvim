@@ -71,7 +71,7 @@ local uv = vim.uv or vim.loop
 ---@field filter? snacks.notifier.level|fun(notif: snacks.notifier.Notif): boolean
 ---@field sort? string[] # sort fields, default: {"added"}
 ---@field reverse? boolean
----@field include_prefix? boolean
+---@field preview? boolean
 
 ---@type snacks.notifier.history
 local history_opts = {
@@ -108,14 +108,17 @@ Snacks.config.style("notification.history", {
 Snacks.config.style("notification.preview", {
   border = "rounded",
   zindex = 100,
-  width = 0.6,
+  width = 0.75,
   height = 0.6,
-  minimal = false,
+  minimal = true,
   ft = "markdown",
   title_pos = "center",
   footer_pos = "center",
   bo = { filetype = "snacks_notif_preview", modifiable = false },
-  wo = { winhighlight = "Normal:SnacksNotifierHistory" },
+  wo = {
+    wrap = true,
+    winhighlight = "Normal:SnacksNotifierHistory",
+  },
   keys = { q = "close" },
 })
 
@@ -446,12 +449,29 @@ function N:update()
   self.sorted = self.sorted or self:sort()
 end
 
+---@param notif snacks.notifier.Notif
+function N:apply_preview(notif)
+  if not notif._preview or not notif._preview._prefix then
+    notif._preview = notif._preview
+      or {
+        prefix = notif_prefix(notif, { notifier = self, hl = self:hl(notif) }),
+        msg_title = vim.split(notif.msg, "\n")[1],
+      }
+  end
+end
+
 ---@param opts? snacks.notifier.history
 ---@return snacks.notifier.Notif[]
 function N:get_history(opts)
   ---@type snacks.notifier.history
   opts = vim.tbl_deep_extend("force", {}, history_opts, opts or {})
-  local notifs = vim.tbl_values(self.history)
+  local notifs = {}
+  for _, notif in pairs(self.history) do
+    if opts.preview then
+      self:apply_preview(notif)
+    end
+    table.insert(notifs, notif)
+  end
   local filter = opts.filter
   if type(filter) == "string" or type(filter) == "number" then
     local level = normlevel(filter)
@@ -495,19 +515,13 @@ function N:show_history(opts)
 end
 
 ---@param notif snacks.notifier.Notif
----@param buf? integer use an existing buffer
 function N:show_preview(notif)
   if vim.bo.filetype == "snacks_notif_preview" then
     vim.cmd("close")
     return
   end
 
-  local win = Snacks.win({
-    style = "notification.preview",
-    enter = true,
-    show = false,
-    wrap = true,
-  })
+  local win = Snacks.win({ style = "notification.preview", enter = true, show = false })
   local buf = win:open_buf()
 
   N.styles.preview(buf, notif, {
@@ -516,8 +530,9 @@ function N:show_preview(notif)
     ns = N.ns,
     hl = self:hl(notif),
   })
-  local prefix = notif._preview.prefix
-  win.opts.title = vim.list_extend({ { "  " } }, prefix)
+
+  self:apply_preview(notif)
+  win.opts.title = vim.list_extend({ { "  " } }, notif._preview.prefix)
 
   return win:show()
 end
@@ -799,13 +814,17 @@ function M.show_history(opts)
 end
 
 ---@param notif snacks.notifier.Notif
+---@overload fun(id: number|string)
 function M.show_preview(notif)
+  if type(notif) ~= "table" then
+    if notifier.history[notif] then
+      notif = notifier.history[notif]
+    else
+      Snacks.notify.error(("Notification #%d not found"):format(notif))
+      return
+    end
+  end
   return notifier:show_preview(notif)
-end
-
----@private
-function M.get_prefix(notif)
-  return notif_prefix(notif, { hl = notifier:hl(notif), notifier = notifier })
 end
 
 ---@private

@@ -32,18 +32,9 @@ local displayer = entry_display.create({
 })
 
 local telescope_notifications = function(opts)
-  local notifs = Snacks.notifier.get_history()
+  local notifs = Snacks.notifier.get_history({ preview = true })
   local reversed = {}
   for i, notif in ipairs(notifs) do
-    local preview = notif._preview
-
-    if not preview then
-      notif._preview = {}
-      local prefix = Snacks.notifier.get_prefix(notif)
-      notif._preview.prefix = prefix
-      notif._preview.msg_title = vim.split(notif.msg, "\n")[1]
-    end
-
     reversed[#notifs - i + 1] = notif
   end
   pickers
@@ -84,6 +75,7 @@ local telescope_notifications = function(opts)
           local notif = entry.value
           vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, vim.split(notif.msg, "\n"))
           vim.api.nvim_set_option_value("wrap", true, { win = status.preview_win })
+          -- performance issues with filetype set
           -- vim.api.nvim_set_option_value("filetype", "markdown", { buf = self.state.bufnr })
         end,
       }),
