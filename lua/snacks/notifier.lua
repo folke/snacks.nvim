@@ -34,6 +34,7 @@ local uv = vim.uv or vim.loop
 ---@field style? snacks.notifier.style
 ---@field opts? fun(notif: snacks.notifier.Notif) -- dynamic opts
 ---@field hl? snacks.notifier.hl -- highlight overrides
+---@field hide_from_history? boolean
 
 --- Notification object
 ---@class snacks.notifier.Notif: snacks.notifier.Notif.opts
@@ -395,7 +396,9 @@ function N:add(opts)
   if numlevel(notif.level) >= numlevel(self.opts.level) then
     self.queue[notif.id] = notif
   end
-  self.history[notif.id] = notif
+  if not opts.hide_from_history then
+    self.history[notif.id] = notif
+  end
   if self:is_blocking() then
     pcall(function()
       self:process()
