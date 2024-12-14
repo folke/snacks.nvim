@@ -131,7 +131,7 @@ function M.input(opts, on_confirm)
       omnifunc = "v:lua.Snacks.input.complete",
     },
     wo = {
-      statuscolumn = next(statuscolumn) and " " .. table.concat(statuscolumn, " ") .. " " or nil,
+      statuscolumn = next(statuscolumn) and " " .. table.concat(statuscolumn, " ") .. " " or " ",
     },
     actions = {
       cancel = function(self)
