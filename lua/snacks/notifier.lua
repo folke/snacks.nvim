@@ -71,6 +71,7 @@ local uv = vim.uv or vim.loop
 ---@field filter? snacks.notifier.level|fun(notif: snacks.notifier.Notif): boolean
 ---@field sort? string[] # sort fields, default: {"added"}
 ---@field reverse? boolean
+---@field include_prefix? boolean
 
 ---@type snacks.notifier.history
 local history_opts = {
@@ -100,6 +101,20 @@ Snacks.config.style("notification.history", {
   title_pos = "center",
   ft = "markdown",
   bo = { filetype = "snacks_notif_history", modifiable = false },
+  wo = { winhighlight = "Normal:SnacksNotifierHistory" },
+  keys = { q = "close" },
+})
+
+Snacks.config.style("notification.preview", {
+  border = "rounded",
+  zindex = 100,
+  width = 0.6,
+  height = 0.6,
+  minimal = false,
+  ft = "markdown",
+  title_pos = "center",
+  footer_pos = "center",
+  bo = { filetype = "snacks_notif_preview", modifiable = false },
   wo = { winhighlight = "Normal:SnacksNotifierHistory" },
   keys = { q = "close" },
 })
@@ -160,6 +175,24 @@ local function hl(name, level)
   return "SnacksNotifier" .. name .. (level and cap(level) or "")
 end
 
+local function notif_prefix(notif, ctx)
+  local prefix = {
+    { os.date(ctx.notifier.opts.date_format, notif.added), hl("HistoryDateTime") },
+    { notif.icon, ctx.hl.icon },
+    { notif.level:upper(), ctx.hl.title },
+    { notif.title, hl("HistoryTitle") },
+  }
+  prefix = vim.tbl_filter(function(v)
+    return (v[1] or "") ~= ""
+  end, prefix)
+  local prefix_width = 0
+  for i = 1, #prefix do
+    prefix_width = prefix_width + vim.fn.strdisplaywidth(prefix[i * 2 - 1][1]) + 1
+    table.insert(prefix, i * 2, { " " })
+  end
+  return prefix, prefix_width
+end
+
 ---@type table<string, snacks.notifier.render>
 N.styles = {
   -- style using border title
@@ -181,22 +214,13 @@ N.styles = {
       virt_text_pos = "right_align",
     })
   end,
+  preview = function(buf, notif)
+    local lines = vim.split(notif.msg, "\n", { plain = true })
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  end,
   history = function(buf, notif, ctx)
     local lines = vim.split(notif.msg, "\n", { plain = true })
-    local prefix = {
-      { os.date(ctx.notifier.opts.date_format, notif.added), hl("HistoryDateTime") },
-      { notif.icon, ctx.hl.icon },
-      { notif.level:upper(), ctx.hl.title },
-      { notif.title, hl("HistoryTitle") },
-    }
-    prefix = vim.tbl_filter(function(v)
-      return (v[1] or "") ~= ""
-    end, prefix)
-    local prefix_width = 0
-    for i = 1, #prefix do
-      prefix_width = prefix_width + vim.fn.strdisplaywidth(prefix[i * 2 - 1][1]) + 1
-      table.insert(prefix, i * 2, { " " })
-    end
+    local prefix, prefix_width = notif_prefix(notif, ctx)
     local top = vim.api.nvim_buf_line_count(buf)
     local empty = top == 1 and #vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] == 0
     top = empty and 0 or top
@@ -467,6 +491,34 @@ function N:show_history(opts)
       hl = self:hl(notif),
     })
   end
+  return win:show()
+end
+
+---@param notif snacks.notifier.Notif
+---@param buf? integer use an existing buffer
+function N:show_preview(notif)
+  if vim.bo.filetype == "snacks_notif_preview" then
+    vim.cmd("close")
+    return
+  end
+
+  local win = Snacks.win({
+    style = "notification.preview",
+    enter = true,
+    show = false,
+    wrap = true,
+  })
+  local buf = win:open_buf()
+
+  N.styles.preview(buf, notif, {
+    opts = win.opts,
+    notifier = self,
+    ns = N.ns,
+    hl = self:hl(notif),
+  })
+  local prefix = notif._preview.prefix
+  win.opts.title = vim.list_extend({ { "  " } }, prefix)
+
   return win:show()
 end
 
@@ -744,6 +796,16 @@ end
 ---@param opts? snacks.notifier.history
 function M.show_history(opts)
   return notifier:show_history(opts)
+end
+
+---@param notif snacks.notifier.Notif
+function M.show_preview(notif)
+  return notifier:show_preview(notif)
+end
+
+---@private
+function M.get_prefix(notif)
+  return notif_prefix(notif, { hl = notifier:hl(notif), notifier = notifier })
 end
 
 ---@private

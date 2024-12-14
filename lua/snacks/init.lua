@@ -134,6 +134,11 @@ function M.setup(opts)
       vim.notify = Snacks.notifier.notify
       return Snacks.notifier.notify(msg, level, o)
     end
+
+    local has_telescope = (vim.fn.exists("g:loaded_telescope") == 1)
+    if has_telescope then
+      require("telescope").load_extension("notifier")
+    end
   end
 end
 
