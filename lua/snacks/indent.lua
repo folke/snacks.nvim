@@ -143,7 +143,8 @@ end
 ---@param indent number
 ---@param state snacks.indent.State
 local function get_extmark(indent, state)
-  local space = config.indent.blank or state.listchars.space or " "
+  local listchars = state.listchars
+  local space = config.indent.blank or listchars.lead or listchars.space or " "
   local key = indent .. ":" .. state.leftcol .. ":" .. state.shiftwidth .. ":" .. state.indent_offset .. ":" .. space
   if cache_extmarks[key] ~= nil then
     return cache_extmarks[key]
