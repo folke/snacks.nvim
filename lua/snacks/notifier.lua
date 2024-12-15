@@ -456,7 +456,7 @@ function N:show_history(opts)
     vim.cmd("close")
     return
   end
-  local win = Snacks.win({ style = "notification.history", enter = true, show = false })
+  local win = Snacks.win({ style = "notification_history", enter = true, show = false })
   local buf = win:open_buf()
   opts = opts or {}
   if opts.reverse == nil then
