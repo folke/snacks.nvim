@@ -1,5 +1,39 @@
 # Changelog
 
+## [2.11.0](https://github.com/folke/snacks.nvim/compare/v2.10.0...v2.11.0) (2024-12-15)
+
+
+### Features
+
+* **indent:** properly handle continuation indents. Closes [#286](https://github.com/folke/snacks.nvim/issues/286) ([f2bb7fa](https://github.com/folke/snacks.nvim/commit/f2bb7fa94e4b9b1fa7f84066bbedea8b3d9875e3))
+* **input:** allow configuring position of prompt and icon ([d0cb707](https://github.com/folke/snacks.nvim/commit/d0cb7070e98d6a2ca31d94dd04d7048c9b258f33))
+* **notifier:** notification `history` option ([#297](https://github.com/folke/snacks.nvim/issues/297)) ([8f56e19](https://github.com/folke/snacks.nvim/commit/8f56e19f916f8075e2bfb534d723e3d850e256a4))
+* **scope:** `Scope:inner` for indent based and treesitter scopes ([8a8b1c9](https://github.com/folke/snacks.nvim/commit/8a8b1c976fc2736a3b91697750074fd3b23a24c9))
+* **scope:** added `__tostring` for debugging ([94e0849](https://github.com/folke/snacks.nvim/commit/94e0849c3aae3b818cad2804c256c57318256c72))
+* **scope:** added `opts.cursor` to take cursor column into account for scope detection. (defaults to true). Closes [#282](https://github.com/folke/snacks.nvim/issues/282) ([54bc6ba](https://github.com/folke/snacks.nvim/commit/54bc6bab2dbd07270c8c3fd447e8b72f825c315c))
+* **scope:** text objects now use treesitter scopes by default. See [#231](https://github.com/folke/snacks.nvim/issues/231) ([a953697](https://github.com/folke/snacks.nvim/commit/a9536973a9111c3c7b66fb51bc5f62be27850884))
+* **statuscolumn:** allow left/right to be a function. Closes [#288](https://github.com/folke/snacks.nvim/issues/288) ([cb42b95](https://github.com/folke/snacks.nvim/commit/cb42b952c5d4047f8e805c02c7aa596eb4e45ef2))
+* **util:** on_key handler ([002d5eb](https://github.com/folke/snacks.nvim/commit/002d5eb5c2710a4e7456dd572543369e8424fd64))
+* **win:** win:line() ([17494ad](https://github.com/folke/snacks.nvim/commit/17494ad9bf98e82c6a16f032cb3c9c82e072371a))
+
+
+### Bug Fixes
+
+* **dashboard:** telescope can't be run from a `vim.schedule` for some reason ([dcc5338](https://github.com/folke/snacks.nvim/commit/dcc5338e6f2a825b78791c96829d7e5a29e3ea5d))
+* **indent:** `opts.indent.blank` now defaults to `listchars.space`. Closes [#291](https://github.com/folke/snacks.nvim/issues/291) ([31bc409](https://github.com/folke/snacks.nvim/commit/31bc409342b00d406963de3e1f38f3a2f84cfdcb))
+* **indent:** fixup ([14d71c3](https://github.com/folke/snacks.nvim/commit/14d71c3fb2856634a8697f7c9f01704980e49bd0))
+* **indent:** honor lead listchar ([#303](https://github.com/folke/snacks.nvim/issues/303)) ([7db0cc9](https://github.com/folke/snacks.nvim/commit/7db0cc9281b23c71155422433b6f485675674932))
+* **indent:** honor listchars and list when blank is `nil`. Closes [#296](https://github.com/folke/snacks.nvim/issues/296) ([0e150f5](https://github.com/folke/snacks.nvim/commit/0e150f5510e381753ddd18f29facba14716d5669))
+* **indent:** lower priorities of indent guides ([7f66818](https://github.com/folke/snacks.nvim/commit/7f668185ea810304cef5cb166a51665d4859124b))
+* **input:** check if parent win still exists. Fixes [#287](https://github.com/folke/snacks.nvim/issues/287) ([db768a5](https://github.com/folke/snacks.nvim/commit/db768a5497301aad7fcddae2fe578cb320cc9ca2))
+* **input:** go back to insert mode if input was started from insert mode. Fixes [#287](https://github.com/folke/snacks.nvim/issues/287) ([5d00e6d](https://github.com/folke/snacks.nvim/commit/5d00e6dec5686d7d2a6d97288287892d117d579b))
+* **input:** missing padding if neither title nor icon positioned left ([#292](https://github.com/folke/snacks.nvim/issues/292)) ([97542a7](https://github.com/folke/snacks.nvim/commit/97542a7d9bfc7f242acbaa9851a62c649222fec8))
+* **input:** open input window with `noautocmd=true` set. Fixes [#287](https://github.com/folke/snacks.nvim/issues/287) ([26b7d4c](https://github.com/folke/snacks.nvim/commit/26b7d4cbd9f803d9f759fc00d0dc4caa0141048b))
+* **scope:** add `indent` to `__eq` ([be2779e](https://github.com/folke/snacks.nvim/commit/be2779e942bee0932e9c14ef4ed3e4002be861ce))
+* **scope:** better treesitter scope edge detection ([b7355c1](https://github.com/folke/snacks.nvim/commit/b7355c16fb441e33be993ade74130464b62304cf))
+* **scroll:** check mousescroll before spamming ([3d67bda](https://github.com/folke/snacks.nvim/commit/3d67bda1e29b8e8108dd74d611bf5c8b42883838))
+* **util:** on_key compat with Neovim 0.9 ([effa885](https://github.com/folke/snacks.nvim/commit/effa885120670ca8a1775fc16ab2ec9e8040c288))
+
 ## [2.10.0](https://github.com/folke/snacks.nvim/compare/v2.9.0...v2.10.0) (2024-12-13)
 
 
