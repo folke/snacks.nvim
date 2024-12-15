@@ -521,7 +521,12 @@ function N:show_preview(notif)
     return
   end
 
-  local win = Snacks.win({ style = "notification.preview", enter = true, show = false })
+  local win = Snacks.win({
+    style = "notification.preview",
+    enter = true,
+    show = false,
+    ft = notif.win and notif.win.opts.ft,
+  })
   local buf = win:open_buf()
 
   N.styles.preview(buf, notif, {
