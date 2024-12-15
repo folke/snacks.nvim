@@ -108,7 +108,7 @@ Snacks.config.style("notification.history", {
 Snacks.config.style("notification.preview", {
   border = "rounded",
   zindex = 100,
-  width = 0.75,
+  width = 0.6,
   height = 0.6,
   minimal = true,
   ft = "markdown",
@@ -532,7 +532,7 @@ function N:show_preview(notif)
   })
 
   self:apply_preview(notif)
-  win.opts.title = vim.list_extend({ { "  " } }, notif._preview.prefix)
+  win.opts.title = vim.list_extend({ { "  ", hl("HistoryDateTime") } }, notif._preview.prefix)
 
   return win:show()
 end
