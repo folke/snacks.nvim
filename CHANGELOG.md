@@ -1,5 +1,44 @@
 # Changelog
 
+## [2.12.0](https://github.com/folke/snacks.nvim/compare/v2.11.0...v2.12.0) (2024-12-20)
+
+
+### Features
+
+* **input:** disable completion engines in input ([37038df](https://github.com/folke/snacks.nvim/commit/37038df00d6b47a65de24266c25683ff5a781a40))
+* **scope:** disable treesitter blocks by default ([8ec6e6a](https://github.com/folke/snacks.nvim/commit/8ec6e6adc5b098674c41005530d1c8af126480ae))
+* **util:** throttle ([737980d](https://github.com/folke/snacks.nvim/commit/737980d987cdb4d3c2b18e0b3b8613fde974a2e9))
+
+
+### Bug Fixes
+
+* **debug:** make debug.inpect work in fast events ([b70edc2](https://github.com/folke/snacks.nvim/commit/b70edc29dbc8c9718af246a181b05d4d190ad260))
+* **debug:** make sure debug can be required in fast events ([6cbdbb9](https://github.com/folke/snacks.nvim/commit/6cbdbb9afa748e84af4c35d17fc4737b18638a35))
+* **indent:** allow rendering over blank lines. Fixes [#313](https://github.com/folke/snacks.nvim/issues/313) ([766e671](https://github.com/folke/snacks.nvim/commit/766e67145259e30ae7d63dfd6d51b8d8ef0840ae))
+* **indent:** better way to deal with `breakindent`. Fixes [#329](https://github.com/folke/snacks.nvim/issues/329) ([235427a](https://github.com/folke/snacks.nvim/commit/235427abcbf3e2b251a8b75f0e409dfbb6c737d6))
+* **indent:** breakdinent ([972c61c](https://github.com/folke/snacks.nvim/commit/972c61cc1cd254ef3b43ec1dfd51eefbdc441a7d))
+* **indent:** correct calculation of partial indent when leftcol &gt; 0 ([6f3cbf8](https://github.com/folke/snacks.nvim/commit/6f3cbf8ad328d181a694cdded344477e81cd094d))
+* **indent:** do animate check in bufcall ([c62e7a2](https://github.com/folke/snacks.nvim/commit/c62e7a2561351c9fe3a8e7e9fc8602f3b61abf53))
+* **indent:** don't render scopes in closed folds. Fixes [#352](https://github.com/folke/snacks.nvim/issues/352) ([94ec568](https://github.com/folke/snacks.nvim/commit/94ec5686a64218c9477de7761af4fd34dd4a665b))
+* **indent:** off-by-one for indent guide hl group ([551e644](https://github.com/folke/snacks.nvim/commit/551e644ca311d065b3a6882db900846c1e66e636))
+* **indent:** repeat_linbebreak only works on Neovim &gt;= 0.10. Fixes [#353](https://github.com/folke/snacks.nvim/issues/353) ([b93201b](https://github.com/folke/snacks.nvim/commit/b93201bdf36bd62b07daf7d40bc305998f9da52c))
+* **indent:** simplify indent guide logic and never overwrite blanks. Fixes [#334](https://github.com/folke/snacks.nvim/issues/334) ([282be8b](https://github.com/folke/snacks.nvim/commit/282be8bfa8e6f46d6994ff46638d1c155b90753f))
+* **indent:** typo for underline ([66cce2f](https://github.com/folke/snacks.nvim/commit/66cce2f512e11a961a8f187eac802acbf8725d05))
+* **indent:** use space instead of full blank for indent offset. See [#313](https://github.com/folke/snacks.nvim/issues/313) ([58081bc](https://github.com/folke/snacks.nvim/commit/58081bcecb31db8c6f12ad876c70786582a7f6a8))
+* **input:** change buftype to prompt. Fixes [#350](https://github.com/folke/snacks.nvim/issues/350) ([2990bf0](https://github.com/folke/snacks.nvim/commit/2990bf0c7a79f5780a0268a47bae69ef004cec99))
+* **input:** make sure to show input window with a higher zindex of the parent window (if float) ([3123e6e](https://github.com/folke/snacks.nvim/commit/3123e6e9882f178411ea6e9fbf5e9552134b82b0))
+* **notifier:** open history window with correct style ([#307](https://github.com/folke/snacks.nvim/issues/307)) ([d2b5680](https://github.com/folke/snacks.nvim/commit/d2b5680359ee8feb34b095fd574b4f9b3f013629))
+* **notifier:** rename style `notification.history` -&gt; `notification_history` ([fd9ef30](https://github.com/folke/snacks.nvim/commit/fd9ef30206185e3dd4d3294c74e2fd0dee9722d1))
+* **scope:** allow treesitter scopes when treesitter highlighting is disabled. See [#231](https://github.com/folke/snacks.nvim/issues/231) ([58ae580](https://github.com/folke/snacks.nvim/commit/58ae580c2c12275755bb3e2003aebd06d550f2db))
+* **scope:** don't expand to invalid range. Fixes [#339](https://github.com/folke/snacks.nvim/issues/339) ([1244305](https://github.com/folke/snacks.nvim/commit/1244305bedb8e60a946d949c78453263a714a4ad))
+* **scope:** properly caluclate start indent when `cursor=true` for indent scopes. See [#5068](https://github.com/folke/snacks.nvim/issues/5068) ([e63fa7b](https://github.com/folke/snacks.nvim/commit/e63fa7bf05d22f4306c5fff594d48bc01e382238))
+* **scope:** use virtcol for calculating scopes at the cursor ([6a36f32](https://github.com/folke/snacks.nvim/commit/6a36f32eaa7d5d59e681b7b8112a85a58a2d563d))
+* **scroll:** check for invalid window. Fixes [#340](https://github.com/folke/snacks.nvim/issues/340) ([b6032e8](https://github.com/folke/snacks.nvim/commit/b6032e8f1b5cba55b5a2cf138ab4f172c4decfbd))
+* **scroll:** don't animate when leaving cmdline search with incsearch enabled. Fixes [#331](https://github.com/folke/snacks.nvim/issues/331) ([fc0a99b](https://github.com/folke/snacks.nvim/commit/fc0a99b8493c34e6a930b3571ee8491e23831bca))
+* **win:** unset `winblend` when transparent ([0617e28](https://github.com/folke/snacks.nvim/commit/0617e28f8289002310fed5986acc29fde38e01b5))
+* **words:** only check modes for `is_enabled` when needed ([80dcb88](https://github.com/folke/snacks.nvim/commit/80dcb88ede1a96f79edd3b7ede0bc41d51dd8a2d))
+* **zen:** set zindex to 40, lower than hover (45). Closes [#345](https://github.com/folke/snacks.nvim/issues/345) ([05f4981](https://github.com/folke/snacks.nvim/commit/05f49814f3a2f3ecb83d9e72b7f8f2af40351aad))
+
 ## [2.11.0](https://github.com/folke/snacks.nvim/compare/v2.10.0...v2.11.0) (2024-12-15)
 
 
