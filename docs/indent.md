@@ -17,6 +17,7 @@ Similar plugins:
 -- lazy.nvim
 {
   "folke/snacks.nvim",
+  ---@type snacks.Config
   opts = {
     indent = {
       -- your indent configuration comes here
@@ -34,10 +35,9 @@ Similar plugins:
 ---@field enabled? boolean
 {
   indent = {
+    priority = 1,
     enabled = true, -- enable indent guides
     char = "│",
-    blank = " ",
-    -- blank = "∙",
     only_scope = false, -- only show indent guides of the scope
     only_current = false, -- only show indent guides in the current window
     hl = "SnacksIndent", ---@type string|string[] hl groups for indent guides
@@ -74,6 +74,7 @@ Similar plugins:
   ---@class snacks.indent.Scope.Config: snacks.scope.Config
   scope = {
     enabled = true, -- enable highlighting the current scope
+    priority = 200,
     char = "│",
     underline = false, -- underline the start of the scope
     only_current = false, -- only show scope in the current window
@@ -85,6 +86,7 @@ Similar plugins:
     enabled = false,
     -- only show chunk scopes in the current window
     only_current = false,
+    priority = 200,
     hl = "SnacksIndentChunk", ---@type string|string[] hl group for chunk scopes
     char = {
       corner_top = "┌",
@@ -105,7 +107,6 @@ Similar plugins:
   filter = function(buf)
     return vim.g.snacks_indent ~= false and vim.b[buf].snacks_indent ~= false and vim.bo[buf].buftype == ""
   end,
-  priority = 200,
 }
 ```
 

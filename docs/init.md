@@ -102,6 +102,7 @@ Register a new window style config.
 ```lua
 ---@param name string
 ---@param defaults snacks.win.Config|{}
+---@return string
 Snacks.config.style(name, defaults)
 ```
 

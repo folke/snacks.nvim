@@ -23,6 +23,7 @@ Table of Contents                               *snacks-win-table-of-contents*
   - win:has_border()                      |snacks-win-module-win:has_border()|
   - win:hide()                                  |snacks-win-module-win:hide()|
   - win:is_floating()                    |snacks-win-module-win:is_floating()|
+  - win:line()                                  |snacks-win-module-win:line()|
   - win:lines()                                |snacks-win-module-win:lines()|
   - win:parent_size()                    |snacks-win-module-win:parent_size()|
   - win:show()                                  |snacks-win-module-win:show()|
@@ -62,6 +63,7 @@ Easily create and manage floating windows or splits
     -- lazy.nvim
     {
       "folke/snacks.nvim",
+      ---@type snacks.Config
       opts = {
         win = {
           -- your win configuration comes here
@@ -88,8 +90,8 @@ Easily create and manage floating windows or splits
     ---@field file? string If set, use this file instead of creating a new buffer
     ---@field enter? boolean Enter the window after opening (default: false)
     ---@field backdrop? number|false|snacks.win.Backdrop Opacity of the backdrop (default: 60)
-    ---@field wo? vim.wo window options
-    ---@field bo? vim.bo buffer options
+    ---@field wo? vim.wo|{} window options
+    ---@field bo? vim.bo|{} buffer options
     ---@field ft? string filetype to use for treesitter/syntax highlighting. Won't override existing filetype
     ---@field keys? table<string, false|string|fun(self: snacks.win)|snacks.win.Keys> Key mappings
     ---@field on_buf? fun(self: snacks.win) Callback after opening the buffer
@@ -116,6 +118,10 @@ Easily create and manage floating windows or splits
 
 ==============================================================================
 4. Styles                                                  *snacks-win-styles*
+
+Check the styles
+<https://github.com/folke/snacks.nvim/blob/main/docs/styles.md> docs for more
+information on how to customize these styles
 
 
 FLOAT                                                *snacks-win-styles-float*
@@ -284,11 +290,18 @@ WIN:IS_FLOATING()                        *snacks-win-module-win:is_floating()*
 <
 
 
+WIN:LINE()                                      *snacks-win-module-win:line()*
+
+>lua
+    win:line(line)
+<
+
+
 WIN:LINES()                                    *snacks-win-module-win:lines()*
 
 >lua
-    ---@param from? number
-    ---@param to? number
+    ---@param from? number 1-indexed, inclusive
+    ---@param to? number 1-indexed, inclusive
     win:lines(from, to)
 <
 
@@ -318,8 +331,8 @@ WIN:SIZE()                                      *snacks-win-module-win:size()*
 WIN:TEXT()                                      *snacks-win-module-win:text()*
 
 >lua
-    ---@param from? number
-    ---@param to? number
+    ---@param from? number 1-indexed, inclusive
+    ---@param to? number 1-indexed, inclusive
     win:text(from, to)
 <
 

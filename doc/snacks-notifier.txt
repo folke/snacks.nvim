@@ -9,7 +9,7 @@ Table of Contents                          *snacks-notifier-table-of-contents*
 4. Config                                             |snacks-notifier-config|
 5. Styles                                             |snacks-notifier-styles|
   - notification                         |snacks-notifier-styles-notification|
-  - notification.history         |snacks-notifier-styles-notification.history|
+  - notification_history         |snacks-notifier-styles-notification_history|
 6. Types                                               |snacks-notifier-types|
   - Notifications                        |snacks-notifier-types-notifications|
   - Rendering                                |snacks-notifier-types-rendering|
@@ -116,6 +116,7 @@ Advanced LSP Progress ~
     -- lazy.nvim
     {
       "folke/snacks.nvim",
+      ---@type snacks.Config
       opts = {
         notifier = {
           -- your notifier configuration comes here
@@ -172,6 +173,10 @@ Advanced LSP Progress ~
 ==============================================================================
 5. Styles                                             *snacks-notifier-styles*
 
+Check the styles
+<https://github.com/folke/snacks.nvim/blob/main/docs/styles.md> docs for more
+information on how to customize these styles
+
 
 NOTIFICATION                             *snacks-notifier-styles-notification*
 
@@ -191,7 +196,7 @@ NOTIFICATION                             *snacks-notifier-styles-notification*
 <
 
 
-NOTIFICATION.HISTORY             *snacks-notifier-styles-notification.history*
+NOTIFICATION_HISTORY             *snacks-notifier-styles-notification_history*
 
 >lua
     {
@@ -238,6 +243,7 @@ Notification options
     ---@field style? snacks.notifier.style
     ---@field opts? fun(notif: snacks.notifier.Notif) -- dynamic opts
     ---@field hl? snacks.notifier.hl -- highlight overrides
+    ---@field history? boolean
 <
 
 Notification object

@@ -36,7 +36,7 @@ function M.enable()
   vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI", "ModeChanged" }, {
     group = group,
     callback = function()
-      if not M.is_enabled() then
+      if not M.is_enabled({ modes = true }) then
         M.clear()
         return
       end
@@ -69,7 +69,7 @@ function M.update()
     vim.schedule(function()
       if vim.api.nvim_buf_is_valid(buf) then
         vim.api.nvim_buf_call(buf, function()
-          if not M.is_enabled() then
+          if not M.is_enabled({ modes = true }) then
             return
           end
           vim.lsp.buf.document_highlight()
@@ -80,18 +80,29 @@ function M.update()
   end)
 end
 
----@param buf number?
-function M.is_enabled(buf)
-  buf = buf or vim.api.nvim_get_current_buf()
-  local mode = vim.api.nvim_get_mode().mode:lower()
-  mode = mode:gsub("\22", "v"):gsub("\19", "s")
-  mode = mode:sub(1, 2) == "no" and "o" or mode
-  mode = mode:sub(1, 1):match("[ncitsvo]") or "n"
+---@param opts? number|{buf?:number, modes:boolean} if modes is true, also check if the current mode is enabled
+function M.is_enabled(opts)
+  if not M.enabled then
+    return false
+  end
+  opts = type(opts) == "number" and { buf = opts } or opts or {}
+
+  if opts.modes then
+    local mode = vim.api.nvim_get_mode().mode:lower()
+    mode = mode:gsub("\22", "v"):gsub("\19", "s")
+    mode = mode:sub(1, 2) == "no" and "o" or mode
+    mode = mode:sub(1, 1):match("[ncitsvo]") or "n"
+    if not vim.tbl_contains(config.modes, mode) then
+      return false
+    end
+  end
+
+  local buf = opts.buf or vim.api.nvim_get_current_buf()
   local clients = (vim.lsp.get_clients or vim.lsp.get_active_clients)({ bufnr = buf })
   clients = vim.tbl_filter(function(client)
     return client.supports_method("textDocument/documentHighlight", { bufnr = buf })
   end, clients)
-  return M.enabled and vim.tbl_contains(config.modes, mode) and #clients > 0
+  return #clients > 0
 end
 
 ---@private

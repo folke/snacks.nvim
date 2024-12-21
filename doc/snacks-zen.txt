@@ -29,6 +29,7 @@ Similar plugins:
     -- lazy.nvim
     {
       "folke/snacks.nvim",
+      ---@type snacks.Config
       opts = {
         zen = {
           -- your zen configuration comes here
@@ -85,6 +86,10 @@ Similar plugins:
 
 ==============================================================================
 3. Styles                                                  *snacks-zen-styles*
+
+Check the styles
+<https://github.com/folke/snacks.nvim/blob/main/docs/styles.md> docs for more
+information on how to customize these styles
 
 
 ZEN                                                    *snacks-zen-styles-zen*

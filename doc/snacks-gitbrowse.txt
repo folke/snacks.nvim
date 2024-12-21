@@ -20,6 +20,7 @@ Open the repo of the active file in the browser (e.g., GitHub)
     -- lazy.nvim
     {
       "folke/snacks.nvim",
+      ---@type snacks.Config
       opts = {
         gitbrowse = {
           -- your gitbrowse configuration comes here

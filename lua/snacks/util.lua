@@ -5,6 +5,8 @@ M.meta = {
   desc = "Utility functions for Snacks _(library)_",
 }
 
+local uv = vim.uv or vim.loop
+
 ---@alias snacks.util.hl table<string, string|vim.api.keyset.highlight>
 
 local hl_groups = {} ---@type table<string, vim.api.keyset.highlight>
@@ -157,7 +159,7 @@ function M.redraw(win)
   end
 end
 
-local mod_timer = assert((vim.uv or vim.loop).new_timer())
+local mod_timer = assert(uv.new_timer())
 local mod_cb = {} ---@type table<string, fun(modname:string)[]>
 
 ---@return boolean waiting
@@ -215,6 +217,46 @@ function M.var(buf, name, default)
     return ret
   end
   return default
+end
+
+local keys = {} ---@type table<string, fun(key:string)[]>
+local on_key_ns ---@type number?
+
+---@param key string
+---@param cb fun(key:string)
+function M.on_key(key, cb)
+  local code = M.keycode(key)
+  keys[code] = keys[code] or {}
+  table.insert(keys[code], cb)
+  on_key_ns = on_key_ns
+    or vim.on_key(function(resolved, typed)
+      for _, c in ipairs(keys[typed or resolved] or {}) do
+        pcall(c, typed)
+      end
+    end)
+end
+
+---@generic T
+---@param fn T
+---@param opts? {ms?:number}
+---@return T
+function M.throttle(fn, opts)
+  local timer, trailing, ms = assert(uv.new_timer()), false, opts and opts.ms or 20
+  return function()
+    if timer:is_active() then
+      trailing = true
+      return
+    end
+    trailing = false
+    if vim.in_fast_event() then
+      vim.schedule(fn)
+    else
+      fn()
+    end
+    timer:start(ms, 0, function()
+      return trailing and vim.schedule(fn)
+    end)
+  end
 end
 
 return M

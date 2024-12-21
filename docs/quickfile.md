@@ -11,6 +11,7 @@ before loading your plugins.
 -- lazy.nvim
 {
   "folke/snacks.nvim",
+  ---@type snacks.Config
   opts = {
     quickfile = {
       -- your quickfile configuration comes here

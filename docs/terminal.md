@@ -46,6 +46,7 @@ Based on the provided options, some defaults will be set:
 -- lazy.nvim
 {
   "folke/snacks.nvim",
+  ---@type snacks.Config
   opts = {
     terminal = {
       -- your terminal configuration comes here
@@ -68,6 +69,9 @@ Based on the provided options, some defaults will be set:
 ```
 
 ## 🎨 Styles
+
+Check the [styles](https://github.com/folke/snacks.nvim/blob/main/docs/styles.md)
+docs for more information on how to customize these styles
 
 ### `terminal`
 

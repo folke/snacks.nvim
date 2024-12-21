@@ -61,6 +61,7 @@ local query = vim.treesitter.query.parse(
 ---@field mod? string
 ---@field methods {name: string, args: string, comment?: string, types?: string, type: "method"|"function"}[]
 ---@field types string[]
+---@field setup? string
 ---@field examples table<string, string>
 ---@field styles {name:string, opts:string, comment?:string}[]
 
@@ -239,14 +240,14 @@ function M.render(name, info)
     prefix = "Snacks"
   end
 
-  if info.config then
-    if name ~= "init" then
-      add("## 📦 Setup\n")
-      add(([[
+  if name ~= "init" and (info.config or info.setup) then
+    add("## 📦 Setup\n")
+    add(([[
 ```lua
 -- lazy.nvim
 {
   "folke/snacks.nvim",
+  ---@type snacks.Config
   opts = {
     %s = {
       -- your %s configuration comes here
@@ -256,9 +257,10 @@ function M.render(name, info)
   }
 }
 ```
-]]):format(name, name))
-    end
+]]):format(info.setup or name, name))
+  end
 
+  if info.config then
     add("## ⚙️ Config\n")
     add(M.md(info.config))
   end
@@ -280,6 +282,18 @@ function M.render(name, info)
       return a.name < b.name
     end)
     add("## 🎨 Styles\n")
+
+    if name == "styles" then
+      add([[These are the default styles that Snacks provides.
+You can customize them by adding your own styles to `opts.styles`.
+
+]])
+    else
+      add([[Check the [styles](https://github.com/folke/snacks.nvim/blob/main/docs/styles.md)
+docs for more information on how to customize these styles
+]])
+    end
+
     for _, style in pairs(info.styles) do
       add(("### `%s`\n"):format(style.name))
       if style.comment and style.comment ~= "" then
@@ -380,12 +394,22 @@ function M._build()
     config = {}, ---@type string[]
   }
 
+  ---@type snacks.docs.Info
+  local styles = {
+    methods = {},
+    types = {},
+    examples = {},
+    styles = {},
+    setup = "---@type table<string, snacks.win.Config>\n    styles",
+  }
+
   for _, plugin in pairs(plugins) do
     if plugin.meta.docs then
       local name = plugin.name
       print("[gen] " .. name .. ".md")
       local lines = vim.fn.readfile(plugin.file)
       local info = M.extract(lines)
+      vim.list_extend(styles.styles, info.styles)
       info.config = name ~= "init" and info.config or nil
       plugin.meta.config = info.config ~= nil
       M.write(name, M.render(name, info))
@@ -397,6 +421,7 @@ function M._build()
       end
     end
   end
+  M.write("styles", M.render("styles", styles))
 
   M.readme(plugins, types)
   M.types(types)

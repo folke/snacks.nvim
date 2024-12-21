@@ -23,6 +23,7 @@ mini.animate <https://github.com/echasnovski/mini.animate> (if used)
     -- lazy.nvim
     {
       "folke/snacks.nvim",
+      ---@type snacks.Config
       opts = {
         bigfile = {
           -- your bigfile configuration comes here

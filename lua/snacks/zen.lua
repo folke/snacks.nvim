@@ -55,6 +55,7 @@ Snacks.config.style("zen", {
   height = 0,
   backdrop = { transparent = true, blend = 40 },
   keys = { q = false },
+  zindex = 40,
   wo = {
     winhighlight = "NormalFloat:Normal",
   },

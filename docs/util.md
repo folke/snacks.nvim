@@ -81,6 +81,14 @@ Snacks.util.is_transparent()
 Snacks.util.keycode(str)
 ```
 
+### `Snacks.util.on_key()`
+
+```lua
+---@param key string
+---@param cb fun(key:string)
+Snacks.util.on_key(key, cb)
+```
+
 ### `Snacks.util.on_module()`
 
 Call a function when a module is loaded.
@@ -123,6 +131,16 @@ Ensures the hl groups are always set, even after a colorscheme change.
 ---@param groups snacks.util.hl
 ---@param opts? { prefix?:string, default?:boolean, managed?:boolean }
 Snacks.util.set_hl(groups, opts)
+```
+
+### `Snacks.util.throttle()`
+
+```lua
+---@generic T
+---@param fn T
+---@param opts? {ms?:number}
+---@return T
+Snacks.util.throttle(fn, opts)
 ```
 
 ### `Snacks.util.var()`

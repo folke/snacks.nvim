@@ -12,6 +12,10 @@ Table of Contents                               *snacks-git-table-of-contents*
 ==============================================================================
 1. Styles                                                  *snacks-git-styles*
 
+Check the styles
+<https://github.com/folke/snacks.nvim/blob/main/docs/styles.md> docs for more
+information on how to customize these styles
+
 
 BLAME_LINE                                      *snacks-git-styles-blame_line*
 

@@ -18,6 +18,7 @@ The default implementation enables `syntax` for the buffer and disables
 -- lazy.nvim
 {
   "folke/snacks.nvim",
+  ---@type snacks.Config
   opts = {
     bigfile = {
       -- your bigfile configuration comes here

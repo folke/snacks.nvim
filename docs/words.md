@@ -10,6 +10,7 @@ Auto-show LSP references and quickly navigate between them
 -- lazy.nvim
 {
   "folke/snacks.nvim",
+  ---@type snacks.Config
   opts = {
     words = {
       -- your words configuration comes here
@@ -58,8 +59,8 @@ Snacks.words.enable()
 ### `Snacks.words.is_enabled()`
 
 ```lua
----@param buf number?
-Snacks.words.is_enabled(buf)
+---@param opts? number|{buf?:number, modes:boolean} if modes is true, also check if the current mode is enabled
+Snacks.words.is_enabled(opts)
 ```
 
 ### `Snacks.words.jump()`

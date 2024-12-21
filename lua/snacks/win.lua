@@ -6,7 +6,7 @@
 ---@field augroup? number
 ---@field backdrop? snacks.win
 ---@field keys snacks.win.Keys[]
----@overload fun(opts? :snacks.win.Config): snacks.win
+---@overload fun(opts? :snacks.win.Config|{}): snacks.win
 local M = setmetatable({}, {
   __call = function(t, ...)
     return t.new(...)
@@ -41,6 +41,8 @@ M.meta = {
 ---@field backdrop? number|false|snacks.win.Backdrop Opacity of the backdrop (default: 60)
 ---@field wo? vim.wo|{} window options
 ---@field bo? vim.bo|{} buffer options
+---@field b? table<string, any> buffer local variables
+---@field w? table<string, any> window local variables
 ---@field ft? string filetype to use for treesitter/syntax highlighting. Won't override existing filetype
 ---@field keys? table<string, false|string|fun(self: snacks.win)|snacks.win.Keys> Key mappings
 ---@field on_buf? fun(self: snacks.win) Callback after opening the buffer
@@ -174,7 +176,7 @@ function M.resolve(...)
   return ret
 end
 
----@param opts? snacks.win.Config
+---@param opts? snacks.win.Config|{}
 ---@return snacks.win
 function M.new(opts)
   local self = setmetatable({}, { __index = M })
@@ -420,6 +422,11 @@ function M:show()
 
   self:open_buf()
 
+  -- buffer local variables
+  for k, v in pairs(self.opts.b or {}) do
+    vim.b[self.buf][k] = v
+  end
+
   -- OPTIM: prevent treesitter or syntax highlighting to attach on FileType if it's not already enabled
   local optim_hl = not vim.b[self.buf].ts_highlight and vim.bo[self.buf].syntax == ""
   vim.b[self.buf].ts_highlight = optim_hl or vim.b[self.buf].ts_highlight
@@ -431,6 +438,10 @@ function M:show()
   end
 
   self:open_win()
+  -- window local variables
+  for k, v in pairs(self.opts.w or {}) do
+    vim.w[self.win][k] = v
+  end
   if Snacks.util.is_transparent() then
     self.opts.wo.winblend = 0
   end

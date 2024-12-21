@@ -16,6 +16,7 @@ Similar plugins:
 -- lazy.nvim
 {
   "folke/snacks.nvim",
+  ---@type snacks.Config
   opts = {
     scroll = {
       -- your scroll configuration comes here

@@ -19,7 +19,12 @@ local LINE_NR = "%=%{%(&number || &relativenumber) && v:virtnum == 0 ? ("
   .. (vim.fn.has("nvim-0.11") == 1 and '"%l"' or 'v:relnum == 0 ? (&number ? "%l" : "%r") : (&relativenumber ? "%r" : "%l")')
   .. ') : ""%} '
 
+---@alias snacks.statuscolumn.Component "mark"|"sign"|"fold"|"git"
+---@alias snacks.statuscolumn.Components snacks.statuscolumn.Component[]|fun(win:number,buf:number,lnum:number):snacks.statuscolumn.Component[]
+
 ---@class snacks.statuscolumn.Config
+---@field left snacks.statuscolumn.Components
+---@field right snacks.statuscolumn.Components
 ---@field enabled? boolean
 local defaults = {
   left = { "mark", "sign" }, -- priority of signs on the left (high to low)
@@ -198,7 +203,10 @@ function M._get()
           end
         end
       end
-      local left, right = find(config.left), find(config.right)
+
+      local left_c = type(config.left) == "function" and config.left(win, buf, vim.v.lnum) or config.left --[[@as snacks.statuscolumn.Component[] ]]
+      local right_c = type(config.right) == "function" and config.right(win, buf, vim.v.lnum) or config.right --[[@as snacks.statuscolumn.Component[] ]]
+      local left, right = find(left_c), find(right_c)
 
       if config.folds.git_hl then
         local git = signs_by_type.git

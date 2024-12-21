@@ -34,8 +34,6 @@ local defaults = {
 }
 
 local SCROLL_UP, SCROLL_DOWN = Snacks.util.keycode("<c-e>"), Snacks.util.keycode("<c-y>")
-local SCROLL_WHEEL_DOWN, SCROLL_WHEEL_UP =
-  Snacks.util.keycode("<ScrollWheelDown>"), Snacks.util.keycode("<ScrollWheelUp>")
 local mouse_scrolling = false
 
 M.enabled = false
@@ -51,6 +49,9 @@ local spammer_timer = assert((vim.uv or vim.loop).new_timer())
 -- get the state for a window.
 -- when the state doesn't exist, its target is the current view
 local function get_state(win)
+  if not vim.api.nvim_win_is_valid(win) then
+    return
+  end
   local buf = vim.api.nvim_win_get_buf(win)
   if not config.filter(buf) then
     return
@@ -99,10 +100,11 @@ function M.enable()
   local group = vim.api.nvim_create_augroup("snacks_scroll", { clear = true })
 
   -- track mouse scrolling
-  vim.on_key(function(key)
-    if key == SCROLL_WHEEL_DOWN or key == SCROLL_WHEEL_UP then
-      mouse_scrolling = true
-    end
+  Snacks.util.on_key("<ScrollWheelDown>", function()
+    mouse_scrolling = true
+  end)
+  Snacks.util.on_key("<ScrollWheelUp>", function()
+    mouse_scrolling = true
   end)
 
   -- initialize state for buffers entering windows
@@ -127,6 +129,18 @@ function M.enable()
         end
       end
     end),
+  })
+
+  -- clear scroll state when leaving the cmdline after a search with incsearch
+  vim.api.nvim_create_autocmd({ "CmdlineLeave" }, {
+    group = group,
+    callback = function(ev)
+      if (ev.file == "/" or ev.file == "?") and vim.o.incsearch then
+        for _, win in ipairs(vim.fn.win_findbuf(ev.buf)) do
+          states[win] = nil
+        end
+      end
+    end,
   })
 
   -- listen to scroll events with topline changes
@@ -205,14 +219,6 @@ function M.check(win)
     stats.skipped = stats.skipped + 1
     state.current = vim.deepcopy(state.view)
     return
-  elseif spamming and not (state.anim and state.anim.done) then
-    -- just ignore the scroll when spamming and we're already animating
-    stats.spamming = stats.spamming + 1
-    stats.scrolls = stats.scrolls + 1
-    vim.api.nvim_win_call(win, function()
-      vim.fn.winrestview(state.current)
-    end)
-    return
   elseif mouse_scrolling then
     if state.anim then
       state.anim:stop()
@@ -222,6 +228,14 @@ function M.check(win)
     mouse_scrolling = false
     stats.mousescroll = stats.mousescroll + 1
     state.current = vim.deepcopy(state.view)
+    return
+  elseif spamming and not (state.anim and state.anim.done) then
+    -- just ignore the scroll when spamming and we're already animating
+    stats.spamming = stats.spamming + 1
+    stats.scrolls = stats.scrolls + 1
+    vim.api.nvim_win_call(win, function()
+      vim.fn.winrestview(state.current)
+    end)
     return
   end
   stats.scrolls = stats.scrolls + 1

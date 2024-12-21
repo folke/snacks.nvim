@@ -19,6 +19,7 @@ Similar plugins:
 -- lazy.nvim
 {
   "folke/snacks.nvim",
+  ---@type snacks.Config
   opts = {
     dim = {
       -- your dim configuration comes here

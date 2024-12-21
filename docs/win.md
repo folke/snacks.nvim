@@ -28,6 +28,7 @@ Snacks.win({
 -- lazy.nvim
 {
   "folke/snacks.nvim",
+  ---@type snacks.Config
   opts = {
     win = {
       -- your win configuration comes here
@@ -54,6 +55,8 @@ Snacks.win({
 ---@field backdrop? number|false|snacks.win.Backdrop Opacity of the backdrop (default: 60)
 ---@field wo? vim.wo|{} window options
 ---@field bo? vim.bo|{} buffer options
+---@field b? table<string, any> buffer local variables
+---@field w? table<string, any> window local variables
 ---@field ft? string filetype to use for treesitter/syntax highlighting. Won't override existing filetype
 ---@field keys? table<string, false|string|fun(self: snacks.win)|snacks.win.Keys> Key mappings
 ---@field on_buf? fun(self: snacks.win) Callback after opening the buffer
@@ -78,6 +81,9 @@ Snacks.win({
 ```
 
 ## 🎨 Styles
+
+Check the [styles](https://github.com/folke/snacks.nvim/blob/main/docs/styles.md)
+docs for more information on how to customize these styles
 
 ### `float`
 
@@ -158,14 +164,14 @@ Snacks.win = {}
 ### `Snacks.win()`
 
 ```lua
----@type fun(opts? :snacks.win.Config): snacks.win
+---@type fun(opts? :snacks.win.Config|{}): snacks.win
 Snacks.win()
 ```
 
 ### `Snacks.win.new()`
 
 ```lua
----@param opts? snacks.win.Config
+---@param opts? snacks.win.Config|{}
 ---@return snacks.win
 Snacks.win.new(opts)
 ```

@@ -34,6 +34,7 @@ local uv = vim.uv or vim.loop
 ---@field style? snacks.notifier.style
 ---@field opts? fun(notif: snacks.notifier.Notif) -- dynamic opts
 ---@field hl? snacks.notifier.hl -- highlight overrides
+---@field history? boolean
 
 --- Notification object
 ---@class snacks.notifier.Notif: snacks.notifier.Notif.opts
@@ -91,7 +92,7 @@ Snacks.config.style("notification", {
   bo = { filetype = "snacks_notif" },
 })
 
-Snacks.config.style("notification.history", {
+Snacks.config.style("notification_history", {
   border = "rounded",
   zindex = 100,
   width = 0.6,
@@ -422,7 +423,9 @@ function N:add(opts)
   if numlevel(notif.level) >= numlevel(self.opts.level) then
     self.queue[notif.id] = notif
   end
-  self.history[notif.id] = notif
+  if opts.history ~= false then
+    self.history[notif.id] = notif
+  end
   if self:is_blocking() then
     pcall(function()
       self:process()
@@ -497,7 +500,7 @@ function N:show_history(opts)
     vim.cmd("close")
     return
   end
-  local win = Snacks.win({ style = "notification.history", enter = true, show = false })
+  local win = Snacks.win({ style = "notification_history", enter = true, show = false })
   local buf = win:open_buf()
   opts = opts or {}
   if opts.reverse == nil then

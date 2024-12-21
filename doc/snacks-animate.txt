@@ -34,6 +34,7 @@ Doing this, will disable `scroll`, `indent`, `dim` and all other animations.
     -- lazy.nvim
     {
       "folke/snacks.nvim",
+      ---@type snacks.Config
       opts = {
         animate = {
           -- your animate configuration comes here

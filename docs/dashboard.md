@@ -105,6 +105,7 @@ In the example below, both sections are equivalent.
 -- lazy.nvim
 {
   "folke/snacks.nvim",
+  ---@type snacks.Config
   opts = {
     dashboard = {
       -- your dashboard configuration comes here
@@ -218,7 +219,7 @@ A more advanced example using multiple panes
       enabled = function()
         return Snacks.git.get_root() ~= nil
       end,
-      cmd = "hub status --short --branch --renames",
+      cmd = "git status --short --branch --renames",
       height = 5,
       padding = 1,
       ttl = 5 * 60,
@@ -365,7 +366,7 @@ Advanced example using the GitHub CLI.
         {
           icon = " ",
           title = "Git Status",
-          cmd = "hub --no-pager diff --stat -B -M -C",
+          cmd = "git --no-pager diff --stat -B -M -C",
           height = 10,
         },
       }
@@ -435,6 +436,9 @@ Similar to the Vim Startify dashboard
 ```
 
 ## 🎨 Styles
+
+Check the [styles](https://github.com/folke/snacks.nvim/blob/main/docs/styles.md)
+docs for more information on how to customize these styles
 
 ### `dashboard`
 

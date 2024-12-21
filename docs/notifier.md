@@ -103,6 +103,7 @@ vim.api.nvim_create_autocmd("LspProgress", {
 -- lazy.nvim
 {
   "folke/snacks.nvim",
+  ---@type snacks.Config
   opts = {
     notifier = {
       -- your notifier configuration comes here
@@ -155,6 +156,9 @@ vim.api.nvim_create_autocmd("LspProgress", {
 
 ## 🎨 Styles
 
+Check the [styles](https://github.com/folke/snacks.nvim/blob/main/docs/styles.md)
+docs for more information on how to customize these styles
+
 ### `notification`
 
 ```lua
@@ -172,7 +176,7 @@ vim.api.nvim_create_autocmd("LspProgress", {
 }
 ```
 
-### `notification.history`
+### `notification_history`
 
 ```lua
 {
@@ -218,6 +222,7 @@ Notification options
 ---@field style? snacks.notifier.style
 ---@field opts? fun(notif: snacks.notifier.Notif) -- dynamic opts
 ---@field hl? snacks.notifier.hl -- highlight overrides
+---@field history? boolean
 ```
 
 Notification object

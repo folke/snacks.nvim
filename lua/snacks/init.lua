@@ -26,6 +26,9 @@ M.config = setmetatable({}, {
     config[k] = config[k] or {}
     return config[k]
   end,
+  __newindex = function(_, k, v)
+    config[k] = v
+  end,
 })
 
 --- Get an example config from the docs/examples directory.
@@ -70,8 +73,10 @@ end
 --- Register a new window style config.
 ---@param name string
 ---@param defaults snacks.win.Config|{}
+---@return string
 function M.config.style(name, defaults)
   config.styles[name] = vim.tbl_deep_extend("force", vim.deepcopy(defaults), config.styles[name] or {})
+  return name
 end
 
 M.did_setup = false

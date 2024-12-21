@@ -6,7 +6,7 @@ M.meta = {
   needs_setup = true,
 }
 
----@class snacks.scope.Opts: snacks.scope.Config
+---@class snacks.scope.Opts: snacks.scope.Config,{}
 ---@field buf? number
 ---@field pos? {[1]:number, [2]:number} -- (1,0) indexed
 ---@field end_pos? {[1]:number, [2]:number} -- (1,0) indexed
@@ -30,6 +30,7 @@ local defaults = {
   min_size = 2,
   -- try to expand the scope to this size
   max_size = nil,
+  cursor = true, -- when true, the column of the cursor is used to determine the scope
   edge = true, -- include the edge of the scope (typically the line above and below with smaller indent)
   siblings = false, -- expand single line scopes with single line siblings
   -- what buffers to attach to
@@ -42,8 +43,9 @@ local defaults = {
     -- detect scope based on treesitter.
     -- falls back to indent based detection if not available
     enabled = true,
-    ---@type string[]|false
+    ---@type string[]|{enabled?:boolean}
     blocks = {
+      enabled = false, -- enable to use the following blocks
       "function_declaration",
       "function_definition",
       "method_declaration",
@@ -56,6 +58,10 @@ local defaults = {
       "if_statement",
       "for_statement",
     },
+    -- these treesitter fields will be considered as blocks
+    field_blocks = {
+      "local_declaration",
+    },
   },
   -- These keymaps will only be set if the `scope` plugin is enabled.
   -- Alternatively, you can set them manually in your config,
@@ -64,16 +70,17 @@ local defaults = {
     ---@type table<string, snacks.scope.TextObject|{desc?:string}>
     textobject = {
       ii = {
-        min_size = 1, -- allow single line scopes
-        edge = false, -- don't include the edge
-        treesitter = { enabled = false },
+        min_size = 2, -- minimum size of the scope
+        edge = false, -- inner scope
+        cursor = false,
+        treesitter = { blocks = { enabled = false } },
         desc = "inner scope",
       },
       ai = {
-        min_size = 1, -- allow single line scopes
-        edge = true, -- include the edge
-        treesitter = { enabled = false },
-        desc = "scope with edge",
+        cursor = false,
+        min_size = 2, -- minimum size of the scope
+        treesitter = { blocks = { enabled = false } },
+        desc = "full scope",
       },
     },
     ---@type table<string, snacks.scope.Jump|{desc?:string}>
@@ -81,15 +88,17 @@ local defaults = {
       ["[i"] = {
         min_size = 1, -- allow single line scopes
         bottom = false,
+        cursor = false,
         edge = true,
-        treesitter = { enabled = false },
+        treesitter = { blocks = { enabled = false } },
         desc = "jump to top edge of scope",
       },
       ["]i"] = {
         min_size = 1, -- allow single line scopes
         bottom = true,
+        cursor = false,
         edge = true,
-        treesitter = { enabled = false },
+        treesitter = { blocks = { enabled = false } },
         desc = "jump to bottom edge of scope",
       },
     },
@@ -115,13 +124,17 @@ Scope.__index = Scope
 ---@param opts snacks.scope.Opts
 ---@return T
 function Scope:new(scope, opts)
-  local ret = setmetatable(scope, { __index = self, __eq = self.__eq })
+  local ret = setmetatable(scope, { __index = self, __eq = self.__eq, __tostring = self.__tostring })
   ret.opts = opts
   return ret
 end
 
 function Scope:__eq(other)
-  return other and self.buf == other.buf and self.from == other.from and self.to == other.to
+  return other
+    and self.buf == other.buf
+    and self.from == other.from
+    and self.to == other.to
+    and self.indent == other.indent
 end
 
 ---@generic T: snacks.scope.Scope
@@ -143,6 +156,13 @@ end
 ---@param self T
 ---@return T
 function Scope:with_edge()
+  error("not implemented")
+end
+
+---@generic T: snacks.scope.scope
+---@param self T
+---@return T
+function Scope:inner()
   error("not implemented")
 end
 
@@ -201,6 +221,22 @@ function IndentScope._expand(line, indent, up)
   return line
 end
 
+-- Inner indent scope is all lines with higher indent than the current scope
+function IndentScope:inner()
+  local from, to, indent = nil, nil, math.huge
+  for l = self.from, self.to do
+    local i, il = IndentScope.get_indent(vim.fn.nextnonblank(l))
+    if il == l then
+      if i > self.indent then
+        from = from or l
+        to = l
+        indent = math.min(indent, i)
+      end
+    end
+  end
+  return from and to and self:with({ from = from, to = to, indent = indent }) or self
+end
+
 function IndentScope:with_edge()
   if self.indent == 0 then
     return self
@@ -210,6 +246,9 @@ function IndentScope:with_edge()
   local indent = math.min(math.max(before_i or self.indent, after_i or self.indent), self.indent)
   local from = before_i and before_i == indent and before_l or self.from
   local to = after_i and after_i == indent and after_l or self.to
+  if from == 0 or to == 0 or indent < 0 then
+    return self
+  end
   return self:with({ from = from, to = to, indent = indent })
 end
 
@@ -245,6 +284,10 @@ function IndentScope:find(opts)
     indent = next_i
   end
 
+  if opts.cursor then
+    indent = math.min(indent, vim.fn.virtcol(opts.pos) + 1)
+  end
+
   -- expand to include bigger indents
   return IndentScope:new({
     buf = opts.buf,
@@ -268,13 +311,25 @@ end
 local TSScope = setmetatable({}, Scope)
 TSScope.__index = TSScope
 
+function TSScope.has_ts(buf)
+  if vim.b[buf].snacks_ts == nil then
+    if vim.b[buf].ts_highlight then
+      vim.b[buf].snacks_ts = true
+    else
+      local ok, parser = pcall(vim.treesitter.get_parser, buf)
+      vim.b[buf].snacks_ts = ok and parser ~= nil
+    end
+  end
+  return vim.b[buf].snacks_ts
+end
+
 -- Expand the scope to fill the range of the node
 function TSScope:fill()
   local n = self.node
   local u, _, d = n:range()
   while n do
     local uu, _, dd = n:range()
-    if uu == u and dd == d then
+    if uu == u and dd == d and not self:is_field(n) then
       self.node = n
     else
       break
@@ -287,34 +342,39 @@ function TSScope:fix()
   self:fill()
   self.from, _, self.to = self.node:range()
   self.from, self.to = self.from + 1, self.to + 1
-  self.indent = math.huge
-  local l = self.from
-  while l and l > 0 and l <= self.to do
-    self.indent = math.min(self.indent, vim.fn.indent(l))
-    l = vim.fn.nextnonblank(l + 1)
-  end
-  self.indent = self.indent == math.huge and 0 or self.indent
+  self.indent = math.min(vim.fn.indent(self.from), vim.fn.indent(self.to))
   return self
 end
 
-function TSScope:with_edge()
-  local prev = vim.fn.prevnonblank(self.from - 1)
-  local next = vim.fn.nextnonblank(self.from + 1)
-  if vim.fn.indent(next) > self.indent then
-    return self
+---@param node? TSNode
+function TSScope:is_field(node)
+  node = node or self.node
+  local parent = node:parent()
+  parent = parent ~= node:tree():root() and parent or nil
+  if not parent then
+    return false
   end
-  local parent, ret = self:parent(), self
-  while parent and parent.indent < self.indent do
-    if parent.from >= prev then
-      ret = parent
+  for child, field in parent:iter_children() do
+    if child == node then
+      return not (field == nil or vim.tbl_contains(self.opts.treesitter.field_blocks, field))
     end
-    parent = parent:parent()
   end
-  return ret
+  error("node not found in parent")
+end
+
+function TSScope:with_edge()
+  local ret = self ---@type snacks.scope.TSScope?
+  while ret do
+    if ret:size() >= 1 and not ret:is_field() then
+      return ret
+    end
+    ret = ret:parent()
+  end
+  return self
 end
 
 function TSScope:root()
-  if self.opts.treesitter.blocks == false then
+  if type(self.opts.treesitter.blocks) ~= "table" or not self.opts.treesitter.blocks.enabled then
     return self:fix()
   end
   local root = self.node --[[@as TSNode?]]
@@ -335,9 +395,6 @@ end
 
 ---@param opts snacks.scope.Opts
 function TSScope:find(opts)
-  if not vim.b[opts.buf].ts_highlight then
-    return
-  end
   local lang = vim.bo[opts.buf].filetype
   local has_parser, parser = pcall(vim.treesitter.get_parser, opts.buf, lang, { error = false })
   if not has_parser or parser == nil then
@@ -356,8 +413,24 @@ function TSScope:find(opts)
   if not node then
     return
   end
-  local ret = TSScope:new({ buf = opts.buf, node = node }, opts)
-  return ret:root()
+
+  if opts.cursor then
+    -- expand to biggest ancestor with a lower start position
+    local n = node ---@type TSNode?
+    local virtcol = vim.fn.virtcol(opts.pos)
+    while n and n ~= n:tree():root() do
+      local r, c = n:range()
+      local virtcol_n = vim.fn.virtcol({ r + 1, c })
+      if virtcol_n > virtcol then
+        node, n = n, n:parent()
+      else
+        break
+      end
+    end
+  end
+
+  local ret = TSScope:new({ buf = opts.buf, node = node }, opts):root()
+  return ret
 end
 
 function TSScope:parent()
@@ -365,10 +438,40 @@ function TSScope:parent()
   return parent and parent ~= self.node:tree():root() and self:with({ node = parent }):root() or nil
 end
 
+-- Inner treesitter scope includes all lines for which the node
+-- has a start position lower than the start of the scope.
+function TSScope:inner()
+  local from, to, indent = nil, nil, math.huge
+  for l = self.from + 1, self.to do
+    if l == vim.fn.nextnonblank(l) then
+      local col = (vim.fn.getline(l):find("%S") or 1) - 1
+      local node = vim.treesitter.get_node({ pos = { l - 1, col }, bufnr = self.buf })
+      local s = TSScope:new({ buf = self.buf, node = node }, self.opts):fix()
+      if s and s.from > self.from and s.to <= self.to then
+        from = from or l
+        to = l
+        indent = math.min(indent, vim.fn.indent(l))
+      end
+    end
+  end
+  return from and to and IndentScope:new({ from = from, to = to, indent = indent }, self.opts) or self
+end
+
+function Scope:__tostring()
+  local meta = getmetatable(self)
+  return ("%s(buf=%d, from=%d, to=%d, indent=%d)"):format(
+    meta == TSScope and "TSScope" or meta == IndentScope and "IndentSCope" or "Scope",
+    self.buf or -1,
+    self.from or -1,
+    self.to or -1,
+    self.indent or 0
+  )
+end
+
 ---@param opts? snacks.scope.Opts
 ---@return snacks.scope.Scope?
 function M.get(opts)
-  opts = opts or {}
+  opts = Snacks.config.get("scope", defaults, opts or {}) --[[ @as snacks.scope.Opts ]]
   opts.buf = (opts.buf == nil or opts.buf == 0) and vim.api.nvim_get_current_buf() or opts.buf
   if not opts.pos then
     assert(opts.buf == vim.api.nvim_win_get_buf(0), "missing pos")
@@ -385,8 +488,8 @@ function M.get(opts)
   end
 
   ---@type snacks.scope.Scope
-  local Class = opts.treesitter.enabled and vim.b[opts.buf].ts_highlight and TSScope or IndentScope
-  local ret = Class:find(opts)
+  local Class = opts.treesitter.enabled and TSScope.has_ts(opts.buf) and TSScope or IndentScope
+  local ret = Class:find(opts) --[[ @as snacks.scope.Scope? ]]
 
   -- fallback to indent based detection
   if not ret and Class == TSScope then
@@ -396,8 +499,8 @@ function M.get(opts)
 
   -- when end_pos is provided, get its scope and expand the current scope
   -- to include it.
-  if ret and opts.end_pos and false then
-    local end_scope = M.get(vim.tbl_extend("keep", { pos = opts.end_pos, end_pos = false }, opts))
+  if ret and opts.end_pos and not vim.deep_equal(opts.pos, opts.end_pos) then
+    local end_scope = Class:find(vim.tbl_extend("keep", { pos = opts.end_pos }, opts)) --[[ @as snacks.scope.Scope? ]]
     if end_scope and end_scope.from < ret.from then
       ret = ret:expand(end_scope.from) or ret
     end
@@ -606,33 +709,24 @@ function M.textobject(opts)
     opts.pos = vim.api.nvim_buf_get_mark(0, "<")
     opts.end_pos = vim.api.nvim_buf_get_mark(0, ">")
   end
+  local inner = not opts.edge
+  opts.edge = true -- always include the edge of the scope to make inner work
 
   local scope = M.get(opts)
   if not scope then
     return opts.notify ~= false and Snacks.notify.warn("No scope in range")
   end
 
-  while scope do
-    -- determine scope range
-    local from, to =
-      { scope.from, opts.linewise and 0 or vim.fn.indent(scope.from) },
-      { scope.to, opts.linewise and 0 or vim.fn.col({ scope.to, "$" }) - 2 }
+  scope = inner and scope:inner() or scope
+  -- determine scope range
+  local from, to =
+    { scope.from, opts.linewise and 0 or vim.fn.indent(scope.from) },
+    { scope.to, opts.linewise and 0 or vim.fn.col({ scope.to, "$" }) - 2 }
 
-    -- if the scope is the same as the visual selection
-    -- then select the parent scope instead.
-    local same = selection and vim.deep_equal(from, opts.pos) and vim.deep_equal(to, opts.end_pos)
-
-    local parent = scope:parent()
-    if not same or not parent then
-      -- select the range
-      vim.api.nvim_win_set_cursor(0, from)
-      vim.cmd("normal! " .. (opts.linewise and "V" or "v"))
-      vim.api.nvim_win_set_cursor(0, to)
-      return
-    end
-
-    scope = opts.edge and parent:with_edge() or parent
-  end
+  -- select the range
+  vim.api.nvim_win_set_cursor(0, from)
+  vim.cmd("normal! " .. (opts.linewise and "V" or "v"))
+  vim.api.nvim_win_set_cursor(0, to)
 end
 
 --- Jump to the top or bottom of the scope

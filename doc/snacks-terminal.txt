@@ -64,6 +64,7 @@ EDGY INTEGRATION                      *snacks-terminal-usage-edgy-integration*
     -- lazy.nvim
     {
       "folke/snacks.nvim",
+      ---@type snacks.Config
       opts = {
         terminal = {
           -- your terminal configuration comes here
@@ -90,6 +91,10 @@ EDGY INTEGRATION                      *snacks-terminal-usage-edgy-integration*
 
 ==============================================================================
 4. Styles                                             *snacks-terminal-styles*
+
+Check the styles
+<https://github.com/folke/snacks.nvim/blob/main/docs/styles.md> docs for more
+information on how to customize these styles
 
 
 TERMINAL                                     *snacks-terminal-styles-terminal*

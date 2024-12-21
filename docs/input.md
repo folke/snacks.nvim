@@ -12,6 +12,7 @@ Better `vim.ui.input`.
 -- lazy.nvim
 {
   "folke/snacks.nvim",
+  ---@type snacks.Config
   opts = {
     input = {
       -- your input configuration comes here
@@ -43,6 +44,9 @@ Better `vim.ui.input`.
 
 ## 🎨 Styles
 
+Check the [styles](https://github.com/folke/snacks.nvim/blob/main/docs/styles.md)
+docs for more information on how to customize these styles
+
 ### `input`
 
 ```lua
@@ -63,10 +67,17 @@ Better `vim.ui.input`.
     winhighlight = "NormalFloat:SnacksInputNormal,FloatBorder:SnacksInputBorder,FloatTitle:SnacksInputTitle",
     cursorline = false,
   },
-  bo = { filetype = "snacks_input" },
+  bo = {
+    filetype = "snacks_input",
+    buftype = "prompt",
+  },
+  --- buffer local variables
+  b = {
+    completion = false, -- disable blink completions in input
+  },
   keys = {
-    i_esc = { "<esc>", { "cmp_close", "cancel" }, mode = "i" },
-    -- i_esc = { "<esc>", "stopinsert", mode = "i" },
+    n_esc = { "<esc>", { "cmp_close", "cancel" }, mode = "n" },
+    i_esc = { "<esc>", { "cmp_close", "stopinsert" }, mode = "i" },
     i_cr = { "<cr>", { "cmp_accept", "confirm" }, mode = "i" },
     i_tab = { "<tab>", { "cmp_select_next", "cmp" }, mode = "i" },
     q = "cancel",
@@ -81,7 +92,7 @@ Better `vim.ui.input`.
 ```
 
 ```lua
----@class snacks.input.Opts: snacks.input.Config
+---@class snacks.input.Opts: snacks.input.Config|{}
 ---@field prompt? string
 ---@field default? string
 ---@field completion? string

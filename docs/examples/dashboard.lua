@@ -57,7 +57,7 @@ M.examples.advanced = {
       enabled = function()
         return Snacks.git.get_root() ~= nil
       end,
-      cmd = "hub status --short --branch --renames",
+      cmd = "git status --short --branch --renames",
       height = 5,
       padding = 1,
       ttl = 5 * 60,
@@ -127,7 +127,7 @@ M.examples.github = {
         {
           icon = " ",
           title = "Git Status",
-          cmd = "hub --no-pager diff --stat -B -M -C",
+          cmd = "git --no-pager diff --stat -B -M -C",
           height = 10,
         },
       }

@@ -175,6 +175,7 @@ field.
     -- lazy.nvim
     {
       "folke/snacks.nvim",
+      ---@type snacks.Config
       opts = {
         profiler = {
           -- your profiler configuration comes here

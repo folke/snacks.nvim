@@ -139,6 +139,7 @@ All other fields equal to `true` will match if the trace has a value for that fi
 -- lazy.nvim
 {
   "folke/snacks.nvim",
+  ---@type snacks.Config
   opts = {
     profiler = {
       -- your profiler configuration comes here

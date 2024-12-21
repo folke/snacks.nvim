@@ -286,17 +286,15 @@ function D:action(action)
     vim.api.nvim_win_close(self.win, true)
     self.win = nil
   end
-  vim.schedule(function()
-    if type(action) == "string" then
-      if action:find("^:") then
-        return vim.cmd(action:sub(2))
-      else
-        local keys = vim.api.nvim_replace_termcodes(action, true, true, true)
-        return vim.api.nvim_feedkeys(keys, "tm", true)
-      end
+  if type(action) == "string" then
+    if action:find("^:") then
+      return vim.cmd(action:sub(2))
+    else
+      local keys = vim.api.nvim_replace_termcodes(action, true, true, true)
+      return vim.api.nvim_feedkeys(keys, "tm", true)
     end
-    action(self)
-  end)
+  end
+  action(self)
 end
 
 ---@param item snacks.dashboard.Item

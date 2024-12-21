@@ -13,6 +13,7 @@ Table of Contents                              *snacks-util-table-of-contents*
   - Snacks.util.icon()                 |snacks-util-module-snacks.util.icon()|
   - Snacks.util.is_transparent()|snacks-util-module-snacks.util.is_transparent()|
   - Snacks.util.keycode()           |snacks-util-module-snacks.util.keycode()|
+  - Snacks.util.on_key()             |snacks-util-module-snacks.util.on_key()|
   - Snacks.util.on_module()       |snacks-util-module-snacks.util.on_module()|
   - Snacks.util.redraw()             |snacks-util-module-snacks.util.redraw()|
   - Snacks.util.redraw_range() |snacks-util-module-snacks.util.redraw_range()|
@@ -108,6 +109,15 @@ Check if the colorscheme is transparent.
 >lua
     ---@param str string
     Snacks.util.keycode(str)
+<
+
+
+`Snacks.util.on_key()`                                  *Snacks.util.on_key()*
+
+>lua
+    ---@param key string
+    ---@param cb fun(key:string)
+    Snacks.util.on_key(key, cb)
 <
 
 

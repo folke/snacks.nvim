@@ -24,6 +24,7 @@ Better `vim.ui.input`.
     -- lazy.nvim
     {
       "folke/snacks.nvim",
+      ---@type snacks.Config
       opts = {
         input = {
           -- your input configuration comes here
@@ -41,11 +42,15 @@ Better `vim.ui.input`.
 >lua
     ---@class snacks.input.Config
     ---@field enabled? boolean
-    ---@field win? snacks.win.Config
+    ---@field win? snacks.win.Config|{}
     ---@field icon? string
+    ---@field icon_pos? snacks.input.Pos
+    ---@field prompt_pos? snacks.input.Pos
     {
       icon = " ",
       icon_hl = "SnacksInputIcon",
+      icon_pos = "left",
+      prompt_pos = "title",
       win = { style = "input" },
       expand = true,
     }
@@ -54,6 +59,10 @@ Better `vim.ui.input`.
 
 ==============================================================================
 3. Styles                                                *snacks-input-styles*
+
+Check the styles
+<https://github.com/folke/snacks.nvim/blob/main/docs/styles.md> docs for more
+information on how to customize these styles
 
 
 INPUT                                              *snacks-input-styles-input*
@@ -67,6 +76,7 @@ INPUT                                              *snacks-input-styles-input*
       height = 1,
       width = 60,
       relative = "editor",
+      noautocmd = true,
       row = 2,
       -- relative = "cursor",
       -- row = -3,
@@ -89,6 +99,10 @@ INPUT                                              *snacks-input-styles-input*
 
 ==============================================================================
 4. Types                                                  *snacks-input-types*
+
+>lua
+    ---@alias snacks.input.Pos "left"|"title"|false
+<
 
 >lua
     ---@class snacks.input.Opts: snacks.input.Config

@@ -5,7 +5,8 @@ Table of Contents                      *snacks-statuscolumn-table-of-contents*
 
 1. Setup                                           |snacks-statuscolumn-setup|
 2. Config                                         |snacks-statuscolumn-config|
-3. Module                                         |snacks-statuscolumn-module|
+3. Types                                           |snacks-statuscolumn-types|
+4. Module                                         |snacks-statuscolumn-module|
   - Snacks.statuscolumn()   |snacks-statuscolumn-module-snacks.statuscolumn()|
   - Snacks.statuscolumn.get()|snacks-statuscolumn-module-snacks.statuscolumn.get()|
 
@@ -16,6 +17,7 @@ Table of Contents                      *snacks-statuscolumn-table-of-contents*
     -- lazy.nvim
     {
       "folke/snacks.nvim",
+      ---@type snacks.Config
       opts = {
         statuscolumn = {
           -- your statuscolumn configuration comes here
@@ -32,6 +34,8 @@ Table of Contents                      *snacks-statuscolumn-table-of-contents*
 
 >lua
     ---@class snacks.statuscolumn.Config
+    ---@field left snacks.statuscolumn.Components
+    ---@field right snacks.statuscolumn.Components
     ---@field enabled? boolean
     {
       left = { "mark", "sign" }, -- priority of signs on the left (high to low)
@@ -50,7 +54,16 @@ Table of Contents                      *snacks-statuscolumn-table-of-contents*
 
 
 ==============================================================================
-3. Module                                         *snacks-statuscolumn-module*
+3. Types                                           *snacks-statuscolumn-types*
+
+>lua
+    ---@alias snacks.statuscolumn.Component "mark"|"sign"|"fold"|"git"
+    ---@alias snacks.statuscolumn.Components snacks.statuscolumn.Component[]|fun(win:number,buf:number,lnum:number):snacks.statuscolumn.Component[]
+<
+
+
+==============================================================================
+4. Module                                         *snacks-statuscolumn-module*
 
 
 `Snacks.statuscolumn()`                                *Snacks.statuscolumn()*
