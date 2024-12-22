@@ -23,6 +23,7 @@ local defaults = {
 ---@field cwd? string
 ---@field env? table<string, string>
 ---@field interactive? boolean
+---@field jobstart_opts? table<string, any>
 
 Snacks.config.style("terminal", {
   bo = {
@@ -93,10 +94,7 @@ function M.open(cmd, opts)
   local terminal = Snacks.win(opts.win)
 
   vim.api.nvim_buf_call(terminal.buf, function()
-    local term_opts = {
-      cwd = opts.cwd,
-      env = opts.env,
-    }
+    local term_opts = vim.tbl_extend("keep", { env = opts.env, cwd = opts.cwd }, opts.jobstart_opts or {})
     vim.fn.termopen(cmd or M.parse(vim.o.shell), vim.tbl_isempty(term_opts) and vim.empty_dict() or term_opts)
   end)
 
