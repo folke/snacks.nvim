@@ -387,7 +387,7 @@ function M:equalize()
     return vim.w[win].snacks_win
       and vim.w[win].snacks_win.relative == self.opts.relative
       and vim.w[win].snacks_win.position == self.opts.position
-  end, vim.api.nvim_list_wins())
+  end, vim.api.nvim_tabpage_list_wins(vim.api.nvim_win_get_tabpage(self.win)))
   if #all <= 1 then
     return
   end
