@@ -156,6 +156,9 @@ local function update_config(opts)
   local config = vim.tbl_deep_extend("force", { gui = { theme = theme } }, opts.config or {})
 
   local function yaml_val(val)
+    if type(val) == "boolean" then
+      return tostring(val)
+    end
     return type(val) == "string" and not val:find("^\"'`") and ("%q"):format(val) or val
   end
 
