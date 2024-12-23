@@ -116,8 +116,19 @@ function Toggle:map(keys, opts)
     self:toggle()
   end, opts)
   if self.opts.which_key then
-    Snacks.util.on_module("which-key", function()
-      self:_wk(keys, mode)
+    -- Needed so that it executes after `keymaps.lua` loads, otherwise it
+    -- wouldn't work as `Snacks.toggle.animate():map("<leader>ua") will be
+    -- evaluated during the parsing phase. Maybe there's a better way??
+    vim.schedule(function()
+      Snacks.util.on_module("which-key", function()
+        local modes = type(mode) == "string" and { mode } or mode
+        for _, m in ipairs(modes) do
+          local mapping = vim.fn.maparg(keys, m)
+          if mapping ~= "" then
+            self:_wk(keys, mode)
+          end
+        end
+      end)
     end)
   end
   return self
