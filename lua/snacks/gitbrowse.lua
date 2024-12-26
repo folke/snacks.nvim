@@ -143,6 +143,10 @@ function M._open(opts)
   local cwd = file and vim.fn.fnamemodify(file, ":h") or vim.fn.getcwd()
   local word = vim.fn.expand("<cword>")
   local is_commit = is_valid_commit_hash(word, cwd)
+  if not is_commit and opts.what == "commit" and is_valid_commit_hash(opts.branch, cwd) then
+    is_commit = true
+    word = opts.branch
+  end
   ---@type snacks.gitbrowse.Fields
   local fields = {
     branch = opts.branch
