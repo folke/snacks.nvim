@@ -215,6 +215,15 @@ function M.input(opts, on_confirm)
         end)
       end,
     })
+  else
+    -- Set buffer to unmodified regardless of `expand` value, so that it can
+    -- close even when `expand = false` from `win:close` method
+    vim.api.nvim_create_autocmd("TextChangedI", {
+      buffer = win.buf,
+      callback = function()
+        vim.bo[win.buf].modified = false
+      end,
+    })
   end
 
   return win
