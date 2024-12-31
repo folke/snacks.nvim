@@ -159,7 +159,15 @@ local function update_config(opts)
     if type(val) == "boolean" then
       return tostring(val)
     end
-    return type(val) == "string" and not val:find("^\"'`") and ("%q"):format(val) or val
+
+    if type(val) == "string" then
+      if val:find("^\"'`") then
+        return val
+      end
+      return ("%q"):format(val)
+    end
+
+    return val
   end
 
   local function to_yaml(tbl, indent)
