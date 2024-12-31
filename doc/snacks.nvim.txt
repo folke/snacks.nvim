@@ -322,9 +322,9 @@ Click to see all highlight groups ~
   SnacksWinBarNC              SnacksWinBar            Title for non-current
                                                       windows
 
-  SnacksScratchKey            DiagnosticVirtualText   Keymap help in the footer
+  SnacksKey            DiagnosticVirtualText   Keymap help in the footer
 
-  SnacksScratchDesc           DiagnosticInfo          Keymap help desc in the
+  SnacksDesc           DiagnosticInfo          Keymap help desc in the
                                                       footer
 
   SnacksNotifierInfo          none                    Notification window for

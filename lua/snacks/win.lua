@@ -51,6 +51,7 @@ M.meta = {
 ---@class snacks.win.Config: vim.api.keyset.win_config
 ---@field style? string merges with config from `Snacks.config.styles[style]`
 ---@field show? boolean Show the window immediately (default: true)
+---@field show_footer? boolean Show keys footer (default: false)
 ---@field height? number|fun(self:snacks.win):number Height of the window. Use <1 for relative height. 0 means full height. (default: 0.9)
 ---@field width? number|fun(self:snacks.win):number Width of the window. Use <1 for relative width. 0 means full width. (default: 0.9)
 ---@field min_height? number Minimum height of the window
@@ -88,9 +89,12 @@ local defaults = {
     winhighlight = "Normal:SnacksNormal,NormalNC:SnacksNormalNC,WinBar:SnacksWinBar,WinBarNC:SnacksWinBarNC",
   },
   bo = {},
+  title_pos = "center",
   keys = {
     q = "close",
   },
+  footer_pos = "center",
+  show_footer = false,
 }
 
 Snacks.config.style("float", {
@@ -176,8 +180,12 @@ local borders = {
 
 Snacks.util.set_hl({
   Backdrop = { bg = "#000000" },
+  Desc = "DiagnosticInfo",
+  Footer = "FloatFooter",
+  Key = "DiagnosticVirtualTextInfo",
   Normal = "NormalFloat",
   NormalNC = "NormalFloat",
+  Title = "FloatTitle",
   WinBar = "Title",
   WinBarNC = "SnacksWinBar",
 }, { prefix = "Snacks", default = true })
@@ -542,6 +550,27 @@ function M:show()
 
   if self.opts.on_buf then
     self.opts.on_buf(self)
+  end
+
+  -- footer
+  if self.opts.title or self.opts.show_footer then
+    self.opts.border = self.opts.border or "rounded"
+  end
+  if self.opts.show_footer then
+    self.opts.footer = {}
+    table.sort(self.keys, function(a, b)
+      return a[1] < b[1]
+    end)
+    for _, key in ipairs(self.keys) do
+      local keymap = vim.fn.keytrans(Snacks.util.keycode(key[1]))
+      table.insert(self.opts.footer, { " " })
+      table.insert(self.opts.footer, { " " .. keymap .. " ", "SnacksKey" })
+      table.insert(self.opts.footer, { " " .. (key.desc or keymap) .. " ", "SnacksDesc" })
+    end
+    table.insert(self.opts.footer, { " " })
+    for _, t in ipairs(self.opts.footer) do
+      t[2] = t[2] or "SnacksFooter"
+    end
   end
 
   self:open_win()

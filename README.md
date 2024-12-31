@@ -262,8 +262,8 @@ See the example below for how to configure `snacks.nvim`.
 | **SnacksBackdrop**            | _none_                  | Backdrop                       |
 | **SnacksNormalNC**            | _NormalFloat_           | Normal for non-current windows |
 | **SnacksWinBarNC**            | _SnacksWinBar_          | Title for non-current windows  |
-| **SnacksScratchKey**          | _DiagnosticVirtualText_ | Keymap help in the footer      |
-| **SnacksScratchDesc**         | _DiagnosticInfo_        | Keymap help desc in the footer |
+| **SnacksKey**                 | _DiagnosticVirtualText_ | Keymap help in the footer      |
+| **SnacksDesc**                | _DiagnosticInfo_        | Keymap help desc in the footer |
 | **SnacksNotifierInfo**        | _none_                  | Notification window for Info   |
 | **SnacksNotifierWarn**        | _none_                  | Notification window for Warn   |
 | **SnacksNotifierDebug**       | _none_                  | Notification window for Debug  |
