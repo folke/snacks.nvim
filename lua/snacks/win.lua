@@ -805,7 +805,7 @@ end
 
 --- Calculate the size of the border
 function M:border_size()
-  local border = self.opts.border and self.opts.border ~= "" and self.opts.border ~= "none" and self.opts.border
+  local border = self:has_border() and self.opts.border
   local full = border and not vim.tbl_contains({ "top", "right", "bottom", "left" }, border)
   ---@type { top: number, right: number, bottom: number, left: number }
   return {
@@ -878,7 +878,7 @@ function M:dim(parent)
   local function pos(p, s, ps, border_offset)
     p = type(p) == "function" and p(self) or p
     if not p then -- center
-      return math.floor((ps - s) / 2) + border_offset
+      return math.floor((ps - s - border_offset) / 2)
     end
     ---@cast p number
     if p < 0 then -- negative position
@@ -899,8 +899,8 @@ function M:dim(parent)
   ret.width = math.max(ret.width, self.opts.min_width or 0, 1)
   ret.width = math.min(ret.width, self.opts.max_width or ret.width, parent.width)
 
-  ret.row = pos(self.opts.row, ret.height, parent.height, border.top)
-  ret.col = pos(self.opts.col, ret.width, parent.width, border.left)
+  ret.row = pos(self.opts.row, ret.height, parent.height, border.top + border.bottom)
+  ret.col = pos(self.opts.col, ret.width, parent.width, border.left + border.right)
 
   return ret
 end
