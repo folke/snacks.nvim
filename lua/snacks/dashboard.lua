@@ -37,12 +37,13 @@ math.randomseed(os.time())
 ---@field header? string
 ---@field icon? string
 ---@field title? string
----@field text? string|snacks.dashboard.Text[]
+---@field text? snacks.dashboard.TextFunc
 
 ---@alias snacks.dashboard.Format.ctx {width?:number}
 ---@alias snacks.dashboard.Action string|fun(self:snacks.dashboard.Class)
 ---@alias snacks.dashboard.Gen fun(self:snacks.dashboard.Class):snacks.dashboard.Section?
 ---@alias snacks.dashboard.Section snacks.dashboard.Item|snacks.dashboard.Gen|snacks.dashboard.Section[]
+---@alias snacks.dashboard.TextFunc snacks.dashboard.Text[]|snacks.dashboard.Text|string|fun():string|snacks.dashboard.Text|snacks.dashboard.Text[]
 
 ---@class snacks.dashboard.Text
 ---@field [1] string the text
@@ -101,6 +102,7 @@ local defaults = {
       { icon = " ", key = "q", desc = "Quit", action = ":qa" },
     },
     -- Used by the `header` section
+    ---@type string|snacks.dashboard.TextFunc
     header = [[
 ███╗   ██╗███████╗ ██████╗ ██╗   ██╗██╗███╗   ███╗
 ████╗  ██║██╔════╝██╔═══██╗██║   ██║██║████╗ ████║
@@ -357,9 +359,10 @@ function D:align(item, width, align)
   end
 end
 
----@param texts snacks.dashboard.Text[]|snacks.dashboard.Text|string
+---@param texts snacks.dashboard.TextFunc
 function D:texts(texts)
   texts = type(texts) == "string" and { { texts } } or texts
+  texts = type(texts) == "function" and { texts() } or texts
   texts = type(texts[1]) == "string" and { texts } or texts
   return texts --[[ @as snacks.dashboard.Text[] ]]
 end
@@ -916,7 +919,7 @@ end
 ---@return snacks.dashboard.Gen
 function M.sections.header()
   return function(self)
-    return { header = self.opts.preset.header, padding = 2 }
+    return { header = type(self.opts.preset.header) == "function" and self.opts.preset.header() or self.opts.preset.header, padding = 2 }
   end
 end
 
