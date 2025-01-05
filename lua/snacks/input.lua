@@ -123,7 +123,7 @@ function M.input(opts, on_confirm)
   if opts.icon_pos and (opts.icon or "") ~= "" then
     add(opts.icon, "SnacksInputIcon", opts.icon_pos)
   end
-  add(opts.prompt, "SnacksInputBorder", opts.prompt_pos)
+  add(opts.prompt, "SnacksInputTitle", opts.prompt_pos)
 
   if next(title) then
     table.insert(title, { " " })
