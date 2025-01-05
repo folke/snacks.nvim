@@ -158,6 +158,47 @@ function M.toggle(cmd, opts)
   return created and terminal or assert(terminal):toggle()
 end
 
+--- Toggle all terminal windows.
+--- If terminal windows exist:
+---   - If any are open, close all open terminals
+---   - If none are open, open all existing terminals
+--- If no terminals exist:
+---   - Create a terminal window
+--- `cmd` ans `opts` are optional and will be used
+--- to create a terminal if needed.
+---@param cmd? string | string[]
+---@param opts? snacks.terminal.Opts
+function M.toggle_all(cmd, opts)
+  local existing_terminals = {}
+  for _, term in pairs(terminals) do
+    if term and term:buf_valid() then
+      table.insert(existing_terminals, term)
+    end
+  end
+
+  if #existing_terminals > 0 then
+    local any_open = false
+    for _, term in ipairs(existing_terminals) do
+      if term:win_valid() then
+        any_open = true
+        break
+      end
+    end
+
+    if any_open then
+      for _, term in ipairs(existing_terminals) do
+        term:hide()
+      end
+    else
+      for _, term in ipairs(existing_terminals) do
+        term:show()
+      end
+    end
+  else
+    M.toggle(cmd, opts)
+  end
+end
+
 --- Parses a shell command into a table of arguments.
 --- - spaces inside quotes (only double quotes are supported) are preserved
 --- - backslash
