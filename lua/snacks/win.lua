@@ -876,15 +876,18 @@ function M:dim(parent)
   ---@param s number size
   ---@param ps number parent size
   local function pos(p, s, ps, border_from, border_to)
-    p = type(p) == "function" and p(self) or p
-    if not p then -- center
-      return math.floor((ps - s) / 2) - border_from
-    end
-    ---@cast p number
-    if p < 0 then -- negative position
-      return ps - s + p - border_from - border_to
-    elseif p < 1 and p > 0 then -- relative position
-      return math.floor(ps * p) + border_from
+    if self.opts.relative ~= "cursor" then
+      p = type(p) == "function" and p(self) or p
+      if not p then -- center
+        return math.floor((ps - s) / 2) - border_from
+      end
+      ---@cast p number
+      if p < 0 then -- negative position
+        return ps - s + p - border_from - border_to
+      elseif p < 1 and p > 0 then -- relative position
+        return math.floor(ps * p) + border_from
+      end
+      return p
     end
     return p
   end
