@@ -17,6 +17,7 @@ M.meta = {
 ---@field target vim.fn.winsaveview.ret
 ---@field scrolloff number
 ---@field virtualedit? string
+---@field changedtick number
 
 ---@class snacks.scroll.Config
 ---@field animate snacks.animate.Config
@@ -49,6 +50,9 @@ local spammer_timer = assert((vim.uv or vim.loop).new_timer())
 -- get the state for a window.
 -- when the state doesn't exist, its target is the current view
 local function get_state(win)
+  if vim.o.paste or vim.fn.reg_executing() ~= "" or vim.fn.reg_recording() ~= "" then
+    return
+  end
   if not vim.api.nvim_win_is_valid(win) then
     return
   end
@@ -59,14 +63,16 @@ local function get_state(win)
   if not Snacks.animate.enabled({ buf = buf, name = "scroll" }) then
     return
   end
+  local changedtick = vim.api.nvim_buf_get_changedtick(buf)
   local view = vim.api.nvim_win_call(win, vim.fn.winsaveview) ---@type vim.fn.winsaveview.ret
-  if not (states[win] and states[win].buf == buf) then
+  if not (states[win] and states[win].buf == buf and states[win].changedtick == changedtick) then
     ---@diagnostic disable-next-line: missing-fields
     states[win] = {
       win = win,
       target = vim.deepcopy(view),
       current = vim.deepcopy(view),
       buf = buf,
+      changedtick = changedtick,
     }
   end
   states[win].scrolloff = vim.wo[win].scrolloff
