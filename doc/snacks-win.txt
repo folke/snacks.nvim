@@ -16,16 +16,21 @@ Table of Contents                               *snacks-win-table-of-contents*
   - Snacks.win.new()                      |snacks-win-module-snacks.win.new()|
   - win:action()                              |snacks-win-module-win:action()|
   - win:add_padding()                    |snacks-win-module-win:add_padding()|
+  - win:border_size()                    |snacks-win-module-win:border_size()|
   - win:border_text_width()        |snacks-win-module-win:border_text_width()|
   - win:buf_valid()                        |snacks-win-module-win:buf_valid()|
   - win:close()                                |snacks-win-module-win:close()|
+  - win:dim()                                    |snacks-win-module-win:dim()|
   - win:focus()                                |snacks-win-module-win:focus()|
   - win:has_border()                      |snacks-win-module-win:has_border()|
   - win:hide()                                  |snacks-win-module-win:hide()|
   - win:is_floating()                    |snacks-win-module-win:is_floating()|
   - win:line()                                  |snacks-win-module-win:line()|
   - win:lines()                                |snacks-win-module-win:lines()|
+  - win:on()                                      |snacks-win-module-win:on()|
   - win:parent_size()                    |snacks-win-module-win:parent_size()|
+  - win:redraw()                              |snacks-win-module-win:redraw()|
+  - win:scroll()                              |snacks-win-module-win:scroll()|
   - win:show()                                  |snacks-win-module-win:show()|
   - win:size()                                  |snacks-win-module-win:size()|
   - win:text()                                  |snacks-win-module-win:text()|
@@ -84,21 +89,31 @@ Easily create and manage floating windows or splits
     ---@field show? boolean Show the window immediately (default: true)
     ---@field height? number|fun(self:snacks.win):number Height of the window. Use <1 for relative height. 0 means full height. (default: 0.9)
     ---@field width? number|fun(self:snacks.win):number Width of the window. Use <1 for relative width. 0 means full width. (default: 0.9)
+    ---@field min_height? number Minimum height of the window
+    ---@field max_height? number Maximum height of the window
+    ---@field min_width? number Minimum width of the window
+    ---@field max_width? number Maximum width of the window
+    ---@field col? number|fun(self:snacks.win):number Column of the window. Use <1 for relative column. (default: center)
+    ---@field row? number|fun(self:snacks.win):number Row of the window. Use <1 for relative row. (default: center)
     ---@field minimal? boolean Disable a bunch of options to make the window minimal (default: true)
     ---@field position? "float"|"bottom"|"top"|"left"|"right"
+    ---@field border? "none"|"top"|"right"|"bottom"|"left"|"rounded"|"single"|"double"|"solid"|"shadow"|string[]|false
     ---@field buf? number If set, use this buffer instead of creating a new one
     ---@field file? string If set, use this file instead of creating a new buffer
     ---@field enter? boolean Enter the window after opening (default: false)
     ---@field backdrop? number|false|snacks.win.Backdrop Opacity of the backdrop (default: 60)
     ---@field wo? vim.wo|{} window options
     ---@field bo? vim.bo|{} buffer options
+    ---@field b? table<string, any> buffer local variables
+    ---@field w? table<string, any> window local variables
     ---@field ft? string filetype to use for treesitter/syntax highlighting. Won't override existing filetype
     ---@field keys? table<string, false|string|fun(self: snacks.win)|snacks.win.Keys> Key mappings
     ---@field on_buf? fun(self: snacks.win) Callback after opening the buffer
     ---@field on_win? fun(self: snacks.win) Callback after opening the window
+    ---@field on_close? fun(self: snacks.win) Callback after closing the window
     ---@field fixbuf? boolean don't allow other buffers to be opened in this window
     ---@field text? string|string[]|fun():(string[]|string) Initial lines to set in the buffer
-    ---@field actions? table<string, fun(self: snacks.win):(boolean|string?)> Actions that can be used in key mappings
+    ---@field actions? table<string, snacks.win.Action.spec> Actions that can be used in key mappings
     {
       show = true,
       fixbuf = true,
@@ -183,11 +198,35 @@ SPLIT                                                *snacks-win-styles-split*
 <
 
 >lua
+    ---@class snacks.win.Event: vim.api.keyset.create_autocmd
+    ---@field buf? true
+    ---@field win? true
+    ---@field callback? fun(self: snacks.win)
+<
+
+>lua
     ---@class snacks.win.Backdrop
     ---@field bg? string
     ---@field blend? number
     ---@field transparent? boolean defaults to true
     ---@field win? snacks.win.Config overrides the backdrop window config
+<
+
+>lua
+    ---@class snacks.win.Dim
+    ---@field width number width of the window, without borders
+    ---@field height number height of the window, without borders
+    ---@field row number row of the window (0-indexed)
+    ---@field col number column of the window (0-indexed)
+    ---@field border? boolean whether the window has a border
+<
+
+>lua
+    ---@alias snacks.win.Action.fn fun(self: snacks.win):(boolean|string?)
+    ---@alias snacks.win.Action.spec snacks.win.Action|snacks.win.Action.fn
+    ---@class snacks.win.Action
+    ---@field action snacks.win.Action.fn
+    ---@field desc? string
 <
 
 
@@ -203,6 +242,7 @@ SPLIT                                                *snacks-win-styles-split*
     ---@field augroup? number
     ---@field backdrop? snacks.win
     ---@field keys snacks.win.Keys[]
+    ---@field events (snacks.win.Event|{event:string|string[]})[]
     Snacks.win = {}
 <
 
@@ -210,7 +250,7 @@ SPLIT                                                *snacks-win-styles-split*
 `Snacks.win()`                                                  *Snacks.win()*
 
 >lua
-    ---@type fun(opts? :snacks.win.Config): snacks.win
+    ---@type fun(opts? :snacks.win.Config|{}): snacks.win
     Snacks.win()
 <
 
@@ -218,7 +258,7 @@ SPLIT                                                *snacks-win-styles-split*
 `Snacks.win.new()`                                          *Snacks.win.new()*
 
 >lua
-    ---@param opts? snacks.win.Config
+    ---@param opts? snacks.win.Config|{}
     ---@return snacks.win
     Snacks.win.new(opts)
 <
@@ -228,7 +268,7 @@ WIN:ACTION()                                  *snacks-win-module-win:action()*
 
 >lua
     ---@param actions string|string[]
-    ---@return fun(): boolean|string?
+    ---@return (fun(): boolean|string?) action, string? desc
     win:action(actions)
 <
 
@@ -237,6 +277,15 @@ WIN:ADD_PADDING()                        *snacks-win-module-win:add_padding()*
 
 >lua
     win:add_padding()
+<
+
+
+WIN:BORDER_SIZE()                        *snacks-win-module-win:border_size()*
+
+Calculate the size of the border
+
+>lua
+    win:border_size()
 <
 
 
@@ -259,6 +308,14 @@ WIN:CLOSE()                                    *snacks-win-module-win:close()*
 >lua
     ---@param opts? { buf: boolean }
     win:close(opts)
+<
+
+
+WIN:DIM()                                        *snacks-win-module-win:dim()*
+
+>lua
+    ---@param parent? snacks.win.Dim
+    win:dim(parent)
 <
 
 
@@ -306,10 +363,36 @@ WIN:LINES()                                    *snacks-win-module-win:lines()*
 <
 
 
+WIN:ON()                                          *snacks-win-module-win:on()*
+
+>lua
+    ---@param event string|string[]
+    ---@param cb fun(self: snacks.win)
+    ---@param opts? snacks.win.Event
+    win:on(event, cb, opts)
+<
+
+
 WIN:PARENT_SIZE()                        *snacks-win-module-win:parent_size()*
 
 >lua
+    ---@return { height: number, width: number }
     win:parent_size()
+<
+
+
+WIN:REDRAW()                                  *snacks-win-module-win:redraw()*
+
+>lua
+    win:redraw()
+<
+
+
+WIN:SCROLL()                                  *snacks-win-module-win:scroll()*
+
+>lua
+    ---@param up? boolean
+    win:scroll(up)
 <
 
 

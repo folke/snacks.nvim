@@ -306,4 +306,30 @@ function M.stats(opts)
   return { summary = summary, trace = trace, tree = M._traces }
 end
 
+function M.size(bytes)
+  local sizes = { "B", "KB", "MB", "GB", "TB" }
+  local s = 1
+  while bytes > 1024 and s < #sizes do
+    bytes = bytes / 1024
+    s = s + 1
+  end
+  return ("%.2f%s"):format(bytes, sizes[s])
+end
+
+function M.metrics()
+  collectgarbage("collect")
+  local lines = {} ---@type string[]
+  local function add(name, value)
+    lines[#lines + 1] = ("- **%s**: %s"):format(name, value)
+  end
+
+  add("lua", M.size(collectgarbage("count") * 1024))
+
+  for _, stat in ipairs({ "get_total_memory", "get_free_memory", "get_available_memory", "resident_set_memory" }) do
+    add(stat:gsub("get_", ""):gsub("_", " "), M.size(uv[stat]()))
+  end
+  lines[#lines + 1] = ("```lua\n%s\n```"):format(vim.inspect(uv.getrusage()))
+  Snacks.notify.warn(lines, { title = "Metrics" })
+end
+
 return M

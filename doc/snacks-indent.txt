@@ -48,8 +48,6 @@ Similar plugins:
         priority = 1,
         enabled = true, -- enable indent guides
         char = "│",
-        blank = nil, ---@type string? blank space character. If nil, it will use listchars when list is enabled.
-        -- blank = "∙",
         only_scope = false, -- only show indent guides of the scope
         only_current = false, -- only show indent guides in the current window
         hl = "SnacksIndent", ---@type string|string[] hl groups for indent guides

@@ -9,8 +9,10 @@ Table of Contents                             *snacks-debug-table-of-contents*
   - Snacks.debug.backtrace()    |snacks-debug-module-snacks.debug.backtrace()|
   - Snacks.debug.inspect()        |snacks-debug-module-snacks.debug.inspect()|
   - Snacks.debug.log()                |snacks-debug-module-snacks.debug.log()|
+  - Snacks.debug.metrics()        |snacks-debug-module-snacks.debug.metrics()|
   - Snacks.debug.profile()        |snacks-debug-module-snacks.debug.profile()|
   - Snacks.debug.run()                |snacks-debug-module-snacks.debug.run()|
+  - Snacks.debug.size()              |snacks-debug-module-snacks.debug.size()|
   - Snacks.debug.stats()            |snacks-debug-module-snacks.debug.stats()|
   - Snacks.debug.trace()            |snacks-debug-module-snacks.debug.trace()|
   - Snacks.debug.tracemod()      |snacks-debug-module-snacks.debug.tracemod()|
@@ -98,6 +100,13 @@ smaller than 120 characters, it will be printed on a single line.
 <
 
 
+`Snacks.debug.metrics()`                              *Snacks.debug.metrics()*
+
+>lua
+    Snacks.debug.metrics()
+<
+
+
 `Snacks.debug.profile()`                              *Snacks.debug.profile()*
 
 Very simple function to profile a lua function. **flush**set to `true` to use
@@ -118,6 +127,13 @@ with the code. Any error will be shown as a diagnostic.
 >lua
     ---@param opts? {name?:string, buf?:number, print?:boolean}
     Snacks.debug.run(opts)
+<
+
+
+`Snacks.debug.size()`                                    *Snacks.debug.size()*
+
+>lua
+    Snacks.debug.size(bytes)
 <
 
 

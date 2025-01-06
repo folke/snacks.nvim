@@ -6,12 +6,14 @@
 ---@field augroup? number
 ---@field backdrop? snacks.win
 ---@field keys snacks.win.Keys[]
+---@field events (snacks.win.Event|{event:string|string[]})[]
 ---@overload fun(opts? :snacks.win.Config|{}): snacks.win
 local M = setmetatable({}, {
   __call = function(t, ...)
     return t.new(...)
   end,
 })
+M.__index = M
 
 M.meta = {
   desc = "Create and manage floating windows or splits",
@@ -22,19 +24,44 @@ M.meta = {
 ---@field [2]? string|string[]|fun(self: snacks.win): string?
 ---@field mode? string|string[]
 
+---@class snacks.win.Event: vim.api.keyset.create_autocmd
+---@field buf? true
+---@field win? true
+---@field callback? fun(self: snacks.win)
+
 ---@class snacks.win.Backdrop
 ---@field bg? string
 ---@field blend? number
 ---@field transparent? boolean defaults to true
 ---@field win? snacks.win.Config overrides the backdrop window config
 
+---@class snacks.win.Dim
+---@field width number width of the window, without borders
+---@field height number height of the window, without borders
+---@field row number row of the window (0-indexed)
+---@field col number column of the window (0-indexed)
+---@field border? boolean whether the window has a border
+
+---@alias snacks.win.Action.fn fun(self: snacks.win):(boolean|string?)
+---@alias snacks.win.Action.spec snacks.win.Action|snacks.win.Action.fn
+---@class snacks.win.Action
+---@field action snacks.win.Action.fn
+---@field desc? string
+
 ---@class snacks.win.Config: vim.api.keyset.win_config
 ---@field style? string merges with config from `Snacks.config.styles[style]`
 ---@field show? boolean Show the window immediately (default: true)
 ---@field height? number|fun(self:snacks.win):number Height of the window. Use <1 for relative height. 0 means full height. (default: 0.9)
 ---@field width? number|fun(self:snacks.win):number Width of the window. Use <1 for relative width. 0 means full width. (default: 0.9)
+---@field min_height? number Minimum height of the window
+---@field max_height? number Maximum height of the window
+---@field min_width? number Minimum width of the window
+---@field max_width? number Maximum width of the window
+---@field col? number|fun(self:snacks.win):number Column of the window. Use <1 for relative column. (default: center)
+---@field row? number|fun(self:snacks.win):number Row of the window. Use <1 for relative row. (default: center)
 ---@field minimal? boolean Disable a bunch of options to make the window minimal (default: true)
 ---@field position? "float"|"bottom"|"top"|"left"|"right"
+---@field border? "none"|"top"|"right"|"bottom"|"left"|"rounded"|"single"|"double"|"solid"|"shadow"|string[]|false
 ---@field buf? number If set, use this buffer instead of creating a new one
 ---@field file? string If set, use this file instead of creating a new buffer
 ---@field enter? boolean Enter the window after opening (default: false)
@@ -47,9 +74,10 @@ M.meta = {
 ---@field keys? table<string, false|string|fun(self: snacks.win)|snacks.win.Keys> Key mappings
 ---@field on_buf? fun(self: snacks.win) Callback after opening the buffer
 ---@field on_win? fun(self: snacks.win) Callback after opening the window
+---@field on_close? fun(self: snacks.win) Callback after closing the window
 ---@field fixbuf? boolean don't allow other buffers to be opened in this window
 ---@field text? string|string[]|fun():(string[]|string) Initial lines to set in the buffer
----@field actions? table<string, fun(self: snacks.win):(boolean|string?)> Actions that can be used in key mappings
+---@field actions? table<string, snacks.win.Action.spec> Actions that can be used in key mappings
 local defaults = {
   show = true,
   fixbuf = true,
@@ -98,6 +126,8 @@ Snacks.config.style("minimal", {
   },
 })
 
+local SCROLL_UP, SCROLL_DOWN = Snacks.util.keycode("<c-u>"), Snacks.util.keycode("<c-d>")
+
 local split_commands = {
   editor = {
     top = "topleft",
@@ -134,6 +164,14 @@ local win_opts = {
   "width",
   "win",
   "zindex",
+}
+
+---@type table<string, string[]>
+local borders = {
+  left = { "│", "", "", "", "", "", "│", "│" },
+  right = { "", "", "│", "│", "│", "", "", "" },
+  top = { "─", "─", "─", "", "", "", "", "" },
+  bottom = { "", "", "", "", "─", "─", "─", "" },
 }
 
 Snacks.util.set_hl({
@@ -179,7 +217,7 @@ end
 ---@param opts? snacks.win.Config|{}
 ---@return snacks.win
 function M.new(opts)
-  local self = setmetatable({}, { __index = M })
+  local self = setmetatable({}, M)
   id = id + 1
   self.id = id
   opts = M.resolve(Snacks.config.get("win", defaults), opts)
@@ -199,6 +237,7 @@ function M.new(opts)
   end
 
   self.keys = {}
+  self.events = {}
   for key, spec in pairs(opts.keys) do
     if spec then
       if type(spec) == "string" then
@@ -210,6 +249,11 @@ function M.new(opts)
     end
   end
 
+  self:on("WinClosed", self.on_close, { win = true })
+
+  -- update window size when resizing
+  self:on("VimResized", self.update)
+
   ---@cast opts snacks.win.Config
   self.opts = opts
   if opts.show ~= false then
@@ -219,31 +263,93 @@ function M.new(opts)
 end
 
 ---@param actions string|string[]
----@return fun(): boolean|string?
+---@return (fun(): boolean|string?) action, string? desc
 function M:action(actions)
   actions = type(actions) == "string" and { actions } or actions
   ---@cast actions string[]
+  local desc = {} ---@type string[]
+  for a, name in ipairs(actions) do
+    desc[a] = name:gsub("_", " ")
+    if self.opts.actions and self.opts.actions[name] then
+      local action = self.opts.actions[name]
+      desc[a] = type(action) == "table" and action.desc and action.desc or desc[a]
+    end
+  end
   return function()
-    for _, action in ipairs(actions) do
-      if self.opts.actions and self.opts.actions[action] then
-        local ret = self.opts.actions[action](self)
+    for _, name in ipairs(actions) do
+      if self.opts.actions and self.opts.actions[name] then
+        local a = self.opts.actions[name]
+        local fn = type(a) == "function" and a or a.action
+        local ret = fn(self)
         if ret then
           return type(ret) == "string" and ret or nil
         end
-      elseif self[action] then
-        self[action](self)
+      elseif self[name] then
+        self[name](self)
         return
       else
-        return action
+        return name
       end
     end
+  end,
+    table.concat(desc, ", ")
+end
+
+---@param event string|string[]
+---@param cb fun(self: snacks.win)
+---@param opts? snacks.win.Event
+function M:on(event, cb, opts)
+  opts = opts or {}
+  opts.callback = cb
+  table.insert(self.events, vim.tbl_extend("keep", { event = event }, opts))
+  if self:valid() then
+    self:_on(event, opts)
   end
+end
+
+---@param event string|string[]
+---@param opts snacks.win.Event
+function M:_on(event, opts)
+  local event_opts = {} ---@type vim.api.keyset.create_autocmd
+  local skip = { "buf", "win", "event" }
+  for k, v in pairs(opts) do
+    if not vim.tbl_contains(skip, k) then
+      event_opts[k] = v
+    end
+  end
+  event_opts.group = event_opts.group or self.augroup
+  event_opts.callback = function()
+    opts.callback(self)
+  end
+  if event_opts.pattern or event_opts.buffer then
+    -- don't alter the pattern or buffer
+  elseif opts.win then
+    event_opts.pattern = self.win .. ""
+  elseif opts.buf then
+    event_opts.buffer = self.buf
+  end
+  vim.api.nvim_create_autocmd(event, event_opts)
 end
 
 function M:focus()
   if self:valid() then
     vim.api.nvim_set_current_win(self.win)
   end
+end
+
+function M:redraw()
+  if vim.api.nvim__redraw then
+    vim.api.nvim__redraw({ win = self.win, valid = false, flush = true })
+  else
+    vim.cmd("redraw")
+  end
+end
+
+---@param up? boolean
+function M:scroll(up)
+  vim.api.nvim_buf_call(self.buf, function()
+    vim.cmd(("normal! %s"):format(up and SCROLL_UP or SCROLL_DOWN))
+  end)
 end
 
 ---@param opts? { buf: boolean }
@@ -255,7 +361,7 @@ function M:close(opts)
   local buf = wipe and self.buf
 
   -- never close modified buffers
-  if buf and vim.bo[buf].modified then
+  if buf and vim.bo[buf].modified and vim.bo[buf].buftype == "" then
     if not pcall(vim.api.nvim_buf_delete, buf, { force = false }) then
       return
     end
@@ -336,6 +442,7 @@ function M:open_win()
   local relative = self.opts.relative or "editor"
   local position = self.opts.position or "float"
   local enter = self.opts.enter == nil or self.opts.enter or false
+  enter = not self.opts.focusable and enter or false
   local opts = self:win_opts()
   if position == "float" then
     self.win = vim.api.nvim_open_win(self.buf, enter, opts)
@@ -459,24 +566,9 @@ function M:show()
     end
   end
 
-  -- Go back to the previous window when closing,
-  -- and it's the current window
-  vim.api.nvim_create_autocmd("WinClosed", {
-    group = self.augroup,
-    callback = function(ev)
-      if ev.buf == self.buf and vim.api.nvim_get_current_win() == self.win then
-        pcall(vim.cmd.wincmd, "p")
-      end
-    end,
-  })
-
-  -- update window size when resizing
-  vim.api.nvim_create_autocmd("VimResized", {
-    group = self.augroup,
-    callback = function()
-      self:update()
-    end,
-  })
+  for _, event in ipairs(self.events) do
+    self:_on(event.event, event)
+  end
 
   -- swap buffers when opening a new buffer in the same window
   vim.api.nvim_create_autocmd("BufWinEnter", {
@@ -523,15 +615,21 @@ function M:show()
     opts[1] = nil
     opts[2] = nil
     opts.mode = nil
+    ---@diagnostic disable-next-line: cast-type-mismatch
+    ---@cast opts vim.keymap.set.Opts
     opts.buffer = self.buf
     opts.nowait = true
     local rhs = spec[2]
     local is_action = type(rhs) == "string" or type(rhs) == "table"
     if is_action then
-      opts.expr = true
-    end
-    rhs = is_action and self:action(rhs) or function()
-      return spec[2](self)
+      local desc = spec.desc
+      ---@cast rhs string|string[]
+      rhs, desc = self:action(rhs)
+      opts.desc = opts.desc or desc
+    else
+      rhs = function()
+        return spec[2](self)
+      end
     end
     ---@cast spec snacks.win.Keys
     vim.keymap.set(spec.mode or "n", spec[1], rhs, opts)
@@ -540,6 +638,23 @@ function M:show()
   self:drop()
 
   return self
+end
+
+---@private
+function M:on_close()
+  -- close the backdrop
+  if self.backdrop then
+    self.backdrop:close()
+    self.backdrop = nil
+  end
+  if self.opts.on_close then
+    self.opts.on_close(self)
+  end
+  -- Go back to the previous window when closing,
+  -- and it's the current window
+  if vim.api.nvim_get_current_win() == self.win then
+    pcall(vim.cmd.wincmd, "p")
+  end
 end
 
 function M:add_padding()
@@ -603,22 +718,13 @@ function M:drop()
     wo = {
       winhighlight = "Normal:" .. group,
       winblend = winblend,
+      colorcolumn = "",
     },
     bo = {
       buftype = "nofile",
       filetype = "snacks_win_backdrop",
     },
   }, backdrop.win))
-  vim.api.nvim_create_autocmd("WinClosed", {
-    group = self.augroup,
-    pattern = self.win .. "",
-    callback = function()
-      if self.backdrop then
-        self.backdrop:close()
-        self.backdrop = nil
-      end
-    end,
-  })
 end
 
 function M:line(line)
@@ -637,6 +743,7 @@ function M:text(from, to)
   return table.concat(self:lines(from, to), "\n")
 end
 
+---@return { height: number, width: number }
 function M:parent_size()
   return {
     height = self.opts.relative == "win" and vim.api.nvim_win_get_height(self.opts.win) or vim.o.lines,
@@ -650,23 +757,17 @@ function M:win_opts()
   for _, k in ipairs(win_opts) do
     opts[k] = self.opts[k]
   end
-  local parent = self:parent_size()
-  opts.height = type(opts.height) == "function" and opts.height(self) or opts.height
-  opts.width = type(opts.width) == "function" and opts.width(self) or opts.width
-  -- Special case for 0, which means 100%
-  opts.height = opts.height == 0 and parent.height or opts.height
-  opts.width = opts.width == 0 and parent.width or opts.width
-  opts.height = math.floor(opts.height < 1 and parent.height * opts.height or opts.height)
-  opts.width = math.floor(opts.width < 1 and parent.width * opts.width or opts.width)
+
+  opts.border = opts.border and (borders[opts.border] or opts.border) or "none"
 
   if opts.relative == "cursor" then
-    return opts
+    self.opts.row = self.opts.row or 0
+    self.opts.col = self.opts.col or 0
   end
-  local border_offset = self:has_border() and 2 or 0
-  opts.row = opts.row and opts.row < 0 and parent.height + opts.row - opts.height + 1 or opts.row
-  opts.col = opts.col and opts.col < 0 and parent.width + opts.col - opts.width + 1 or opts.col
-  opts.row = opts.row or math.floor((parent.height - opts.height - border_offset) / 2)
-  opts.col = opts.col or math.floor((parent.width - opts.width - border_offset) / 2)
+
+  local dim = self:dim()
+  opts.height, opts.width = dim.height, dim.width
+  opts.row, opts.col = dim.row, dim.col
 
   if opts.title_pos and not opts.title then
     opts.title_pos = nil
@@ -674,10 +775,15 @@ function M:win_opts()
   if opts.footer_pos and not opts.footer then
     opts.footer_pos = nil
   end
+
   if vim.fn.has("nvim-0.10") == 0 then
     opts.footer, opts.footer_pos = nil, nil
   end
 
+  if not self:has_border() then
+    opts.title, opts.footer = nil, nil
+    opts.title_pos, opts.footer_pos = nil, nil
+  end
   return opts
 end
 
@@ -695,6 +801,19 @@ end
 
 function M:has_border()
   return self.opts.border and self.opts.border ~= "" and self.opts.border ~= "none"
+end
+
+--- Calculate the size of the border
+function M:border_size()
+  local border = self.opts.border and self.opts.border ~= "" and self.opts.border ~= "none" and self.opts.border
+  local full = border and not vim.tbl_contains({ "top", "right", "bottom", "left" }, border)
+  ---@type { top: number, right: number, bottom: number, left: number }
+  return {
+    top = (full or border == "top") and 1 or 0,
+    right = (full or border == "right") and 1 or 0,
+    bottom = (full or border == "bottom") and 1 or 0,
+    left = (full or border == "left") and 1 or 0,
+  }
 end
 
 function M:border_text_width()
@@ -726,6 +845,64 @@ end
 
 function M:valid()
   return self:win_valid() and self:buf_valid() and vim.api.nvim_win_get_buf(self.win) == self.buf
+end
+
+---@param parent? snacks.win.Dim
+function M:dim(parent)
+  parent = parent or self:parent_size()
+  ---@type snacks.win.Dim
+  local ret = {
+    height = 0,
+    width = 0,
+    col = 0,
+    row = 0,
+    border = self:has_border(),
+  }
+
+  ---@param s? number|fun(win:snacks.win):number? size
+  ---@param ps number parent size
+  local function size(s, ps, border_offset)
+    s = type(s) == "function" and s(self) or s or 0
+    ---@cast s number
+    if s == 0 then -- full size
+      return ps - border_offset
+    elseif s < 1 then -- relative size
+      return math.floor(ps * s) - border_offset
+    end
+    return s
+  end
+
+  ---@param p? number|fun(win:snacks.win):number? pos
+  ---@param s number size
+  ---@param ps number parent size
+  local function pos(p, s, ps, border_from, border_to)
+    p = type(p) == "function" and p(self) or p
+    if not p then -- center
+      return math.floor((ps - s) / 2) - border_from
+    end
+    ---@cast p number
+    if p < 0 then -- negative position
+      return ps - s + p - border_from - border_to
+    elseif p < 1 and p > 0 then -- relative position
+      return math.floor(ps * p) + border_from
+    end
+    return p
+  end
+
+  local border = self:border_size()
+
+  ret.height = size(self.opts.height, parent.height, border.top + border.bottom)
+  ret.height = math.max(ret.height, self.opts.min_height or 0, 1)
+  ret.height = math.min(ret.height, self.opts.max_height or ret.height, parent.height)
+
+  ret.width = size(self.opts.width, parent.width, border.left + border.right)
+  ret.width = math.max(ret.width, self.opts.min_width or 0, 1)
+  ret.width = math.min(ret.width, self.opts.max_width or ret.width, parent.width)
+
+  ret.row = pos(self.opts.row, ret.height, parent.height, border.top, border.bottom)
+  ret.col = pos(self.opts.col, ret.width, parent.width, border.left, border.right)
+
+  return ret
 end
 
 return M

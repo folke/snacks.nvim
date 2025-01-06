@@ -76,10 +76,10 @@ docs for more information on how to customize these styles
     completion = false, -- disable blink completions in input
   },
   keys = {
-    n_esc = { "<esc>", { "cmp_close", "cancel" }, mode = "n" },
-    i_esc = { "<esc>", { "cmp_close", "stopinsert" }, mode = "i" },
-    i_cr = { "<cr>", { "cmp_accept", "confirm" }, mode = "i" },
-    i_tab = { "<tab>", { "cmp_select_next", "cmp" }, mode = "i" },
+    n_esc = { "<esc>", { "cmp_close", "cancel" }, mode = "n", expr = true },
+    i_esc = { "<esc>", { "cmp_close", "stopinsert" }, mode = "i", expr = true },
+    i_cr = { "<cr>", { "cmp_accept", "confirm" }, mode = "i", expr = true },
+    i_tab = { "<tab>", { "cmp_select_next", "cmp" }, mode = "i", expr = true },
     q = "cancel",
   },
 }
@@ -92,7 +92,7 @@ docs for more information on how to customize these styles
 ```
 
 ```lua
----@class snacks.input.Opts: snacks.input.Config|{}
+---@class snacks.input.Opts: snacks.input.Config,{}
 ---@field prompt? string
 ---@field default? string
 ---@field completion? string

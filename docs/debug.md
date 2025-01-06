@@ -79,6 +79,12 @@ Snacks.debug.log("Hello", { foo = "bar" }, 42)
 Snacks.debug.log(...)
 ```
 
+### `Snacks.debug.metrics()`
+
+```lua
+Snacks.debug.metrics()
+```
+
 ### `Snacks.debug.profile()`
 
 Very simple function to profile a lua function.
@@ -100,6 +106,12 @@ Any error will be shown as a diagnostic.
 ```lua
 ---@param opts? {name?:string, buf?:number, print?:boolean}
 Snacks.debug.run(opts)
+```
+
+### `Snacks.debug.size()`
+
+```lua
+Snacks.debug.size(bytes)
 ```
 
 ### `Snacks.debug.stats()`

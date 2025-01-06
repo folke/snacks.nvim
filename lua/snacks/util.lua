@@ -237,24 +237,41 @@ function M.on_key(key, cb)
 end
 
 ---@generic T
+---@param t T
+---@return { value?:T }|fun():T?
+function M.ref(t)
+  return setmetatable({ value = t }, {
+    __mode = "v",
+    __call = function(m)
+      return m.value
+    end,
+  })
+end
+
+---@generic T
 ---@param fn T
 ---@param opts? {ms?:number}
 ---@return T
 function M.throttle(fn, opts)
   local timer, trailing, ms = assert(uv.new_timer()), false, opts and opts.ms or 20
+  local running = false
+  local function run()
+    running = true
+    if vim.in_fast_event() then
+      return vim.schedule(run)
+    end
+    fn()
+    running = false
+  end
   return function()
-    if timer:is_active() then
+    if running or timer:is_active() then
       trailing = true
       return
     end
     trailing = false
-    if vim.in_fast_event() then
-      vim.schedule(fn)
-    else
-      fn()
-    end
+    run()
     timer:start(ms, 0, function()
-      return trailing and vim.schedule(fn)
+      return trailing and run()
     end)
   end
 end
