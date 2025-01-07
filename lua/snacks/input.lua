@@ -66,6 +66,7 @@ Snacks.config.style("input", {
     i_esc = { "<esc>", { "cmp_close", "stopinsert" }, mode = "i", expr = true },
     i_cr = { "<cr>", { "cmp_accept", "confirm" }, mode = "i", expr = true },
     i_tab = { "<tab>", { "cmp_select_next", "cmp" }, mode = "i", expr = true },
+    i_ctrlw = { "<c-w>", { "delete_word" }, mode = "i", expr = true },
     q = "cancel",
   },
 })
@@ -166,6 +167,9 @@ function M.input(opts, on_confirm)
       end,
       cmp_select_prev = function()
         return vim.fn.pumvisible() == 1 and "<c-p>"
+      end,
+      delete_word = function()
+        return "<cmd>normal! diw<cr><right>"
       end,
     },
   })
