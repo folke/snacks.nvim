@@ -169,7 +169,7 @@ function M.input(opts, on_confirm)
         return vim.fn.pumvisible() == 1 and "<c-p>"
       end,
       delete_word = function()
-        return "<cmd>normal! diw<cr><right>"
+        vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-S-w>", true, false, true), "n", false)
       end,
     },
   })
