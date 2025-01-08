@@ -61,6 +61,7 @@ Similar plugins:
 ---@field target vim.fn.winsaveview.ret
 ---@field scrolloff number
 ---@field virtualedit? string
+---@field changedtick number
 ```
 
 ## 📦 Module

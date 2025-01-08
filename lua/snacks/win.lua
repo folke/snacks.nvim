@@ -875,16 +875,16 @@ function M:dim(parent)
   ---@param p? number|fun(win:snacks.win):number? pos
   ---@param s number size
   ---@param ps number parent size
-  local function pos(p, s, ps, border_offset)
+  local function pos(p, s, ps, border_from, border_to)
     p = type(p) == "function" and p(self) or p
     if not p then -- center
-      return math.floor((ps - s) / 2) + border_offset
+      return math.floor((ps - s) / 2) - border_from
     end
     ---@cast p number
     if p < 0 then -- negative position
-      return ps + p - border_offset
+      return ps - s + p - border_from - border_to
     elseif p < 1 and p > 0 then -- relative position
-      return math.floor(ps * p) + border_offset
+      return math.floor(ps * p) + border_from
     end
     return p
   end
@@ -899,8 +899,8 @@ function M:dim(parent)
   ret.width = math.max(ret.width, self.opts.min_width or 0, 1)
   ret.width = math.min(ret.width, self.opts.max_width or ret.width, parent.width)
 
-  ret.row = pos(self.opts.row, ret.height, parent.height, border.top)
-  ret.col = pos(self.opts.col, ret.width, parent.width, border.left)
+  ret.row = pos(self.opts.row, ret.height, parent.height, border.top, border.bottom)
+  ret.col = pos(self.opts.col, ret.width, parent.width, border.left, border.right)
 
   return ret
 end

@@ -60,6 +60,9 @@ function M.setup()
     return
   end
   did_setup = true
+  Snacks.util.set_hl({
+    Mark = "DiagnosticHint",
+  }, { prefix = "SnacksStatusColumn", default = true })
   local timer = assert((vim.uv or vim.loop).new_timer())
   timer:start(config.refresh, config.refresh, function()
     sign_cache = {}
@@ -122,7 +125,7 @@ function M.buf_signs(buf)
     if mark.pos[1] == buf and mark.mark:match("[a-zA-Z]") then
       local lnum = mark.pos[2]
       signs[lnum] = signs[lnum] or {}
-      table.insert(signs[lnum], { text = mark.mark:sub(2), texthl = "DiagnosticHint", type = "mark" })
+      table.insert(signs[lnum], { text = mark.mark:sub(2), texthl = "SnacksStatusColumnMark", type = "mark" })
     end
   end
 
