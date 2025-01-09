@@ -95,7 +95,7 @@ Similar plugins:
       -- corner_bottom = "╰",
       horizontal = "─",
       vertical = "│",
-      arrow = ">",
+      arrow = "›",
     },
   },
   blank = {
