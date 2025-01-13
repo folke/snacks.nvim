@@ -264,8 +264,10 @@ function M.open(opts)
     vim.api.nvim_create_autocmd("BufHidden", {
       group = vim.api.nvim_create_augroup("snacks_scratch_autowrite_" .. buf, { clear = true }),
       buffer = buf,
-      callback = function()
-        vim.cmd("silent! write")
+      callback = function(ev)
+        vim.api.nvim_buf_call(ev.buf, function()
+          vim.cmd("silent! write")
+        end)
       end,
     })
   end
