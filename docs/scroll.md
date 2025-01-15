@@ -31,13 +31,19 @@ Similar plugins:
 
 ```lua
 ---@class snacks.scroll.Config
----@field animate snacks.animate.Config
+---@field animate snacks.animate.Config|{}
+---@field animate_repeat snacks.animate.Config|{}|{delay:number}
 {
   animate = {
     duration = { step = 15, total = 250 },
     easing = "linear",
   },
-  spamming = 10, -- threshold for spamming detection
+  -- faster animation when repeating scroll after delay
+  animate_repeat = {
+    delay = 100, -- delay in ms before using the repeat animation
+    duration = { step = 5, total = 50 },
+    easing = "linear",
+  },
   -- what buffers to animate
   filter = function(buf)
     return vim.g.snacks_scroll ~= false and vim.b[buf].snacks_scroll ~= false and vim.bo[buf].buftype ~= "terminal"
@@ -62,6 +68,7 @@ Similar plugins:
 ---@field scrolloff number
 ---@field virtualedit? string
 ---@field changedtick number
+---@field last number vim.uv.hrtime of last scroll
 ```
 
 ## 📦 Module

@@ -5,6 +5,7 @@ Table of Contents                              *snacks-meta-table-of-contents*
 
 1. Types                                                   |snacks-meta-types|
 2. Module                                                 |snacks-meta-module|
+  - Snacks.meta.file()                 |snacks-meta-module-snacks.meta.file()|
   - Snacks.meta.get()                   |snacks-meta-module-snacks.meta.get()|
 Meta functions for Snacks
 
@@ -22,6 +23,7 @@ Meta functions for Snacks
     ---@field health? boolean
     ---@field types? boolean
     ---@field config? boolean
+    ---@field merge? { [string|number]: string }
 <
 
 >lua
@@ -35,6 +37,13 @@ Meta functions for Snacks
 
 ==============================================================================
 2. Module                                                 *snacks-meta-module*
+
+
+`Snacks.meta.file()`                                      *Snacks.meta.file()*
+
+>lua
+    Snacks.meta.file(name)
+<
 
 
 `Snacks.meta.get()`                                        *Snacks.meta.get()*

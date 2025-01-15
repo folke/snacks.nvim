@@ -55,7 +55,7 @@ Snacks.win({
 ---@field row? number|fun(self:snacks.win):number Row of the window. Use <1 for relative row. (default: center)
 ---@field minimal? boolean Disable a bunch of options to make the window minimal (default: true)
 ---@field position? "float"|"bottom"|"top"|"left"|"right"
----@field border? "none"|"top"|"right"|"bottom"|"left"|"rounded"|"single"|"double"|"solid"|"shadow"|string[]|false
+---@field border? "none"|"top"|"right"|"bottom"|"left"|"hpad"|"vpad"|"rounded"|"single"|"double"|"solid"|"shadow"|string[]|false
 ---@field buf? number If set, use this buffer instead of creating a new one
 ---@field file? string If set, use this file instead of creating a new buffer
 ---@field enter? boolean Enter the window after opening (default: false)
@@ -72,6 +72,7 @@ Snacks.win({
 ---@field fixbuf? boolean don't allow other buffers to be opened in this window
 ---@field text? string|string[]|fun():(string[]|string) Initial lines to set in the buffer
 ---@field actions? table<string, snacks.win.Action.spec> Actions that can be used in key mappings
+---@field resize? boolean Automatically resize the window when the editor is resized
 {
   show = true,
   fixbuf = true,
@@ -105,6 +106,19 @@ docs for more information on how to customize these styles
 }
 ```
 
+### `help`
+
+```lua
+{
+  position = "float",
+  backdrop = false,
+  border = "top",
+  row = -1,
+  width = 0,
+  height = 0.3,
+}
+```
+
 ### `minimal`
 
 ```lua
@@ -113,6 +127,7 @@ docs for more information on how to customize these styles
     cursorcolumn = false,
     cursorline = false,
     cursorlineopt = "both",
+    colorcolumn = "",
     fillchars = "eob: ,lastline:…",
     list = false,
     listchars = "extends:…,tab:  ",
@@ -151,7 +166,7 @@ docs for more information on how to customize these styles
 ---@class snacks.win.Event: vim.api.keyset.create_autocmd
 ---@field buf? true
 ---@field win? true
----@field callback? fun(self: snacks.win)
+---@field callback? fun(self: snacks.win, ev:vim.api.keyset.create_autocmd.callback_args):boolean?
 ```
 
 ```lua
@@ -185,12 +200,15 @@ docs for more information on how to customize these styles
 ---@class snacks.win
 ---@field id number
 ---@field buf? number
+---@field scratch_buf? number
 ---@field win? number
 ---@field opts snacks.win.Config
 ---@field augroup? number
 ---@field backdrop? snacks.win
 ---@field keys snacks.win.Keys[]
 ---@field events (snacks.win.Event|{event:string|string[]})[]
+---@field meta table<string, string>
+---@field closed? boolean
 Snacks.win = {}
 ```
 
@@ -257,6 +275,13 @@ win:close(opts)
 win:dim(parent)
 ```
 
+### `win:execute()`
+
+```lua
+---@param actions string|string[]
+win:execute(actions)
+```
+
 ### `win:focus()`
 
 ```lua
@@ -299,9 +324,15 @@ win:lines(from, to)
 
 ```lua
 ---@param event string|string[]
----@param cb fun(self: snacks.win)
+---@param cb fun(self: snacks.win, ev:vim.api.keyset.create_autocmd.callback_args):boolean?
 ---@param opts? snacks.win.Event
 win:on(event, cb, opts)
+```
+
+### `win:on_resize()`
+
+```lua
+win:on_resize()
 ```
 
 ### `win:parent_size()`
@@ -317,11 +348,25 @@ win:parent_size()
 win:redraw()
 ```
 
+### `win:scratch()`
+
+```lua
+win:scratch()
+```
+
 ### `win:scroll()`
 
 ```lua
 ---@param up? boolean
 win:scroll(up)
+```
+
+### `win:set_title()`
+
+```lua
+---@param title string
+---@param pos? "center"|"left"|"right"
+win:set_title(title, pos)
 ```
 
 ### `win:show()`
@@ -349,6 +394,13 @@ win:text(from, to)
 
 ```lua
 win:toggle()
+```
+
+### `win:toggle_help()`
+
+```lua
+---@param opts? {col_width?: number, key_width?: number, win?: snacks.win.Config}
+win:toggle_help(opts)
 ```
 
 ### `win:update()`

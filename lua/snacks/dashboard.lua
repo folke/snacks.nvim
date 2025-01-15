@@ -752,13 +752,18 @@ end
 function M.pick(cmd, opts)
   cmd = cmd or "files"
   local config = Snacks.config.get("dashboard", defaults, opts)
+  local picker = Snacks.picker.config.get()
   -- stylua: ignore
   local try = {
     function() return config.preset.pick(cmd, opts) end,
     function() return require("fzf-lua")[cmd](opts) end,
     function() return require("telescope.builtin")[cmd == "files" and "find_files" or cmd](opts) end,
     function() return require("mini.pick").builtin[cmd](opts) end,
+    function() return Snacks.picker(cmd, opts) end,
   }
+  if picker.enabled then
+    table.insert(try, 1, table.remove(try, #try))
+  end
   for _, fn in ipairs(try) do
     if pcall(fn) then
       return

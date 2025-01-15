@@ -15,6 +15,7 @@ M.meta = {
 ---@field health? boolean
 ---@field types? boolean
 ---@field config? boolean
+---@field merge? { [string|number]: string }
 
 ---@class snacks.meta.Plugin
 ---@field name string
@@ -22,15 +23,20 @@ M.meta = {
 ---@field meta snacks.meta.Meta
 ---@field health? fun()
 
+M.root = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":h:h")
+
+function M.file(name)
+  return vim.fs.normalize(("%s/%s"):format(M.root, name))
+end
+
 --- Get the metadata for all snacks plugins
 ---@return snacks.meta.Plugin[]
 function M.get()
   local ret = {} ---@type snacks.meta.Plugin[]
-  local root = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":h:h")
-  for file, t in vim.fs.dir(root, { depth = 1 }) do
+  for file, t in vim.fs.dir(M.root, { depth = 1 }) do
     local name = vim.fn.fnamemodify(file, ":t:r")
     file = t == "directory" and ("%s/init.lua"):format(file) or file
-    file = root .. "/" .. file
+    file = M.root .. "/" .. file
     local mod = name == "init" and setmetatable({ meta = { desc = "Snacks", hide = true } }, { __index = Snacks })
       or Snacks[name] --[[@as snacks.meta.Plugin]]
     assert(type(mod) == "table", ("`Snacks.%s` not found"):format(name))

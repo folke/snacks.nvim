@@ -8,6 +8,7 @@ Table of Contents                            *snacks-styles-table-of-contents*
   - blame_line                               |snacks-styles-styles-blame_line|
   - dashboard                                 |snacks-styles-styles-dashboard|
   - float                                         |snacks-styles-styles-float|
+  - help                                           |snacks-styles-styles-help|
   - input                                         |snacks-styles-styles-input|
   - lazygit                                     |snacks-styles-styles-lazygit|
   - minimal                                     |snacks-styles-styles-minimal|
@@ -116,6 +117,20 @@ FLOAT                                             *snacks-styles-styles-float*
 <
 
 
+HELP                                               *snacks-styles-styles-help*
+
+>lua
+    {
+      position = "float",
+      backdrop = false,
+      border = "top",
+      row = -1,
+      width = 0,
+      height = 0.3,
+    }
+<
+
+
 INPUT                                             *snacks-styles-styles-input*
 
 >lua
@@ -149,6 +164,7 @@ INPUT                                             *snacks-styles-styles-input*
         i_esc = { "<esc>", { "cmp_close", "stopinsert" }, mode = "i", expr = true },
         i_cr = { "<cr>", { "cmp_accept", "confirm" }, mode = "i", expr = true },
         i_tab = { "<tab>", { "cmp_select_next", "cmp" }, mode = "i", expr = true },
+        i_ctrl_w = { "<c-w>", "<c-s-w>", mode = "i", expr = true },
         q = "cancel",
       },
     }
@@ -170,6 +186,7 @@ MINIMAL                                         *snacks-styles-styles-minimal*
         cursorcolumn = false,
         cursorline = false,
         cursorlineopt = "both",
+        colorcolumn = "",
         fillchars = "eob: ,lastline:…",
         list = false,
         listchars = "extends:…,tab:  ",

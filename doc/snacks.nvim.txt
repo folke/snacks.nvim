@@ -1,4 +1,4 @@
-*snacks.nvim.txt*            For Neovim           Last change: 2025 January 06
+*snacks.nvim.txt*            For Neovim           Last change: 2025 January 15
 
 ==============================================================================
 Table of Contents                              *snacks.nvim-table-of-contents*
@@ -48,7 +48,9 @@ FEATURES                                    *snacks.nvim-snacks.nvim-features*
 
   input            Better vim.ui.input                   
 
-  lazygit          OpenLazyGit in a float,               
+  layout           Windowlayouts                         
+
+  lazygit          Open LazyGit in a float,              
                    auto-configure colorscheme and        
                    integration with Neovim               
 
@@ -57,7 +59,9 @@ FEATURES                                    *snacks.nvim-snacks.nvim-features*
   notify           Utilityfunctions to work with         
                    Neovim’s vim.notify                   
 
-  profiler         Neovim lua profiler                   
+  picker           Picker for selecting items            
+
+  profiler         Neovimlua profiler                    
 
   quickfile        When doing nvim somefile.txt, it will 
                    render the file as quickly as         
@@ -164,8 +168,10 @@ Default Options ~
     ---@field gitbrowse? snacks.gitbrowse.Config
     ---@field indent? snacks.indent.Config
     ---@field input? snacks.input.Config
+    ---@field layout? snacks.layout.Config
     ---@field lazygit? snacks.lazygit.Config
     ---@field notifier? snacks.notifier.Config
+    ---@field picker? snacks.picker.Config
     ---@field profiler? snacks.profiler.Config
     ---@field quickfile? snacks.quickfile.Config
     ---@field scope? snacks.scope.Config

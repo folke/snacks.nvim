@@ -71,6 +71,9 @@ function M.icon(name, cat)
       return require("mini.icons").get(cat or "file", name)
     end,
     function()
+      if cat == "directory" then
+        return " ", "Directory"
+      end
       local Icons = require("nvim-web-devicons")
       if cat == "filetype" then
         return Icons.get_icon_by_filetype(name, { default = false })

@@ -18,15 +18,22 @@ M.meta = {
 ---@field scrolloff number
 ---@field virtualedit? string
 ---@field changedtick number
+---@field last number vim.uv.hrtime of last scroll
 
 ---@class snacks.scroll.Config
----@field animate snacks.animate.Config
+---@field animate snacks.animate.Config|{}
+---@field animate_repeat snacks.animate.Config|{}|{delay:number}
 local defaults = {
   animate = {
     duration = { step = 15, total = 250 },
     easing = "linear",
   },
-  spamming = 10, -- threshold for spamming detection
+  -- faster animation when repeating scroll after delay
+  animate_repeat = {
+    delay = 100, -- delay in ms before using the repeat animation
+    duration = { step = 5, total = 50 },
+    easing = "linear",
+  },
   -- what buffers to animate
   filter = function(buf)
     return vim.g.snacks_scroll ~= false and vim.b[buf].snacks_scroll ~= false and vim.bo[buf].buftype ~= "terminal"
@@ -40,12 +47,10 @@ local mouse_scrolling = false
 M.enabled = false
 
 local states = {} ---@type table<number, snacks.scroll.State>
-local stats =
-  { targets = 0, animating = 0, reset = 0, skipped = 0, mousescroll = 0, scrolls = 0, spamming_rate = 0, spamming = 0 }
+local uv = vim.uv or vim.loop
+local stats = { targets = 0, animating = 0, reset = 0, skipped = 0, mousescroll = 0, scrolls = 0 }
 local config = Snacks.config.get("scroll", defaults)
 local debug_timer = assert((vim.uv or vim.loop).new_timer())
-local spamming = false
-local spammer_timer = assert((vim.uv or vim.loop).new_timer())
 
 -- get the state for a window.
 -- when the state doesn't exist, its target is the current view
@@ -73,6 +78,7 @@ local function get_state(win)
       current = vim.deepcopy(view),
       buf = buf,
       changedtick = changedtick,
+      last = 0,
     }
   end
   states[win].scrolloff = vim.wo[win].scrolloff
@@ -95,14 +101,6 @@ function M.enable()
     get_state(win)
   end
 
-  local current, delta, ema, ms, alpha = 0, 0, 0, 100, 0.3
-  spammer_timer:start(ms, ms, function()
-    delta, current = stats.scrolls - current, stats.scrolls
-    ema = alpha * delta * 1000 / ms + (1 - alpha) * ema
-    spamming = ema > config.spamming
-    stats.spamming_rate = math.floor(ema)
-  end)
-
   local group = vim.api.nvim_create_augroup("snacks_scroll", { clear = true })
 
   -- track mouse scrolling
@@ -115,6 +113,16 @@ function M.enable()
 
   -- initialize state for buffers entering windows
   vim.api.nvim_create_autocmd("BufWinEnter", {
+    group = group,
+    callback = vim.schedule_wrap(function(ev)
+      for _, win in ipairs(vim.fn.win_findbuf(ev.buf)) do
+        get_state(win)
+      end
+    end),
+  })
+
+  -- update state when leaving insert mode or changing text in normal mode
+  vim.api.nvim_create_autocmd({ "InsertLeave", "TextChanged" }, {
     group = group,
     callback = vim.schedule_wrap(function(ev)
       for _, win in ipairs(vim.fn.win_findbuf(ev.buf)) do
@@ -235,14 +243,6 @@ function M.check(win)
     stats.mousescroll = stats.mousescroll + 1
     state.current = vim.deepcopy(state.view)
     return
-  elseif spamming and not (state.anim and state.anim.done) then
-    -- just ignore the scroll when spamming and we're already animating
-    stats.spamming = stats.spamming + 1
-    stats.scrolls = stats.scrolls + 1
-    vim.api.nvim_win_call(win, function()
-      vim.fn.winrestview(state.current)
-    end)
-    return
   end
   stats.scrolls = stats.scrolls + 1
 
@@ -250,6 +250,21 @@ function M.check(win)
   stats.targets = stats.targets + 1
   state.target = vim.deepcopy(state.view)
   virtualedit(state, "all")
+
+  local now = uv.hrtime()
+  local repeat_delta = (now - state.last) / 1e6
+  state.last = now
+
+  ---@type snacks.animate.Opts
+  local opts = vim.tbl_extend(
+    "force",
+    vim.deepcopy(repeat_delta <= config.animate_repeat.delay and config.animate_repeat or config.animate),
+    {
+      int = true,
+      id = ("scroll_%d"):format(win),
+      buf = state.buf,
+    }
+  )
 
   local scrolls = 0
   local from_virtcol, to_virtcol = 0, 0
@@ -304,7 +319,7 @@ function M.check(win)
         vim.fn.winrestview(state.current)
       end
     end)
-  end, vim.tbl_extend("keep", { int = true, id = ("scroll_%d"):format(win), buf = state.buf }, config.animate))
+  end, opts)
 end
 
 ---@private
