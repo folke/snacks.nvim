@@ -205,6 +205,44 @@ function M.git_diff(ctx)
 end
 
 ---@param ctx snacks.picker.preview.ctx
+function M.git_file_diff(ctx)
+  ctx.preview:reset()
+  local output = {}
+  local killed = false
+  local jid = vim.fn.jobstart({ "git", "--no-pager", "diff", "HEAD", "--", ctx.item.file }, {
+    on_stdout = function(_, data)
+      if not vim.api.nvim_buf_is_valid(ctx.buf) then
+        return
+      end
+      vim.list_extend(output, data)
+    end,
+    on_exit = function(_, code)
+      if code ~= 0 then
+        if not killed then
+          Snacks.notify.error(("Failed to preview git diff for file `%s`"):format(ctx.item.file))
+        end
+        return
+      end
+      vim.api.nvim_buf_set_lines(ctx.buf, 0, -1, false, output)
+      vim.bo[ctx.buf].modifiable = false
+      vim.api.nvim_set_option_value("filetype", "diff", { buf = ctx.buf })
+    end,
+  })
+
+  vim.api.nvim_create_autocmd("BufWipeout", {
+    buffer = ctx.buf,
+    callback = function()
+      killed = true
+      vim.fn.jobstop(jid)
+    end,
+  })
+
+  if jid <= 0 then
+    Snacks.notify.error(("Failed to start a job to preview git diff for file `%s`"):format(ctx.item.file))
+  end
+end
+
+---@param ctx snacks.picker.preview.ctx
 function M.git_status(ctx)
   local s = vim.trim(ctx.item.status):sub(1, 1)
   if s == "?" then
