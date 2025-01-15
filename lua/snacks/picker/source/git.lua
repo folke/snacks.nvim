@@ -86,13 +86,14 @@ function M.status(opts)
   }
 
   local cwd = vim.fs.normalize(opts and opts.cwd or uv.cwd() or ".") or nil
+  local git_root = vim.fs.root(cwd, ".git")
   return require("snacks.picker.source.proc").proc(vim.tbl_deep_extend("force", {
     cmd = "git",
     args = args,
     ---@param item snacks.picker.finder.Item
     transform = function(item)
       local status, file = item.text:sub(1, 2), item.text:sub(4)
-      item.cwd = cwd
+      item.cwd = git_root
       item.status = status
       item.file = file
     end,
