@@ -185,7 +185,7 @@ function M.get_locations(method, opts, filter)
           file = loc.filename,
           pos = { loc.lnum, loc.col },
           end_pos = loc.end_lnum and loc.end_col and { loc.end_lnum, loc.end_col } or nil,
-          comment = loc.text,
+          line = loc.text,
         }
         local loc_key = loc.filename .. ":" .. loc.lnum
         if filter:match(item) and not (done[loc_key] and opts.unique_lines) then
