@@ -143,7 +143,7 @@ end
 --- and moves the cursor to the prev item.
 function M.select_and_prev(picker)
   picker.list:select()
-  M.list_down(picker)
+  M.list_up(picker)
 end
 
 function M.cmd(picker, item)
