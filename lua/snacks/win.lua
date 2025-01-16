@@ -610,7 +610,7 @@ function M:open_win()
     local parent = self.opts.win or 0
     local vertical = position == "left" or position == "right"
     if parent == 0 then
-      for _, win in ipairs(vim.api.nvim_list_wins()) do
+      for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
         if
           vim.w[win].snacks_win
           and vim.w[win].snacks_win.relative == relative
@@ -654,7 +654,7 @@ function M:equalize()
     return vim.w[win].snacks_win
       and vim.w[win].snacks_win.relative == self.opts.relative
       and vim.w[win].snacks_win.position == self.opts.position
-  end, vim.api.nvim_list_wins())
+  end, vim.api.nvim_tabpage_list_wins(vim.api.nvim_win_get_tabpage(self.win)))
   if #all <= 1 then
     return
   end
