@@ -287,6 +287,9 @@ Snacks.picker.pick({source = "files", ...})
       Variable      = "󰀫 ",
     },
   },
+  debug = {
+    scores = false, -- show scores in the list
+  },
 }
 ```
 
@@ -538,7 +541,12 @@ Snacks.picker.select(...)
   current = true,
   sort_lastused = true,
   win = {
-    input = { keys = { ["dd"] = "bufdelete" } },
+    input = {
+      keys = {
+        ["dd"] = "bufdelete",
+        ["<c-x>"] = { "bufdelete", mode = { "n", "i" } },
+      },
+    },
     list = { keys = { ["dd"] = "bufdelete" } },
   },
 }

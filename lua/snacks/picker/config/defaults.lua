@@ -270,6 +270,9 @@ local defaults = {
       Variable      = "󰀫 ",
     },
   },
+  debug = {
+    scores = false, -- show scores in the list
+  },
 }
 
 M.defaults = defaults

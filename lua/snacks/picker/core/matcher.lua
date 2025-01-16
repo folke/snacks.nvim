@@ -8,6 +8,7 @@ local Async = require("snacks.picker.util.async")
 ---@field tick number
 ---@field task snacks.picker.Async
 ---@field live? boolean
+---@field score snacks.picker.Score
 local M = {}
 M.__index = M
 M.DEFAULT_SCORE = 1000
@@ -39,6 +40,7 @@ function M.new(opts)
   self.task = Async.nop()
   self.mods = {}
   self.tick = 0
+  self.score = require("snacks.picker.core.score").new()
   return self
 end
 
@@ -282,13 +284,6 @@ function M:fuzzy_positions(str, pattern, from)
   return ret
 end
 
----@param str string
----@param c number
-function M.is_alpha(str, c)
-  local b = str:byte(c, c)
-  return (b >= 65 and b <= 90) or (b >= 97 and b <= 122)
-end
-
 ---@param item snacks.picker.Item
 ---@param mods snacks.picker.matcher.Mods
 ---@return number? score, number? from, number? to, string? str
@@ -297,58 +292,49 @@ function M:_match(item, mods)
   if mods.field then
     if item[mods.field] == nil then
       if mods.inverse then
-        return 0, 0
+        return M.INVERSE_SCORE
       end
       return
     end
     str = tostring(item[mods.field])
   end
 
+  local str_orig = str
   str = mods.ignorecase and str:lower() or str
   local from, to ---@type number?, number?
   if mods.fuzzy then
-    from, to = self:fuzzy(str, mods.chars)
+    return self:fuzzy(str, mods.chars)
+  end
+  if mods.exact_prefix then
+    if str:sub(1, #mods.pattern) == mods.pattern then
+      from, to = 1, #mods.pattern
+    end
+  elseif mods.exact_suffix then
+    if str:sub(-#mods.pattern) == mods.pattern then
+      from, to = #str - #mods.pattern + 1, #str
+    end
   else
-    if mods.exact_prefix then
-      if str:sub(1, #mods.pattern) == mods.pattern then
-        from, to = 1, #mods.pattern
+    from, to = str:find(mods.pattern, 1, true)
+    -- word match
+    while mods.word and from and to do
+      local bound_left = self.score:is_left_boundary(str, from)
+      local bound_right = self.score:is_right_boundary(str, to)
+      if bound_left and bound_right then
+        break
       end
-    elseif mods.exact_suffix then
-      if str:sub(-#mods.pattern) == mods.pattern then
-        from, to = #str - #mods.pattern + 1, #str
-      end
-    else
-      from, to = str:find(mods.pattern, 1, true)
-      -- word match
-      while mods.word and from and to do
-        local bound_left = from == 1 or not M.is_alpha(str, from - 1)
-        local bound_right = to == #str or not M.is_alpha(str, to + 1)
-        if bound_left and bound_right then
-          break
-        end
-        from, to = str:find(mods.pattern, to + 1, true)
-      end
+      from, to = str:find(mods.pattern, to + 1, true)
     end
-    if mods.inverse then
-      if not from then
-        return 0, 0
-      end
-      return
+  end
+  if mods.inverse then
+    if not from then
+      return M.INVERSE_SCORE
     end
+    return
   end
   if from then
     ---@cast to number
-    return M.score(from, to, #str), from, to, str
+    return self.score:get(str_orig, from, to), from, to, str
   end
-end
-
----@param from number
----@param to number
----@param len number
-function M.score(from, to, len)
-  return 1000 / (to - from + 1) -- calculate compactness score (distance between first and last match)
-    + (100 / from) -- add bonus for early match
-    + (100 / (len + 1)) -- add bonus for string length
 end
 
 ---@param str string
@@ -360,11 +346,14 @@ function M:fuzzy_find(str, pattern, init)
   if not from then
     return
   end
+  self.score:init(str, from)
   ---@type number?, number
   local last, n = from, #pattern
   for i = 2, n do
     last = string.find(str, pattern[i], last + 1, true)
-    if not last then
+    if last then
+      self.score:update(last)
+    else
       return
     end
   end
@@ -375,24 +364,22 @@ end
 --- to find the best match.
 ---@param str string
 ---@param pattern string[]
----@return number? from, number? to
+---@return number? score, number? from, number? to, string? str
 function M:fuzzy(str, pattern)
   local from, to = self:fuzzy_find(str, pattern)
   if not from then
     return
   end
+  ---@cast to number
 
-  local best_from, best_to, best_width = from, to, to - from + 1
-  local n, width = #pattern, 0
-  -- short circuit if we have a perfect match
-  while from and best_width > n do
-    width = to - from + 1
-    if width < best_width then
-      best_from, best_to, best_width = from, to, width
+  local best_from, best_to, best_score = from, to, self.score.score
+  while from do
+    if self.score.score > best_score then
+      best_from, best_to, best_score = from, to, self.score.score
     end
     from, to = self:fuzzy_find(str, pattern, from + 1)
   end
-  return best_from, best_to
+  return best_score, best_from, best_to, str
 end
 
 return M

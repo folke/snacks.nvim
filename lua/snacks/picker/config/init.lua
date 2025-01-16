@@ -56,7 +56,7 @@ function M.layout(opts)
   local layout = M.resolve(opts.layout or {}, opts.source)
   layout = type(layout) == "string" and { preset = layout } or layout
   ---@cast layout snacks.picker.layout.Config
-  if layout.layout then
+  if layout.layout and layout.layout[1] then
     return layout
   end
   local preset = M.resolve(layout.preset or "custom", opts.source)

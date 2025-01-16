@@ -61,7 +61,7 @@ function M.new(opts)
           backdrop = nil
         end
         self.box_wins[box.id] = Snacks.win(Snacks.win.resolve(box, {
-          relative = is_root and "editor" or "win",
+          relative = is_root and (box.relative or "editor") or "win",
           focusable = false,
           enter = false,
           show = false,
