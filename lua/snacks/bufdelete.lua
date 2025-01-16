@@ -55,6 +55,14 @@ function M.delete(opts)
         if not vim.api.nvim_win_is_valid(win) or vim.api.nvim_win_get_buf(win) ~= buf then
           return
         end
+
+        -- set the bufhidden option to automatically delete the buffer
+        -- if force is set
+        if opts.force then
+          vim.bo[buf].bufhidden = opts.wipe and 'wipe' or 'delete'
+          vim.bo[buf].buftype = 'nofile'
+        end
+
         -- Try using alternate buffer
         local alt = vim.fn.bufnr("#")
         if alt ~= buf and vim.fn.buflisted(alt) == 1 then
