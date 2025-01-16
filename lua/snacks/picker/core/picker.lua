@@ -478,10 +478,11 @@ end
 function M:match()
   local pattern = vim.trim(self.input.filter.pattern)
   local search = vim.trim(self.input.filter.search)
+  local loc = self.input.filter.loc
   local needs_match = false
   self:hist_record()
-  if self.matcher.pattern ~= pattern then
-    self.matcher:init({ pattern = pattern })
+  if self.matcher.pattern ~= pattern or not vim.deep_equal(self.matcher.loc, loc) then
+    self.matcher:init({ pattern = pattern, loc = loc })
     needs_match = true
   end
 
