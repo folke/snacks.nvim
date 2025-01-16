@@ -5,6 +5,7 @@ local Async = require("snacks.picker.util.async")
 ---@field mods snacks.picker.matcher.Mods[][]
 ---@field one? snacks.picker.matcher.Mods
 ---@field pattern string
+---@field loc? {[1]:number, [2]:number}
 ---@field tick number
 ---@field task snacks.picker.Async
 ---@field live? boolean
@@ -105,13 +106,14 @@ function M:run(picker, opts)
   end)
 end
 
----@param opts? {pattern?: string}
+---@param opts? {pattern?: string, loc?: {[1]: number, [2]: number}}
 function M:init(opts)
   opts = opts or {}
   self.tick = self.tick + 1
   local pattern = vim.trim(opts.pattern or self.pattern)
   self.mods = {}
   self.pattern = pattern
+  self.loc = opts.loc or self.loc
   self:abort()
   self.one = nil
   if pattern == "" then
@@ -222,6 +224,9 @@ function M:update(item)
     end
   end
   item.match_tick, item.score = self.tick, score
+  if self.loc then
+    item.pos = self.loc
+  end
   return true
 end
 

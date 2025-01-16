@@ -137,4 +137,35 @@ function M.title(str)
   )
 end
 
+---@param input string
+---@return string, {[1]: number, [2]: number} | nil
+function M.input_line_col_split(input)
+  local seps = { ":" }
+
+  -- Helper function to split a string by multiple separators
+  local function split_by_separators(str, separators)
+    local fields = {}
+    local pattern = string.format("([^%s]+)", table.concat(separators, ""))
+    str:gsub(pattern, function(c)
+      fields[#fields + 1] = c
+    end)
+    return fields
+  end
+
+  local parts = split_by_separators(input, seps)
+
+  if #parts == 2 then
+    return parts[1], { tonumber(parts[2]) or 1, 0 }
+  elseif #parts == 3 then
+    return parts[1], { tonumber(parts[2]) or 1, tonumber(parts[3]) or 0 }
+  elseif #parts >= 4 then
+    local result_file = table.concat(parts, seps[1], 1, #parts - 2)
+    local lnum = tonumber(parts[#parts - 1]) or 1
+    local col = tonumber(parts[#parts]) or 1
+    return result_file, { lnum, col }
+  end
+
+  return input, nil
+end
+
 return M
