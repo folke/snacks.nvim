@@ -31,6 +31,30 @@ M.config = setmetatable({}, {
   end,
 })
 
+local function can_merge(v)
+  return type(v) == "table" and (vim.tbl_isempty(v) or not v[1]) and getmetatable(v) == nil
+end
+
+--- Merges the values similar to vim.tbl_deep_extend with the **force** behavior,
+--- but the values can be any type
+---@generic T
+---@param ... T
+---@return T
+function M.config.merge(...)
+  local ret = select(1, ...)
+  for i = 2, select("#", ...) do
+    local value = select(i, ...)
+    if can_merge(ret) and can_merge(value) then
+      for k, v in pairs(value) do
+        ret[k] = M.config.merge(ret[k], v)
+      end
+    elseif value ~= nil then
+      ret = value
+    end
+  end
+  return ret
+end
+
 --- Get an example config from the docs/examples directory.
 ---@param snack string
 ---@param name string
@@ -63,7 +87,7 @@ function M.config.get(snack, defaults, ...)
       table.insert(merge, vim.deepcopy(v))
     end
   end
-  local ret = #merge == 1 and merge[1] or vim.tbl_deep_extend("force", unpack(merge)) --[[@as snacks.Config.base]]
+  local ret = M.config.merge(unpack(merge))
   if type(ret.config) == "function" then
     ret.config(ret, defaults)
   end

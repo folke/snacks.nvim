@@ -10,6 +10,29 @@ M.alias = {
   oldfiles = "recent",
 }
 
+local key_cache = {} ---@type table<string, string>
+
+--- Fixes keys before merging configs for correctly resolving keymaps.
+--- For example: <c-s> -> <C-S>
+---@param opts? snacks.picker.Config
+function M.fix_keys(opts)
+  if not (opts and opts.win) then
+    return
+  end
+  for _, win in pairs(opts.win) do
+    ---@cast win snacks.win.Config
+    if win.keys then
+      local keys = vim.tbl_keys(win.keys) ---@type string[]
+      for _, key in ipairs(keys) do
+        key_cache[key] = key_cache[key] or vim.fn.keytrans(Snacks.util.keycode(key))
+        if key ~= key_cache[key] then
+          win.keys[key_cache[key]], win.keys[key] = win.keys[key], nil
+        end
+      end
+    end
+  end
+end
+
 ---@param opts? snacks.picker.Config
 function M.get(opts)
   M.setup()
@@ -19,14 +42,19 @@ function M.get(opts)
   local defaults = require("snacks.picker.config.defaults").defaults
   defaults.sources = sources
   local user = Snacks.config.picker or {}
+  M.fix_keys(user)
+  M.fix_keys(defaults)
+  M.fix_keys(opts)
   opts.source = M.alias[opts.source] or opts.source
 
   local global = Snacks.config.get("picker", defaults, opts) -- defaults + global user config
+  local source = opts.source and global.sources[opts.source] or {}
+  M.fix_keys(source)
   ---@type snacks.picker.Config[]
   local todo = {
-    defaults,
-    user,
-    opts.source and global.sources[opts.source] or {},
+    vim.deepcopy(defaults),
+    vim.deepcopy(user),
+    vim.deepcopy(source),
     opts,
   }
 
@@ -37,7 +65,7 @@ function M.get(opts)
     end
   end
 
-  local ret = vim.tbl_deep_extend("force", unpack(todo))
+  local ret = Snacks.config.merge(unpack(todo))
   ret.layouts = ret.layouts or {}
   local layouts = require("snacks.picker.config.layouts")
   for k, v in pairs(layouts or {}) do
@@ -61,7 +89,7 @@ function M.layout(opts)
   end
   local preset = M.resolve(layout.preset or "custom", opts.source)
   local ret = vim.deepcopy(opts.layouts and opts.layouts[preset] or layouts[preset] or {})
-  ret = vim.tbl_deep_extend("force", ret, layout or {})
+  ret = Snacks.config.merge(ret, layout)
   ret.preset = nil
   return ret
 end

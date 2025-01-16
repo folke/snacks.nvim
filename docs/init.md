@@ -99,6 +99,18 @@ Snacks.init.config.example(snack, name, opts)
 Snacks.init.config.get(snack, defaults, ...)
 ```
 
+### `Snacks.init.config.merge()`
+
+Merges the values similar to vim.tbl_deep_extend with the **force** behavior,
+but the values can be any type
+
+```lua
+---@generic T
+---@param ... T
+---@return T
+Snacks.init.config.merge(...)
+```
+
 ### `Snacks.init.config.style()`
 
 Register a new window style config.

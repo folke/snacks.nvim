@@ -153,8 +153,11 @@ function M:reset()
   vim.bo[self.win.buf].modifiable = true
   vim.api.nvim_buf_set_lines(self.win.buf, 0, -1, false, {})
   self:clear(self.win.buf)
+  local ei = vim.o.eventignore
+  vim.o.eventignore = "all"
   vim.bo[self.win.buf].filetype = "snacks_picker_preview"
   vim.bo[self.win.buf].syntax = ""
+  vim.o.eventignore = ei
   self:wo({ cursorline = false })
   self:wo(self.win.opts.wo)
 end
