@@ -180,7 +180,7 @@ function M.get_locations(method, opts, filter)
       for _, loc in ipairs(items) do
         ---@type snacks.picker.finder.Item
         local item = {
-          text = loc.filename .. " " .. loc.text,
+          text = loc.text,
           buf = loc.bufnr,
           file = loc.filename,
           pos = { loc.lnum, loc.col },
