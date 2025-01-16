@@ -183,8 +183,8 @@ M.git_status = {
 
 M.git_diff = {
   finder = "git_diff",
-  format = "git_diff",
-  preview = "git_diff",
+  format = "file",
+  preview = "preview",
 }
 
 ---@class snacks.picker.grep.Config: snacks.picker.proc.Config

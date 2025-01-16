@@ -19,6 +19,14 @@ local M = {}
 ---@field smartcase? boolean use smartcase (defaults to true)
 ---@field ignorecase? boolean use ignorecase (defaults to true)
 
+--- This is only used when using `opts.preview = "preview"`.
+--- It's a previewer that shows a preview based on the item data.
+---@class snacks.picker.Item.preview
+---@field text string text to show in the preview buffer
+---@field ft? string optional filetype used tohighlight the preview buffer
+---@field extmarks? snacks.picker.Extmark[] additional extmarks
+---@field loc? boolean set to false to disable showing the item location in the preview
+
 ---@class snacks.picker.Item
 ---@field [string] any
 ---@field idx number
@@ -28,6 +36,7 @@ local M = {}
 ---@field pos? {[1]:number, [2]:number}
 ---@field end_pos? {[1]:number, [2]:number}
 ---@field highlights? snacks.picker.Highlight[][]
+---@field preview? snacks.picker.Item.preview
 
 ---@class snacks.picker.finder.Item: snacks.picker.Item
 ---@field idx? number

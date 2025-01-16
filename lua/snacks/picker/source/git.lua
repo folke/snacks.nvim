@@ -102,87 +102,49 @@ end
 
 ---@param opts snacks.picker.Config
 ---@type snacks.picker.finder
-function M.diff(_opts)
-  return require("snacks.picker.core.picker").new({
-    finder = function()
-      local output = vim.system({ "git", "diff" }):wait().stdout
-      ---@type snacks.picker.finder.Item[]
-      local results = {}
-      ---@type string | nil
-      local filename = nil
-      ---@type number | nil
-      local linenumber = nil
-      ---@type string[]
-      local hunk = {}
-
-      for _, line in ipairs(vim.split(output or "", "\n")) do
-        -- new file
-        if vim.startswith(line, "diff") then
-          -- Start of a new hunk
-          if hunk[1] ~= nil then
-            ---@type snacks.picker.finder.Item
-            local item = { file = filename, pos = { linenumber, 0 }, raw_lines = hunk }
-            table.insert(results, item)
-          end
-
-          filename = line:match("^diff .* a/(.*) b/.*$")
-          linenumber = nil
-
-          hunk = {}
-        elseif vim.startswith(line, "@") then
-          if filename ~= nil and linenumber ~= nil and #hunk > 0 then
-            table.insert(results, { file = filename, pos = { linenumber, 0 }, raw_lines = hunk })
-            hunk = {}
-          end
-          -- Hunk header
-          -- @example "@@ -157,20 +157,6 @@ some content"
-          local linenr_str = string.match(line, "@@ %-.*,.* %+(.*),.* @@")
-          linenumber = tonumber(linenr_str)
-          hunk = {}
-          table.insert(hunk, line)
-        else
-          table.insert(hunk, line)
-        end
+function M.diff(opts)
+  local args = { "--no-pager", "diff", "--no-color", "--no-ext-diff" }
+  local file, line ---@type string?, number?
+  local header, hunk = {}, {} ---@type string[], string[]
+  local finder = require("snacks.picker.source.proc").proc(vim.tbl_deep_extend("force", {
+    cmd = "git",
+    args = args,
+  }, opts or {}))
+  return function(cb)
+    local function add()
+      if file and line and #hunk > 0 then
+        local diff = table.concat(header, "\n") .. "\n" .. table.concat(hunk, "\n")
+        cb({
+          text = file .. ":" .. line,
+          file = file,
+          pos = { line, 0 },
+          preview = { text = diff, ft = "diff", loc = false },
+        })
       end
-      -- Add the last hunk to the table
-      if hunk[1] ~= nil and filename and linenumber and hunk then
-        table.insert(results, { file = filename, pos = { linenumber, 0 }, raw_lines = hunk })
+      hunk = {}
+    end
+    finder(function(proc_item)
+      local text = proc_item.text
+      if text:find("diff", 1, true) == 1 then
+        add()
+        file = text:match("^diff .* a/(.*) b/.*$")
+        header = { text }
+      elseif file and #header < 4 then
+        header[#header + 1] = text
+      elseif text:find("@", 1, true) == 1 then
+        add()
+        -- Hunk header
+        -- @example "@@ -157,20 +157,6 @@ some content"
+        line = tonumber(string.match(text, "@@ %-.*,.* %+(.*),.* @@"))
+        hunk = { text }
+      elseif #hunk > 0 then
+        hunk[#hunk + 1] = text
+      else
+        error("unexpected line: " .. text)
       end
-
-      local function get_diff_line_idx(lines)
-        for i, line in ipairs(lines) do
-          if vim.startswith(line, "-") or vim.startswith(line, "+") then
-            return i
-          end
-        end
-        return -1
-      end
-
-      for _, v in ipairs(results) do
-        local diff_line_idx = get_diff_line_idx(v.raw_lines)
-        diff_line_idx = math.max(
-          -- first line is header, next one is already handled
-          diff_line_idx - 2,
-          0
-        )
-        v.pos[1] = v.pos[1] + diff_line_idx
-      end
-
-      return results
-    end,
-    preview = function(ctx)
-      local buf = ctx.preview:scratch()
-
-      vim.bo[buf].modifiable = true
-      local lines = vim.split(table.concat(ctx.item.raw_lines, "\n"), "\n")
-      vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-      vim.bo[buf].modifiable = false
-
-      vim.bo[buf].filetype = "diff"
-
-      return true
-    end,
-  })
+    end)
+    add()
+  end
 end
 
 return M
