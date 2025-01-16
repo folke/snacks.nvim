@@ -1,5 +1,77 @@
 # Changelog
 
+## [2.13.0](https://github.com/folke/snacks.nvim/compare/v2.12.0...v2.13.0) (2025-01-16)
+
+
+### Features
+
+* **picker.buffers:** del buffer with ctrl+x ([2479ff7](https://github.com/folke/snacks.nvim/commit/2479ff7cf41392130bd660fb787e3b1730863657))
+* **picker.buffers:** delete buffers with dd ([2ab18a0](https://github.com/folke/snacks.nvim/commit/2ab18a0b9f425ccbc697adc53a01b26ea38abe0d))
+* **picker.git:** added `git_diff` picker for diff hunks ([#519](https://github.com/folke/snacks.nvim/issues/519)) ([cc69043](https://github.com/folke/snacks.nvim/commit/cc690436892d6ab0b8d5ee51ad60ff91c3a5d640))
+* **picker.git:** git diff/show can now use native or neovim for preview. defaults to neovim. Closes [#500](https://github.com/folke/snacks.nvim/issues/500). Closes [#494](https://github.com/folke/snacks.nvim/issues/494). Closes [#491](https://github.com/folke/snacks.nvim/issues/491). Closes [#478](https://github.com/folke/snacks.nvim/issues/478) ([e36e6af](https://github.com/folke/snacks.nvim/commit/e36e6af96cb2ac0574199ab9d229735fb6d9f016))
+* **picker.git:** stage/unstage files in git status with `&lt;tab&gt;` key ([0892db4](https://github.com/folke/snacks.nvim/commit/0892db4f42fc538df0a0b8fd66600d1e2d41b9e4))
+* **picker.grep:** added `ft` (rg's `type`) and `regex` (rg's `--fixed-strings`) options ([0437cfd](https://github.com/folke/snacks.nvim/commit/0437cfd98ea9767836685ef8f100b7a758239624))
+* **picker.list:** added debug option to show scores ([821e231](https://github.com/folke/snacks.nvim/commit/821e23101fdfcc28819e27596177eaa64eebf0c2))
+* **picker.list:** added select_all action mapped to ctrl+a ([c9e2695](https://github.com/folke/snacks.nvim/commit/c9e2695969687285fbf53c86336b75c4dae3b609))
+* **picker.matcher:** better scoring algorithm based on fzf. Closes [#512](https://github.com/folke/snacks.nvim/issues/512). Fixes [#513](https://github.com/folke/snacks.nvim/issues/513) ([e4e2e88](https://github.com/folke/snacks.nvim/commit/e4e2e88c769d54094194d6e3d68fbfae87b20cbe))
+* **picker.matcher:** integrate custom item scores ([7267e24](https://github.com/folke/snacks.nvim/commit/7267e2493b5962a550d874f142aaf64c3873fb7e))
+* **picker.recent:** include open files in recent files. Closes [#487](https://github.com/folke/snacks.nvim/issues/487) ([96ffaba](https://github.com/folke/snacks.nvim/commit/96ffaba71bed87cf8bf75c6d945dedae3fa40af2))
+* **picker.score:** prioritize matches in filenames ([5cf5ec1](https://github.com/folke/snacks.nvim/commit/5cf5ec1a314b38d4e361f7f26cb6eb14febd4d69))
+* **picker:** add some source aliases like the Telescope / FzfLua names ([5a83a8e](https://github.com/folke/snacks.nvim/commit/5a83a8e32885d6b923319cb8dc5ff1d1d97d0b10))
+* **picker:** added `inspect` action mapped to `&lt;c-i&gt;`. Useful to see what search fields are available on an item. ([2ba165b](https://github.com/folke/snacks.nvim/commit/2ba165b826d31ab0ebeaaff26632efe7013042b6))
+* **picker:** added `smart` picker ([772f3e9](https://github.com/folke/snacks.nvim/commit/772f3e9b8970123db4050e9f7a5bdf2270575c6c))
+* **picker:** added preliminary support for combining finder results. More info coming soon ([000db17](https://github.com/folke/snacks.nvim/commit/000db17bf9f8bd243bbe944c0ae7e162d8cad572))
+* **picker:** allow disabling file icons ([76fbf9e](https://github.com/folke/snacks.nvim/commit/76fbf9e8a85485abfe1c53d096c74faad3fa2a6b))
+* **picker:** restore cursor / topline on resume ([ca54948](https://github.com/folke/snacks.nvim/commit/ca54948f79917113dfcdf1c4ccaec573244a02aa))
+* **pickers.format:** added `opts.picker.formatters.file.filename_first` ([98562ae](https://github.com/folke/snacks.nvim/commit/98562ae6a112bf1d80a9bec7fb2849605234a9d5))
+* **scroll:** faster animations for scroll repeats after delay. (replaces spamming handling) ([d494a9e](https://github.com/folke/snacks.nvim/commit/d494a9e66447e9ae22e40c374e2e7d9a24b64d93))
+* **snacks:** added `snacks.picker` ([#445](https://github.com/folke/snacks.nvim/issues/445)) ([559d6c6](https://github.com/folke/snacks.nvim/commit/559d6c6bf207e4e768a88e7f727ac12a87c768b7))
+
+
+### Bug Fixes
+
+* **animate:** never animate stopped animations ([197b0a9](https://github.com/folke/snacks.nvim/commit/197b0a9be93a6fa49b840fe159ce6373c7edcf98))
+* **grep:** explicitely set `--no-hidden` because of the git filter ([ae2de9a](https://github.com/folke/snacks.nvim/commit/ae2de9aa8101dbff1ee1ab101d53e916f6e217dd))
+* **input:** bring back `&lt;c-w&gt;`. Fixes [#426](https://github.com/folke/snacks.nvim/issues/426). Closes [#429](https://github.com/folke/snacks.nvim/issues/429) ([5affa72](https://github.com/folke/snacks.nvim/commit/5affa7214f621144526b9a7d93b83302fa6ea6f4))
+* **layout:** allow root with relative=cursor. Closes [#479](https://github.com/folke/snacks.nvim/issues/479) ([f06f14c](https://github.com/folke/snacks.nvim/commit/f06f14c4ae4d131eb5e15f4c49994f8debddff42))
+* **lsp:** use treesitter highlights for LSP locations ([fc06a36](https://github.com/folke/snacks.nvim/commit/fc06a363b95312eba0f3335f1190c745d0e5ea26))
+* **picker.actions:** close existing empty buffer if it's the current buffer ([0745505](https://github.com/folke/snacks.nvim/commit/0745505f2f43d2983867f48805bd4f700ad06c73))
+* **picker.actions:** full path for qflist and loclist actions ([3e39250](https://github.com/folke/snacks.nvim/commit/3e392507963f784a4d57708585f8e012f1b95768))
+* **picker.git:** use Snacks.git.get_root instead vim.fs.root for backward compatibility ([a2fb70e](https://github.com/folke/snacks.nvim/commit/a2fb70e8ba2bb2ce5c60ed1ee7505d6f6d7be061))
+* **picker.input:** don't set prompt interrupt, but use a `&lt;c-c&gt;` mapping instead that can be changed ([123f0d9](https://github.com/folke/snacks.nvim/commit/123f0d9e5d7be5b23ef9b28b9ddde403e4b2d061))
+* **picker.input:** strip newllines from pattern (mainly due to pasting in the input box) ([c6a9955](https://github.com/folke/snacks.nvim/commit/c6a9955516b686d1b6bd815e1df0c808baa60bd3))
+* **picker.list:** disable folds ([5582a84](https://github.com/folke/snacks.nvim/commit/5582a84020a1e11d9001660252cdee6a424ba159))
+* **picker.list:** include `search` filter for highlighting items (live search). See [#474](https://github.com/folke/snacks.nvim/issues/474) ([1693fbb](https://github.com/folke/snacks.nvim/commit/1693fbb0dcf1b82f2212a325379ebb0257d582e5))
+* **picker.list:** possible issue with window options being set in the wrong window ([f1b6c55](https://github.com/folke/snacks.nvim/commit/f1b6c55027c6e75940fcb40fa8ac5ab717de1647))
+* **picker.list:** scores debug ([9499b94](https://github.com/folke/snacks.nvim/commit/9499b944e79ff305769a59819c44a93911023fc7))
+* **picker.matcher:** inverse scores ([1816931](https://github.com/folke/snacks.nvim/commit/1816931aadb1fdcd3e08606d773d31f3d51fabcc))
+* **picker.minheap:** clear sorted on minheap clear. Fixes [#492](https://github.com/folke/snacks.nvim/issues/492) ([79bea58](https://github.com/folke/snacks.nvim/commit/79bea58b1ec92909d763c8b5788baf8da6c19a06))
+* **picker.preview:** don't show line numbers for preview commands ([a652214](https://github.com/folke/snacks.nvim/commit/a652214f52694233b5e27d374db0d51d2f7cb43d))
+* **picker.preview:** pattern to detect binary files was incorrect ([bbd1a08](https://github.com/folke/snacks.nvim/commit/bbd1a0885b3e89103a8a59f1f07d296f23c7d2ad))
+* **picker.select:** allow main to be current. Fixes [#497](https://github.com/folke/snacks.nvim/issues/497) ([076259d](https://github.com/folke/snacks.nvim/commit/076259d263c927ed1d1c56c94b6e870230e77a3d))
+* **picker:** add alias for `oldfiles` ([46554a6](https://github.com/folke/snacks.nvim/commit/46554a63425c0594eacaa0e8eaddec5dbf79b48e))
+* **picker:** changed inspect mapping to `&lt;a-d&gt;` since not all terminal differentiate between `<a-i>` and `<tab>` ([8386540](https://github.com/folke/snacks.nvim/commit/8386540c422774059a75fe26ce7cfb6ab3811c73))
+* **picker:** correctly normalize path after fnamemodify ([f351dcf](https://github.com/folke/snacks.nvim/commit/f351dcfcaca069d5f70bcf6edbde244e7358d063))
+* **picker:** dont fast path matcher when finder items have scores ([2ba5602](https://github.com/folke/snacks.nvim/commit/2ba5602834830e1a96e4f1a81e0fbb310481ca74))
+* **picker:** picker:items() should return filtered items, not finder items. Closes [#481](https://github.com/folke/snacks.nvim/issues/481) ([d67e093](https://github.com/folke/snacks.nvim/commit/d67e093bbc2a2069c5e6118babf99c9029b34675))
+* **picker:** select_and_prev should use list_up instead of list_down ([#471](https://github.com/folke/snacks.nvim/issues/471)) ([b993be7](https://github.com/folke/snacks.nvim/commit/b993be762ba9aa9c1efd858ae777eef3de28c609))
+* **picker:** set correct cwd for git status picker ([#505](https://github.com/folke/snacks.nvim/issues/505)) ([2cc7cf4](https://github.com/folke/snacks.nvim/commit/2cc7cf42e94041c08f5654935f745424d10a15b1))
+* **scope:** make sure to parse the ts tree. Fixes [#521](https://github.com/folke/snacks.nvim/issues/521) ([4c55f1c](https://github.com/folke/snacks.nvim/commit/4c55f1c2da103e4c2776274cb0f6fab0318ea811))
+* **scratch:** autowrite right buffer. Fixes [#449](https://github.com/folke/snacks.nvim/issues/449). ([#452](https://github.com/folke/snacks.nvim/issues/452)) ([8d2e26c](https://github.com/folke/snacks.nvim/commit/8d2e26cf27330ead517193f7eeb898d189a973c2))
+* **scroll:** don't animate for new changedtick. Fixes [#384](https://github.com/folke/snacks.nvim/issues/384) ([ac8b3cd](https://github.com/folke/snacks.nvim/commit/ac8b3cdfa08c2bba065c95b512887d3bbea91807))
+* **scroll:** don't animate when recording or executing macros ([7dcdcb0](https://github.com/folke/snacks.nvim/commit/7dcdcb0b6ab6ecb2c6efdbaa4769bc03f5837832))
+* **win:** fix relative=cursor again ([5b1cd46](https://github.com/folke/snacks.nvim/commit/5b1cd464e8759156d4d69f0398a0f5b34fa0b743))
+* **win:** relative=cursor. Closes [#427](https://github.com/folke/snacks.nvim/issues/427). Closes [#477](https://github.com/folke/snacks.nvim/issues/477) ([743f8b3](https://github.com/folke/snacks.nvim/commit/743f8b3fee780780d8e201960a4a295dc5187e9b))
+* **win:** win position with border offsets. Closes [#413](https://github.com/folke/snacks.nvim/issues/413). Fixes [#423](https://github.com/folke/snacks.nvim/issues/423) ([ee08b1f](https://github.com/folke/snacks.nvim/commit/ee08b1f32e06904318f8fa24714557d3abcdd215))
+
+
+### Performance Improvements
+
+* **picker.matcher:** fast path when we already found a perfect match ([6bbf50c](https://github.com/folke/snacks.nvim/commit/6bbf50c5e3a3ab3bfc6a6747f6a2c66cbc9b7548))
+* **picker.matcher:** yield every 1ms to prevent ui locking in large repos ([19979c8](https://github.com/folke/snacks.nvim/commit/19979c88f37930f71bd98b96e1afa50ae26a09ae))
+* **picker.util:** cache path calculation ([7117356](https://github.com/folke/snacks.nvim/commit/7117356b49ceedd7185c43a732dfe10c6a60cdbc))
+* **picker:** matcher optims ([5295741](https://github.com/folke/snacks.nvim/commit/529574128783c0fc4a146b207ea532950f48732f))
+
 ## [2.12.0](https://github.com/folke/snacks.nvim/compare/v2.11.0...v2.12.0) (2025-01-05)
 
 
