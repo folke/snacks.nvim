@@ -131,9 +131,13 @@ function M.run(opts)
     for _, line in ipairs(vim.split(str, "\n", { plain = true })) do
       table.insert(virt_lines, { { "  │ ", "SnacksDebugIndent" }, { line, "SnacksDebugPrint" } })
     end
-    vim.api.nvim_buf_set_extmark(buf, ns, (get_line() or 1) - 1, 0, {
-      virt_lines = virt_lines,
-    })
+
+    local line = (get_line() or 1) - 1
+    vim.schedule(function()
+      vim.api.nvim_buf_set_extmark(buf, ns, line, 0, {
+        virt_lines = virt_lines,
+      })
+    end)
   end
 
   -- Load the code
@@ -143,7 +147,7 @@ function M.run(opts)
   end
 
   -- Setup the env
-  local env = { print = opts.print and vim.schedule_wrap(on_print) or nil }
+  local env = { print = opts.print and on_print or nil }
   package.seeall(env)
   setfenv(chunk, env)
   xpcall(chunk, function(e)
