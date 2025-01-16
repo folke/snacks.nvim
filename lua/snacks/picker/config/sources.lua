@@ -26,7 +26,12 @@ M.buffers = {
   current = true,
   sort_lastused = true,
   win = {
-    input = { keys = { ["dd"] = "bufdelete" } },
+    input = {
+      keys = {
+        ["dd"] = "bufdelete",
+        ["<c-x>"] = { "bufdelete", mode = { "n", "i" } },
+      },
+    },
     list = { keys = { ["dd"] = "bufdelete" } },
   },
 }
@@ -174,6 +179,12 @@ M.git_status = {
       },
     },
   },
+}
+
+M.git_diff = {
+  finder = "git_diff",
+  format = "file",
+  preview = "preview",
 }
 
 ---@class snacks.picker.grep.Config: snacks.picker.proc.Config
@@ -505,6 +516,15 @@ M.search_history = {
     preset = "vscode",
   },
   confirm = "search",
+}
+
+---@class snacks.picker.smart.Config: snacks.picker.Config
+---@field finders? string[] list of finders to use
+---@field filter? snacks.picker.filter.Config
+M.smart = {
+  finder = "smart",
+  finders = { "buffers", "recent", "files" },
+  format = "file",
 }
 
 -- Open a project from zoxide

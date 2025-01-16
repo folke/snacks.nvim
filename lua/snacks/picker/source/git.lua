@@ -8,6 +8,7 @@ local uv = vim.uv or vim.loop
 ---@field git_log_file fun(opts?: snacks.picker.git.log.Config): snacks.Picker
 ---@field git_log_line fun(opts?: snacks.picker.git.log.Config): snacks.Picker
 ---@field git_status fun(opts?: snacks.picker.Config): snacks.Picker
+---@field git_diff fun(opts?: snacks.picker.Config): snacks.Picker
 
 ---@param opts snacks.picker.git.files.Config
 ---@type snacks.picker.finder
@@ -98,6 +99,53 @@ function M.status(opts)
       item.file = file
     end,
   }, opts or {}))
+end
+
+---@param opts snacks.picker.Config
+---@type snacks.picker.finder
+function M.diff(opts)
+  local args = { "--no-pager", "diff", "--no-color", "--no-ext-diff" }
+  local file, line ---@type string?, number?
+  local header, hunk = {}, {} ---@type string[], string[]
+  local finder = require("snacks.picker.source.proc").proc(vim.tbl_deep_extend("force", {
+    cmd = "git",
+    args = args,
+  }, opts or {}))
+  return function(cb)
+    local function add()
+      if file and line and #hunk > 0 then
+        local diff = table.concat(header, "\n") .. "\n" .. table.concat(hunk, "\n")
+        cb({
+          text = file .. ":" .. line,
+          file = file,
+          pos = { line, 0 },
+          preview = { text = diff, ft = "diff", loc = false },
+        })
+      end
+      hunk = {}
+    end
+    finder(function(proc_item)
+      local text = proc_item.text
+      if text:find("diff", 1, true) == 1 then
+        add()
+        file = text:match("^diff .* a/(.*) b/.*$")
+        header = { text }
+      elseif file and #header < 4 then
+        header[#header + 1] = text
+      elseif text:find("@", 1, true) == 1 then
+        add()
+        -- Hunk header
+        -- @example "@@ -157,20 +157,6 @@ some content"
+        line = tonumber(string.match(text, "@@ %-.*,.* %+(.*),.* @@"))
+        hunk = { text }
+      elseif #hunk > 0 then
+        hunk[#hunk + 1] = text
+      else
+        error("unexpected line: " .. text)
+      end
+    end)
+    add()
+  end
 end
 
 return M

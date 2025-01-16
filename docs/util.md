@@ -25,7 +25,7 @@ Set buffer-local options.
 
 ```lua
 ---@param buf number
----@param bo vim.bo
+---@param bo vim.bo|{}
 Snacks.util.bo(buf, bo)
 ```
 
@@ -171,6 +171,6 @@ Set window-local options.
 
 ```lua
 ---@param win number
----@param wo vim.wo
+---@param wo vim.wo|{}
 Snacks.util.wo(win, wo)
 ```

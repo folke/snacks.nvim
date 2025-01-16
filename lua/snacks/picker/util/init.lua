@@ -6,7 +6,9 @@ function M.path(item)
   if not (item and item.file) then
     return
   end
-  return vim.fs.normalize(item.cwd and item.cwd .. "/" .. item.file or item.file, { _fast = true, expand_env = false })
+  item._path = item._path
+    or vim.fs.normalize(item.cwd and item.cwd .. "/" .. item.file or item.file, { _fast = true, expand_env = false })
+  return item._path
 end
 
 ---@param cmd string|string[]

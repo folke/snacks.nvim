@@ -32,9 +32,6 @@ function M.new(picker)
       vim.fn.prompt_setcallback(self.win.buf, function()
         self.win:execute("confirm")
       end)
-      vim.fn.prompt_setinterrupt(self.win.buf, function()
-        self.win:close()
-      end)
     end,
     bo = {
       filetype = "snacks_picker_input",

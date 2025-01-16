@@ -46,13 +46,17 @@ function M.preview(ctx)
   ctx.preview:reset()
   local lines = vim.split(ctx.item.preview.text, "\n")
   vim.api.nvim_buf_set_lines(ctx.buf, 0, -1, false, lines)
-  ctx.preview:highlight({ ft = ctx.item.preview.ft })
+  if ctx.item.preview.ft then
+    ctx.preview:highlight({ ft = ctx.item.preview.ft })
+  end
   for _, extmark in ipairs(ctx.item.preview.extmarks or {}) do
     local e = vim.deepcopy(extmark)
     e.col, e.row = nil, nil
     vim.api.nvim_buf_set_extmark(ctx.buf, ns, (extmark.row or 1) - 1, extmark.col, e)
   end
-  ctx.preview:loc()
+  if ctx.item.preview.loc ~= false then
+    ctx.preview:loc()
+  end
 end
 
 ---@param ctx snacks.picker.preview.ctx

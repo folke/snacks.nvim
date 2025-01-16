@@ -14,6 +14,13 @@ function M.edit(picker)
     vim.cmd("normal! m'")
   end)
 
+  local current_buf = vim.api.nvim_get_current_buf()
+  local current_empty = vim.bo[current_buf].buftype == ""
+    and vim.bo[current_buf].filetype == ""
+    and vim.api.nvim_buf_line_count(current_buf) == 1
+    and vim.api.nvim_buf_get_lines(current_buf, 0, -1, false)[1] == ""
+    and vim.api.nvim_buf_get_name(current_buf) == ""
+
   local items = picker:selected({ fallback = true })
   for _, item in ipairs(items) do
     -- load the buffer
@@ -42,6 +49,9 @@ function M.edit(picker)
     end
     -- center
     vim.cmd("norm! zzzv")
+  end
+  if current_empty and vim.api.nvim_buf_is_valid(current_buf) then
+    vim.api.nvim_buf_delete(current_buf, { force = true })
   end
 end
 

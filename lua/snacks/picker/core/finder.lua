@@ -5,6 +5,7 @@ local Async = require("snacks.picker.util.async")
 ---@field task snacks.picker.Async
 ---@field items snacks.picker.finder.Item[]
 ---@field filter? snacks.picker.Filter
+---@field has_scores? boolean
 local M = {}
 M.__index = M
 
@@ -45,6 +46,7 @@ function M:run(picker)
   local default_score = require("snacks.picker.core.matcher").DEFAULT_SCORE
   self.task:abort()
   self.items = {}
+  self.has_scores = false
   local yield ---@type fun()
   self.filter = picker.input.filter:clone({ trim = true })
   local finder = self._find(picker.opts, self.filter)
@@ -54,6 +56,7 @@ function M:run(picker)
   local function add(item)
     item.idx, item.score = #self.items + 1, default_score
     self.items[item.idx] = item
+    self.has_scores = self.has_scores or item.score_add ~= nil
   end
 
   -- PERF: if finder is a table, we can skip the async part
@@ -115,6 +118,32 @@ function M.multi(finders)
           find(cb)
         end
       end
+  end
+end
+
+---@param finder snacks.picker.finder
+---@param transform snacks.picker.transform
+---@return snacks.picker.finder
+function M.wrap(finder, transform)
+  return function(opts, filter)
+    local find = finder(opts, filter)
+    return function(cb)
+      ---@param item snacks.picker.finder.Item
+      local function add(item)
+        local t = transform(item)
+        if t ~= false then
+          cb(type(t) == "table" and t or item)
+        end
+      end
+      if type(find) == "table" then
+        ---@cast find snacks.picker.finder.Item[]
+        for _, item in ipairs(find) do
+          add(item)
+        end
+        return
+      end
+      find(add)
+    end
   end
 end
 

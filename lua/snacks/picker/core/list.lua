@@ -348,6 +348,17 @@ function M:format(item)
     table.remove(line)
   end
 
+  if self.picker.opts.debug.scores then
+    local score = item.score and ("%.2f "):format(item.score) or "nil"
+    parts[#parts + 1] = score
+    ret[#ret + 1] = {
+      col = selw,
+      end_col = selw + vim.api.nvim_strwidth(score),
+      hl_group = "Number",
+    }
+    selw = selw + vim.api.nvim_strwidth(score)
+  end
+
   local col = selw
   for _, text in ipairs(line) do
     if type(text[1]) == "string" then
@@ -407,7 +418,7 @@ end
 
 function M:update_cursorline()
   if self.win.win and vim.api.nvim_win_is_valid(self.win.win) then
-    vim.wo[self.win.win].cursorline = self:count() > 0
+    Snacks.util.wo(self.win.win, { cursorline = self:count() > 0 })
   end
 end
 

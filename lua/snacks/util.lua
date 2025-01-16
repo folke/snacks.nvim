@@ -45,7 +45,7 @@ end
 
 --- Set window-local options.
 ---@param win number
----@param wo vim.wo
+---@param wo vim.wo|{}
 function M.wo(win, wo)
   for k, v in pairs(wo or {}) do
     vim.api.nvim_set_option_value(k, v, { scope = "local", win = win })
@@ -54,7 +54,7 @@ end
 
 --- Set buffer-local options.
 ---@param buf number
----@param bo vim.bo
+---@param bo vim.bo|{}
 function M.bo(buf, bo)
   for k, v in pairs(bo or {}) do
     vim.api.nvim_set_option_value(k, v, { buf = buf })
