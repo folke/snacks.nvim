@@ -170,6 +170,16 @@ function M.zen(opts)
   end
   opts.on_open(win)
 
+  -- sync cursor with the parent window
+  vim.api.nvim_create_autocmd("CursorMoved", {
+    group = win.augroup,
+    callback = function()
+      if win:win_valid() and vim.api.nvim_win_is_valid(parent_win) then
+        vim.api.nvim_win_set_cursor(parent_win, vim.api.nvim_win_get_cursor(win.win))
+      end
+    end,
+  })
+
   -- restore toggle states when window is closed
   vim.api.nvim_create_autocmd("WinClosed", {
     group = win.augroup,
