@@ -15,7 +15,7 @@ local defaults = {
   -- Enable or disable features when big file detected
   ---@param ctx {buf: number, ft:string}
   setup = function(ctx)
-    if vim.fn.exists("NoMatchParen") then
+    if vim.fn.exists(":NoMatchParen") ~= 0 then
       vim.cmd([[NoMatchParen]])
     end
     Snacks.util.wo(0, { foldmethod = "manual", statuscolumn = "", conceallevel = 0 })
