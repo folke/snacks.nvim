@@ -17,7 +17,9 @@ Table of Contents                              *snacks-util-table-of-contents*
   - Snacks.util.on_module()       |snacks-util-module-snacks.util.on_module()|
   - Snacks.util.redraw()             |snacks-util-module-snacks.util.redraw()|
   - Snacks.util.redraw_range() |snacks-util-module-snacks.util.redraw_range()|
+  - Snacks.util.ref()                   |snacks-util-module-snacks.util.ref()|
   - Snacks.util.set_hl()             |snacks-util-module-snacks.util.set_hl()|
+  - Snacks.util.throttle()         |snacks-util-module-snacks.util.throttle()|
   - Snacks.util.var()                   |snacks-util-module-snacks.util.var()|
   - Snacks.util.wo()                     |snacks-util-module-snacks.util.wo()|
 
@@ -156,6 +158,16 @@ Redraw the range of lines in the window. Optimized for Neovim >= 0.10
 <
 
 
+`Snacks.util.ref()`                                        *Snacks.util.ref()*
+
+>lua
+    ---@generic T
+    ---@param t T
+    ---@return { value?:T }|fun():T?
+    Snacks.util.ref(t)
+<
+
+
 `Snacks.util.set_hl()`                                  *Snacks.util.set_hl()*
 
 Ensures the hl groups are always set, even after a colorscheme change.
@@ -164,6 +176,17 @@ Ensures the hl groups are always set, even after a colorscheme change.
     ---@param groups snacks.util.hl
     ---@param opts? { prefix?:string, default?:boolean, managed?:boolean }
     Snacks.util.set_hl(groups, opts)
+<
+
+
+`Snacks.util.throttle()`                              *Snacks.util.throttle()*
+
+>lua
+    ---@generic T
+    ---@param fn T
+    ---@param opts? {ms?:number}
+    ---@return T
+    Snacks.util.throttle(fn, opts)
 <
 
 

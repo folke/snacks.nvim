@@ -18,9 +18,11 @@ A collection of small QoL plugins for Neovim.
 | [gitbrowse](https://github.com/folke/snacks.nvim/blob/main/docs/gitbrowse.md) | Open the current file, branch, commit, or repo in a browser (e.g. GitHub, GitLab, Bitbucket) |  |
 | [indent](https://github.com/folke/snacks.nvim/blob/main/docs/indent.md) | Indent guides and scopes |  |
 | [input](https://github.com/folke/snacks.nvim/blob/main/docs/input.md) | Better `vim.ui.input` | ‼️ |
+| [layout](https://github.com/folke/snacks.nvim/blob/main/docs/layout.md) | Window layouts |  |
 | [lazygit](https://github.com/folke/snacks.nvim/blob/main/docs/lazygit.md) | Open LazyGit in a float, auto-configure colorscheme and integration with Neovim |  |
 | [notifier](https://github.com/folke/snacks.nvim/blob/main/docs/notifier.md) | Pretty `vim.notify` | ‼️ |
 | [notify](https://github.com/folke/snacks.nvim/blob/main/docs/notify.md) | Utility functions to work with Neovim's `vim.notify` |  |
+| [picker](https://github.com/folke/snacks.nvim/blob/main/docs/picker.md) | Picker for selecting items | ‼️ |
 | [profiler](https://github.com/folke/snacks.nvim/blob/main/docs/profiler.md) | Neovim lua profiler |  |
 | [quickfile](https://github.com/folke/snacks.nvim/blob/main/docs/quickfile.md) | When doing `nvim somefile.txt`, it will render the file as quickly as possible, before loading your plugins. | ‼️ |
 | [rename](https://github.com/folke/snacks.nvim/blob/main/docs/rename.md) | LSP-integrated file renaming with support for plugins like [neo-tree.nvim](https://github.com/nvim-neo-tree/neo-tree.nvim) and [mini.files](https://github.com/echasnovski/mini.files). |  |
@@ -104,8 +106,10 @@ Please refer to the readme of each plugin for their specific configuration.
 ---@field gitbrowse? snacks.gitbrowse.Config
 ---@field indent? snacks.indent.Config
 ---@field input? snacks.input.Config
+---@field layout? snacks.layout.Config
 ---@field lazygit? snacks.lazygit.Config
 ---@field notifier? snacks.notifier.Config
+---@field picker? snacks.picker.Config
 ---@field profiler? snacks.profiler.Config
 ---@field quickfile? snacks.quickfile.Config
 ---@field scope? snacks.scope.Config

@@ -123,6 +123,15 @@ Optimized for Neovim >= 0.10
 Snacks.util.redraw_range(win, from, to)
 ```
 
+### `Snacks.util.ref()`
+
+```lua
+---@generic T
+---@param t T
+---@return { value?:T }|fun():T?
+Snacks.util.ref(t)
+```
+
 ### `Snacks.util.set_hl()`
 
 Ensures the hl groups are always set, even after a colorscheme change.

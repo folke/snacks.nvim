@@ -93,6 +93,19 @@ The other options are used with `:lua Snacks.dashboard()`
 }
 ```
 
+### `help`
+
+```lua
+{
+  position = "float",
+  backdrop = false,
+  border = "top",
+  row = -1,
+  width = 0,
+  height = 0.3,
+}
+```
+
 ### `input`
 
 ```lua
@@ -122,10 +135,11 @@ The other options are used with `:lua Snacks.dashboard()`
     completion = false, -- disable blink completions in input
   },
   keys = {
-    n_esc = { "<esc>", { "cmp_close", "cancel" }, mode = "n" },
-    i_esc = { "<esc>", { "cmp_close", "stopinsert" }, mode = "i" },
-    i_cr = { "<cr>", { "cmp_accept", "confirm" }, mode = "i" },
-    i_tab = { "<tab>", { "cmp_select_next", "cmp" }, mode = "i" },
+    n_esc = { "<esc>", { "cmp_close", "cancel" }, mode = "n", expr = true },
+    i_esc = { "<esc>", { "cmp_close", "stopinsert" }, mode = "i", expr = true },
+    i_cr = { "<cr>", { "cmp_accept", "confirm" }, mode = "i", expr = true },
+    i_tab = { "<tab>", { "cmp_select_next", "cmp" }, mode = "i", expr = true },
+    i_ctrl_w = { "<c-w>", "<c-s-w>", mode = "i", expr = true },
     q = "cancel",
   },
 }
@@ -145,6 +159,7 @@ The other options are used with `:lua Snacks.dashboard()`
     cursorcolumn = false,
     cursorline = false,
     cursorlineopt = "both",
+    colorcolumn = "",
     fillchars = "eob: ,lastline:…",
     list = false,
     listchars = "extends:…,tab:  ",

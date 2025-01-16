@@ -62,17 +62,18 @@ Snacks.config.style("input", {
     completion = false, -- disable blink completions in input
   },
   keys = {
-    n_esc = { "<esc>", { "cmp_close", "cancel" }, mode = "n" },
-    i_esc = { "<esc>", { "cmp_close", "stopinsert" }, mode = "i" },
-    i_cr = { "<cr>", { "cmp_accept", "confirm" }, mode = "i" },
-    i_tab = { "<tab>", { "cmp_select_next", "cmp" }, mode = "i" },
+    n_esc = { "<esc>", { "cmp_close", "cancel" }, mode = "n", expr = true },
+    i_esc = { "<esc>", { "cmp_close", "stopinsert" }, mode = "i", expr = true },
+    i_cr = { "<cr>", { "cmp_accept", "confirm" }, mode = "i", expr = true },
+    i_tab = { "<tab>", { "cmp_select_next", "cmp" }, mode = "i", expr = true },
+    i_ctrl_w = { "<c-w>", "<c-s-w>", mode = "i", expr = true },
     q = "cancel",
   },
 })
 
 local ui_input = vim.ui.input
 
----@class snacks.input.Opts: snacks.input.Config|{}
+---@class snacks.input.Opts: snacks.input.Config,{}
 ---@field prompt? string
 ---@field default? string
 ---@field completion? string
@@ -123,7 +124,7 @@ function M.input(opts, on_confirm)
   if opts.icon_pos and (opts.icon or "") ~= "" then
     add(opts.icon, "SnacksInputIcon", opts.icon_pos)
   end
-  add(opts.prompt, "SnacksInputBorder", opts.prompt_pos)
+  add(opts.prompt, "SnacksInputTitle", opts.prompt_pos)
 
   if next(title) then
     table.insert(title, { " " })
@@ -188,7 +189,6 @@ function M.input(opts, on_confirm)
   vim.cmd.startinsert()
   if opts.default then
     vim.api.nvim_buf_set_lines(win.buf, 0, -1, false, { opts.default })
-    vim.bo[win.buf].modified = false
     vim.api.nvim_win_set_cursor(win.win, { 1, #opts.default + 1 })
   end
   vim.fn.prompt_setcallback(win.buf, function(text)
@@ -200,23 +200,22 @@ function M.input(opts, on_confirm)
     win:close()
   end)
 
-  if opts.expand then
-    vim.api.nvim_create_autocmd("TextChangedI", {
-      buffer = win.buf,
-      callback = function()
-        vim.bo[win.buf].modified = false
-        if vim.api.nvim_win_is_valid(parent_win) then
-          vim.api.nvim_win_call(parent_win, function()
-            win:update()
-          end)
-        end
-        vim.api.nvim_win_call(win.win, function()
-          vim.fn.winrestview({ leftcol = 0 })
+  win:on({ "TextChangedI", "TextChanged" }, function()
+    if not win:valid() then
+      return
+    end
+    vim.bo[win.buf].modified = false
+    if opts.expand then
+      if vim.api.nvim_win_is_valid(parent_win) then
+        vim.api.nvim_win_call(parent_win, function()
+          win:update()
         end)
-      end,
-    })
-  end
-
+      end
+      vim.api.nvim_win_call(win.win, function()
+        vim.fn.winrestview({ leftcol = 0 })
+      end)
+    end
+  end, { buf = true })
   return win
 end
 

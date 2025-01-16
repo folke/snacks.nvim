@@ -96,6 +96,7 @@ local ns = vim.api.nvim_create_namespace("snacks_indent")
 local cache_extmarks = {} ---@type table<string, vim.api.keyset.set_extmark[]>
 local debug_timer = assert((vim.uv or vim.loop).new_timer())
 local cache_underline = {} ---@type table<string, boolean>
+local has_repeat_lb = vim.fn.has("nvim-0.10.0") == 1
 local states = {} ---@type table<number, snacks.indent.State>
 local scopes ---@type snacks.scope.Listener?
 local stats = {
@@ -170,7 +171,7 @@ local function get_extmarks(indent, state)
         hl_mode = "combine",
         priority = config.indent.priority,
         ephemeral = true,
-        virt_text_repeat_linebreak = state.breakindent,
+        virt_text_repeat_linebreak = has_repeat_lb and state.breakindent or nil,
       })
     end
   end
@@ -337,7 +338,7 @@ function M.render_scope(scope, state)
         priority = config.scope.priority,
         strict = false,
         ephemeral = true,
-        virt_text_repeat_linebreak = state.breakindent,
+        virt_text_repeat_linebreak = has_repeat_lb and state.breakindent or nil,
       })
     end
   end
@@ -368,7 +369,7 @@ function M.render_chunk(scope, state)
       hl_mode = "combine",
       priority = config.chunk.priority,
       strict = false,
-      virt_text_repeat_linebreak = repeat_indent,
+      virt_text_repeat_linebreak = has_repeat_lb and repeat_indent or nil,
       ephemeral = true,
     })
   end

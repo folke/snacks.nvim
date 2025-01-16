@@ -749,13 +749,18 @@ end
 function M.pick(cmd, opts)
   cmd = cmd or "files"
   local config = Snacks.config.get("dashboard", defaults, opts)
+  local picker = Snacks.picker.config.get()
   -- stylua: ignore
   local try = {
     function() return config.preset.pick(cmd, opts) end,
     function() return require("fzf-lua")[cmd](opts) end,
     function() return require("telescope.builtin")[cmd == "files" and "find_files" or cmd](opts) end,
     function() return require("mini.pick").builtin[cmd](opts) end,
+    function() return Snacks.picker(cmd, opts) end,
   }
+  if picker.enabled then
+    table.insert(try, 1, table.remove(try, #try))
+  end
   for _, fn in ipairs(try) do
     if pcall(fn) then
       return
@@ -943,10 +948,11 @@ function M.sections.terminal(opts)
       table.concat(type(cmd) == "table" and cmd or { cmd }, " "),
       uv.cwd(),
       opts.random and math.random(1, opts.random) or "",
-      "txt",
     }
+    local hashed_cache_key = vim.fn.sha256(table.concat(cache_parts, "."))
+
     local cache_dir = vim.fn.stdpath("cache") .. "/snacks"
-    local cache_file = cache_dir .. "/" .. table.concat(cache_parts, "."):gsub("[^%w%-_%.]", "_")
+    local cache_file = cache_dir .. "/" .. hashed_cache_key .. ".txt"
     local stat = uv.fs_stat(cache_file)
     local buf = vim.api.nvim_create_buf(false, true)
     local chan = vim.api.nvim_open_term(buf, {})
