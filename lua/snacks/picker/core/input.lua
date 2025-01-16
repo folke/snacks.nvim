@@ -1,3 +1,4 @@
+local util = require("snacks.picker.util")
 ---@class snacks.picker.input
 ---@field win snacks.win
 ---@field totals string
@@ -58,12 +59,13 @@ function M.new(picker)
         vim.api.nvim_win_set_cursor(self.win.win, { 1, #line + 1 })
       end
       vim.bo[self.win.buf].modified = false
-      local pattern = self:get()
+      local pattern, location = util.input_line_col_split(self:get())
       if self.picker.opts.live then
         self.filter.search = pattern
       else
         self.filter.pattern = pattern
       end
+      self.filter.loc = location
       picker:match()
     end, { ms = picker.opts.live and 100 or 30 }),
     { buf = true }

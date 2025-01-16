@@ -1,6 +1,7 @@
 ---@class snacks.picker.Filter
 ---@field pattern string Pattern used to filter items by the matcher
 ---@field search string Initial search string used by finders
+---@field loc? {[1]: number, [2]: number} Target location for the cursor
 ---@field buf? number
 ---@field file? string
 ---@field cwd string
