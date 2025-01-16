@@ -176,6 +176,12 @@ M.git_status = {
   },
 }
 
+M.git_diff = {
+  finder = "git_diff",
+  format = "git_diff",
+  preview = "git_diff",
+}
+
 ---@class snacks.picker.grep.Config: snacks.picker.proc.Config
 ---@field cmd? string
 ---@field hidden? boolean show hidden files
