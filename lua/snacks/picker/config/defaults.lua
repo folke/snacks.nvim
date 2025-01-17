@@ -114,6 +114,10 @@ local defaults = {
     file = {
       filename_first = false, -- display filename before the file path
     },
+    selected = {
+      show_always = false, -- only show the selected column when there are multiple selections
+      unselected = true, -- use the unselected icon for unselected items
+    },
   },
   ---@class snacks.picker.previewers.Config
   previewers = {

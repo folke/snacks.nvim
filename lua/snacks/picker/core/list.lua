@@ -333,7 +333,11 @@ end
 function M:format(item)
   -- Add selected and debug info
   local prefix = {} ---@type snacks.picker.Highlight[]
-  vim.list_extend(prefix, Snacks.picker.format.selected(item, self.picker))
+  if #self.selected > 0 or self.picker.opts.formatters.selected.show_always then
+    vim.list_extend(prefix, Snacks.picker.format.selected(item, self.picker))
+  else
+    prefix[#prefix + 1] = { " " }
+  end
   if self.picker.opts.debug.scores then
     vim.list_extend(prefix, Snacks.picker.format.debug(item, self.picker))
   end

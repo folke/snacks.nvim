@@ -18,6 +18,7 @@ Snacks.util.set_hl({
   Delim = "Delimiter",
   Spinner = "Special",
   Selected = "Number",
+  Unselected = "NonText",
   Idx = "Number",
   Bold = "Bold",
   Indent = "LineNr",
