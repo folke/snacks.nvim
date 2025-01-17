@@ -37,7 +37,8 @@ function M.filename(item, picker)
 
   if picker.opts.icons.files.enabled ~= false then
     local icon, hl = Snacks.util.icon(name, cat)
-    ret[#ret + 1] = { icon .. " ", hl, virtual = true }
+    local padded_icon = icon:sub(-1) == " " and icon or icon .. " "
+    ret[#ret + 1] = { padded_icon, hl, virtual = true }
   end
 
   local dir, file = path:match("^(.*)/(.+)$")
