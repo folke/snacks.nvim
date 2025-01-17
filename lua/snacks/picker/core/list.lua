@@ -388,6 +388,11 @@ end
 ---@param row number
 function M:_render(item, row)
   local text, extmarks = self:format(item)
+  -- unvetted text may contain new lines, this makes nvim_buf_set_lines fail
+  local new_line_idx = string.find(text, "\n")
+  if new_line_idx then
+    text = string.sub(text, 1, new_line_idx - 1)
+  end
   vim.api.nvim_buf_set_lines(self.win.buf, row - 1, row, false, { text })
   for _, extmark in ipairs(extmarks) do
     local col = extmark.col
