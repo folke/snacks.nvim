@@ -272,16 +272,23 @@ function M.new(opts)
       end
       ---@cast spec snacks.win.Keys
       local lhs = vim.fn.keytrans(Snacks.util.keycode(spec[1] or ""))
-      if done[lhs] then
-        Snacks.notify.warn(
-          ("# Duplicate key mapping for `%s` (check case):\n```lua\n%s\n```\n```lua\n%s\n```"):format(
-            lhs,
-            vim.inspect(done[lhs]),
-            vim.inspect(spec)
+      local mode = type(spec.mode) == "table" and spec.mode or { spec.mode or "n" }
+      ---@cast mode string[]
+      mode = #mode == 0 and { "n" } or mode
+      for _, m in ipairs(mode) do
+        local k = m .. ":" .. lhs
+        if done[k] then
+          Snacks.notify.warn(
+            ("# Duplicate key mapping for `%s` mode=%s (check case):\n```lua\n%s\n```\n```lua\n%s\n```"):format(
+              lhs,
+              m,
+              vim.inspect(done[k]),
+              vim.inspect(spec)
+            )
           )
-        )
+        end
+        done[k] = spec
       end
-      done[lhs] = spec
       table.insert(self.keys, spec)
     end
   end
@@ -596,7 +603,7 @@ function M:scratch()
   vim.bo[self.buf].swapfile = false
   self.scratch_buf = self.buf
   local text = type(self.opts.text) == "function" and self.opts.text() or self.opts.text
-  text = type(text) == "string" and { text } or text
+  text = type(text) == "string" and vim.split(text, "\n") or text
   if text then
     ---@cast text string[]
     vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, text)

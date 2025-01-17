@@ -25,8 +25,8 @@ function M.diagnostics(opts, filter)
         is_cwd = file:sub(1, #cwd) == cwd and 0 or 1,
         lnum = diag.lnum,
         severity = diag.severity,
-        pos = { diag.lnum + 1, diag.col + 1 },
-        end_pos = diag.end_lnum and { diag.end_lnum + 1, diag.end_col + 1 } or nil,
+        pos = { diag.lnum + 1, diag.col },
+        end_pos = diag.end_lnum and { diag.end_lnum + 1, diag.end_col } or nil,
         item = diag,
         comment = diag.message,
       }

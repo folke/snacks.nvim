@@ -46,7 +46,7 @@ function M.files(opts, filter)
   return function(cb)
     for file in oldfiles(filter, extra) do
       if file ~= current_file then
-        cb({ file = file, text = file })
+        cb({ file = file, text = file, recent = true })
       end
     end
   end

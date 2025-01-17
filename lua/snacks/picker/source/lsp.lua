@@ -183,8 +183,8 @@ function M.get_locations(method, opts, filter)
           text = loc.filename .. " " .. loc.text,
           buf = loc.bufnr,
           file = loc.filename,
-          pos = { loc.lnum, loc.col },
-          end_pos = loc.end_lnum and loc.end_col and { loc.end_lnum, loc.end_col } or nil,
+          pos = { loc.lnum, loc.col - 1 },
+          end_pos = loc.end_lnum and loc.end_col and { loc.end_lnum, loc.end_col - 1 } or nil,
           line = loc.text,
         }
         local loc_key = loc.filename .. ":" .. loc.lnum
@@ -255,8 +255,8 @@ function M.results_to_items(client, results, opts)
         text = table.concat({ M.symbol_kind(result.kind), result.name, result.detail }, " "),
         file = sym.filename,
         buf = sym.bufnr,
-        pos = { sym.lnum, sym.col },
-        end_pos = sym.end_lnum and sym.end_col and { sym.end_lnum, sym.end_col },
+        pos = { sym.lnum, sym.col - 1 },
+        end_pos = sym.end_lnum and sym.end_col and { sym.end_lnum, sym.end_col - 1 } or nil,
       }
       items[#items + 1] = item
       last[parent] = item

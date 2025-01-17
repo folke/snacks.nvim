@@ -49,14 +49,17 @@ function M.log(opts)
     args[#args + 1] = "--follow"
   end
 
+  local file ---@type string?
   if opts.current_line then
     local cursor = vim.api.nvim_win_get_cursor(0)
+    file = vim.api.nvim_buf_get_name(0)
     local line = cursor[1]
     args[#args + 1] = "-L"
-    args[#args + 1] = line .. ",+1:" .. vim.api.nvim_buf_get_name(0)
+    args[#args + 1] = line .. ",+1:" .. file
   elseif opts.current_file then
+    file = vim.api.nvim_buf_get_name(0)
     args[#args + 1] = "--"
-    args[#args + 1] = vim.api.nvim_buf_get_name(0)
+    args[#args + 1] = file
   end
 
   local cwd = vim.fs.normalize(opts and opts.cwd or uv.cwd() or ".") or nil
@@ -73,7 +76,7 @@ function M.log(opts)
       item.commit = commit
       item.msg = msg
       item.date = date
-      item.file = item.text
+      item.file = file
     end,
   }, opts or {}))
 end

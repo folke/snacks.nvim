@@ -32,7 +32,7 @@ M.config = setmetatable({}, {
 })
 
 local function can_merge(v)
-  return type(v) == "table" and (vim.tbl_isempty(v) or not v[1]) and getmetatable(v) == nil
+  return type(v) == "table" and (vim.tbl_isempty(v) or not v[1])
 end
 
 --- Merges the values similar to vim.tbl_deep_extend with the **force** behavior,

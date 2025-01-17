@@ -207,6 +207,10 @@ function M.git_show(ctx)
     "show",
     ctx.item.commit,
   }
+  if ctx.item.file then
+    cmd[#cmd + 1] = "--"
+    cmd[#cmd + 1] = ctx.item.file
+  end
   if not native then
     table.insert(cmd, 2, "--no-pager")
   end

@@ -208,9 +208,9 @@ function M:loc()
       self:wo({ cursorline = true })
     end)
     if self.item.end_pos then
-      vim.api.nvim_buf_set_extmark(self.win.buf, ns_loc, self.item.pos[1] - 1, self.item.pos[2] - 1, {
+      vim.api.nvim_buf_set_extmark(self.win.buf, ns_loc, self.item.pos[1] - 1, self.item.pos[2], {
         end_row = self.item.end_pos[1] - 1,
-        end_col = self.item.end_pos[2] - 1,
+        end_col = self.item.end_pos[2],
         hl_group = "SnacksPickerSearch",
       })
     end

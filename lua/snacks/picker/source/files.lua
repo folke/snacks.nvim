@@ -90,6 +90,7 @@ function M.files(opts, filter)
   return require("snacks.picker.source.proc").proc(vim.tbl_deep_extend("force", {
     cmd = cmd,
     args = args,
+    notify = false,
     ---@param item snacks.picker.finder.Item
     transform = function(item)
       item.cwd = cwd
