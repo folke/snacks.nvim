@@ -12,6 +12,7 @@ M.meta = {
 local defaults = {
   notify = true, -- show notification when big file detected
   size = 1.5 * 1024 * 1024, -- 1.5MB
+  columns = 500,
   -- Enable or disable features when big file detected
   ---@param ctx {buf: number, ft:string}
   setup = function(ctx)
@@ -34,10 +35,23 @@ function M.setup()
     pattern = {
       [".*"] = {
         function(path, buf)
+          local columns_exceed_limit = false
+
+          local status, file = pcall(io.open, path, "r")
+          if status ~= nil and file ~= nil then
+            for line in file:lines() do
+              if #line > opts.columns then
+                columns_exceed_limit = true
+                file:close()
+                break
+              end
+            end
+          end
+
           return vim.bo[buf]
               and vim.bo[buf].filetype ~= "bigfile"
               and path
-              and vim.fn.getfsize(path) > opts.size
+              and (vim.fn.getfsize(path) > opts.size or columns_exceed_limit)
               and "bigfile"
             or nil
         end,
