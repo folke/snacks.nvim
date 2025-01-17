@@ -26,6 +26,7 @@ local LINE_NR = "%=%{%(&number || &relativenumber) && v:virtnum == 0 ? ("
 ---@field left snacks.statuscolumn.Components
 ---@field right snacks.statuscolumn.Components
 ---@field enabled? boolean
+---@field filter? fun(buf:number):boolean
 local defaults = {
   left = { "mark", "sign" }, -- priority of signs on the left (high to low)
   right = { "fold", "git" }, -- priority of signs on the right (high to low)
@@ -37,6 +38,10 @@ local defaults = {
     -- patterns to match Git signs
     patterns = { "GitSign", "MiniDiffSign" },
   },
+  -- filter for buffers to disable statuscolumn
+  filter = function(buf)
+    return vim.bo[buf].filetype == "neo-tree"
+  end,
   refresh = 50, -- refresh at most every 50ms
 }
 
@@ -234,6 +239,9 @@ end
 function M.get()
   local win = vim.g.statusline_winid
   local buf = vim.api.nvim_win_get_buf(win)
+  if config.filter(buf) then
+    return ""
+  end
   local key = ("%d:%d:%d:%d"):format(win, buf, vim.v.lnum, vim.v.virtnum and 1 or 0)
   if cache[key] then
     return cache[key]
