@@ -10,10 +10,7 @@ M.alias = {
   oldfiles = "recent",
 }
 
-local key_cache = {} ---@type table<string, string>
-
 --- Fixes keys before merging configs for correctly resolving keymaps.
---- For example: <c-s> -> <C-S>
 ---@param opts? snacks.picker.Config
 function M.fix_keys(opts)
   if not (opts and opts.win) then
@@ -22,13 +19,10 @@ function M.fix_keys(opts)
   for _, win in pairs(opts.win) do
     ---@cast win snacks.win.Config
     if win.keys then
-      local keys = vim.tbl_keys(win.keys) ---@type string[]
-      for _, key in ipairs(keys) do
-        key_cache[key] = key_cache[key] or vim.fn.keytrans(Snacks.util.keycode(key))
-        if key ~= key_cache[key] then
-          win.keys[key_cache[key]], win.keys[key] = win.keys[key], nil
-        end
-      end
+      win.keys = vim.iter(win.keys):fold({}, function(t, k, v)
+        t[k:lower()] = v
+        return t
+      end)
     end
   end
 end
