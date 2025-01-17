@@ -286,7 +286,7 @@ local defaults = {
       Text          = " ",
       TypeParameter = " ",
       Unit          = " ",
-      Uknown        = " ",
+      Unknown        = " ",
       Value         = " ",
       Variable      = "󰀫 ",
     },
