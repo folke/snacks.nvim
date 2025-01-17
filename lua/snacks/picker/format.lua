@@ -389,10 +389,10 @@ end
 
 function M.selected(item, picker)
   local selected = picker.list:is_selected(item)
-  local icon = picker.opts.icons.ui.selected
-  local icon_width = vim.api.nvim_strwidth(icon)
+  local icon_selected = picker.opts.icons.ui.selected
+  local icon_unselected = picker.opts.icons.ui.unselected
   local ret = {} ---@type snacks.picker.Highlight[]
-  ret[#ret + 1] = { selected and icon or string.rep(" ", icon_width), "SnacksPickerSelected", virtual = true }
+  ret[#ret + 1] = { selected and icon_selected or icon_unselected, "SnacksPickerSelected", virtual = true }
   return ret
 end
 

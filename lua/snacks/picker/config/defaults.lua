@@ -239,6 +239,7 @@ local defaults = {
     ui = {
       live        = "󰐰 ",
       selected    = "● ",
+      unselected = "○ ",
       -- selected = " ",
     },
     git = {
