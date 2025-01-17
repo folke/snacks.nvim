@@ -44,7 +44,7 @@ local config = Snacks.config.get("statuscolumn", defaults)
 
 ---@private
 ---@alias snacks.statuscolumn.Sign.type "mark"|"sign"|"fold"|"git"
----@alias snacks.statuscolumn.Sign {name:string, text:string, texthl:string, priority:number, type:snacks.statuscolumn.Sign.type}
+---@alias snacks.statuscolumn.Sign {name:string, text:string, texthl:string, culhl: string, priority:number, type:snacks.statuscolumn.Sign.type}
 
 -- Cache for signs per buffer and line
 ---@type table<number,table<number,snacks.statuscolumn.Sign[]>>
@@ -114,6 +114,7 @@ function M.buf_signs(buf)
       type = M.is_git_sign(name) and "git" or "sign",
       text = extmark[4].sign_text,
       texthl = extmark[4].sign_hl_group,
+      culhl = extmark[4].cursorline_hl_group,
       priority = extmark[4].priority,
     })
   end
@@ -164,17 +165,19 @@ end
 
 ---@private
 ---@param sign? snacks.statuscolumn.Sign
-function M.icon(sign)
+---@param is_cul? boolean -- is cursorline?
+function M.icon(sign, is_cul)
   if not sign then
     return "  "
   end
-  local key = (sign.text or "") .. (sign.texthl or "")
+  local hl = is_cul and sign.culhl or sign.texthl
+  local key = (sign.text or "") .. (hl or "")
   if icon_cache[key] then
     return icon_cache[key]
   end
   local text = vim.fn.strcharpart(sign.text or "", 0, 2) ---@type string
   text = text .. string.rep(" ", 2 - vim.fn.strchars(text))
-  icon_cache[key] = sign.texthl and ("%#" .. sign.texthl .. "#" .. text .. "%*") or text
+  icon_cache[key] = hl and ("%#" .. hl .. "#" .. text .. "%*") or text
   return icon_cache[key]
 end
 
@@ -220,8 +223,11 @@ function M._get()
           right.texthl = git.texthl
         end
       end
-      components[1] = left and M.icon(left) or "  " -- left
-      components[3] = is_file and (right and M.icon(right) or "  ") or "" -- right
+
+      local is_cul = vim.v.relnum == 0 -- is cursorline?
+
+      components[1] = left and M.icon(left, is_cul) or "  " -- left
+      components[3] = is_file and (right and M.icon(right, is_cul) or "  ") or "" -- right
     else
       components[1] = "  "
       components[3] = is_file and "  " or ""
