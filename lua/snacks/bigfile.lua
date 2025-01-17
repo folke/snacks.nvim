@@ -12,7 +12,8 @@ M.meta = {
 local defaults = {
   notify = true, -- show notification when big file detected
   size = 1.5 * 1024 * 1024, -- 1.5MB
-  columns = 500,
+  line_length = 500,
+  lines_scan = 2, -- how many lines will scan for line length
   -- Enable or disable features when big file detected
   ---@param ctx {buf: number, ft:string}
   setup = function(ctx)
@@ -31,27 +32,26 @@ local defaults = {
 function M.setup()
   local opts = Snacks.config.get("bigfile", defaults)
 
+  ---@param buf integer
+  local function buf_contains_long_lines(buf)
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, opts.lines_scan, false) or {}
+    for _, line in ipairs(lines) do
+      local length = line and #line or 0
+      if length > opts.line_length then
+        return true
+      end
+    end
+    return nil
+  end
+
   vim.filetype.add({
     pattern = {
       [".*"] = {
         function(path, buf)
-          local columns_exceed_limit = false
-
-          local status, file = pcall(io.open, path, "r")
-          if status ~= nil and file ~= nil then
-            for line in file:lines() do
-              if #line > opts.columns then
-                columns_exceed_limit = true
-                file:close()
-                break
-              end
-            end
-          end
-
           return vim.bo[buf]
               and vim.bo[buf].filetype ~= "bigfile"
               and path
-              and (vim.fn.getfsize(path) > opts.size or columns_exceed_limit)
+              and (vim.fn.getfsize(path) > opts.size or buf_contains_long_lines(buf))
               and "bigfile"
             or nil
         end,

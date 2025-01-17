@@ -37,7 +37,8 @@ The default implementation enables `syntax` for the buffer and disables
 {
   notify = true, -- show notification when big file detected
   size = 1.5 * 1024 * 1024, -- 1.5MB
-  columns = 500,
+  line_length = 500,
+  lines_scan = 2, -- how many lines will scan for line length
   -- Enable or disable features when big file detected
   ---@param ctx {buf: number, ft:string}
   setup = function(ctx)
