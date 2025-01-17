@@ -11,45 +11,58 @@ M.alias = {
 }
 
 local key_cache = {} ---@type table<string, string>
+local defaults ---@type snacks.picker.Config?
 
 --- Fixes keys before merging configs for correctly resolving keymaps.
 --- For example: <c-s> -> <C-S>
 ---@param opts? snacks.picker.Config
 function M.fix_keys(opts)
-  if not (opts and opts.win) then
-    return
+  opts = opts or {}
+  -- fix keys in sources
+  for _, source in pairs(opts.sources or {}) do
+    M.fix_keys(source)
   end
+  if not opts.win then
+    return opts
+  end
+  -- fix keys in wins
   for _, win in pairs(opts.win) do
     ---@cast win snacks.win.Config
     if win.keys then
       local keys = vim.tbl_keys(win.keys) ---@type string[]
       for _, key in ipairs(keys) do
+        key_cache[key] = key:lower() == "<c-j>" and "<C-J>" or key
         key_cache[key] = key_cache[key] or vim.fn.keytrans(Snacks.util.keycode(key))
-        if key ~= key_cache[key] then
-          win.keys[key_cache[key]], win.keys[key] = win.keys[key], nil
+        local norm = key_cache[key]
+        if key ~= norm then
+          key_cache[norm] = norm
+          win.keys[norm], win.keys[key] = win.keys[key], nil
         end
       end
     end
   end
+  return opts
 end
 
 ---@param opts? snacks.picker.Config
 function M.get(opts)
   M.setup()
-  opts = opts or {}
+  opts = M.fix_keys(opts)
 
-  local sources = require("snacks.picker.config.sources")
-  local defaults = require("snacks.picker.config.defaults").defaults
-  defaults.sources = sources
-  local user = Snacks.config.picker or {}
-  M.fix_keys(user)
-  M.fix_keys(defaults)
-  M.fix_keys(opts)
+  -- Setup defaults
+  if not defaults then
+    defaults = require("snacks.picker.config.defaults").defaults
+    defaults.sources = require("snacks.picker.config.sources")
+    defaults.layouts = require("snacks.picker.config.layouts")
+    M.fix_keys(defaults)
+  end
+
+  local user = M.fix_keys(Snacks.config.picker or {})
   opts.source = M.alias[opts.source] or opts.source
 
+  -- Prepare config
   local global = Snacks.config.get("picker", defaults, opts) -- defaults + global user config
   local source = opts.source and global.sources[opts.source] or {}
-  M.fix_keys(source)
   ---@type snacks.picker.Config[]
   local todo = {
     vim.deepcopy(defaults),
@@ -58,6 +71,7 @@ function M.get(opts)
     opts,
   }
 
+  -- Merge the confirm action into the actions table
   for _, t in ipairs(todo) do
     if t.confirm then
       t.actions = t.actions or {}
@@ -65,13 +79,8 @@ function M.get(opts)
     end
   end
 
-  local ret = Snacks.config.merge(unpack(todo))
-  ret.layouts = ret.layouts or {}
-  local layouts = require("snacks.picker.config.layouts")
-  for k, v in pairs(layouts or {}) do
-    ret.layouts[k] = ret.layouts[k] or v
-  end
-  return ret
+  -- Merge the configs
+  return Snacks.config.merge(unpack(todo))
 end
 
 --- Resolve the layout configuration
@@ -80,19 +89,22 @@ function M.layout(opts)
   if type(opts) == "string" then
     opts = M.get({ layout = { preset = opts } })
   end
-  local layouts = require("snacks.picker.config.layouts")
+
+  -- Resolve the layout configuration
   local layout = M.resolve(opts.layout or {}, opts.source)
   layout = type(layout) == "string" and { preset = layout } or layout
   ---@cast layout snacks.picker.layout.Config
   if layout.layout and layout.layout[1] then
     return layout
   end
+
+  -- Resolve the preset
   local preset = M.resolve(layout.preset or "custom", opts.source)
-  local ret = vim.deepcopy(opts.layouts and opts.layouts[preset] or layouts[preset] or {})
-  -- NOTE: use deep extend instead of merge to allow merging list-like tables
-  ret = vim.tbl_deep_extend("force", ret, layout)
-  ret.preset = nil
-  return ret
+  ---@type snacks.picker.layout.Config
+  local ret = vim.deepcopy(opts.layouts and opts.layouts[preset] or {})
+
+  -- Merge and return the layout
+  return Snacks.config.merge(ret, layout)
 end
 
 ---@generic T

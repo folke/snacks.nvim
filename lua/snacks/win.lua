@@ -398,6 +398,7 @@ function M:toggle_help(opts)
   local done = {} ---@type table<string, boolean>
   for _, keymap in ipairs(keys) do
     local key = vim.fn.keytrans(Snacks.util.keycode(keymap.lhs or ""))
+    key = key == "<NL>" and "<C-J>" or key
     if not done[key] and not (keymap.desc and keymap.desc:find("which%-key")) then
       done[key] = true
       row = row + 1

@@ -86,6 +86,7 @@ end
 function M.status(opts)
   local args = {
     "status",
+    "-uall",
     "--porcelain=v1",
   }
 

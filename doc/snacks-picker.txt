@@ -431,7 +431,7 @@ below.
           Text          = " ",
           TypeParameter = " ",
           Unit          = " ",
-          Uknown        = " ",
+          Unknown        = " ",
           Value         = " ",
           Variable      = "󰀫 ",
         },

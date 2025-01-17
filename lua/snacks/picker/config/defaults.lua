@@ -75,7 +75,7 @@ local M = {}
 --- Preset options
 ---@field previewers? snacks.picker.previewers.Config|{}
 ---@field formatters? snacks.picker.formatters.Config|{}
----@field sources? snacks.picker.sources.Config|{}
+---@field sources? snacks.picker.sources.Config|{}|table<string, snacks.picker.Config|{}>
 ---@field layouts? table<string, snacks.picker.layout.Config>
 --- Actions
 ---@field actions? table<string, snacks.picker.Action.spec> actions used by keymaps
@@ -287,7 +287,7 @@ local defaults = {
       Text          = " ",
       TypeParameter = " ",
       Unit          = " ",
-      Uknown        = " ",
+      Unknown        = " ",
       Value         = " ",
       Variable      = "󰀫 ",
     },
