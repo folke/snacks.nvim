@@ -41,14 +41,15 @@ function M.filename(item, picker)
     ret[#ret + 1] = { padded_icon, hl, virtual = true }
   end
 
-  local dir, file = path:match("^(.*)/(.+)$")
+  local path_separator = vim.uv.os_uname().sysname:find("Windows") and "\\" or "/"
+  local dir, file = path:match("^(.*)" .. path_separator .. "(.+)$")
   if file and dir then
     if picker.opts.formatters.file.filename_first then
       ret[#ret + 1] = { file, "SnacksPickerFile", field = "file" }
       ret[#ret + 1] = { " " }
       ret[#ret + 1] = { dir, "SnacksPickerDir", field = "file" }
     else
-      ret[#ret + 1] = { dir .. "/", "SnacksPickerDir", field = "file" }
+      ret[#ret + 1] = { dir .. path_separator, "SnacksPickerDir", field = "file" }
       ret[#ret + 1] = { file, "SnacksPickerFile", field = "file" }
     end
   else
