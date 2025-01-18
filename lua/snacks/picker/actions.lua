@@ -167,6 +167,12 @@ function M.qflist(picker)
   setqflist(items)
 end
 
+--- Send all items to the quickfix list.
+function M.qflist_all(picker)
+  picker:close()
+  setqflist(picker:items())
+end
+
 --- Send selected or all items to the location list.
 function M.loclist(picker)
   picker:close()
