@@ -401,7 +401,7 @@ function N:add(opts)
   if opts.history ~= false then
     self.history[notif.id] = notif
   end
-  if not self:is_blocking() then
+  if self:is_blocking() then
     pcall(function()
       self:process()
     end)
