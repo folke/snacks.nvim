@@ -19,7 +19,7 @@ Async.BUDGET = 10
 ---@field sort snacks.picker.sort
 ---@field updater uv.uv_timer_t
 ---@field start_time number
----@field source_name string
+---@field title string
 ---@field closed? boolean
 ---@field hist_idx number
 ---@field hist_cursor number
@@ -88,6 +88,7 @@ function M.new(opts)
   M._active[self] = true
 
   local layout = Snacks.picker.config.layout(self.opts)
+  self.resolved_layout = layout
   self.list = require("snacks.picker.core.list").new(self)
   self.input = require("snacks.picker.core.input").new(self)
   self.preview = require("snacks.picker.core.preview").new(self.opts, layout.preview == "main" and self.main or nil)
@@ -100,7 +101,7 @@ function M.new(opts)
     topline = self.list.top,
   }
 
-  self.source_name = Snacks.picker.util.title(self.opts.source or "search")
+  self.title = self.opts.title or Snacks.picker.util.title(self.opts.source or "search")
 
   -- properly close the picker when the window is closed
   self.input.win:on("WinClosed", function()
@@ -132,12 +133,26 @@ function M.new(opts)
   return self
 end
 
+--- Execute the callback in normal mode.
+--- When still in insert mode, stop insert mode first,
+--- and then`vim.schedule` the callback.
+---@param cb fun()
+function M:norm(cb)
+  if vim.fn.mode():sub(1, 1) == "i" then
+    vim.cmd.stopinsert()
+    vim.schedule(cb)
+    return
+  end
+  cb()
+  return true
+end
+
 ---@param layout? snacks.picker.layout.Config
 ---@private
 function M:init_layout(layout)
   layout = layout or Snacks.picker.config.layout(self.opts)
   self.resolved_layout = vim.deepcopy(layout)
-  self.resolved_layout.cycle = nil -- not needed for applying layout
+  self.resolved_layout.cycle = self.resolved_layout.cycle == true
   local opts = layout --[[@as snacks.layout.Config]]
   local preview_main = layout.preview == "main"
   local preview_hidden = layout.preview == false or preview_main
@@ -182,7 +197,7 @@ function M:set_layout(layout)
   layout = layout or Snacks.picker.config.layout(self.opts)
   layout = type(layout) == "string" and Snacks.picker.config.layout(layout) or layout
   ---@cast layout snacks.picker.layout.Config
-  layout.cycle = nil -- not needed for applying layout
+  layout.cycle = layout.cycle == true
   if vim.deep_equal(layout, self.resolved_layout) then
     -- no need to update
     return
@@ -211,12 +226,17 @@ end
 ---@hide
 function M:update_titles()
   local data = {
-    source = self.source_name,
+    source = self.title,
+    title = self.title,
     live = self.opts.live and self.opts.icons.ui.live or "",
     preview = vim.trim(self.preview.title or ""),
   }
   local opts = self.opts --[[@as snacks.picker.files.Config]]
   local flags = {} ---@type snacks.picker.Text[]
+  if opts.follow then
+    flags[#flags + 1] = { " " .. self.opts.icons.ui.follow .. " ", "SnacksPickerFlagFollow" }
+    flags[#flags + 1] = { " ", "FloatTitle" }
+  end
   if opts.hidden then
     flags[#flags + 1] = { " " .. self.opts.icons.ui.hidden .. " ", "SnacksPickerFlagHidden" }
     flags[#flags + 1] = { " ", "FloatTitle" }

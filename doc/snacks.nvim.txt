@@ -1,4 +1,4 @@
-*snacks.nvim.txt*            For Neovim           Last change: 2025 January 18
+*snacks.nvim.txt*            For Neovim           Last change: 2025 January 19
 
 ==============================================================================
 Table of Contents                              *snacks.nvim-table-of-contents*

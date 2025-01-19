@@ -76,7 +76,7 @@ M.command_history = {
 -- Neovim commands
 M.commands = {
   finder = "vim_commands",
-  format = "text",
+  format = "command",
   preview = "preview",
   confirm = "cmd",
 }
@@ -535,6 +535,13 @@ M.smart = {
   format = "file",
   -- sort the results even when the filter is empty (frecency)
   matcher = { sort_empty = true },
+}
+
+M.spelling = {
+  finder = "vim_spelling",
+  format = "text",
+  layout = { preset = "vscode" },
+  confirm = "item_action",
 }
 
 -- Open a project from zoxide

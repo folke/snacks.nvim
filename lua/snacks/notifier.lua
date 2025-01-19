@@ -315,11 +315,15 @@ function N:init()
 end
 
 function N:start()
-  uv.new_timer():start(
-    self.opts.refresh,
-    self.opts.refresh,
-    vim.schedule_wrap(function()
-      if not next(self.queue) then
+  local running = false
+  uv.new_timer():start(self.opts.refresh, self.opts.refresh, function()
+    if running or not next(self.queue) then
+      return
+    end
+    running = true
+    vim.schedule(function()
+      if self.in_search() then
+        running = false
         return
       end
       xpcall(function()
@@ -336,8 +340,9 @@ function N:start()
         end)
         self.queue = {}
       end)
+      running = false
     end)
-  )
+  end)
 end
 
 function N:process()
@@ -575,9 +580,6 @@ function N:render(notif)
   for _, line in ipairs(lines) do
     width = math.max(width, vim.fn.strdisplaywidth(line) + pad)
   end
-  if win:has_border() then
-    width = width + 2
-  end
   width = dim(width, self.opts.width.min, self.opts.width.max, vim.o.columns)
 
   local height = #lines
@@ -664,6 +666,7 @@ function N:layout()
   local layout = self:new_layout()
   local wins_updated = 0
   local wins_created = 0
+  local update = {} ---@type snacks.win[]
   for _, notif in ipairs(assert(self.sorted)) do
     if layout.free < (self.opts.height.min + 2) then -- not enough space
       if notif.win then
@@ -690,6 +693,7 @@ function N:layout()
           else
             wins_created = wins_created + 1
           end
+          update[#update + 1] = notif.win
           notif.win.opts.row = notif.layout.top - 1
           notif.win.opts.col = vim.o.columns - notif.layout.width - self.opts.margin.right
           notif.shown = notif.shown or ts()
@@ -702,16 +706,19 @@ function N:layout()
     end
   end
 
-  local redraw = false
-    or wins_created > 0 -- always redraw when new windows are created
-    or (
-      wins_updated > 0 -- only redraw updated windows when not searching
-      and not (vim.tbl_contains({ "/", "?" }, vim.fn.getcmdtype()))
-    )
-
-  if redraw then
-    vim.cmd.redraw()
+  if #update > 0 and not self.in_search() then
+    if vim.api.nvim__redraw then
+      for _, win in ipairs(update) do
+        win:redraw()
+      end
+    else
+      vim.cmd.redraw()
+    end
   end
+end
+
+function N.in_search()
+  return vim.tbl_contains({ "/", "?" }, vim.fn.getcmdtype())
 end
 
 ---@param msg string

@@ -291,7 +291,7 @@ end
 
 function M.toggle_live(picker)
   if not picker.opts.supports_live then
-    Snacks.notify.warn("Live search is not supported for `" .. picker.source_name .. "`", { title = "Snacks Picker" })
+    Snacks.notify.warn("Live search is not supported for `" .. picker.title .. "`", { title = "Snacks Picker" })
     return
   end
   picker.opts.live = not picker.opts.live
@@ -346,9 +346,24 @@ function M.toggle_ignored(picker)
   picker:find()
 end
 
+function M.item_action(picker, item, action)
+  if item.action then
+    picker:norm(function()
+      picker:close()
+      item.action(picker, item, action)
+    end)
+  end
+end
+
 function M.toggle_hidden(picker)
   local opts = picker.opts --[[@as snacks.picker.files.Config]]
   opts.hidden = not opts.hidden
+  picker:find()
+end
+
+function M.toggle_follow(picker)
+  local opts = picker.opts --[[@as snacks.picker.files.Config]]
+  opts.follow = not opts.follow
   picker:find()
 end
 

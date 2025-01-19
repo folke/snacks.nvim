@@ -32,7 +32,7 @@ end
 ---@param picker snacks.Picker
 function M.new(picker)
   local self = setmetatable({}, M)
-  self.reverse = picker.opts.layout.reverse
+  self.reverse = picker.resolved_layout.reverse
   self.picker = picker
   self.selected = {}
   self.selected_map = {}
@@ -47,8 +47,6 @@ function M.new(picker)
     bo = { modifiable = false, filetype = "snacks_picker_list" },
     wo = {
       foldenable = false,
-      conceallevel = 3,
-      concealcursor = "nvc",
       cursorline = false,
       winhighlight = Snacks.picker.highlight.winhl("SnacksPickerList", { CursorLine = "Visual" }),
     },
@@ -180,7 +178,7 @@ function M:_move(to, absolute, render)
     self.cursor, self.top = 1, 1
   else
     self.cursor = absolute and to or self.cursor + to
-    if self.picker.opts.layout.cycle then
+    if self.picker.resolved_layout.cycle then
       self.cursor = (self.cursor - 1) % self:count() + 1
     end
     self.cursor = minmax(self.cursor, 1, self:count())

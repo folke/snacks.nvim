@@ -74,11 +74,6 @@ local defaults = {
       arrow = ">",
     },
   },
-  blank = {
-    char = " ",
-    -- char = "·",
-    hl = "SnacksIndentBlank", ---@type string|string[] hl group for blank spaces
-  },
   -- filter for buffers to enable indent guides
   filter = function(buf)
     return vim.g.snacks_indent ~= false and vim.b[buf].snacks_indent ~= false and vim.bo[buf].buftype == ""
@@ -526,13 +521,13 @@ function M.enable()
   })
 
   -- redraw when shiftwidth changes
-  vim.api.nvim_create_autocmd("OptionSet", {
-    group = group,
-    pattern = { "shiftwidth", "listchars", "list" },
-    callback = vim.schedule_wrap(function()
-      vim.cmd([[redraw!]])
-    end),
-  })
+  -- vim.api.nvim_create_autocmd("OptionSet", {
+  --   group = group,
+  --   pattern = { "shiftwidth", "listchars", "list" },
+  --   callback = vim.schedule_wrap(function()
+  --     vim.cmd([[redraw!]])
+  --   end),
+  -- })
 end
 
 -- Disable indent guides

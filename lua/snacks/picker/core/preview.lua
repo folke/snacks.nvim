@@ -44,7 +44,6 @@ function M.new(opts, main)
       width = 0,
       height = 0,
       fixbuf = false,
-      bo = { filetype = "snacks_picker_preview" },
       on_win = function()
         self.item = nil
         self:reset()
@@ -52,6 +51,7 @@ function M.new(opts, main)
       wo = {
         winhighlight = self.winhl,
       },
+      scratch_ft = "snacks_picker_preview",
     }
   )
   self.win_opts = {

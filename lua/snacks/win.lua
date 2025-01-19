@@ -74,6 +74,7 @@ M.meta = {
 ---@field b? table<string, any> buffer local variables
 ---@field w? table<string, any> window local variables
 ---@field ft? string filetype to use for treesitter/syntax highlighting. Won't override existing filetype
+---@field scratch_ft? string filetype to use for scratch buffers
 ---@field keys? table<string, false|string|fun(self: snacks.win)|snacks.win.Keys> Key mappings
 ---@field on_buf? fun(self: snacks.win) Callback after opening the buffer
 ---@field on_win? fun(self: snacks.win) Callback after opening the window
@@ -613,8 +614,13 @@ function M:scratch()
     ---@cast text string[]
     vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, text)
   end
-  if vim.bo[self.buf].filetype == "" and not self.opts.bo.filetype then
-    self.opts.bo.filetype = "snacks_win"
+  if not self.opts.bo.filetype then
+    if self.opts.scratch_ft then
+      vim.bo[self.buf].filetype = self.opts.scratch_ft
+    else
+      vim.bo[self.buf].filetype = self.opts.bo.filetype or "snacks_win"
+    end
+    vim.bo[self.buf].syntax = ""
   end
   if self:win_valid() then
     vim.api.nvim_win_set_buf(self.win, self.buf)

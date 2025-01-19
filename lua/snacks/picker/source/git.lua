@@ -62,8 +62,9 @@ function M.log(opts)
     args[#args + 1] = file
   end
 
-  local cwd = vim.fs.normalize(opts and opts.cwd or uv.cwd() or ".") or nil
+  local cwd = vim.fs.normalize(file and vim.fn.fnamemodify(file, ":h") or opts and opts.cwd or uv.cwd() or ".") or nil
   return require("snacks.picker.source.proc").proc(vim.tbl_deep_extend("force", {
+    cwd = cwd,
     cmd = "git",
     args = args,
     ---@param item snacks.picker.finder.Item
@@ -93,6 +94,7 @@ function M.status(opts)
   local cwd = vim.fs.normalize(opts and opts.cwd or uv.cwd() or ".") or nil
   cwd = Snacks.git.get_root(cwd)
   return require("snacks.picker.source.proc").proc(vim.tbl_deep_extend("force", {
+    cwd = cwd,
     cmd = "git",
     args = args,
     ---@param item snacks.picker.finder.Item

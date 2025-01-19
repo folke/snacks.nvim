@@ -72,6 +72,7 @@ local M = {}
 ---@field layout? snacks.picker.layout.Config|string|{}|fun(source:string):(snacks.picker.layout.Config|string)
 ---@field icons? snacks.picker.icons
 ---@field prompt? string prompt text / icon
+---@field title? string defaults to a capitalized source name
 --- Preset options
 ---@field previewers? snacks.picker.previewers.Config|{}
 ---@field formatters? snacks.picker.formatters.Config|{}
@@ -183,6 +184,7 @@ local defaults = {
         ["<c-q>"] = { "qflist", mode = { "i", "n" } },
         ["<a-i>"] = { "toggle_ignored", mode = { "i", "n" } },
         ["<a-h>"] = { "toggle_hidden", mode = { "i", "n" } },
+        ["<a-f>"] = { "toggle_follow", mode = { "i", "n" } },
       },
       b = {
         minipairs_disable = true,
@@ -223,6 +225,10 @@ local defaults = {
         ["<a-w>"] = "cycle_win",
         ["<Esc>"] = "close",
       },
+      wo = {
+        conceallevel = 2,
+        concealcursor = "nvc",
+      },
     },
     -- preview window
     preview = {
@@ -251,6 +257,7 @@ local defaults = {
       live        = "󰐰 ",
       hidden      = "h",
       ignored     = "i",
+      follow      = "f",
       selected    = "● ",
       unselected  = "○ ",
       -- selected = " ",
