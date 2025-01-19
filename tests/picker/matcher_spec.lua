@@ -74,7 +74,7 @@ describe("fuzzy matching", function()
       local item = { text = test[1], idx = 1, score = 0 }
       local score = matcher:match(item)
       assert(score and score > 0, "no match found")
-      local positions = matcher:positions(item)
+      local positions = matcher:positions(item).text
       assert.are.same(test[3], positions)
     end)
   end

@@ -176,10 +176,14 @@ function M:update()
     height = vim.o.lines,
   })
 
-  local update_wins = {} ---@type snacks.win[]
   for _, win in pairs(self:get_wins()) do
     if win:valid() then
-      table.insert(update_wins, win)
+      -- update windows with eventignore=all
+      -- to fix issues with syntax being reset
+      local ei = vim.o.eventignore
+      vim.o.eventignore = "all"
+      win:update()
+      vim.o.eventignore = ei
     else
       win:show()
     end
@@ -188,16 +192,6 @@ function M:update()
     if not self:is_enabled(w) and win:win_valid() then
       win:close()
     end
-  end
-  if #update_wins > 0 then
-    -- update windows with eventignore=all
-    -- to fix issues with syntax being reset
-    local ei = vim.o.eventignore
-    vim.o.eventignore = "all"
-    for _, win in ipairs(update_wins) do
-      win:update()
-    end
-    vim.o.eventignore = ei
   end
   if self.opts.on_update then
     self.opts.on_update(self)

@@ -250,10 +250,10 @@ function M.colorscheme(ctx)
     ctx.preview.state.colorscheme = vim.g.colors_name or "default"
     ctx.preview.state.background = vim.o.background
     ctx.preview.win:on("WinClosed", function()
-      if not ctx.preview.state.colorscheme then
-        return
-      end
       vim.schedule(function()
+        if not ctx.preview.state.colorscheme then
+          return
+        end
         vim.cmd("colorscheme " .. ctx.preview.state.colorscheme)
         vim.o.background = ctx.preview.state.background
       end)

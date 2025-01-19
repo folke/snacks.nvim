@@ -126,7 +126,7 @@ Snacks.toggle.new(...)
 
 ```lua
 ---@param option string
----@param opts? snacks.toggle.Config | {on?: unknown, off?: unknown}
+---@param opts? snacks.toggle.Config | {on?: unknown, off?: unknown, global?: boolean}
 Snacks.toggle.option(option, opts)
 ```
 

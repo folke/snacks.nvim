@@ -276,7 +276,7 @@ function M.registers()
         reg = reg,
         label = reg,
         data = value,
-        value = value,
+        value = value:gsub("\n", "\\n"):gsub("\r", "\\r"),
         preview = {
           text = value,
           ft = "text",

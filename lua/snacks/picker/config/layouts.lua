@@ -11,12 +11,11 @@ M.default = {
     {
       box = "vertical",
       border = "rounded",
-      title = "{source} {live}",
-      title_pos = "center",
+      title = "{source} {live} {flags}",
       { win = "input", height = 1, border = "bottom" },
       { win = "list", border = "none" },
     },
-    { win = "preview", border = "rounded", width = 0.5 },
+    { win = "preview", title = "{preview}", border = "rounded", width = 0.5 },
   },
 }
 
@@ -31,13 +30,13 @@ M.telescope = {
     {
       box = "vertical",
       { win = "list", title = " Results ", title_pos = "center", border = "rounded" },
-      { win = "input", height = 1, border = "rounded", title = "{source} {live}", title_pos = "center" },
+      { win = "input", height = 1, border = "rounded", title = "{source} {live} {flags}", title_pos = "center" },
     },
     {
       win = "preview",
+      title = "{preview:Preview}",
       width = 0.45,
       border = "rounded",
-      title = " Preview ",
       title_pos = "center",
     },
   },
@@ -51,13 +50,13 @@ M.ivy = {
     width = 0,
     height = 0.4,
     border = "top",
-    title = " {source} {live}",
+    title = " {source} {live} {flags}",
     title_pos = "left",
     { win = "input", height = 1, border = "bottom" },
     {
       box = "horizontal",
       { win = "list", border = "none" },
-      { win = "preview", width = 0.6, border = "left" },
+      { win = "preview", title = "{preview}", width = 0.6, border = "left" },
     },
   },
 }
@@ -71,11 +70,11 @@ M.dropdown = {
     height = 0.8,
     border = "none",
     box = "vertical",
-    { win = "preview", height = 0.4, border = "rounded" },
+    { win = "preview", title = "{preview}", height = 0.4, border = "rounded" },
     {
       box = "vertical",
       border = "rounded",
-      title = "{source} {live}",
+      title = "{source} {live} {flags}",
       title_pos = "center",
       { win = "input", height = 1, border = "bottom" },
       { win = "list", border = "none" },
@@ -92,11 +91,11 @@ M.vertical = {
     min_height = 30,
     box = "vertical",
     border = "rounded",
-    title = "{source} {live}",
+    title = "{source} {live} {flags}",
     title_pos = "center",
     { win = "input", height = 1, border = "bottom" },
     { win = "list", border = "none" },
-    { win = "preview", height = 0.4, border = "top" },
+    { win = "preview", title = "{preview}", height = 0.4, border = "top" },
   },
 }
 
@@ -114,7 +113,7 @@ M.select = {
     title_pos = "center",
     { win = "input", height = 1, border = "bottom" },
     { win = "list", border = "none" },
-    { win = "preview", height = 0.4, border = "top" },
+    { win = "preview", title = "{preview}", height = 0.4, border = "top" },
   },
 }
 
@@ -128,9 +127,9 @@ M.vscode = {
     height = 0.4,
     border = "none",
     box = "vertical",
-    { win = "input", height = 1, border = "rounded", title = "{source} {live}", title_pos = "center" },
+    { win = "input", height = 1, border = "rounded", title = "{source} {live} {flags}", title_pos = "center" },
     { win = "list", border = "hpad" },
-    { win = "preview", border = "rounded" },
+    { win = "preview", title = "{preview}", border = "rounded" },
   },
 }
 

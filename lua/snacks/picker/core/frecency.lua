@@ -27,7 +27,13 @@ M.store = nil
 function M.setup()
   if
     not pcall(function()
-      M.store = require("snacks.picker.util.db").new(store_file .. ".sqlite3", "number")
+      local db = require("snacks.picker.util.db").new(store_file .. ".sqlite3", "number")
+      M.store = db
+      -- Cleanup old entries
+      local cutoff = db:prepare("SELECT value FROM data ORDER BY value DESC LIMIT 1 OFFSET ?;")
+      if cutoff:exec({ MAX_STORE_SIZE - 1 }) == 100 then -- 100 == SQLITE_ROW
+        db:prepare("DELETE FROM data WHERE value < ?;"):exec({ cutoff:col("number") })
+      end
     end)
   then
     M.store = require("snacks.picker.util.kv").new(store_file .. ".dat", { max_size = MAX_STORE_SIZE })

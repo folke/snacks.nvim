@@ -116,6 +116,7 @@ M.diagnostics_buffer = {
 ---@field ignored? boolean show ignored files
 ---@field dirs? string[] directories to search
 ---@field follow? boolean follow symlinks
+---@field exclude? string[] exclude patterns
 M.files = {
   finder = "files",
   format = "file",
@@ -198,6 +199,7 @@ M.git_diff = {
 ---@field regex? boolean use regex search pattern (defaults to `true`)
 ---@field buffers? boolean search in open buffers
 ---@field need_search? boolean require a search pattern
+---@field exclude? string[] exclude patterns
 M.grep = {
   finder = "grep",
   format = "file",
@@ -292,6 +294,7 @@ M.lines = {
     picker.list:view(cursor[1], info.topline)
     picker:show_preview()
   end,
+  sort = { fields = { "score:desc", "idx" } },
 }
 
 -- Loclist
@@ -314,6 +317,7 @@ M.lsp_declarations = {
   format = "file",
   include_current = false,
   auto_confirm = true,
+  jump = { tagstack = true, reuse_win = true },
 }
 
 -- LSP definitions
@@ -323,6 +327,7 @@ M.lsp_definitions = {
   format = "file",
   include_current = false,
   auto_confirm = true,
+  jump = { tagstack = true, reuse_win = true },
 }
 
 -- LSP implementations
@@ -332,6 +337,7 @@ M.lsp_implementations = {
   format = "file",
   include_current = false,
   auto_confirm = true,
+  jump = { tagstack = true, reuse_win = true },
 }
 
 -- LSP references
@@ -343,6 +349,7 @@ M.lsp_references = {
   include_declaration = true,
   include_current = false,
   auto_confirm = true,
+  jump = { tagstack = true, reuse_win = true },
 }
 
 -- LSP document symbols
@@ -398,6 +405,7 @@ M.lsp_type_definitions = {
   format = "file",
   include_current = false,
   auto_confirm = true,
+  jump = { tagstack = true, reuse_win = true },
 }
 
 M.man = {
@@ -525,6 +533,8 @@ M.smart = {
   finder = "smart",
   finders = { "buffers", "recent", "files" },
   format = "file",
+  -- sort the results even when the filter is empty (frecency)
+  matcher = { sort_empty = true },
 }
 
 -- Open a project from zoxide

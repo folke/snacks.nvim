@@ -5,14 +5,28 @@ local M = {}
 local SCROLL_WHEEL_DOWN = Snacks.util.keycode("<ScrollWheelDown>")
 local SCROLL_WHEEL_UP = Snacks.util.keycode("<ScrollWheelUp>")
 
-function M.edit(picker)
-  picker:close()
-  local win = vim.api.nvim_get_current_win()
+---@class snacks.picker.jump.Action: snacks.picker.Action
+---@field cmd? string
 
-  -- save position in jump list
-  vim.api.nvim_win_call(win, function()
-    vim.cmd("normal! m'")
-  end)
+function M.jump(picker, _, action)
+  ---@cast action snacks.picker.jump.Action
+  -- if we're still in insert mode, stop it and schedule
+  -- it to prevent issues with cursor position
+  if vim.fn.mode():sub(1, 1) == "i" then
+    vim.cmd.stopinsert()
+    vim.schedule(function()
+      M.jump(picker, _, action)
+    end)
+    return
+  end
+
+  picker:close()
+
+  if action.cmd then
+    vim.cmd(action.cmd)
+  end
+
+  local win = vim.api.nvim_get_current_win()
 
   local current_buf = vim.api.nvim_get_current_buf()
   local current_empty = vim.bo[current_buf].buftype == ""
@@ -21,7 +35,25 @@ function M.edit(picker)
     and vim.api.nvim_buf_get_lines(current_buf, 0, -1, false)[1] == ""
     and vim.api.nvim_buf_get_name(current_buf) == ""
 
+  if not current_empty then
+    -- save position in jump list
+    if picker.opts.jump.jumplist then
+      vim.api.nvim_win_call(win, function()
+        vim.cmd("normal! m'")
+      end)
+    end
+
+    -- save position in tag stack
+    if picker.opts.jump.tagstack then
+      local from = vim.fn.getpos(".")
+      from[1] = current_buf
+      local tagstack = { { tagname = vim.fn.expand("<cword>"), from = from } }
+      vim.fn.settagstack(vim.fn.win_getid(win), { items = tagstack }, "t")
+    end
+  end
+
   local items = picker:selected({ fallback = true })
+
   for _, item in ipairs(items) do
     -- load the buffer
     local buf = item.buf ---@type number
@@ -30,10 +62,14 @@ function M.edit(picker)
       buf = vim.fn.bufadd(path)
     end
 
+    -- use an existing window if possible
+    if #items == 1 and picker.opts.jump.reuse_win and buf ~= current_buf then
+      win = vim.fn.win_findbuf(buf)[1] or win
+      vim.api.nvim_set_current_win(win)
+    end
+
     if not vim.api.nvim_buf_is_loaded(buf) then
-      vim.api.nvim_buf_call(buf, function()
-        vim.cmd("edit")
-      end)
+      vim.cmd("buffer " .. buf)
       vim.bo[buf].buflisted = true
     end
 
@@ -65,9 +101,12 @@ function M.edit(picker)
   end
 end
 
-M.cancel = function() end
-
-M.confirm = M.edit
+M.cancel = "close"
+M.edit = M.jump
+M.confirm = M.jump
+M.edit_split = { action = "jump", cmd = "split" }
+M.edit_vsplit = { action = "jump", cmd = "vsplit" }
+M.edit_tab = { action = "jump", cmd = "tabnew" }
 
 function M.toggle_maximize(picker)
   picker.layout:maximize()
@@ -117,7 +156,7 @@ local function setqflist(items, opts)
       col = item.pos and item.pos[2] or 1,
       end_lnum = item.end_pos and item.end_pos[1] or nil,
       end_col = item.end_pos and item.end_pos[2] or nil,
-      text = item.text,
+      text = item.line or item.comment or item.label or item.name or item.detail or item.text,
       pattern = item.search,
       valid = true,
     }
@@ -137,6 +176,12 @@ function M.qflist(picker)
   local sel = picker:selected()
   local items = #sel > 0 and sel or picker:items()
   setqflist(items)
+end
+
+--- Send all items to the quickfix list.
+function M.qflist_all(picker)
+  picker:close()
+  setqflist(picker:items())
 end
 
 --- Send selected or all items to the location list.
@@ -159,24 +204,6 @@ end
 
 function M.history_forward(picker)
   picker:hist(true)
-end
-
-function M.edit_tab(picker)
-  picker:close()
-  vim.cmd("tabnew")
-  return picker:action("edit")
-end
-
-function M.edit_split(picker)
-  picker:close()
-  vim.cmd("split")
-  return picker:action("edit")
-end
-
-function M.edit_vsplit(picker)
-  picker:close()
-  vim.cmd("vsplit")
-  return picker:action("edit")
 end
 
 --- Toggles the selection of the current item,

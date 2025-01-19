@@ -31,7 +31,11 @@ M.config = setmetatable({}, {
   end,
 })
 
-local function can_merge(v)
+local islist = vim.islist or vim.tbl_islist
+local is_dict_like = function(v) -- has string and number keys
+  return type(v) == "table" and (vim.tbl_isempty(v) or not islist(v))
+end
+local is_dict = function(v) -- has only string keys
   return type(v) == "table" and (vim.tbl_isempty(v) or not v[1])
 end
 
@@ -44,7 +48,7 @@ function M.config.merge(...)
   local ret = select(1, ...)
   for i = 2, select("#", ...) do
     local value = select(i, ...)
-    if can_merge(ret) and can_merge(value) then
+    if is_dict_like(ret) and is_dict(value) then
       for k, v in pairs(value) do
         ret[k] = M.config.merge(ret[k], v)
       end

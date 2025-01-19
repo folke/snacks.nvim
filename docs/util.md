@@ -81,6 +81,13 @@ Snacks.util.is_transparent()
 Snacks.util.keycode(str)
 ```
 
+### `Snacks.util.normkey()`
+
+```lua
+---@param key string
+Snacks.util.normkey(key)
+```
+
 ### `Snacks.util.on_key()`
 
 ```lua

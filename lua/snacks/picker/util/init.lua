@@ -122,9 +122,21 @@ end
 ---@param str string
 ---@param data table<string, string>
 function M.tpl(str, data)
-  return (str:gsub("(%b{})", function(w)
-    return data[w:sub(2, -2)] or w
-  end))
+  return (
+    str:gsub(
+      "(%b{})",
+      ---@param w string
+      function(w)
+        local inner = w:sub(2, -2)
+        local key, default = inner:match("^(.-):(.*)$")
+        local ret = data[key or inner]
+        if ret == "" and default then
+          return default
+        end
+        return ret or w
+      end
+    )
+  )
 end
 
 ---@param str string

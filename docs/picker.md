@@ -87,7 +87,7 @@ Snacks.picker.pick({source = "files", ...})
 --- Preset options
 ---@field previewers? snacks.picker.previewers.Config|{}
 ---@field formatters? snacks.picker.formatters.Config|{}
----@field sources? snacks.picker.sources.Config|{}
+---@field sources? snacks.picker.sources.Config|{}|table<string, snacks.picker.Config|{}>
 ---@field layouts? table<string, snacks.picker.layout.Config>
 --- Actions
 ---@field actions? table<string, snacks.picker.Action.spec> actions used by keymaps
@@ -96,6 +96,7 @@ Snacks.picker.pick({source = "files", ...})
 ---@field main? snacks.picker.main.Config main editor window config
 ---@field on_change? fun(picker:snacks.Picker, item:snacks.picker.Item) called when the cursor changes
 ---@field on_show? fun(picker:snacks.Picker) called when the picker is shown
+---@field jump? snacks.picker.jump.Config|{}
 --- Other
 ---@field debug? snacks.picker.debug|{}
 {
@@ -108,11 +109,27 @@ Snacks.picker.pick({source = "files", ...})
       return vim.o.columns >= 120 and "default" or "vertical"
     end,
   },
+  ---@class snacks.picker.matcher.Config
+  matcher = {
+    fuzzy = true, -- use fuzzy matching
+    smartcase = true, -- use smartcase
+    ignorecase = true, -- use ignorecase
+    sort_empty = false, -- sort results when the search string is empty
+    filename_bonus = true, -- give bonus for matching file names (last part of the path)
+  },
+  sort = {
+    -- default sort is by score, text length and index
+    fields = { "score:desc", "#text", "idx" },
+  },
   ui_select = true, -- replace `vim.ui.select` with the snacks picker
   ---@class snacks.picker.formatters.Config
   formatters = {
     file = {
       filename_first = false, -- display filename before the file path
+    },
+    selected = {
+      show_always = false, -- only show the selected column when there are multiple selections
+      unselected = true, -- use the unselected icon for unselected items
     },
   },
   ---@class snacks.picker.previewers.Config
@@ -127,6 +144,12 @@ Snacks.picker.pick({source = "files", ...})
     },
     man_pager = nil, ---@type string? MANPAGER env to use for `man` preview
   },
+  ---@class snacks.picker.jump.Config
+  jump = {
+    jumplist = true, -- save the current position in the jumplist
+    tagstack = false, -- save the current position in the tagstack
+    reuse_win = false, -- reuse an existing window if the buffer is already open
+  },
   win = {
     -- input window
     input = {
@@ -136,7 +159,7 @@ Snacks.picker.pick({source = "files", ...})
         -- to close the picker on ESC instead of going to normal mode,
         -- add the following keymap to your config
         -- ["<Esc>"] = { "close", mode = { "n", "i" } },
-        ["<CR>"] = "confirm",
+        ["<CR>"] = { "confirm", mode = { "n", "i" } },
         ["G"] = "list_bottom",
         ["gg"] = "list_top",
         ["j"] = "list_down",
@@ -237,7 +260,10 @@ Snacks.picker.pick({source = "files", ...})
     },
     ui = {
       live        = "󰐰 ",
+      hidden      = "h",
+      ignored     = "i",
       selected    = "● ",
+      unselected  = "○ ",
       -- selected = " ",
     },
     git = {
@@ -285,7 +311,7 @@ Snacks.picker.pick({source = "files", ...})
       Text          = " ",
       TypeParameter = " ",
       Unit          = " ",
-      Uknown        = " ",
+      Unknown        = " ",
       Value         = " ",
       Variable      = "󰀫 ",
     },
@@ -398,8 +424,13 @@ Snacks.picker.pick({source = "files", ...})
 ## 📚 Types
 
 ```lua
----@alias snacks.picker.Extmark vim.api.keyset.set_extmark|{col:number, row?:number}
----@alias snacks.picker.Text {[1]:string, [2]:string?, virtual?:boolean}
+---@class snacks.picker.jump.Action: snacks.picker.Action
+---@field cmd? string
+```
+
+```lua
+---@alias snacks.picker.Extmark vim.api.keyset.set_extmark|{col:number, row?:number, field?:string}
+---@alias snacks.picker.Text {[1]:string, [2]:string?, virtual?:boolean, field?:string}
 ---@alias snacks.picker.Highlight snacks.picker.Text|snacks.picker.Extmark
 ---@alias snacks.picker.format fun(item:snacks.picker.Item, picker:snacks.Picker):snacks.picker.Highlight[]
 ---@alias snacks.picker.preview fun(ctx: snacks.picker.preview.ctx):boolean?
@@ -414,13 +445,6 @@ Generic filter used by finders to pre-filter items
 ---@field buf? boolean|number only show items for the current or given buffer
 ---@field paths? table<string, boolean> only show items that include or exclude the given paths
 ---@field filter? fun(item:snacks.picker.finder.Item):boolean custom filter function
-```
-
-```lua
----@class snacks.picker.matcher.Config
----@field fuzzy? boolean use fuzzy matching (defaults to true)
----@field smartcase? boolean use smartcase (defaults to true)
----@field ignorecase? boolean use ignorecase (defaults to true)
 ```
 
 This is only used when using `opts.preview = "preview"`.
@@ -680,6 +704,7 @@ Neovim commands
 ---@field ignored? boolean show ignored files
 ---@field dirs? string[] directories to search
 ---@field follow? boolean follow symlinks
+---@field exclude? string[] exclude patterns
 {
   finder = "files",
   format = "file",
@@ -792,6 +817,7 @@ Git log
 ---@field regex? boolean use regex search pattern (defaults to `true`)
 ---@field buffers? boolean search in open buffers
 ---@field need_search? boolean require a search pattern
+---@field exclude? string[] exclude patterns
 {
   finder = "grep",
   format = "file",
@@ -916,6 +942,7 @@ Search lines in the current buffer
     picker.list:view(cursor[1], info.topline)
     picker:show_preview()
   end,
+  sort = { fields = { "score:desc", "idx" } },
 }
 ```
 
@@ -943,6 +970,7 @@ LSP declarations
   format = "file",
   include_current = false,
   auto_confirm = true,
+  jump = { tagstack = true, reuse_win = true },
 }
 ```
 
@@ -957,6 +985,7 @@ LSP definitions
   format = "file",
   include_current = false,
   auto_confirm = true,
+  jump = { tagstack = true, reuse_win = true },
 }
 ```
 
@@ -971,6 +1000,7 @@ LSP implementations
   format = "file",
   include_current = false,
   auto_confirm = true,
+  jump = { tagstack = true, reuse_win = true },
 }
 ```
 
@@ -987,6 +1017,7 @@ LSP references
   include_declaration = true,
   include_current = false,
   auto_confirm = true,
+  jump = { tagstack = true, reuse_win = true },
 }
 ```
 
@@ -1052,6 +1083,7 @@ LSP type definitions
   format = "file",
   include_current = false,
   auto_confirm = true,
+  jump = { tagstack = true, reuse_win = true },
 }
 ```
 
@@ -1245,6 +1277,8 @@ Neovim search history
   finder = "smart",
   finders = { "buffers", "recent", "files" },
   format = "file",
+  -- sort the results even when the filter is empty (frecency)
+  matcher = { sort_empty = true },
 }
 ```
 
@@ -1279,12 +1313,11 @@ Open a project from zoxide
     {
       box = "vertical",
       border = "rounded",
-      title = "{source} {live}",
-      title_pos = "center",
+      title = "{source} {live} {flags}",
       { win = "input", height = 1, border = "bottom" },
       { win = "list", border = "none" },
     },
-    { win = "preview", border = "rounded", width = 0.5 },
+    { win = "preview", title = "{preview}", border = "rounded", width = 0.5 },
   },
 }
 ```
@@ -1301,11 +1334,11 @@ Open a project from zoxide
     height = 0.8,
     border = "none",
     box = "vertical",
-    { win = "preview", height = 0.4, border = "rounded" },
+    { win = "preview", title = "{preview}", height = 0.4, border = "rounded" },
     {
       box = "vertical",
       border = "rounded",
-      title = "{source} {live}",
+      title = "{source} {live} {flags}",
       title_pos = "center",
       { win = "input", height = 1, border = "bottom" },
       { win = "list", border = "none" },
@@ -1325,13 +1358,13 @@ Open a project from zoxide
     width = 0,
     height = 0.4,
     border = "top",
-    title = " {source} {live}",
+    title = " {source} {live} {flags}",
     title_pos = "left",
     { win = "input", height = 1, border = "bottom" },
     {
       box = "horizontal",
       { win = "list", border = "none" },
-      { win = "preview", width = 0.6, border = "left" },
+      { win = "preview", title = "{preview}", width = 0.6, border = "left" },
     },
   },
 }
@@ -1354,7 +1387,7 @@ Open a project from zoxide
     title_pos = "center",
     { win = "input", height = 1, border = "bottom" },
     { win = "list", border = "none" },
-    { win = "preview", height = 0.4, border = "top" },
+    { win = "preview", title = "{preview}", height = 0.4, border = "top" },
   },
 }
 ```
@@ -1373,13 +1406,13 @@ Open a project from zoxide
     {
       box = "vertical",
       { win = "list", title = " Results ", title_pos = "center", border = "rounded" },
-      { win = "input", height = 1, border = "rounded", title = "{source} {live}", title_pos = "center" },
+      { win = "input", height = 1, border = "rounded", title = "{source} {live} {flags}", title_pos = "center" },
     },
     {
       win = "preview",
+      title = "{preview:Preview}",
       width = 0.45,
       border = "rounded",
-      title = " Preview ",
       title_pos = "center",
     },
   },
@@ -1398,11 +1431,11 @@ Open a project from zoxide
     min_height = 30,
     box = "vertical",
     border = "rounded",
-    title = "{source} {live}",
+    title = "{source} {live} {flags}",
     title_pos = "center",
     { win = "input", height = 1, border = "bottom" },
     { win = "list", border = "none" },
-    { win = "preview", height = 0.4, border = "top" },
+    { win = "preview", title = "{preview}", height = 0.4, border = "top" },
   },
 }
 ```
@@ -1420,9 +1453,9 @@ Open a project from zoxide
     height = 0.4,
     border = "none",
     box = "vertical",
-    { win = "input", height = 1, border = "rounded", title = "{source} {live}", title_pos = "center" },
+    { win = "input", height = 1, border = "rounded", title = "{source} {live} {flags}", title_pos = "center" },
     { win = "list", border = "hpad" },
-    { win = "preview", border = "rounded" },
+    { win = "preview", title = "{preview}", border = "rounded" },
   },
 }
 ```
@@ -1458,30 +1491,6 @@ Snacks.picker.actions.copy(_, item)
 
 ```lua
 Snacks.picker.actions.cycle_win(picker)
-```
-
-### `Snacks.picker.actions.edit()`
-
-```lua
-Snacks.picker.actions.edit(picker)
-```
-
-### `Snacks.picker.actions.edit_split()`
-
-```lua
-Snacks.picker.actions.edit_split(picker)
-```
-
-### `Snacks.picker.actions.edit_tab()`
-
-```lua
-Snacks.picker.actions.edit_tab(picker)
-```
-
-### `Snacks.picker.actions.edit_vsplit()`
-
-```lua
-Snacks.picker.actions.edit_vsplit(picker)
 ```
 
 ### `Snacks.picker.actions.focus_input()`
@@ -1530,6 +1539,12 @@ Snacks.picker.actions.history_forward(picker)
 
 ```lua
 Snacks.picker.actions.inspect(picker, item)
+```
+
+### `Snacks.picker.actions.jump()`
+
+```lua
+Snacks.picker.actions.jump(picker, _, action)
 ```
 
 ### `Snacks.picker.actions.list_bottom()`
@@ -1632,6 +1647,14 @@ Send selected or all items to the quickfix list.
 
 ```lua
 Snacks.picker.actions.qflist(picker)
+```
+
+### `Snacks.picker.actions.qflist_all()`
+
+Send all items to the quickfix list.
+
+```lua
+Snacks.picker.actions.qflist_all(picker)
 ```
 
 ### `Snacks.picker.actions.search()`
@@ -1852,6 +1875,15 @@ or a custom layout configuration.
 ```lua
 ---@param layout? string|snacks.picker.layout.Config
 picker:set_layout(layout)
+```
+
+### `picker:show_preview()`
+
+Show the preview. Show instantly when no item is yet in the preview,
+otherwise throttle the preview.
+
+```lua
+picker:show_preview()
 ```
 
 ### `picker:word()`

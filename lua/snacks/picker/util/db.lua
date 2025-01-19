@@ -27,8 +27,9 @@ local sqlite = ffi.load("sqlite3")
 ---@class snacks.picker.db
 ---@field type type
 ---@field db sqlite3*
----@field insert sqlite3_stmt*
----@field select sqlite3_stmt*
+---@field handle ffi.cdata*
+---@field insert snacks.picker.db.Query
+---@field select snacks.picker.db.Query
 local M = {}
 M.__index = M
 
@@ -49,6 +50,72 @@ local function bind(stmt, idx, value, value_type)
   end
 end
 
+---@class snacks.picker.db.Query
+---@field stmt sqlite3_stmt*
+---@field handle ffi.cdata*
+local Query = {}
+Query.__index = Query
+
+function Query.new(db, query)
+  local self = setmetatable({}, Query)
+  local stmt = ffi.new("sqlite3_stmt*[1]")
+  local code = sqlite.sqlite3_prepare_v2(db.db, query, #query, stmt, nil) --[[@as number]]
+  if code ~= 0 then
+    error("Failed to prepare statement: " .. code)
+  end
+  self.handle = stmt
+  ffi.gc(stmt, function()
+    self:close()
+  end)
+  self.stmt = stmt[0]
+  return self
+end
+
+function Query:reset()
+  return sqlite.sqlite3_reset(self.stmt)
+end
+
+---@param binds? any[]
+function Query:exec(binds)
+  self:reset()
+  for i, value in ipairs(binds or {}) do
+    if bind(self.stmt, i, value) ~= 0 then
+      error(("Failed to bind %d=%s"):format(i, value))
+    end
+  end
+  return self:step()
+end
+
+function Query:step()
+  return sqlite.sqlite3_step(self.stmt)
+end
+
+function Query:close()
+  if self.stmt then
+    sqlite.sqlite3_finalize(self.stmt)
+    self.stmt = nil
+  end
+end
+
+function Query:bind(idx, value)
+  return bind(self.stmt, idx, value)
+end
+
+---@param idx? number
+---@param value_type type
+function Query:col(value_type, idx)
+  idx = idx or 0
+  local ret = ffi.string(sqlite.sqlite3_column_text(self.stmt, idx))
+  if value_type == "string" then
+    return ret
+  elseif value_type == "number" then
+    return tonumber(ret)
+  elseif value_type == "boolean" then
+    return ret == "1"
+  end
+  error("Unsupported value type: " .. value_type)
+end
+
 function M.new(path, value_type)
   local self = setmetatable({}, M)
   local handle = ffi.new("sqlite3*[1]")
@@ -56,6 +123,7 @@ function M.new(path, value_type)
     error("Failed to open database: " .. path)
   end
 
+  self.handle = handle
   self.db = handle[0]
   self.type = value_type or "number"
   self:exec("PRAGMA journal_mode=WAL")
@@ -83,36 +151,20 @@ function M.new(path, value_type)
 end
 
 ---@param query string
----@return sqlite3_stmt*
 function M:prepare(query)
-  local stmt = ffi.new("sqlite3_stmt*[1]")
-  if sqlite.sqlite3_prepare_v2(self.db, query, #query, stmt, nil) ~= 0 then
-    error("Failed to prepare statement")
-  end
-  ffi.gc(stmt, function()
-    sqlite.sqlite3_finalize(stmt[0])
-  end)
-  return stmt[0]
+  return Query.new(self, query)
 end
 
 function M:close()
   if self.db then
     sqlite.sqlite3_close(self.db)
     self.db = nil
+    self.handle = nil
   end
 end
 
 function M:set(key, value)
-  local stmt = self.insert
-  sqlite.sqlite3_reset(stmt)
-  -- Bind parameters and execute
-  if bind(stmt, 1, key) ~= 0 then
-    error("Failed to bind key")
-  end
-  if bind(stmt, 2, value, self.type) ~= 0 then
-    error("Failed to bind value")
-  end
-  if sqlite.sqlite3_step(stmt) ~= 101 then -- 101 == SQLITE_DONE
+  if self.insert:exec({ key, value }) ~= 101 then -- 101 == SQLITE_DONE
     error("Failed to execute insert statement")
   end
 end
@@ -138,21 +190,18 @@ function M:rollback()
   self:exec("ROLLBACK")
 end
 
+---@param key string
 function M:get(key)
-  local stmt = self.select
-  sqlite.sqlite3_reset(stmt)
-  bind(stmt, 1, key)
-
-  local ret
-  if sqlite.sqlite3_step(stmt) == 100 then -- 100 == SQLITE_ROW
-    ret = ffi.string(sqlite.sqlite3_column_text(stmt, 0))
-    if self.type == "number" then
-      ret = tonumber(ret)
-    elseif self.type == "boolean" then
-      ret = ret == "1"
-    end
+  if self.select:exec({ key }) == 100 then -- 100 == SQLITE_ROW
+    return self.select:col(self.type)
   end
-  return ret
+end
+
+function M:count()
+  local query = self:prepare("SELECT COUNT(*) FROM data;")
+  if query:exec() == 100 then
+    return query:col("number")
+  end
 end
 
 return M

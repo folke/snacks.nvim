@@ -6,6 +6,7 @@ M.meta = {
 }
 
 local uv = vim.uv or vim.loop
+local key_cache = {} ---@type table<string, string>
 
 ---@alias snacks.util.hl table<string, string|vim.api.keyset.highlight>
 
@@ -277,6 +278,21 @@ function M.throttle(fn, opts)
       return trailing and run()
     end)
   end
+end
+
+---@param key string
+function M.normkey(key)
+  if key_cache[key] then
+    return key_cache[key]
+  end
+  local k = key
+  key = key:gsub("<[aAmMcC]%-.>", string.lower)
+  if not key:match("^<[aAmMcC]%-.>$") then
+    key = vim.fn.keytrans(M.keycode(key))
+  end
+  key_cache[k] = key
+  key_cache[key] = key
+  return key
 end
 
 return M

@@ -6,6 +6,7 @@
 ---@field main? number
 ---@field win_opts {main: snacks.win.Config, layout: snacks.win.Config, win: snacks.win.Config}
 ---@field winhl string
+---@field title? string
 local M = {}
 M.__index = M
 
@@ -123,14 +124,16 @@ function M:show(picker)
   end
 end
 
----@param title string
+---@param title? string
 function M:set_title(title)
-  self.win:set_title(title)
+  self.title = title
 end
 
 ---@param wo vim.wo|{}
 function M:wo(wo)
-  Snacks.util.wo(self.win.win, wo)
+  if self.win:win_valid() then
+    Snacks.util.wo(self.win.win, wo)
+  end
 end
 
 ---@param buf? number
@@ -148,7 +151,7 @@ function M:reset()
   else
     self.win:scratch()
   end
-  self:set_title("")
+  self:set_title()
   vim.treesitter.stop(self.win.buf)
   vim.bo[self.win.buf].modifiable = true
   vim.api.nvim_buf_set_lines(self.win.buf, 0, -1, false, {})

@@ -17,8 +17,10 @@ function M.new(path, opts)
   self.data = {}
   self.path = path
   self.max_size = opts and opts.max_size or 10000
+  ---@param a snacks.picker.KeyValue.entry
+  ---@param b snacks.picker.KeyValue.entry
   self.cmp = opts and opts.cmp or function(a, b)
-    return a < b
+    return a.value > b.value
   end
   self.loaded_time = os.time()
   local fd = io.open(path, "rb")
@@ -47,7 +49,7 @@ function M:close()
   if self.loaded_time > 0 and stat and stat.mtime.sec > self.loaded_time then
     return
   end
-  local entries = {} ---@type {key:string, value:number}[]
+  local entries = {} ---@type snacks.picker.KeyValue.entry[]
   for k, v in pairs(self.data) do
     table.insert(entries, { key = k, value = v })
   end

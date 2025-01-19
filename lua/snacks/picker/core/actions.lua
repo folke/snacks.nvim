@@ -1,12 +1,13 @@
 local M = {}
 
----@alias snacks.picker.Action.fn fun(self: snacks.Picker, item?:snacks.picker.Item):(boolean|string?)
----@alias snacks.picker.Action.spec.one string|snacks.picker.Action|snacks.picker.Action.fn
+---@alias snacks.picker.Action.fn fun(self: snacks.Picker, item?:snacks.picker.Item, action?:snacks.picker.Action):(boolean|string?)
+---@alias snacks.picker.Action.spec.one string|snacks.picker.Action|snacks.picker.Action.fn|{action?:snacks.picker.Action.spec.one}
 ---@alias snacks.picker.Action.spec snacks.picker.Action.spec.one|snacks.picker.Action.spec.one[]
 
 ---@class snacks.picker.Action
 ---@field action snacks.picker.Action.fn
 ---@field desc? string
+---@field name? string
 
 ---@param picker snacks.Picker
 function M.get(picker)
@@ -24,7 +25,7 @@ function M.get(picker)
       if not p then
         return
       end
-      t[k] = M.resolve(k, p, k) or false
+      t[k] = M.wrap(k, p, k) or false
       return rawget(t, k)
     end,
   })
@@ -34,17 +35,33 @@ end
 ---@param action snacks.picker.Action.spec
 ---@param picker snacks.Picker
 ---@param name? string
----@return snacks.picker.Action?
+---@return snacks.win.Action?
+function M.wrap(action, picker, name)
+  action = M.resolve(action, picker, name)
+  action.name = name
+  return {
+    name = name,
+    action = function()
+      return action.action(picker, picker:current(), action)
+    end,
+    desc = action.desc,
+  }
+end
+
+---@param action snacks.picker.Action.spec
+---@param picker snacks.Picker
+---@param name? string
+---@return snacks.picker.Action
 function M.resolve(action, picker, name)
   if not action then
     assert(name, "Missing action without name")
     local fn, desc = picker.input.win[name], name
     return {
-      action = function()
+      action = function(p)
         if not fn then
           return name
         end
-        fn(picker.input.win)
+        fn(p.input.win)
       end,
       desc = desc,
     }
@@ -60,9 +77,9 @@ function M.resolve(action, picker, name)
       return M.resolve(a, picker)
     end, action)
     return {
-      action = function(_, item)
+      action = function(p, i, aa)
         for _, a in ipairs(actions) do
-          a.action(picker, item)
+          a.action(p, i, aa)
         end
       end,
       desc = table.concat(
@@ -72,17 +89,18 @@ function M.resolve(action, picker, name)
         ", "
       ),
     }
+  elseif type(action) == "table" then
+    if type(action.action) ~= "function" then
+      action = vim.deepcopy(action)
+      action.action = M.resolve(action.action, picker).action
+    end
+    ---@cast action snacks.picker.Action
+    return action
   end
-  action = type(action) == "function" and {
+  assert(type(action) == "function", "Invalid action")
+  return {
     action = action,
     desc = name or nil,
-  } or action
-  ---@cast action snacks.picker.Action
-  return {
-    action = function()
-      return action.action(picker, picker:current())
-    end,
-    desc = action.desc,
   }
 end
 

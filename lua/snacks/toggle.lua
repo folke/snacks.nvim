@@ -138,7 +138,7 @@ function Toggle:_wk(keys, mode)
 end
 
 ---@param option string
----@param opts? snacks.toggle.Config | {on?: unknown, off?: unknown}
+---@param opts? snacks.toggle.Config | {on?: unknown, off?: unknown, global?: boolean}
 function M.option(option, opts)
   opts = opts or {}
   local on = opts.on == nil and true or opts.on
@@ -147,9 +147,16 @@ function M.option(option, opts)
     id = option,
     name = option,
     get = function()
+      if opts.global then
+        return vim.opt[option]:get() == on
+      end
       return vim.opt_local[option]:get() == on
     end,
     set = function(state)
+      if opts.global then
+        vim.opt[option] = state and on or off
+        return
+      end
       vim.opt_local[option] = state and on or off
     end,
   }, opts)

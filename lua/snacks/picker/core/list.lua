@@ -221,17 +221,19 @@ function M:pause(ms)
   end, ms)
 end
 
-function M:add(item)
+---@param item snacks.picker.Item
+---@param sort? boolean
+function M:add(item, sort)
   local idx = #self.items + 1
   self.items[idx] = item
-  local added, prev = self.topk:add(item)
-  if added then
-    self.dirty = true
+  if sort ~= false then
+    local _added, prev = self.topk:add(item)
     if prev then
       -- replace with previous item, since new item is now in topk
       self.items[idx] = prev
     end
-  elseif not self.dirty then
+  end
+  if not self.dirty then
     self.dirty = idx >= self.top and idx <= self.top + (self.state.height or 50)
   end
 end
@@ -314,6 +316,11 @@ function M:set_selected(items)
   self:update()
 end
 
+---@param item snacks.picker.Item
+function M:is_selected(item)
+  return self.selected_map[self:select_key(item)] ~= nil
+end
+
 function M:unpause()
   if not self.paused then
     return
@@ -324,100 +331,89 @@ end
 
 ---@param item snacks.picker.Item
 function M:format(item)
-  local line = self.picker.format(item, self.picker)
-  local parts = {} ---@type string[]
-  local ret = {} ---@type snacks.picker.Extmark[]
-  local selected = self.selected_map[self:select_key(item)] ~= nil
-
-  local selw = vim.api.nvim_strwidth(self.picker.opts.icons.ui.selected)
-  parts[#parts + 1] = string.rep(" ", selw)
-  if selected then
-    ret[#ret + 1] = {
-      virt_text = { {
-        self.picker.opts.icons.ui.selected or parts[1],
-        "SnacksPickerSelected",
-      } },
-      virt_text_pos = "overlay",
-      line_hl_group = "SnacksPickerSelectedLine",
-      col = 0,
-      hl_mode = "combine",
-    }
+  -- Add selected and debug info
+  local prefix = {} ---@type snacks.picker.Highlight[]
+  if #self.selected > 0 or self.picker.opts.formatters.selected.show_always then
+    vim.list_extend(prefix, Snacks.picker.format.selected(item, self.picker))
+  else
+    prefix[#prefix + 1] = { " " }
   end
+  if self.picker.opts.debug.scores then
+    vim.list_extend(prefix, Snacks.picker.format.debug(item, self.picker))
+  end
+  local text, extmarks = Snacks.picker.highlight.to_text(prefix)
 
+  -- Add the formatted item
+  local line = self.picker.format(item, self.picker)
   while #line > 0 and type(line[#line][1]) == "string" and line[#line][1]:find("^%s*$") do
     table.remove(line)
   end
+  local line_text, line_extmarks = Snacks.picker.highlight.to_text(line, { offset = #text })
+  vim.list_extend(extmarks, line_extmarks)
+  text = text .. line_text
 
-  if self.picker.opts.debug.scores then
-    local score = item.score and ("%.2f "):format(item.score) or "nil"
-    parts[#parts + 1] = score
-    ret[#ret + 1] = {
-      col = selw,
-      end_col = selw + vim.api.nvim_strwidth(score),
-      hl_group = "Number",
-    }
-    selw = selw + vim.api.nvim_strwidth(score)
-  end
-
-  local col = selw
-  for _, text in ipairs(line) do
-    if type(text[1]) == "string" then
-      ---@cast text snacks.picker.Text
-      if text.virtual then
-        table.insert(ret, {
-          col = col,
-          virt_text = { { text[1], text[2] } },
-          virt_text_pos = "overlay",
-          hl_mode = "combine",
+  -- Highlight match positions for field patterns
+  local fields = self.matcher:fields()
+  for _, extmark in ipairs(extmarks) do
+    if extmark.col and extmark.end_col and extmark.field and vim.tbl_contains(fields, extmark.field) then
+      local field = extmark.field --[[@as string]]
+      ---@type snacks.picker.Item
+      local it = {
+        idx = 1,
+        score = 0,
+        file = item.file,
+        text = "",
+      }
+      it[field] = text:sub(extmark.col + 1, extmark.end_col)
+      local positions = self.matcher:positions(it)
+      for _, pos in ipairs(positions[field] or {}) do
+        table.insert(extmarks, {
+          col = pos - 1 + extmark.col,
+          end_col = pos + extmark.col,
+          hl_group = "SnacksPickerMatch",
         })
-        parts[#parts + 1] = string.rep(" ", vim.api.nvim_strwidth(text[1]))
-      else
-        table.insert(ret, {
-          col = col,
-          end_col = col + #text[1],
-          hl_group = text[2],
-        })
-        parts[#parts + 1] = text[1]
       end
-      col = col + #parts[#parts]
-    else
-      text = vim.deepcopy(text)
-      ---@cast text snacks.picker.Extmark
-      -- fix extmark col and end_col
-      text.col = text.col + selw
-      if text.end_col then
-        text.end_col = text.end_col + selw
-      end
-      table.insert(ret, text)
     end
   end
-  local str = table.concat(parts, ""):gsub("\n", " ")
-  local positions = self.matcher:positions({ text = str:gsub("%s*$", ""), idx = 1, score = 0 })
-  for _, pos in ipairs(positions) do
-    table.insert(ret, {
+
+  -- Highlight match positions for text
+  local positions = self.matcher:positions({ text = text:gsub("%s*$", ""), idx = 1, score = 0, file = item.file })
+  for _, pos in ipairs(positions.text or {}) do
+    table.insert(extmarks, {
       col = pos - 1,
       end_col = pos,
       hl_group = "SnacksPickerMatch",
     })
   end
-  return str, ret
+  return text, extmarks
 end
 
 ---@param item snacks.picker.Item
 ---@param row number
 function M:_render(item, row)
   local text, extmarks = self:format(item)
+  text = text:gsub("\n", " ")
   vim.api.nvim_buf_set_lines(self.win.buf, row - 1, row, false, { text })
   for _, extmark in ipairs(extmarks) do
     local col = extmark.col
     extmark.col = nil
     extmark.row = nil
-    vim.api.nvim_buf_set_extmark(self.win.buf, ns, row - 1, col, extmark)
+    extmark.field = nil
+    local ok, err = pcall(vim.api.nvim_buf_set_extmark, self.win.buf, ns, row - 1, col, extmark)
+    if not ok then
+      Snacks.notify.error(
+        "Failed to set extmark. This should not happen. Please report.\n"
+          .. err
+          .. "\n```lua\n"
+          .. vim.inspect(extmark)
+          .. "\n```"
+      )
+    end
   end
 end
 
 function M:update_cursorline()
-  if self.win.win and vim.api.nvim_win_is_valid(self.win.win) then
+  if self.win:win_valid() then
     Snacks.util.wo(self.win.win, { cursorline = self:count() > 0 })
   end
 end

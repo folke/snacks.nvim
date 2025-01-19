@@ -364,7 +364,7 @@ win:scroll(up)
 ### `win:set_title()`
 
 ```lua
----@param title string
+---@param title string|{[1]:string, [2]:string}[]
 ---@param pos? "center"|"left"|"right"
 win:set_title(title, pos)
 ```

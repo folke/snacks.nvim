@@ -26,6 +26,11 @@ local function get_cmd(opts, filter)
 
   args = vim.deepcopy(args)
 
+  -- exclude
+  for _, e in ipairs(opts.exclude or {}) do
+    vim.list_extend(args, { "-g", "!" .. e })
+  end
+
   -- hidden
   if opts.hidden then
     table.insert(args, "--hidden")

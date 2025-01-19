@@ -80,7 +80,7 @@ function M.proc(opts)
       while from <= #data do
         local nl = data:find("\n", from, true)
         if nl then
-          local cr = data:byte(nl - 2, nl - 2) == 13 -- \r
+          local cr = data:byte(nl - 1, nl - 1) == 13 -- \r
           local line = data:sub(from, nl - (cr and 2 or 1))
           if prev then
             line, prev = prev .. line, nil

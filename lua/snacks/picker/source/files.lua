@@ -30,6 +30,19 @@ local function get_cmd(opts, filter)
   args = vim.deepcopy(args)
   local is_fd, is_fd_rg, is_find, is_rg = cmd == "fd" or cmd == "fdfind", cmd ~= "find", cmd == "find", cmd == "rg"
 
+  -- exclude
+  for _, e in ipairs(opts.exclude or {}) do
+    if is_fd then
+      vim.list_extend(args, { "-E", e })
+    elseif is_rg then
+      vim.list_extend(args, { "-g", "!" .. e })
+    elseif is_find then
+      table.insert(args, "-not")
+      table.insert(args, "-path")
+      table.insert(args, e)
+    end
+  end
+
   -- hidden
   if opts.hidden and is_fd_rg then
     table.insert(args, "--hidden")

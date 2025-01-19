@@ -16,6 +16,7 @@ function M.new(picker)
   self.totals = ""
   self.picker = picker
   self.filter = require("snacks.picker.core.filter").new(picker)
+  picker.matcher:init({ pattern = self.filter.pattern })
   self._statuscolumn = self:statuscolumn()
 
   self.win = Snacks.win(Snacks.win.resolve(picker.opts.win.input, {
@@ -29,9 +30,6 @@ function M.new(picker)
       self.win:focus()
       vim.cmd.startinsert()
       vim.api.nvim_win_set_cursor(self.win.win, { 1, #self:get() + 1 })
-      vim.fn.prompt_setcallback(self.win.buf, function()
-        self.win:execute("confirm")
-      end)
     end,
     bo = {
       filetype = "snacks_picker_input",
