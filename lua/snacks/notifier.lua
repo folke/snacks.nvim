@@ -315,10 +315,12 @@ function N:init()
 end
 
 function N:start()
-  uv.new_timer():start(
-    self.opts.refresh,
-    self.opts.refresh,
-    vim.schedule_wrap(function()
+  uv.new_timer():start(self.opts.refresh, self.opts.refresh, function()
+    if self:is_blocking() then
+      return
+    end
+
+    vim.schedule(function()
       if not next(self.queue) then
         return
       end
@@ -337,7 +339,7 @@ function N:start()
         self.queue = {}
       end)
     end)
-  )
+  end)
 end
 
 function N:process()
@@ -399,7 +401,7 @@ function N:add(opts)
   if opts.history ~= false then
     self.history[notif.id] = notif
   end
-  if self:is_blocking() then
+  if not self:is_blocking() then
     pcall(function()
       self:process()
     end)
