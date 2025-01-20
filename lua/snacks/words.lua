@@ -24,6 +24,7 @@ M.enabled = false
 
 local config = Snacks.config.get("words", defaults)
 local ns = vim.api.nvim_create_namespace("vim_lsp_references")
+local ns2 = vim.api.nvim_create_namespace("nvim.lsp.references")
 local timer = (vim.uv or vim.loop).new_timer()
 
 function M.enable()
@@ -55,6 +56,7 @@ function M.disable()
   vim.api.nvim_del_augroup_by_name("snacks_words")
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
     vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
+    vim.api.nvim_buf_clear_namespace(buf, ns2, 0, -1)
   end
 end
 
@@ -110,7 +112,10 @@ end
 function M.get()
   local cursor = vim.api.nvim_win_get_cursor(0)
   local current, ret = nil, {} ---@type number?, LspWord[]
-  for _, extmark in ipairs(vim.api.nvim_buf_get_extmarks(0, ns, 0, -1, { details = true })) do
+  local extmarks = {} ---@type vim.api.keyset.get_extmark_item[]
+  vim.list_extend(extmarks, vim.api.nvim_buf_get_extmarks(0, ns, 0, -1, { details = true }))
+  vim.list_extend(extmarks, vim.api.nvim_buf_get_extmarks(0, ns2, 0, -1, { details = true }))
+  for _, extmark in ipairs(extmarks) do
     local w = {
       from = { extmark[2] + 1, extmark[3] },
       to = { extmark[4].end_row + 1, extmark[4].end_col },

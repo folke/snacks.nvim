@@ -186,6 +186,9 @@ function M._get()
   local win = vim.g.statusline_winid
   local show_signs = vim.v.virtnum == 0 and vim.wo[win].signcolumn ~= "no"
   local components = { "", LINE_NR, "" } -- left, middle, right
+  if not show_signs and not (vim.wo[win].number or vim.wo[win].relativenumber) then
+    return ""
+  end
 
   if show_signs then
     local buf = vim.api.nvim_win_get_buf(win)
@@ -234,7 +237,7 @@ end
 function M.get()
   local win = vim.g.statusline_winid
   local buf = vim.api.nvim_win_get_buf(win)
-  local key = ("%d:%d:%d:%d"):format(win, buf, vim.v.lnum, vim.v.virtnum and 1 or 0)
+  local key = ("%d:%d:%d:%d"):format(win, buf, vim.v.lnum, vim.v.virtnum ~= 0 and 1 or 0)
   if cache[key] then
     return cache[key]
   end

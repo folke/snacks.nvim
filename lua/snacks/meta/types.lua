@@ -12,10 +12,12 @@
 ---@field health snacks.health
 ---@field indent snacks.indent
 ---@field input snacks.input
+---@field layout snacks.layout
 ---@field lazygit snacks.lazygit
 ---@field meta snacks.meta
 ---@field notifier snacks.notifier
 ---@field notify snacks.notify
+---@field picker snacks.picker
 ---@field profiler snacks.profiler
 ---@field quickfile snacks.quickfile
 ---@field rename snacks.rename
@@ -38,8 +40,10 @@
 ---@field gitbrowse? snacks.gitbrowse.Config|{}
 ---@field indent? snacks.indent.Config|{}
 ---@field input? snacks.input.Config|{}
+---@field layout? snacks.layout.Config|{}
 ---@field lazygit? snacks.lazygit.Config|{}
 ---@field notifier? snacks.notifier.Config|{}
+---@field picker? snacks.picker.Config|{}
 ---@field profiler? snacks.profiler.Config|{}
 ---@field quickfile? snacks.quickfile.Config|{}
 ---@field scope? snacks.scope.Config|{}

@@ -13,8 +13,10 @@
 ---@field gitbrowse? snacks.gitbrowse.Config
 ---@field indent? snacks.indent.Config
 ---@field input? snacks.input.Config
+---@field layout? snacks.layout.Config
 ---@field lazygit? snacks.lazygit.Config
 ---@field notifier? snacks.notifier.Config
+---@field picker? snacks.picker.Config
 ---@field profiler? snacks.profiler.Config
 ---@field quickfile? snacks.quickfile.Config
 ---@field scope? snacks.scope.Config
@@ -53,10 +55,12 @@
 ---@field health snacks.health
 ---@field indent snacks.indent
 ---@field input snacks.input
+---@field layout snacks.layout
 ---@field lazygit snacks.lazygit
 ---@field meta snacks.meta
 ---@field notifier snacks.notifier
 ---@field notify snacks.notify
+---@field picker snacks.picker
 ---@field profiler snacks.profiler
 ---@field quickfile snacks.quickfile
 ---@field rename snacks.rename
@@ -73,7 +77,7 @@
 Snacks = {}
 ```
 
-### `Snacks.config.example()`
+### `Snacks.init.config.example()`
 
 Get an example config from the docs/examples directory.
 
@@ -81,10 +85,10 @@ Get an example config from the docs/examples directory.
 ---@param snack string
 ---@param name string
 ---@param opts? table
-Snacks.config.example(snack, name, opts)
+Snacks.init.config.example(snack, name, opts)
 ```
 
-### `Snacks.config.get()`
+### `Snacks.init.config.get()`
 
 ```lua
 ---@generic T: table
@@ -92,10 +96,22 @@ Snacks.config.example(snack, name, opts)
 ---@param defaults T
 ---@param ... T[]
 ---@return T
-Snacks.config.get(snack, defaults, ...)
+Snacks.init.config.get(snack, defaults, ...)
 ```
 
-### `Snacks.config.style()`
+### `Snacks.init.config.merge()`
+
+Merges the values similar to vim.tbl_deep_extend with the **force** behavior,
+but the values can be any type
+
+```lua
+---@generic T
+---@param ... T
+---@return T
+Snacks.init.config.merge(...)
+```
+
+### `Snacks.init.config.style()`
 
 Register a new window style config.
 
@@ -103,12 +119,12 @@ Register a new window style config.
 ---@param name string
 ---@param defaults snacks.win.Config|{}
 ---@return string
-Snacks.config.style(name, defaults)
+Snacks.init.config.style(name, defaults)
 ```
 
-### `Snacks.setup()`
+### `Snacks.init.setup()`
 
 ```lua
 ---@param opts snacks.Config?
-Snacks.setup(opts)
+Snacks.init.setup(opts)
 ```

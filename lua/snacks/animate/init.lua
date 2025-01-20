@@ -66,6 +66,7 @@ local scheduled = false
 ---@field value number current value
 ---@field start number start time in ms
 ---@field cb snacks.animate.cb
+---@field stopped? boolean
 local Animation = {}
 Animation.__index = Animation
 
@@ -83,12 +84,23 @@ function Animation:next()
   return value, done
 end
 
+function Animation:remaining()
+  if not self:enabled() then
+    return 0
+  end
+  local elapsed = (uv.hrtime() - self.start) / 1e6 -- ms
+  return math.max(0, self.duration - elapsed)
+end
+
 function Animation:enabled()
   return M.enabled({ buf = self.opts.buf, name = tostring(self.id) })
 end
 
 ---@return boolean done
 function Animation:update()
+  if self.stopped then
+    return true
+  end
   local value, done = self:next()
   local prev = self.value
   if prev ~= value or done then
@@ -105,6 +117,7 @@ function Animation:dirty()
 end
 
 function Animation:stop()
+  self.stopped = true
   active[self.id] = nil
 end
 
@@ -158,6 +171,7 @@ function M.add(from, to, cb, opts)
     start = 0,
     cb = cb,
   }, Animation)
+  M.del(ret.id)
   active[ret.id] = ret
   M.start()
   return ret
@@ -166,7 +180,10 @@ end
 --- Delete an animation
 ---@param id number|string
 function M.del(id)
-  active[id] = nil
+  if active[id] then
+    active[id]:stop()
+    active[id] = nil
+  end
 end
 
 --- Step the animations and stop loop if no animations are active

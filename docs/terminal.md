@@ -61,7 +61,8 @@ Based on the provided options, some defaults will be set:
 
 ```lua
 ---@class snacks.terminal.Config
----@field win? snacks.win.Config
+---@field win? snacks.win.Config|{}
+---@field shell? string|string[] The shell to use. Defaults to `vim.o.shell`
 ---@field override? fun(cmd?: string|string[], opts?: snacks.terminal.Opts) Use this to use a different terminal implementation
 {
   win = { style = "terminal" },

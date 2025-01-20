@@ -749,13 +749,18 @@ end
 function M.pick(cmd, opts)
   cmd = cmd or "files"
   local config = Snacks.config.get("dashboard", defaults, opts)
+  local picker = Snacks.picker.config.get()
   -- stylua: ignore
   local try = {
     function() return config.preset.pick(cmd, opts) end,
     function() return require("fzf-lua")[cmd](opts) end,
     function() return require("telescope.builtin")[cmd == "files" and "find_files" or cmd](opts) end,
     function() return require("mini.pick").builtin[cmd](opts) end,
+    function() return Snacks.picker(cmd, opts) end,
   }
+  if picker.enabled then
+    table.insert(try, 1, table.remove(try, #try))
+  end
   for _, fn in ipairs(try) do
     if pcall(fn) then
       return
@@ -836,7 +841,7 @@ end
 
 --- Get the most recent files, optionally filtered by the
 --- current working directory or a custom directory.
----@param opts? {limit?:number, cwd?:string|boolean}
+---@param opts? {limit?:number, cwd?:string|boolean, filter?:fun(file:string):boolean?}
 ---@return snacks.dashboard.Gen
 function M.sections.recent_files(opts)
   return function()
@@ -845,14 +850,16 @@ function M.sections.recent_files(opts)
     local root = opts.cwd and vim.fs.normalize(opts.cwd == true and vim.fn.getcwd() or opts.cwd) or ""
     local ret = {} ---@type snacks.dashboard.Section
     for file in M.oldfiles({ filter = { [root] = true } }) do
-      ret[#ret + 1] = {
-        file = file,
-        icon = "file",
-        action = ":e " .. file,
-        autokey = true,
-      }
-      if #ret >= limit then
-        break
+      if not opts.filter or opts.filter(file) then
+        ret[#ret + 1] = {
+          file = file,
+          icon = "file",
+          action = ":e " .. file,
+          autokey = true,
+        }
+        if #ret >= limit then
+          break
+        end
       end
     end
     return ret

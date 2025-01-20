@@ -8,6 +8,7 @@ Table of Contents                               *snacks-win-table-of-contents*
 3. Config                                                  |snacks-win-config|
 4. Styles                                                  |snacks-win-styles|
   - float                                            |snacks-win-styles-float|
+  - help                                              |snacks-win-styles-help|
   - minimal                                        |snacks-win-styles-minimal|
   - split                                            |snacks-win-styles-split|
 5. Types                                                    |snacks-win-types|
@@ -21,6 +22,7 @@ Table of Contents                               *snacks-win-table-of-contents*
   - win:buf_valid()                        |snacks-win-module-win:buf_valid()|
   - win:close()                                |snacks-win-module-win:close()|
   - win:dim()                                    |snacks-win-module-win:dim()|
+  - win:execute()                            |snacks-win-module-win:execute()|
   - win:focus()                                |snacks-win-module-win:focus()|
   - win:has_border()                      |snacks-win-module-win:has_border()|
   - win:hide()                                  |snacks-win-module-win:hide()|
@@ -28,13 +30,17 @@ Table of Contents                               *snacks-win-table-of-contents*
   - win:line()                                  |snacks-win-module-win:line()|
   - win:lines()                                |snacks-win-module-win:lines()|
   - win:on()                                      |snacks-win-module-win:on()|
+  - win:on_resize()                        |snacks-win-module-win:on_resize()|
   - win:parent_size()                    |snacks-win-module-win:parent_size()|
   - win:redraw()                              |snacks-win-module-win:redraw()|
+  - win:scratch()                            |snacks-win-module-win:scratch()|
   - win:scroll()                              |snacks-win-module-win:scroll()|
+  - win:set_title()                        |snacks-win-module-win:set_title()|
   - win:show()                                  |snacks-win-module-win:show()|
   - win:size()                                  |snacks-win-module-win:size()|
   - win:text()                                  |snacks-win-module-win:text()|
   - win:toggle()                              |snacks-win-module-win:toggle()|
+  - win:toggle_help()                    |snacks-win-module-win:toggle_help()|
   - win:update()                              |snacks-win-module-win:update()|
   - win:valid()                                |snacks-win-module-win:valid()|
   - win:win_valid()                        |snacks-win-module-win:win_valid()|
@@ -97,7 +103,7 @@ Easily create and manage floating windows or splits
     ---@field row? number|fun(self:snacks.win):number Row of the window. Use <1 for relative row. (default: center)
     ---@field minimal? boolean Disable a bunch of options to make the window minimal (default: true)
     ---@field position? "float"|"bottom"|"top"|"left"|"right"
-    ---@field border? "none"|"top"|"right"|"bottom"|"left"|"rounded"|"single"|"double"|"solid"|"shadow"|string[]|false
+    ---@field border? "none"|"top"|"right"|"bottom"|"left"|"hpad"|"vpad"|"rounded"|"single"|"double"|"solid"|"shadow"|string[]|false
     ---@field buf? number If set, use this buffer instead of creating a new one
     ---@field file? string If set, use this file instead of creating a new buffer
     ---@field enter? boolean Enter the window after opening (default: false)
@@ -114,6 +120,7 @@ Easily create and manage floating windows or splits
     ---@field fixbuf? boolean don't allow other buffers to be opened in this window
     ---@field text? string|string[]|fun():(string[]|string) Initial lines to set in the buffer
     ---@field actions? table<string, snacks.win.Action.spec> Actions that can be used in key mappings
+    ---@field resize? boolean Automatically resize the window when the editor is resized
     {
       show = true,
       fixbuf = true,
@@ -152,6 +159,20 @@ FLOAT                                                *snacks-win-styles-float*
 <
 
 
+HELP                                                  *snacks-win-styles-help*
+
+>lua
+    {
+      position = "float",
+      backdrop = false,
+      border = "top",
+      row = -1,
+      width = 0,
+      height = 0.3,
+    }
+<
+
+
 MINIMAL                                            *snacks-win-styles-minimal*
 
 >lua
@@ -160,6 +181,7 @@ MINIMAL                                            *snacks-win-styles-minimal*
         cursorcolumn = false,
         cursorline = false,
         cursorlineopt = "both",
+        colorcolumn = "",
         fillchars = "eob: ,lastline:…",
         list = false,
         listchars = "extends:…,tab:  ",
@@ -201,7 +223,7 @@ SPLIT                                                *snacks-win-styles-split*
     ---@class snacks.win.Event: vim.api.keyset.create_autocmd
     ---@field buf? true
     ---@field win? true
-    ---@field callback? fun(self: snacks.win)
+    ---@field callback? fun(self: snacks.win, ev:vim.api.keyset.create_autocmd.callback_args):boolean?
 <
 
 >lua
@@ -237,12 +259,15 @@ SPLIT                                                *snacks-win-styles-split*
     ---@class snacks.win
     ---@field id number
     ---@field buf? number
+    ---@field scratch_buf? number
     ---@field win? number
     ---@field opts snacks.win.Config
     ---@field augroup? number
     ---@field backdrop? snacks.win
     ---@field keys snacks.win.Keys[]
     ---@field events (snacks.win.Event|{event:string|string[]})[]
+    ---@field meta table<string, string>
+    ---@field closed? boolean
     Snacks.win = {}
 <
 
@@ -319,6 +344,14 @@ WIN:DIM()                                        *snacks-win-module-win:dim()*
 <
 
 
+WIN:EXECUTE()                                *snacks-win-module-win:execute()*
+
+>lua
+    ---@param actions string|string[]
+    win:execute(actions)
+<
+
+
 WIN:FOCUS()                                    *snacks-win-module-win:focus()*
 
 >lua
@@ -367,9 +400,16 @@ WIN:ON()                                          *snacks-win-module-win:on()*
 
 >lua
     ---@param event string|string[]
-    ---@param cb fun(self: snacks.win)
+    ---@param cb fun(self: snacks.win, ev:vim.api.keyset.create_autocmd.callback_args):boolean?
     ---@param opts? snacks.win.Event
     win:on(event, cb, opts)
+<
+
+
+WIN:ON_RESIZE()                            *snacks-win-module-win:on_resize()*
+
+>lua
+    win:on_resize()
 <
 
 
@@ -388,11 +428,27 @@ WIN:REDRAW()                                  *snacks-win-module-win:redraw()*
 <
 
 
+WIN:SCRATCH()                                *snacks-win-module-win:scratch()*
+
+>lua
+    win:scratch()
+<
+
+
 WIN:SCROLL()                                  *snacks-win-module-win:scroll()*
 
 >lua
     ---@param up? boolean
     win:scroll(up)
+<
+
+
+WIN:SET_TITLE()                            *snacks-win-module-win:set_title()*
+
+>lua
+    ---@param title string
+    ---@param pos? "center"|"left"|"right"
+    win:set_title(title, pos)
 <
 
 
@@ -424,6 +480,14 @@ WIN:TOGGLE()                                  *snacks-win-module-win:toggle()*
 
 >lua
     win:toggle()
+<
+
+
+WIN:TOGGLE_HELP()                        *snacks-win-module-win:toggle_help()*
+
+>lua
+    ---@param opts? {col_width?: number, key_width?: number, win?: snacks.win.Config}
+    win:toggle_help(opts)
 <
 
 

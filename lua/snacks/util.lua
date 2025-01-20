@@ -6,6 +6,7 @@ M.meta = {
 }
 
 local uv = vim.uv or vim.loop
+local key_cache = {} ---@type table<string, string>
 
 ---@alias snacks.util.hl table<string, string|vim.api.keyset.highlight>
 
@@ -45,7 +46,7 @@ end
 
 --- Set window-local options.
 ---@param win number
----@param wo vim.wo
+---@param wo vim.wo|{}
 function M.wo(win, wo)
   for k, v in pairs(wo or {}) do
     vim.api.nvim_set_option_value(k, v, { scope = "local", win = win })
@@ -54,7 +55,7 @@ end
 
 --- Set buffer-local options.
 ---@param buf number
----@param bo vim.bo
+---@param bo vim.bo|{}
 function M.bo(buf, bo)
   for k, v in pairs(bo or {}) do
     vim.api.nvim_set_option_value(k, v, { buf = buf })
@@ -71,6 +72,9 @@ function M.icon(name, cat)
       return require("mini.icons").get(cat or "file", name)
     end,
     function()
+      if cat == "directory" then
+        return " ", "Directory"
+      end
       local Icons = require("nvim-web-devicons")
       if cat == "filetype" then
         return Icons.get_icon_by_filetype(name, { default = false })
@@ -274,6 +278,21 @@ function M.throttle(fn, opts)
       return trailing and run()
     end)
   end
+end
+
+---@param key string
+function M.normkey(key)
+  if key_cache[key] then
+    return key_cache[key]
+  end
+  local k = key
+  key = key:gsub("<[aAmMcC]%-.>", string.lower)
+  if not key:match("^<[aAmMcC]%-.>$") then
+    key = vim.fn.keytrans(M.keycode(key))
+  end
+  key_cache[k] = key
+  key_cache[key] = key
+  return key
 end
 
 return M

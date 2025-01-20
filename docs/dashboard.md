@@ -623,7 +623,7 @@ Get the most recent files, optionally filtered by the
 current working directory or a custom directory.
 
 ```lua
----@param opts? {limit?:number, cwd?:string|boolean}
+---@param opts? {limit?:number, cwd?:string|boolean, filter?:fun(file:string):boolean?}
 ---@return snacks.dashboard.Gen
 Snacks.dashboard.sections.recent_files(opts)
 ```

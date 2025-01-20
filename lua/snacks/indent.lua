@@ -74,11 +74,6 @@ local defaults = {
       arrow = ">",
     },
   },
-  blank = {
-    char = " ",
-    -- char = "·",
-    hl = "SnacksIndentBlank", ---@type string|string[] hl group for blank spaces
-  },
   -- filter for buffers to enable indent guides
   filter = function(buf)
     return vim.g.snacks_indent ~= false and vim.b[buf].snacks_indent ~= false and vim.bo[buf].buftype == ""
@@ -308,7 +303,7 @@ end
 ---@private
 function M.render_scope(scope, state)
   local indent = (scope.indent or 2)
-  local hl = get_hl(scope.indent + 1, config.scope.hl)
+  local hl = get_hl(math.floor(scope.indent / state.shiftwidth) + 1, config.scope.hl)
   local from, to = bounds(scope, state)
   local col = indent - state.leftcol
 
@@ -355,7 +350,7 @@ function M.render_chunk(scope, state)
     return
   end
   local from, to = bounds(scope, state)
-  local hl = get_hl(scope.indent + 1, config.chunk.hl)
+  local hl = get_hl(math.floor(scope.indent / state.shiftwidth) + 1, config.chunk.hl)
   local char = config.chunk.char
 
   ---@param l number
@@ -526,13 +521,13 @@ function M.enable()
   })
 
   -- redraw when shiftwidth changes
-  vim.api.nvim_create_autocmd("OptionSet", {
-    group = group,
-    pattern = { "shiftwidth", "listchars", "list" },
-    callback = vim.schedule_wrap(function()
-      vim.cmd([[redraw!]])
-    end),
-  })
+  -- vim.api.nvim_create_autocmd("OptionSet", {
+  --   group = group,
+  --   pattern = { "shiftwidth", "listchars", "list" },
+  --   callback = vim.schedule_wrap(function()
+  --     vim.cmd([[redraw!]])
+  --   end),
+  -- })
 end
 
 -- Disable indent guides

@@ -170,44 +170,47 @@ function M.zen(opts)
   end
   opts.on_open(win)
 
-  -- restore toggle states when window is closed
-  vim.api.nvim_create_autocmd("WinClosed", {
+  -- sync cursor with the parent window
+  vim.api.nvim_create_autocmd("CursorMoved", {
     group = win.augroup,
-    pattern = tostring(win.win),
-    callback = vim.schedule_wrap(function()
-      if zoom_indicator then
-        zoom_indicator:close()
+    callback = function()
+      if win:win_valid() and vim.api.nvim_win_is_valid(parent_win) then
+        vim.api.nvim_win_set_cursor(parent_win, vim.api.nvim_win_get_cursor(win.win))
       end
-      for _, state in ipairs(states) do
-        state.toggle:set(state.state)
-      end
-      opts.on_close(win)
-    end),
+    end,
   })
+
+  -- restore toggle states when window is closed
+  win:on("WinClosed", function()
+    if zoom_indicator then
+      zoom_indicator:close()
+    end
+    for _, state in ipairs(states) do
+      state.toggle:set(state.state)
+    end
+    opts.on_close(win)
+  end, { win = true })
 
   -- update the buffer of the parent window
   -- when the zen buffer changes
-  vim.api.nvim_create_autocmd("BufWinEnter", {
-    group = win.augroup,
-    callback = function()
-      vim.api.nvim_win_set_buf(parent_win, win.buf)
-    end,
-  })
+  win:on("BufWinEnter", function()
+    vim.api.nvim_win_set_buf(parent_win, win.buf)
+  end, { buf = true })
 
   -- close when entering another window
-  vim.api.nvim_create_autocmd("WinEnter", {
-    group = win.augroup,
-    callback = function()
-      local w = vim.api.nvim_get_current_win()
-      if w == win.win then
-        return
-      end
-      -- exit if other window is not a floating window
-      if vim.api.nvim_win_get_config(w).relative == "" then
+  win:on("WinEnter", function()
+    local w = vim.api.nvim_get_current_win()
+    if w == win.win then
+      return
+    end
+    -- exit if other window is not a floating window
+    if vim.api.nvim_win_get_config(w).relative == "" then
+      -- schedule so that WinClosed is properly triggered
+      vim.schedule(function()
         win:close()
-      end
-    end,
-  })
+      end)
+    end
+  end)
   return win
 end
 

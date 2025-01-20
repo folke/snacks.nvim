@@ -16,6 +16,7 @@ Meta functions for Snacks
 ---@field health? boolean
 ---@field types? boolean
 ---@field config? boolean
+---@field merge? { [string|number]: string }
 ```
 
 ```lua
@@ -27,6 +28,12 @@ Meta functions for Snacks
 ```
 
 ## 📦 Module
+
+### `Snacks.meta.file()`
+
+```lua
+Snacks.meta.file(name)
+```
 
 ### `Snacks.meta.get()`
 

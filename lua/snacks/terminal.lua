@@ -13,7 +13,8 @@ M.meta = {
 }
 
 ---@class snacks.terminal.Config
----@field win? snacks.win.Config
+---@field win? snacks.win.Config|{}
+---@field shell? string|string[] The shell to use. Defaults to `vim.o.shell`
 ---@field override? fun(cmd?: string|string[], opts?: snacks.terminal.Opts) Use this to use a different terminal implementation
 local defaults = {
   win = { style = "terminal" },
@@ -97,7 +98,10 @@ function M.open(cmd, opts)
       cwd = opts.cwd,
       env = opts.env,
     }
-    vim.fn.termopen(cmd or M.parse(vim.o.shell), vim.tbl_isempty(term_opts) and vim.empty_dict() or term_opts)
+    vim.fn.termopen(
+      cmd or M.parse(opts.shell or vim.o.shell),
+      vim.tbl_isempty(term_opts) and vim.empty_dict() or term_opts
+    )
   end)
 
   if opts.interactive ~= false then
@@ -120,6 +124,9 @@ function M.open(cmd, opts)
         vim.cmd.startinsert()
       end,
     })
+    terminal:on("ExitPre", function()
+      terminal:close()
+    end)
   end
   vim.cmd("noh")
   return terminal
@@ -155,8 +162,12 @@ end
 --- - spaces inside quotes (only double quotes are supported) are preserved
 --- - backslash
 ---@private
----@param cmd string
+---@param cmd string|string[]
+---@return string[]
 function M.parse(cmd)
+  if type(cmd) == "table" then
+    return cmd
+  end
   local args = {}
   local in_quotes, escape_next, current = false, false, ""
   local function add()
@@ -221,7 +232,8 @@ end
 
 ---@private
 function M.health()
-  local cmd = M.parse(vim.o.shell)
+  local opts = Snacks.config.get("terminal", defaults --[[@as snacks.terminal.Opts]])
+  local cmd = M.parse(opts.shell or vim.o.shell)
   local ok = cmd[1] and (vim.fn.executable(cmd[1]) == 1)
   local msg = ("shell %s\n- `vim.o.shell`: %s\n- `parsed`: %s"):format(
     ok and "configured" or "not found",

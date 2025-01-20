@@ -25,7 +25,7 @@ Set buffer-local options.
 
 ```lua
 ---@param buf number
----@param bo vim.bo
+---@param bo vim.bo|{}
 Snacks.util.bo(buf, bo)
 ```
 
@@ -79,6 +79,13 @@ Snacks.util.is_transparent()
 ```lua
 ---@param str string
 Snacks.util.keycode(str)
+```
+
+### `Snacks.util.normkey()`
+
+```lua
+---@param key string
+Snacks.util.normkey(key)
 ```
 
 ### `Snacks.util.on_key()`
@@ -171,6 +178,6 @@ Set window-local options.
 
 ```lua
 ---@param win number
----@param wo vim.wo
+---@param wo vim.wo|{}
 Snacks.util.wo(win, wo)
 ```

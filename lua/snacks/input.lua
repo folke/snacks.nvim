@@ -66,6 +66,7 @@ Snacks.config.style("input", {
     i_esc = { "<esc>", { "cmp_close", "stopinsert" }, mode = "i", expr = true },
     i_cr = { "<cr>", { "cmp_accept", "confirm" }, mode = "i", expr = true },
     i_tab = { "<tab>", { "cmp_select_next", "cmp" }, mode = "i", expr = true },
+    i_ctrl_w = { "<c-w>", "<c-s-w>", mode = "i", expr = true },
     q = "cancel",
   },
 })
@@ -188,7 +189,7 @@ function M.input(opts, on_confirm)
   vim.cmd.startinsert()
   if opts.default then
     vim.api.nvim_buf_set_lines(win.buf, 0, -1, false, { opts.default })
-    vim.api.nvim_win_set_cursor(win.win, { 1, #opts.default + 1 })
+    vim.api.nvim_win_set_cursor(win.win, { 1, #opts.default })
   end
   vim.fn.prompt_setcallback(win.buf, function(text)
     confirm(text)
