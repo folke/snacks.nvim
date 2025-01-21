@@ -479,6 +479,13 @@ function M:redraw()
   end
 end
 
+---@param left? boolean
+function M:hscroll(left)
+  vim.api.nvim_win_call(self.win, function()
+    vim.cmd(("normal! %s"):format(left and "zh" or "zl"))
+  end)
+end
+
 ---@param up? boolean
 function M:scroll(up)
   vim.api.nvim_win_call(self.win, function()

@@ -177,6 +177,8 @@ local defaults = {
         ["<c-k>"] = { "list_up", mode = { "i", "n" } },
         ["<c-n>"] = { "list_down", mode = { "i", "n" } },
         ["<c-p>"] = { "list_up", mode = { "i", "n" } },
+        ["<c-l>"] = { "preview_scroll_left", mode = { "i", "n" } },
+        ["<c-h>"] = { "preview_scroll_right", mode = { "i", "n" } },
         ["<c-b>"] = { "preview_scroll_up", mode = { "i", "n" } },
         ["<c-d>"] = { "list_scroll_down", mode = { "i", "n" } },
         ["<c-f>"] = { "preview_scroll_down", mode = { "i", "n" } },
@@ -221,6 +223,9 @@ local defaults = {
         ["<c-a>"] = "select_all",
         ["<c-f>"] = "preview_scroll_down",
         ["<c-b>"] = "preview_scroll_up",
+        ["<c-l>"] = "preview_scroll_right",
+        ["<c-h>"] = "preview_scroll_left",
+
         ["<c-v>"] = "edit_vsplit",
         ["<c-s>"] = "edit_split",
         ["<c-j>"] = "list_down",

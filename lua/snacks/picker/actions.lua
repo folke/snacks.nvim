@@ -311,6 +311,14 @@ function M.preview_scroll_up(picker)
   picker.preview.win:scroll(true)
 end
 
+function M.preview_scroll_left(picker)
+  picker.preview.win:hscroll(true)
+end
+
+function M.preview_scroll_right(picker)
+  picker.preview.win:hscroll()
+end
+
 function M.inspect(picker, item)
   Snacks.debug.inspect(item)
 end
