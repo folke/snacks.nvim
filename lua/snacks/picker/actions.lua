@@ -118,10 +118,20 @@ function M.toggle_preview(picker)
 end
 
 function M.bufdelete(picker)
+  local non_buf_delete_requested = false
   for _, item in ipairs(picker:selected({ fallback = true })) do
-    Snacks.bufdelete.delete(item.buf)
+    if item.buf then
+      Snacks.bufdelete.delete(item.buf)
+    else
+      non_buf_delete_requested = true
+    end
     picker.list:unselect(item)
   end
+
+  if non_buf_delete_requested then
+    Snacks.notify.warn("Only open buffers can be deleted", { title = "Snacks Picker" })
+  end
+
   local cursor = picker.list.cursor
   picker:find({
     on_done = function()

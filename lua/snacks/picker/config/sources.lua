@@ -564,6 +564,15 @@ M.smart = {
   format = "file",
   -- sort the results even when the filter is empty (frecency)
   matcher = { sort_empty = true },
+  win = {
+    input = {
+      keys = {
+        ["dd"] = "bufdelete",
+        ["<c-x>"] = { "bufdelete", mode = { "n", "i" } },
+      },
+    },
+    list = { keys = { ["dd"] = "bufdelete" } },
+  },
 }
 
 M.spelling = {
