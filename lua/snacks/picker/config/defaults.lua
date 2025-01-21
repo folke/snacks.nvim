@@ -225,7 +225,6 @@ local defaults = {
         ["<c-b>"] = "preview_scroll_up",
         ["<c-l>"] = "preview_scroll_right",
         ["<c-h>"] = "preview_scroll_left",
-
         ["<c-v>"] = "edit_vsplit",
         ["<c-s>"] = "edit_split",
         ["<c-j>"] = "list_down",
