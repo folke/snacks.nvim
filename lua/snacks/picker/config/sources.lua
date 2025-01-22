@@ -293,6 +293,24 @@ M.keymaps = {
       vim.api.nvim_input(item.item.lhs)
     end
   end,
+  actions = {
+    toggle_global = function(picker)
+      picker.opts.global = not picker.opts.global
+      picker:find()
+    end,
+    toggle_buffer = function(picker)
+      picker.opts["local"] = not picker.opts["local"]
+      picker:find()
+    end,
+  },
+  win = {
+    input = {
+      keys = {
+        ["<a-g>"] = { "toggle_global", mode = { "n", "i" }, desc = "Toggle Global Keymaps" },
+        ["<a-b>"] = { "toggle_buffer", mode = { "n", "i" }, desc = "Toggle Buffer Keymaps" },
+      },
+    },
+  },
 }
 
 -- Search lines in the current buffer
