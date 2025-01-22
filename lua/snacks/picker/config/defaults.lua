@@ -144,109 +144,6 @@ local defaults = {
     tagstack = false, -- save the current position in the tagstack
     reuse_win = false, -- reuse an existing window if the buffer is already open
   },
-  win = {
-    -- input window
-    input = {
-      keys = {
-        ["<Esc>"] = "close",
-        ["<C-c>"] = { "close", mode = "i" },
-        -- to close the picker on ESC instead of going to normal mode,
-        -- add the following keymap to your config
-        -- ["<Esc>"] = { "close", mode = { "n", "i" } },
-        ["<CR>"] = { "confirm", mode = { "n", "i" } },
-        ["G"] = "list_bottom",
-        ["gg"] = "list_top",
-        ["j"] = "list_down",
-        ["k"] = "list_up",
-        ["/"] = "toggle_focus",
-        ["q"] = "close",
-        ["?"] = "toggle_help",
-        ["<a-d>"] = { "inspect", mode = { "n", "i" } },
-        ["<c-a>"] = { "select_all", mode = { "n", "i" } },
-        ["<a-m>"] = { "toggle_maximize", mode = { "i", "n" } },
-        ["<a-p>"] = { "toggle_preview", mode = { "i", "n" } },
-        ["<a-w>"] = { "cycle_win", mode = { "i", "n" } },
-        ["<C-w>"] = { "<c-s-w>", mode = { "i" }, expr = true, desc = "delete word" },
-        ["<C-Up>"] = { "history_back", mode = { "i", "n" } },
-        ["<C-Down>"] = { "history_forward", mode = { "i", "n" } },
-        ["<Tab>"] = { "select_and_next", mode = { "i", "n" } },
-        ["<S-Tab>"] = { "select_and_prev", mode = { "i", "n" } },
-        ["<Down>"] = { "list_down", mode = { "i", "n" } },
-        ["<Up>"] = { "list_up", mode = { "i", "n" } },
-        ["<c-j>"] = { "list_down", mode = { "i", "n" } },
-        ["<c-k>"] = { "list_up", mode = { "i", "n" } },
-        ["<c-n>"] = { "list_down", mode = { "i", "n" } },
-        ["<c-p>"] = { "list_up", mode = { "i", "n" } },
-        ["<c-b>"] = { "preview_scroll_up", mode = { "i", "n" } },
-        ["<c-d>"] = { "list_scroll_down", mode = { "i", "n" } },
-        ["<c-f>"] = { "preview_scroll_down", mode = { "i", "n" } },
-        ["<c-g>"] = { "toggle_live", mode = { "i", "n" } },
-        ["<c-u>"] = { "list_scroll_up", mode = { "i", "n" } },
-        ["<ScrollWheelDown>"] = { "list_scroll_wheel_down", mode = { "i", "n" } },
-        ["<ScrollWheelUp>"] = { "list_scroll_wheel_up", mode = { "i", "n" } },
-        ["<c-v>"] = { "edit_vsplit", mode = { "i", "n" } },
-        ["<c-s>"] = { "edit_split", mode = { "i", "n" } },
-        ["<c-q>"] = { "qflist", mode = { "i", "n" } },
-        ["<a-i>"] = { "toggle_ignored", mode = { "i", "n" } },
-        ["<a-h>"] = { "toggle_hidden", mode = { "i", "n" } },
-        ["<a-f>"] = { "toggle_follow", mode = { "i", "n" } },
-      },
-      b = {
-        minipairs_disable = true,
-      },
-    },
-    -- result list window
-    list = {
-      keys = {
-        ["<CR>"] = "confirm",
-        ["gg"] = "list_top",
-        ["G"] = "list_bottom",
-        ["i"] = "focus_input",
-        ["j"] = "list_down",
-        ["k"] = "list_up",
-        ["q"] = "close",
-        ["<Tab>"] = "select_and_next",
-        ["<S-Tab>"] = "select_and_prev",
-        ["<Down>"] = "list_down",
-        ["<Up>"] = "list_up",
-        ["<a-d>"] = "inspect",
-        ["<c-d>"] = "list_scroll_down",
-        ["<c-u>"] = "list_scroll_up",
-        ["zt"] = "list_scroll_top",
-        ["zb"] = "list_scroll_bottom",
-        ["zz"] = "list_scroll_center",
-        ["/"] = "toggle_focus",
-        ["<ScrollWheelDown>"] = "list_scroll_wheel_down",
-        ["<ScrollWheelUp>"] = "list_scroll_wheel_up",
-        ["<c-a>"] = "select_all",
-        ["<c-f>"] = "preview_scroll_down",
-        ["<c-b>"] = "preview_scroll_up",
-        ["<c-v>"] = "edit_vsplit",
-        ["<c-s>"] = "edit_split",
-        ["<c-j>"] = "list_down",
-        ["<c-k>"] = "list_up",
-        ["<c-n>"] = "list_down",
-        ["<c-p>"] = "list_up",
-        ["<a-w>"] = "cycle_win",
-        ["<Esc>"] = "close",
-      },
-      wo = {
-        conceallevel = 2,
-        concealcursor = "nvc",
-      },
-    },
-    -- preview window
-    preview = {
-      keys = {
-        ["<Esc>"] = "close",
-        ["q"] = "close",
-        ["i"] = "focus_input",
-        ["<ScrollWheelDown>"] = "list_scroll_wheel_down",
-        ["<ScrollWheelUp>"] = "list_scroll_wheel_up",
-        ["<a-w>"] = "cycle_win",
-      },
-    },
-  },
   ---@class snacks.picker.icons
     -- stylua: ignore
   icons = {
@@ -254,9 +151,9 @@ local defaults = {
       enabled = true, -- show file icons
     },
     indent = {
-      vertical    = "│ ",
-      middle = "├╴",
-      last   = "└╴",
+      vertical  = "│ ",
+      middle    = "├╴",
+      last      = "└╴",
     },
     undo = {
       saved   = " ",
@@ -324,6 +221,138 @@ local defaults = {
   debug = {
     scores = false, -- show scores in the list
     leaks = false, -- show when pickers don't get garbage collected
+  },
+}
+
+defaults.win = {
+  -- input window
+  input = {
+    keys = {
+      ["<C-c>"] = { "close", mode = "i", desc = "Close" },
+      ["q"] = { "close", desc = "Close" },
+      ["<Esc>"] = { "close", desc = "Close" },
+      -- to close the picker on ESC instead of going to normal mode,
+      -- add the following keymap to your config
+      -- ["<Esc>"] = { "close", mode = { "n", "i" }, desc = "Close" },
+      ["<CR>"] = { "confirm", mode = { "n", "i" }, desc = "Confirm" },
+      ["<a-d>"] = { "inspect", mode = { "n", "i" }, desc = "Inspect Item" },
+      ["<a-w>"] = { "cycle_win", mode = { "i", "n" }, desc = "Focus Cycle" },
+      ["<C-w>"] = { "<c-s-w>", mode = { "i" }, expr = true, desc = "Delete Word" },
+      ["<C-Up>"] = { "history_back", mode = { "i", "n" }, desc = "History Back" },
+      ["<C-Down>"] = { "history_forward", mode = { "i", "n" }, desc = "History Forward" },
+
+      ["<c-v>"] = { "edit_vsplit", mode = { "i", "n" }, desc = "Open in Split Vertical" },
+      ["<c-s>"] = { "edit_split", mode = { "i", "n" }, desc = "Open in Split" },
+      ["<c-q>"] = { "qflist", mode = { "i", "n" }, desc = "Send to Quickfix" },
+
+      -- Selection
+      ["<Tab>"] = { "select_and_next", mode = { "i", "n" }, desc = "Select Item, Next" },
+      ["<S-Tab>"] = { "select_and_prev", mode = { "i", "n" }, desc = "Select Item, Prev" },
+      ["<c-a>"] = { "select_all", mode = { "n", "i" }, desc = "Select All" },
+
+      -- Toggles
+      ["/"] = { "toggle_focus", desc = defaults.icons.kinds.Boolean .. "Focus List/Input" },
+      ["?"] = { "toggle_help", desc = defaults.icons.kinds.Boolean .. "Help" },
+      ["<c-/>"] = { "toggle_help", mode = { "i", "n" }, desc = defaults.icons.kinds.Boolean .. "Help" },
+      ["<a-f>"] = {
+        "toggle_follow",
+        mode = { "i", "n" },
+        desc = defaults.icons.kinds.Boolean .. defaults.icons.ui.follow .. " Follow Symlinks",
+      },
+      ["<a-h>"] = {
+        "toggle_hidden",
+        mode = { "i", "n" },
+        desc = defaults.icons.kinds.Boolean .. defaults.icons.ui.hidden .. " Hidden",
+      },
+      ["<a-i>"] = {
+        "toggle_ignored",
+        mode = { "i", "n" },
+        desc = defaults.icons.kinds.Boolean .. defaults.icons.ui.ignored .. " Ignored",
+      },
+      ["<c-g>"] = {
+        "toggle_live",
+        mode = { "i", "n" },
+        desc = defaults.icons.kinds.Boolean .. defaults.icons.ui.live .. "Live",
+      },
+      ["<a-m>"] = { "toggle_maximize", mode = { "i", "n" }, desc = defaults.icons.kinds.Boolean .. "Maximize" },
+      ["<a-p>"] = { "toggle_preview", mode = { "i", "n" }, desc = defaults.icons.kinds.Boolean .. "Preview" },
+
+      -- List
+      ["gg"] = { "list_top", desc = "List: Top Item" },
+      ["G"] = { "list_bottom", desc = "List: Bottom Item" },
+      ["j"] = { "list_down", desc = "List: Next Item" },
+      ["k"] = { "list_up", desc = "List: Prev Item" },
+      ["<Down>"] = { "list_down", mode = { "i", "n" }, desc = "List: Next Item" },
+      ["<Up>"] = { "list_up", mode = { "i", "n" }, desc = "List: Prev Item" },
+      ["<c-j>"] = { "list_down", mode = { "i", "n" }, desc = "List: Next Item" },
+      ["<c-k>"] = { "list_up", mode = { "i", "n" }, desc = "List: Prev Item" },
+      ["<c-n>"] = { "list_down", mode = { "i", "n" }, desc = "List: Next Item" },
+      ["<c-p>"] = { "list_up", mode = { "i", "n" }, desc = "List: Prev Item" },
+      ["<c-d>"] = { "list_scroll_down", mode = { "i", "n" }, desc = "List: Scroll Down" },
+      ["<ScrollWheelDown>"] = { "list_scroll_wheel_down", mode = { "i", "n" }, desc = "List: Scroll Down" },
+      ["<c-u>"] = { "list_scroll_up", mode = { "i", "n" }, desc = "List: Scroll Up" },
+      ["<ScrollWheelUp>"] = { "list_scroll_wheel_up", mode = { "i", "n" }, desc = "List: Scroll Up" },
+
+      -- Preview
+      ["<c-f>"] = { "preview_scroll_down", mode = { "i", "n" }, desc = "Preview: Scroll Down" },
+      ["<PageDown>"] = { "preview_scroll_down", mode = { "i", "n" }, desc = "Preview: Scroll Down" },
+      ["<c-b>"] = { "preview_scroll_up", mode = { "i", "n" }, desc = "Preview: Scroll Up" },
+      ["<PageUp>"] = { "preview_scroll_up", mode = { "i", "n" }, desc = "Preview: Scroll Up" },
+    },
+    b = {
+      minipairs_disable = true,
+    },
+  },
+  -- result list window
+  list = {
+    keys = {
+      ["<CR>"] = "confirm",
+      ["gg"] = "list_top",
+      ["G"] = "list_bottom",
+      ["i"] = "focus_input",
+      ["j"] = "list_down",
+      ["k"] = "list_up",
+      ["q"] = "close",
+      ["<Tab>"] = "select_and_next",
+      ["<S-Tab>"] = "select_and_prev",
+      ["<Down>"] = "list_down",
+      ["<Up>"] = "list_up",
+      ["<a-d>"] = "inspect",
+      ["<c-d>"] = "list_scroll_down",
+      ["<c-u>"] = "list_scroll_up",
+      ["zt"] = "list_scroll_top",
+      ["zb"] = "list_scroll_bottom",
+      ["zz"] = "list_scroll_center",
+      ["/"] = "toggle_focus",
+      ["<ScrollWheelDown>"] = "list_scroll_wheel_down",
+      ["<ScrollWheelUp>"] = "list_scroll_wheel_up",
+      ["<c-a>"] = "select_all",
+      ["<c-f>"] = "preview_scroll_down",
+      ["<c-b>"] = "preview_scroll_up",
+      ["<c-v>"] = "edit_vsplit",
+      ["<c-s>"] = "edit_split",
+      ["<c-j>"] = "list_down",
+      ["<c-k>"] = "list_up",
+      ["<c-n>"] = "list_down",
+      ["<c-p>"] = "list_up",
+      ["<a-w>"] = "cycle_win",
+      ["<Esc>"] = "close",
+    },
+    wo = {
+      conceallevel = 2,
+      concealcursor = "nvc",
+    },
+  },
+  -- preview window
+  preview = {
+    keys = {
+      ["<Esc>"] = "close",
+      ["q"] = "close",
+      ["i"] = "focus_input",
+      ["<ScrollWheelDown>"] = "list_scroll_wheel_down",
+      ["<ScrollWheelUp>"] = "list_scroll_wheel_up",
+      ["<a-w>"] = "cycle_win",
+    },
   },
 }
 

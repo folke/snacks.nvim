@@ -354,7 +354,7 @@ end
 ---@param opts? {col_width?: number, key_width?: number, win?: snacks.win.Config}
 function M:toggle_help(opts)
   opts = opts or {}
-  local col_width, key_width = opts.col_width or 30, opts.key_width or 10
+  local col_width, key_width = opts.col_width or 34, opts.key_width or 12
   for _, win in ipairs(vim.api.nvim_list_wins()) do
     local buf = vim.api.nvim_win_get_buf(win)
     if vim.bo[buf].filetype == "snacks_win_help" then
@@ -409,8 +409,6 @@ function M:toggle_help(opts)
       help[row] = help[row] or {}
       vim.list_extend(help[row], {
         { trunc(key, key_width, "right"), "SnacksWinKey" },
-        { " " },
-        { "➜", "SnacksWinKeySep" },
         { " " },
         { trunc(keymap.desc or "", col_width - key_width - 3), "SnacksWinKeyDesc" },
       })
