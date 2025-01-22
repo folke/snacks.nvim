@@ -303,6 +303,14 @@ function M.help(picker)
   end
 end
 
+function M.insert_symbol(picker)
+  local item = picker:current()
+  if item then
+    picker:close()
+    vim.api.nvim_put({ item.symbol }, "", true, true)
+  end
+end
+
 function M.preview_scroll_down(picker)
   picker.preview.win:scroll()
 end

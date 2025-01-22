@@ -582,6 +582,14 @@ M.spelling = {
   confirm = "item_action",
 }
 
+M.symbols = {
+  finder = "symbols",
+  format = "symbol",
+  preview = "none",
+  layout = { preset = "vscode" },
+  confirm = "insert_symbol",
+}
+
 M.undo = {
   finder = "vim_undo",
   format = "undo",

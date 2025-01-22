@@ -493,4 +493,12 @@ function M.debug(item, picker)
   return ret
 end
 
+function M.symbol(item, picker)
+  local ret = {} ---@type snacks.picker.Highlight[]
+  ret[#ret + 1] = { Snacks.picker.util.align(item.symbol, 4) }
+  ret[#ret + 1] = { " " }
+  ret[#ret + 1] = { item.desc }
+  return ret
+end
+
 return M
