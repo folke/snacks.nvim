@@ -1,5 +1,21 @@
 local M = {}
 
+local NERDFONTS_SETS = {
+  cod = "Codicons",
+  dev = "Devicons",
+  fa = "Font Awesome",
+  fae = "Font Awesome Extension",
+  iec = "IEC Power Symbols",
+  linux = "Font Logos",
+  logos = "Font Logos",
+  oct = "Octicons",
+  ple = "Powerline Extra",
+  pom = "Pomicons",
+  seti = "Seti-UI",
+  weather = "Weather Icons",
+  md = "Material Design Icons",
+}
+
 ---@type table<string, {url: string, v?:number, build: fun(data:table):snacks.picker.Icon[]}>
 M.sources = {
   nerd_fonts = {
@@ -17,8 +33,8 @@ M.sources = {
           table.insert(ret, {
             name = icon,
             icon = info.char,
-            source = "nerd font",
-            category = font,
+            source = "nerd fonts",
+            category = NERDFONTS_SETS[font] or font,
           })
         end
       end
