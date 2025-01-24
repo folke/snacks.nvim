@@ -498,7 +498,7 @@ function M:destroy()
   self.events = {}
   self.keys = {}
   self.meta = {}
-  self.opts = {}
+  -- self.opts = {}
 end
 
 ---@param opts? { buf: boolean }

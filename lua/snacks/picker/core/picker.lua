@@ -464,10 +464,10 @@ end
 
 --- Close the picker
 function M:close()
+  self.input:stopinsert()
   if self.closed then
     return
   end
-  self.input:stopinsert()
 
   self:hist_record(true)
   self.closed = true

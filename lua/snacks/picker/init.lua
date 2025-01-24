@@ -50,7 +50,9 @@ M.meta = {
 }
 
 -- create actual picker functions for autocomplete
-vim.schedule(M.config.setup)
+vim.defer_fn(function()
+  M.config.setup()
+end, 10)
 
 --- Create a new picker
 ---@param source? string
