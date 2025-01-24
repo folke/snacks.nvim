@@ -192,11 +192,7 @@ local defaults = {
         ["<c-k>"] = { "list_up", mode = { "i", "n" } },
         ["<c-n>"] = { "list_down", mode = { "i", "n" } },
         ["<c-p>"] = { "list_up", mode = { "i", "n" } },
-        ["<c-l>"] = { "preview_scroll_left", mode = { "i", "n" } },
-        ["<c-h>"] = { "preview_scroll_right", mode = { "i", "n" } },
-        ["<c-b>"] = { "preview_scroll_up", mode = { "i", "n" } },
         ["<c-d>"] = { "list_scroll_down", mode = { "i", "n" } },
-        ["<c-f>"] = { "preview_scroll_down", mode = { "i", "n" } },
         ["<c-g>"] = { "toggle_live", mode = { "i", "n" } },
         ["<c-u>"] = { "list_scroll_up", mode = { "i", "n" } },
         ["<ScrollWheelDown>"] = { "list_scroll_wheel_down", mode = { "i", "n" } },
@@ -207,6 +203,14 @@ local defaults = {
         ["<a-i>"] = { "toggle_ignored", mode = { "i", "n" } },
         ["<a-h>"] = { "toggle_hidden", mode = { "i", "n" } },
         ["<a-f>"] = { "toggle_follow", mode = { "i", "n" } },
+
+        --- Preview Controls
+        ["<c-b>"] = { "preview_scroll_up", mode = { "i", "n" }, desc = "Preview Scroll Up" },
+        ["<c-f>"] = { "preview_scroll_down", mode = { "i", "n" }, desc = "Preview Scroll Dn" },
+        ["<c-h>"] = { "preview_scroll_right", mode = { "i", "n" }, desc = "Preview Scroll R" },
+        ["<c-l>"] = { "preview_scroll_left", mode = { "i", "n" }, desc = "Preview Scroll L" },
+        ["<PageUp>"] = { "preview_scroll_up", mode = { "i", "n" }, desc = "Preview Scroll Up" },
+        ["<PageDown>"] = { "preview_scroll_down", mode = { "i", "n" }, desc = "Preview Scroll Dn" },
       },
       b = {
         minipairs_disable = true,
@@ -236,10 +240,6 @@ local defaults = {
         ["<ScrollWheelDown>"] = "list_scroll_wheel_down",
         ["<ScrollWheelUp>"] = "list_scroll_wheel_up",
         ["<c-a>"] = "select_all",
-        ["<c-f>"] = "preview_scroll_down",
-        ["<c-b>"] = "preview_scroll_up",
-        ["<c-l>"] = "preview_scroll_right",
-        ["<c-h>"] = "preview_scroll_left",
         ["<c-v>"] = "edit_vsplit",
         ["<c-s>"] = "edit_split",
         ["<c-j>"] = "list_down",
@@ -248,6 +248,14 @@ local defaults = {
         ["<c-p>"] = "list_up",
         ["<a-w>"] = "cycle_win",
         ["<Esc>"] = "close",
+
+        --- Preview Controls
+        ["<c-b>"] = { "preview_scroll_up", mode = { "i", "n" }, desc = "Preview Scroll Up" },
+        ["<c-f>"] = { "preview_scroll_down", mode = { "i", "n" }, desc = "Preview Scroll Dn" },
+        ["<c-h>"] = { "preview_scroll_right", mode = { "i", "n" }, desc = "Preview Scroll R" },
+        ["<c-l>"] = { "preview_scroll_left", mode = { "i", "n" }, desc = "Preview Scroll L" },
+        ["<PageUp>"] = { "preview_scroll_up", mode = { "i", "n" }, desc = "Preview Scroll Up" },
+        ["<PageDown>"] = { "preview_scroll_down", mode = { "i", "n" }, desc = "Preview Scroll Dn" },
       },
       wo = {
         conceallevel = 2,
@@ -276,9 +284,9 @@ local defaults = {
       nowait = "󰓅 "
     },
     indent = {
-      vertical    = "│ ",
-      middle = "├╴",
-      last   = "└╴",
+      vertical  = "│ ",
+      middle    = "├╴",
+      last      = "└╴",
     },
     undo = {
       saved   = " ",
