@@ -470,4 +470,42 @@ function M.list_scroll_wheel_up(picker)
   end
 end
 
+M.switch_to_grep = nil
+M.grep_alt_picker = nil
+
+---@param picker snacks.Picker
+function M.switch_to_grep(picker, _)
+  local picker_type = picker.opts.source
+  local allowed_pickers = { "files", "buffers", "recent", "smart", "grep" }
+  if not vim.tbl_contains(allowed_pickers, picker_type) then
+    Snacks.notify.warn("Switching to grep is not supported for `" .. picker_type .. "`", { title = "Snacks Picker" })
+    return
+  end
+
+  if picker_type == "grep" then
+    M.switch_to_grep = false
+    M.grep_alt_picker = M.grep_alt_picker or "files"
+  else
+    M.switch_to_grep = true
+    if picker_type == "recent_files" then
+      picker_type = "recent"
+    end
+    M.grep_alt_picker = picker_type
+  end
+  local snacks = require("snacks")
+  local cwd = picker.input.filter.cwd
+
+  picker:close()
+
+  if M.switch_to_grep then
+    local pattern = picker.input.filter.pattern or ""
+    ---@diagnostic disable-next-line: missing-fields
+    snacks.picker.grep({ cwd = cwd, search = pattern })
+  else
+    local pattern = picker.input.filter.search or ""
+    ---@diagnostic disable-next-line: missing-fields
+    snacks.picker.pick(M.grep_alt_picker, { cwd = cwd, pattern = pattern })
+  end
+end
+
 return M
