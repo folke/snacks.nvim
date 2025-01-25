@@ -296,13 +296,10 @@ function M.git_diff(ctx)
     "-c",
     "delta." .. vim.o.background .. "=true",
     "diff",
+    "HEAD",
     "--",
     ctx.item.file,
   }
-  local staged = ctx.item.text:match("^M%s+")
-  if staged then
-    table.insert(cmd, 5, "--staged")
-  end
   if not native then
     table.insert(cmd, 2, "--no-pager")
   end
