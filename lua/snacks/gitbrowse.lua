@@ -62,6 +62,11 @@ local defaults = {
       file = "/src/{branch}/{file}#lines-{line_start}-L{line_end}",
       commit = "/commits/{commit}",
     },
+    ["dev%.azure%.com"] = {
+      file = "?path=/{file}&version=GB{branch}&line={line_start}&lineEnd={line_end}&lineStartColumn=1&lineEndColumn=1&lineStyle=plain&_a=contents",
+      commit = "/commit/{commit}",
+      branch = "",
+    },
   },
 }
 
