@@ -33,7 +33,7 @@ function M.new(picker)
   self.all = not filter or not (filter.cwd or filter.buf or filter.paths or filter.filter)
   self.paths = {}
   local cwd = filter and filter.cwd
-  self.cwd = type(cwd) == "string" and cwd or opts.cwd or uv.cwd() or "."
+  self.cwd = type(cwd) == "string" and cwd or opts.cwd and uv.cwd() or "."
   self.cwd = vim.fs.normalize(self.cwd --[[@as string]], { _fast = true })
   if not self.all and filter then
     self.buf = filter.buf == true and 0 or filter.buf --[[@as number?]]
