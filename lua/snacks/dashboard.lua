@@ -768,7 +768,7 @@ function M.pick(cmd, opts)
     function() return Snacks.picker(cmd, opts) end,
   }
   if picker.enabled then
-    table.insert(try, 1, table.remove(try, #try))
+    table.insert(try, 2, table.remove(try, #try))
   end
   for _, fn in ipairs(try) do
     if pcall(fn) then
