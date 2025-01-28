@@ -296,9 +296,11 @@ function M.git_diff(ctx)
     "-c",
     "delta." .. vim.o.background .. "=true",
     "diff",
-    "--",
-    ctx.item.file,
+    "HEAD",
   }
+  if ctx.item.file then
+    vim.list_extend(cmd, { "--", ctx.item.file })
+  end
   if not native then
     table.insert(cmd, 2, "--no-pager")
   end
@@ -307,8 +309,8 @@ end
 
 ---@param ctx snacks.picker.preview.ctx
 function M.git_status(ctx)
-  local s = vim.trim(ctx.item.status):sub(1, 1)
-  if s == "?" then
+  local ss = ctx.item.status
+  if ss:find("^[A?]") then
     M.file(ctx)
   else
     M.git_diff(ctx)

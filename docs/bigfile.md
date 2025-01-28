@@ -46,7 +46,9 @@ The default implementation enables `syntax` for the buffer and disables
     Snacks.util.wo(0, { foldmethod = "manual", statuscolumn = "", conceallevel = 0 })
     vim.b.minianimate_disable = true
     vim.schedule(function()
-      vim.bo[ctx.buf].syntax = ctx.ft
+      if vim.api.nvim_buf_is_valid(ctx.buf) then
+        vim.bo[ctx.buf].syntax = ctx.ft
+      end
     end)
   end,
 }
