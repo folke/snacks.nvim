@@ -338,6 +338,9 @@ function M.resume()
   ret.matcher.task:on(
     "done",
     vim.schedule_wrap(function()
+      if ret.closed then
+        return
+      end
       ret.list:view(last.cursor, last.topline)
     end)
   )
