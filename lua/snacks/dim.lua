@@ -144,11 +144,12 @@ function M.disable()
   vim.cmd([[redraw!]])
 end
 
-function M.toggle()
+---@param opts? snacks.dim.Config
+function M.toggle(opts)
   if M.enabled then
     M.disable()
   else
-    M.enable()
+    M.enable(opts)
   end
 end
 

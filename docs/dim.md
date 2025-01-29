@@ -82,3 +82,10 @@ Snacks.dim.disable()
 ---@param opts? snacks.dim.Config
 Snacks.dim.enable(opts)
 ```
+### `Snacks.dim.toggle()`
+
+```lua
+---@param opts? snacks.dim.Config
+Snacks.dim.toggle(opts)
+```
+
