@@ -144,4 +144,12 @@ function M.disable()
   vim.cmd([[redraw!]])
 end
 
+function M.toggle()
+  if M.enabled then
+    M.disable()
+  else
+    M.enable()
+  end
+end
+
 return M
