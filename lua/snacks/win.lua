@@ -895,7 +895,7 @@ end
 function M:add_padding()
   local listchars = vim.split(self.opts.wo.listchars or "", ",")
   listchars = vim.tbl_filter(function(s)
-    return not s:find("eol:")
+    return not s:find("eol:") and s ~= ""
   end, listchars)
   table.insert(listchars, "eol: ")
   self.opts.wo.listchars = table.concat(listchars, ",")
