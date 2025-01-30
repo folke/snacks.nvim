@@ -133,7 +133,12 @@ local defaults = {
     },
     file = {
       filename_first = false, -- display filename before the file path
-      truncate = 40, -- truncate the file path to (roughly) this length
+      --- Truncate types:
+      --- * number: truncate the file path to (roughly) this length
+      --- * auto: similar to number, but based on the window width
+      --- * align: align filename to the right border of the window
+      ---@type number|"auto"|"align"|fun(item:snacks.picker.Item, picker:snacks.Picker):string
+      truncate = 40,
       filename_only = false, -- only show the filename
     },
     selected = {
