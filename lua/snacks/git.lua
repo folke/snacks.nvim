@@ -14,16 +14,21 @@ Snacks.config.style("blame_line", {
   ft = "git",
 })
 
-local git_cache = {} ---@type table<string, string>
+-- `string` for cache hit, `false` for cache miss
+local git_cache = {} ---@type table<string, string | false>
 local function is_git_root(dir)
-  if git_cache[dir] == nil and (vim.uv or vim.loop).fs_stat(dir .. "/.git") ~= nil then
-    git_cache[dir] = vim.fs.normalize(dir)
+  if git_cache[dir] == nil then
+    if (vim.uv or vim.loop).fs_stat(dir .. "/.git") ~= nil then
+      git_cache[dir] = vim.fs.normalize(dir)
+    else
+      git_cache[dir] = false
+    end
   end
   return git_cache[dir]
 end
 local function get_git_root()
-  local git_root = vim.system({ "git", "rev-parse", "--show-toplevel" }, { text = true }):wait().stdout
-  return git_root and vim.fs.normalize(git_root):gsub("[\n\r]", "")
+  local git_root = vim.fn.trim(vim.fn.system("git rev-parse --show-toplevel"))
+  return vim.fs.normalize(git_root)
 end
 
 --- Gets the git root for a buffer or path.
@@ -38,7 +43,7 @@ function M.get_root(path)
   -- check cache first
   for dir in vim.fs.parents(path) do
     if git_cache[dir] then
-      return git_cache[dir]
+      return git_cache[dir] or nil
     end
   end
 
