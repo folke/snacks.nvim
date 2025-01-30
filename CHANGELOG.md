@@ -1,5 +1,90 @@
 # Changelog
 
+## [2.16.0](https://github.com/folke/snacks.nvim/compare/v2.15.0...v2.16.0) (2025-01-30)
+
+
+### Features
+
+* **layout:** added support for split layouts (root box can be a split) ([6da592e](https://github.com/folke/snacks.nvim/commit/6da592e130295388ee64fe282eb0dafa0b99fa2f))
+* **layout:** make fullscreen work for split layouts ([115f8c6](https://github.com/folke/snacks.nvim/commit/115f8c6ae9c9a57b36677b728a6f6cc9207c6489))
+* **picker.actions:** added separate hl group for pick win current ([9b80e44](https://github.com/folke/snacks.nvim/commit/9b80e444f548aea26214a95ad9e1affc4ef5d91c))
+* **picker.actions:** separate edit_split etc in separate split and edit actions. Fixes [#791](https://github.com/folke/snacks.nvim/issues/791) ([3564f4f](https://github.com/folke/snacks.nvim/commit/3564f4fede6feefdfe1dc200295eb3b162996d6d))
+* **picker.config:** added `opts.config` which can be a function that can change the resolved options ([b37f368](https://github.com/folke/snacks.nvim/commit/b37f368a81d0a6ce8b7c9f683f9c0c736af6de36))
+* **picker.explorer:** added `explorer_move` action mapped to `m` ([08b9083](https://github.com/folke/snacks.nvim/commit/08b9083f4759c87c93f6afb4af0a1f3d2b8ad1fa))
+* **picker.explorer:** live search ([db52796](https://github.com/folke/snacks.nvim/commit/db52796e79c63dfa0d5d689d5d13b120f6184642))
+* **picker.files:** allow forcing the files finder to use a certain cmd ([3e1dc30](https://github.com/folke/snacks.nvim/commit/3e1dc300cc98815ad74ae11c98f7ebebde966c39))
+* **picker.format:** better path formatting for directories ([08f3c32](https://github.com/folke/snacks.nvim/commit/08f3c32c7d64a81ea35d1cb0d22fc140d25c9088))
+* **picker.format:** directory formatting ([847509e](https://github.com/folke/snacks.nvim/commit/847509e12c0cd95355cb05c97e1bc8bedde29957))
+* **picker.jump:** added `opts.jump.close`, which default to true, but is false for explorer ([a9591ed](https://github.com/folke/snacks.nvim/commit/a9591ed43f4de3b611028eadce7d36c4b3dedca8))
+* **picker.list:** added support for setting a cursor/topline target for the next render. Target clears when reached, or when finders finishes. ([da08379](https://github.com/folke/snacks.nvim/commit/da083792053e41c57e8ca5e9fe9e5b175b1e378d))
+* **picker:** `opts.focus = "input"|"list"|false` to configure what to focus (if anything) when showing the picker ([5a8d798](https://github.com/folke/snacks.nvim/commit/5a8d79847b1959f9c9515b51a062f6acbe22f1a4))
+* **picker:** `picker:iter()` now also returns `idx` ([118d908](https://github.com/folke/snacks.nvim/commit/118d90899d7b2bb0a28a799dbf2a21ed39516e66))
+* **picker:** added `edit_win` action bound to `ctrl+enter` to pick a window and edit ([2ba5be8](https://github.com/folke/snacks.nvim/commit/2ba5be84910d14454292423f08ad83ea213de2ba))
+* **picker:** added `git_stash` picker. Closes [#762](https://github.com/folke/snacks.nvim/issues/762) ([bb3db11](https://github.com/folke/snacks.nvim/commit/bb3db117a45da1dabe76f08a75144b028314e6b6))
+* **picker:** added `notifications` picker. Closes [#738](https://github.com/folke/snacks.nvim/issues/738) ([32cffd2](https://github.com/folke/snacks.nvim/commit/32cffd2e603ccace129b62c777933a42203c5c77))
+* **picker:** added support for split layouts to picker (sidebar and ivy_split) ([5496c22](https://github.com/folke/snacks.nvim/commit/5496c22b6e20a26d2252543029faead946cc2ce9))
+* **picker:** added support to keep the picker open when focusing another window (auto_close = false) ([ad8f166](https://github.com/folke/snacks.nvim/commit/ad8f16632c63a3082ea0e80a39cdbd774624532a))
+* **picker:** new file explorer `Snacks.picker.explorer()` ([00613bd](https://github.com/folke/snacks.nvim/commit/00613bd4163c89e01c1d534d283cfe531773fdc8))
+* **picker:** opening a picker with the same source as an active picker, will close it instead (toggle) ([b6cf033](https://github.com/folke/snacks.nvim/commit/b6cf033051aa2f859d9d217bc60e89806fcf5377))
+* **picker:** reworked toggles (flags). they're now configurable. Closes [#770](https://github.com/folke/snacks.nvim/issues/770) ([e16a6a4](https://github.com/folke/snacks.nvim/commit/e16a6a441322c944b41e9ae5b30ba816145218cd))
+* **rename:** optional `file`, `on_rename` for `Snacks.rename.rename_file()` ([9d8c277](https://github.com/folke/snacks.nvim/commit/9d8c277bebb9483b1d46c7eeeff348966076347f))
+
+
+### Bug Fixes
+
+* **bigfile:** check if buf still exists when applying syntax. Fixes [#737](https://github.com/folke/snacks.nvim/issues/737) ([08852ac](https://github.com/folke/snacks.nvim/commit/08852ac7f811f51d47a590d62df805d0e84e611a))
+* **bufdelete:** ctrl-c throw error in `fn.confirm` ([#750](https://github.com/folke/snacks.nvim/issues/750)) ([3a3e795](https://github.com/folke/snacks.nvim/commit/3a3e79535bb085815d3add9f678d30b98b5f900f))
+* **bufdelete:** invalid lua ([b1f4f99](https://github.com/folke/snacks.nvim/commit/b1f4f99a51ef1ca11a0c802b847501b71f09161b))
+* **dashboard:** better handling of closed dashboard win ([6cb7fdf](https://github.com/folke/snacks.nvim/commit/6cb7fdfb036239b9c1b6d147633e494489a45191))
+* **dashboard:** don't override user configuration ([#774](https://github.com/folke/snacks.nvim/issues/774)) ([5ff2ad3](https://github.com/folke/snacks.nvim/commit/5ff2ad320b0cd1e17d48862c74af0df205894f37))
+* **dashboard:** fix dasdhboard when opening in a new win. Closes [#767](https://github.com/folke/snacks.nvim/issues/767) ([d44b978](https://github.com/folke/snacks.nvim/commit/d44b978d7dbe7df8509a172cef0913b5a9ac77e3))
+* **dashboard:** prevent starting picker twice when no session manager. Fixes [#783](https://github.com/folke/snacks.nvim/issues/783) ([2f396b3](https://github.com/folke/snacks.nvim/commit/2f396b341dc1a072643eb402bfaa8a73f6be19a1))
+* **filter:** insert path from `filter.paths` into `self.paths` ([#761](https://github.com/folke/snacks.nvim/issues/761)) ([ac20c6f](https://github.com/folke/snacks.nvim/commit/ac20c6ff5d0ac8747e164d592e8ae7e8f2581b2e))
+* **layout:** better handling of resizing of split layouts ([c8ce9e2](https://github.com/folke/snacks.nvim/commit/c8ce9e2b33623d21901e02213319270936e4545f))
+* **layout:** better update check for split layouts ([b50d697](https://github.com/folke/snacks.nvim/commit/b50d697ce45dbee5efe25371428b7f23b037d0ed))
+* **layout:** make sure split layouts are still visible when a float layout with backdrop opens ([696d198](https://github.com/folke/snacks.nvim/commit/696d1981b18ad1f0cc0e480aafed78a064730417))
+* **matcher.score:** correct prev_class for transition bonusses when in a gap. Fixes [#787](https://github.com/folke/snacks.nvim/issues/787) ([b45d0e0](https://github.com/folke/snacks.nvim/commit/b45d0e03579c80ac901261e0e2705a1be3dfcb20))
+* **picker.actions:** detect and report circular action references ([0ffc003](https://github.com/folke/snacks.nvim/commit/0ffc00367a957c1602df745c2038600d48d96305))
+* **picker.actions:** proper cr check ([6c9f866](https://github.com/folke/snacks.nvim/commit/6c9f866b3123cbc8cbef91f55593d30d98d4f26a))
+* **picker.actions:** stop pick_win when no target and only unhide when picker wasn't stopped ([4a1d189](https://github.com/folke/snacks.nvim/commit/4a1d189f9f7afac4180f7a459597bb094d11435b))
+* **picker.actions:** when only 1 win, `pick_win` will select that automatically. Show warning when no windows. See [#623](https://github.com/folke/snacks.nvim/issues/623) ([ba5a70b](https://github.com/folke/snacks.nvim/commit/ba5a70b84d12aa9e497cfea86d5358aa5cf0aad3))
+* **picker.config:** fix wrong `opts.cwd = true` config. Closes [#757](https://github.com/folke/snacks.nvim/issues/757) ([ea44a2d](https://github.com/folke/snacks.nvim/commit/ea44a2d4c21aa10fb57fe08b974999f7b8d117d2))
+* **picker.config:** normalize `opts.cwd` ([69c013e](https://github.com/folke/snacks.nvim/commit/69c013e1b27e2f70def48576aaffcc1081fa0e47))
+* **picker.explorer:** fix cwd for items ([71070b7](https://github.com/folke/snacks.nvim/commit/71070b78f0482a42448da2cee64ed0d84c507314))
+* **picker.explorer:** stop file follow when picker was closed ([89fcb3b](https://github.com/folke/snacks.nvim/commit/89fcb3bb2025cb1c986e9af3478715f6e0bdf425))
+* **picker.explorer:** when searching, go to first non internal node in the list ([276497b](https://github.com/folke/snacks.nvim/commit/276497b3969cdefd18aa731c5e3d5c1bb8289cca))
+* **picker.filter:** proper cwd check. See [#757](https://github.com/folke/snacks.nvim/issues/757) ([e4ae9e3](https://github.com/folke/snacks.nvim/commit/e4ae9e32295d688a1e0d3f59ab1ba4cc78d1ba89))
+* **picker.git:** better stash pattern. Closes [#775](https://github.com/folke/snacks.nvim/issues/775) ([e960010](https://github.com/folke/snacks.nvim/commit/e960010496f860d1077f1e54d193e127ad7e26ad))
+* **picker.git:** default to git root for `git_files`. Closes [#751](https://github.com/folke/snacks.nvim/issues/751) ([3cdebee](https://github.com/folke/snacks.nvim/commit/3cdebee880742970df1a1f685be4802b90642c7d))
+* **picker.git:** ignore autostash ([2b15357](https://github.com/folke/snacks.nvim/commit/2b15357c25db315567f08e7ec8d5c85c94d0753f))
+* **picker.git:** show diff for staged files. Fixes [#747](https://github.com/folke/snacks.nvim/issues/747) ([e87f0ff](https://github.com/folke/snacks.nvim/commit/e87f0ffcd100a3a6686549e25f480c1311f08d8f))
+* **picker.layout:** fix list cursorline when layout updates ([3f43026](https://github.com/folke/snacks.nvim/commit/3f43026f579f33b679a924dea699df86e8b965b2))
+* **picker.layout:** make split layouts work in layout preview ([215ae72](https://github.com/folke/snacks.nvim/commit/215ae72daaed5d7ee18b72e8b14bfd6a727bc939))
+* **picker.lsp:** remove symbol detail from search text. too noisy ([92710df](https://github.com/folke/snacks.nvim/commit/92710dfb0bacc72a82e0172bb06f5eb9ad82964a))
+* **picker.multi:** apply source filter settings for multi source pickers. See [#761](https://github.com/folke/snacks.nvim/issues/761) ([4e30ff0](https://github.com/folke/snacks.nvim/commit/4e30ff0f1ed58b0bdc8fd3f5f1a9a440959eb998))
+* **picker.preview:** don't enable numbers when minimal=true ([04e2995](https://github.com/folke/snacks.nvim/commit/04e2995bbfc505d0fc91263712d0255f102f404e))
+* **picker.preview:** don't error on invalid start positions for regex. Fixes [#784](https://github.com/folke/snacks.nvim/issues/784) ([460b58b](https://github.com/folke/snacks.nvim/commit/460b58bdbd57e32a1bed22b3e176fa53befeafaa))
+* **picker.preview:** only show binary message when binary and no ft. Closes [#729](https://github.com/folke/snacks.nvim/issues/729) ([ea838e2](https://github.com/folke/snacks.nvim/commit/ea838e28383d74d60cd6d714cac9b007a4a4469a))
+* **picker.resume:** fix picker is nil ([#772](https://github.com/folke/snacks.nvim/issues/772)) ([1a5a087](https://github.com/folke/snacks.nvim/commit/1a5a0871c822e5de8e69c10bb1d6cb3dfc2f5c86))
+* **picker.score:** scoring closer to fzf. See [#787](https://github.com/folke/snacks.nvim/issues/787) ([390f017](https://github.com/folke/snacks.nvim/commit/390f017c3b227377c09ae6572f88b7c42304b811))
+* **picker.select:** allow configuring `vim.ui.select` with the `select` source. Closes [#776](https://github.com/folke/snacks.nvim/issues/776) ([d70af2d](https://github.com/folke/snacks.nvim/commit/d70af2d253f61164a44a8676a5fc316cad10497f))
+* **picker.util:** proper cwd check for paths. Fixes [#754](https://github.com/folke/snacks.nvim/issues/754). See [#757](https://github.com/folke/snacks.nvim/issues/757) ([1069d78](https://github.com/folke/snacks.nvim/commit/1069d783347a7a5213240e2e12e485ab57e15bd8))
+* **picker:** better handling of win Enter/Leave mostly for split layouts ([046653a](https://github.com/folke/snacks.nvim/commit/046653a4f166633339a276999738bac43c3c1388))
+* **picker:** don't destroy active pickers (only an issue when multiple pickers were open) ([b479f10](https://github.com/folke/snacks.nvim/commit/b479f10b24a8cf5325bc575e1bab2fc51ebfde45))
+* **picker:** only do preview scrolling when preview is scrolling and removed default preview horizontal scrolling keymaps ([a998c71](https://github.com/folke/snacks.nvim/commit/a998c714c31ab92a06b9edafef71251b63f0eb5b))
+* **picker:** show new notifications on top ([0df7c0b](https://github.com/folke/snacks.nvim/commit/0df7c0bef59be861f3e6682aa1381f6422f4a0af))
+* **picker:** split edit_win in `{"pick_win", "jump"}` ([dcd3bc0](https://github.com/folke/snacks.nvim/commit/dcd3bc03295a8521773c04671298bd3fdcb14f7b))
+* **picker:** stopinsert again ([2250c57](https://github.com/folke/snacks.nvim/commit/2250c57529b1a8da4d96966db1cd9a46b73d8007))
+* **win:** don't destroy opts. Fixes [#726](https://github.com/folke/snacks.nvim/issues/726) ([473be03](https://github.com/folke/snacks.nvim/commit/473be039e59730b0554a7dfda2eb800ecf7a948e))
+* **win:** error when enabling padding with `listchars=""` ([#786](https://github.com/folke/snacks.nvim/issues/786)) ([6effbcd](https://github.com/folke/snacks.nvim/commit/6effbcdff110c16f49c2cef5d211db86f6db5820))
+
+
+### Performance Improvements
+
+* **picker.matcher:** optimize matcher priorities and skip items that can't match for pattern subset ([dfaa18d](https://github.com/folke/snacks.nvim/commit/dfaa18d1c72a78cacfe0a682c853b7963641444c))
+* **picker.recent:** correct generator for old files ([5f32414](https://github.com/folke/snacks.nvim/commit/5f32414dd645ab7650dc60379f422b00aaecea4f))
+* **picker.score:** no need to track `in_gap` status. redundant since we can depend on `gap` instead ([fdf4b0b](https://github.com/folke/snacks.nvim/commit/fdf4b0bf26743eef23e645235915aa4920827daf))
+
 ## [2.15.0](https://github.com/folke/snacks.nvim/compare/v2.14.0...v2.15.0) (2025-01-23)
 
 
