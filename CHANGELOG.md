@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.17.0](https://github.com/folke/snacks.nvim/compare/v2.16.0...v2.17.0) (2025-01-30)
+
+
+### Features
+
+* **picker.actions:** allow selecting the visual selection with `&lt;Tab&gt;` ([96c76c6](https://github.com/folke/snacks.nvim/commit/96c76c6d9d401c2205d73639389b32470c550e6a))
+* **picker.explorer:** focus dir on confirm from search ([605f745](https://github.com/folke/snacks.nvim/commit/605f7451984f0011635423571ad83ab74f342ed8))
+
+
+### Bug Fixes
+
+* **git:** basic support for git work trees ([d76d9aa](https://github.com/folke/snacks.nvim/commit/d76d9aaaf2399c6cf15c5b37a9183680b106a4af))
+* **picker.preview:** properly refresh the preview after layout changes. Fixes [#802](https://github.com/folke/snacks.nvim/issues/802) ([47993f9](https://github.com/folke/snacks.nvim/commit/47993f9a809ce13e98c3132d463d5a3002289fd6))
+* **picker:** add proper close ([15a9411](https://github.com/folke/snacks.nvim/commit/15a94117e17d78c8c2e579d20988d4cb9e85d098))
+* **picker:** make jumping work again... ([f40f338](https://github.com/folke/snacks.nvim/commit/f40f338d669bf2d54b224e4a973c52c8157fe505))
+* **picker:** show help for input / list window with `?`. ([87dab7e](https://github.com/folke/snacks.nvim/commit/87dab7eca7949b85c0ee688f86c08b8c437f9433))
+* **win:** properly handle closing the last window. Fixes [#793](https://github.com/folke/snacks.nvim/issues/793) ([18de5bb](https://github.com/folke/snacks.nvim/commit/18de5bb23898fa2055afee5035c97a2abe4aae6b))
+
 ## [2.16.0](https://github.com/folke/snacks.nvim/compare/v2.15.0...v2.16.0) (2025-01-30)
 
 
