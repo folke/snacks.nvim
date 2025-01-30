@@ -24,10 +24,10 @@ function M.files(opts, ctx)
     table.insert(args, "--recurse-submodules")
   end
   if not opts.cwd then
-    opts.cwd = Snacks.git.get_root()
+    opts.cwd = Snacks.git.get_root() or uv.cwd() or "."
     ctx.picker:set_cwd(opts.cwd)
   end
-  local cwd = vim.fs.normalize(opts and opts.cwd or uv.cwd() or ".") or nil
+  local cwd = vim.fs.normalize(opts.cwd) or nil
   return require("snacks.picker.source.proc").proc({
     opts,
     {
@@ -186,7 +186,7 @@ function M.branches(opts, ctx)
     --- e.g. "* (HEAD detached at f65a2c8) f65a2c8 chore(build): auto-generate docs"
     "^(.)%s(%b())%s+(" .. commit_pat .. ")%s*(.*)$",
     --- e.g. "  main                       d2b2b7b [origin/main: behind 276] chore(build): auto-generate docs"
-    "^(.)%s(%S+)%s+(".. commit_pat .. ")%s*(.*)$",
+    "^(.)%s(%S+)%s+(" .. commit_pat .. ")%s*(.*)$",
     -- stylua: ignore end
   } ---@type string[]
 
