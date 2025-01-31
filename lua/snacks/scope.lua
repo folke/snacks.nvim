@@ -43,6 +43,7 @@ local defaults = {
     -- detect scope based on treesitter.
     -- falls back to indent based detection if not available
     enabled = true,
+    ignore_injections = false, -- do not ignore injected languages, helpful for languages like vue
     ---@type string[]|{enabled?:boolean}
     blocks = {
       enabled = false, -- enable to use the following blocks
@@ -410,7 +411,12 @@ function TSScope:find(opts)
     (vim.fn.getline(line):find("%S") or 1) - 1, -- find first non-space character
   }
 
-  local node = vim.treesitter.get_node({ pos = pos, bufnr = opts.buf, lang = lang })
+  local node = vim.treesitter.get_node({
+    pos = pos,
+    bufnr = opts.buf,
+    lang = lang,
+    ignore_injections = opts.treesitter.ignore_injections,
+  })
   if not node then
     return
   end
