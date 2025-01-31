@@ -492,6 +492,14 @@ function M.list_scroll_up(picker)
   picker.list:scroll(-picker.list.state.scroll)
 end
 
+function M.list_scroll_left(picker)
+  picker.list.win:hscroll(true)
+end
+
+function M.list_scroll_right(picker)
+  picker.list.win:hscroll()
+end
+
 function M.list_scroll_wheel_down(picker)
   local mouse_win = vim.fn.getmousepos().winid
   if mouse_win == picker.list.win.win then

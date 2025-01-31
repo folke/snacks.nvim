@@ -216,6 +216,8 @@ local defaults = {
         ["<c-f>"] = { "preview_scroll_down", mode = { "i", "n" } },
         ["<c-g>"] = { "toggle_live", mode = { "i", "n" } },
         ["<c-u>"] = { "list_scroll_up", mode = { "i", "n" } },
+        ["h"] = { "list_scroll_left", mode = { "n" } },
+        ["l"] = { "list_scroll_right", mode = { "n" } },
         ["<ScrollWheelDown>"] = { "list_scroll_wheel_down", mode = { "i", "n" } },
         ["<ScrollWheelUp>"] = { "list_scroll_wheel_up", mode = { "i", "n" } },
         ["<c-v>"] = { "edit_vsplit", mode = { "i", "n" } },
