@@ -1,5 +1,53 @@
 # Changelog
 
+## [2.18.0](https://github.com/folke/snacks.nvim/compare/v2.17.0...v2.18.0) (2025-02-01)
+
+
+### Features
+
+* **dashboard:** play nice with file explorer netrw replacement ([5420a64](https://github.com/folke/snacks.nvim/commit/5420a64b66fd7350f5bb9d5dea2372850ea59969))
+* **explorer.git:** added git_status_open. When false, then dont show recursive git status in open directories ([8646ba4](https://github.com/folke/snacks.nvim/commit/8646ba469630b73a34c06243664fb5607c0a43fa))
+* **explorer:** added git status. Closes [#817](https://github.com/folke/snacks.nvim/issues/817) ([5cae48d](https://github.com/folke/snacks.nvim/commit/5cae48d93c875efa302bdffa995e4b057e2c3731))
+* **explorer:** keep expanded dir state. Closes [#816](https://github.com/folke/snacks.nvim/issues/816) ([31984e8](https://github.com/folke/snacks.nvim/commit/31984e88a51652bda4997456c53113cbdc811cb4))
+* **explorer:** navigate with h/l to close/open directories. Closes [#833](https://github.com/folke/snacks.nvim/issues/833) ([4b29ddc](https://github.com/folke/snacks.nvim/commit/4b29ddc5d9856ff49a07d77a43634e00b06f4d31))
+* **explorer:** new `explorer` module with shortcut to start explorer picker and netrw replacement functionlity ([670c673](https://github.com/folke/snacks.nvim/commit/670c67366f0025fc4ebb78ba35a7586b7477989a))
+* **explorer:** update on cwd change ([8dea225](https://github.com/folke/snacks.nvim/commit/8dea2252094ca3dc6d2073ab0015b7bcee396e24))
+* **explorer:** update status when saving a file that is currently visible ([78d4116](https://github.com/folke/snacks.nvim/commit/78d4116662d38acb8456ffc6869204b487b472f8))
+* **picker.lines:** jump to first position of match. Closes [#806](https://github.com/folke/snacks.nvim/issues/806) ([ae897f3](https://github.com/folke/snacks.nvim/commit/ae897f329f06695ee3482e2cd768797d5af3e277))
+* **picker:** added support for double cliking and confirm ([8b26bae](https://github.com/folke/snacks.nvim/commit/8b26bae6bb01db22dbd3c6f868736487265025c0))
+
+
+### Bug Fixes
+
+* **dashboard:** update on VimResized and WinResized ([558b0ee](https://github.com/folke/snacks.nvim/commit/558b0ee04d0c6e1acf842774fbf9e02cce3efb0e))
+* **explorer:** after search, cursor always jumped to top. Closes [#827](https://github.com/folke/snacks.nvim/issues/827) ([d17449e](https://github.com/folke/snacks.nvim/commit/d17449ee90b78843a22ee12ae29c3c110b28eac7))
+* **explorer:** always use `--follow` to make sure we see dir symlinks as dirs. Fixes [#814](https://github.com/folke/snacks.nvim/issues/814) ([151fd3d](https://github.com/folke/snacks.nvim/commit/151fd3d62d73e0ec122bb243003c3bd59d53f8ef))
+* **explorer:** cwd is now changed automatically, so no need to update state. ([5549d4e](https://github.com/folke/snacks.nvim/commit/5549d4e848b865ad4cc5bbb9bdd9487d631c795b))
+* **explorer:** don't disable netrw fully. Just the autocmd that loads a directory ([836eb9a](https://github.com/folke/snacks.nvim/commit/836eb9a4e9ca0d7973f733203871d70691447c2b))
+* **explorer:** don't try to show when closed. Fixes [#836](https://github.com/folke/snacks.nvim/issues/836) ([6921cd0](https://github.com/folke/snacks.nvim/commit/6921cd06ac7b530d786b2282afdfce67762008f1))
+* **explorer:** fixed hierarchical sorting. Closes [#828](https://github.com/folke/snacks.nvim/issues/828) ([fa32e20](https://github.com/folke/snacks.nvim/commit/fa32e20e9910f8071979f16788832027d1e25850))
+* **git:** use os.getenv to get env var. Fixes [#5504](https://github.com/folke/snacks.nvim/issues/5504) ([16d700e](https://github.com/folke/snacks.nvim/commit/16d700eb65fc320a5ab8e131d8f5d185b241887b))
+* **layout:** adjust zindex when needed when another layout is already open. Closes [#826](https://github.com/folke/snacks.nvim/issues/826) ([ab8af1b](https://github.com/folke/snacks.nvim/commit/ab8af1bb32a4d9f82156122056d07a0850c2a828))
+* **picker.actions:** fix split/vsplit/tab. Closes [#818](https://github.com/folke/snacks.nvim/issues/818) ([ff02241](https://github.com/folke/snacks.nvim/commit/ff022416dd6e6dade2ee822469d0087fcf3e0509))
+* **picker.actions:** tab -&gt; tabnew. Closes [#842](https://github.com/folke/snacks.nvim/issues/842) ([d962d5f](https://github.com/folke/snacks.nvim/commit/d962d5f3359dc91da7aa54388515fd0b03a2fe8b))
+* **picker.explorer:** do LSP stuff on move ([894ff74](https://github.com/folke/snacks.nvim/commit/894ff749300342593007e6366894b681b3148f19))
+* **picker.format:** extra slash in path ([dad3e00](https://github.com/folke/snacks.nvim/commit/dad3e00e83ec8a8af92e778e29f2fe200ad0d969))
+* **picker.format:** use item.file for filename_only ([e784a9e](https://github.com/folke/snacks.nvim/commit/e784a9e6723371f8f453a92edb03d68428da74cc))
+* **picker.keymaps:** added normalized lhs to search text ([fbd39a4](https://github.com/folke/snacks.nvim/commit/fbd39a48df085a7df979a06b1003faf86625c157))
+* **picker.lazy:** don't use live searches. Fixes [#809](https://github.com/folke/snacks.nvim/issues/809) ([1a5fd93](https://github.com/folke/snacks.nvim/commit/1a5fd93b89904b8f8029e6ee74e6d6ada87f28c5))
+* **picker.lines:** col is first non-whitespace. Closes [#806](https://github.com/folke/snacks.nvim/issues/806) ([ec8eb60](https://github.com/folke/snacks.nvim/commit/ec8eb6051530261e7d0e5566721e5c396c1ed6cd))
+* **picker:** make pick_win work with split layouts. Closes [#834](https://github.com/folke/snacks.nvim/issues/834) ([6dbc267](https://github.com/folke/snacks.nvim/commit/6dbc26757cb043c8153a4251a1f75bff4dcadf68))
+* **picker:** multi layouts that need async task work again. ([cd44efb](https://github.com/folke/snacks.nvim/commit/cd44efb60ce70382de02d069e269bb40e5e7fa22))
+* **picker:** no auto-close when entering a floating window ([08e6c12](https://github.com/folke/snacks.nvim/commit/08e6c12358d57dfb497f8ce7de7eb09134868dc7))
+* **picker:** no need to track jumping ([b37ea74](https://github.com/folke/snacks.nvim/commit/b37ea748b6ff56cd479600b1c39d19a308ee7eae))
+* **picker:** show_empty for files / grep. Closes [#808](https://github.com/folke/snacks.nvim/issues/808) ([a13ff6f](https://github.com/folke/snacks.nvim/commit/a13ff6fe0f68c3242d6be5e352d762b6037a9695))
+* **util:** better default icons when no icon plugin is installed ([0e4ddfd](https://github.com/folke/snacks.nvim/commit/0e4ddfd3ee1d81def4028e52e44e45ac3ce98cfc))
+
+
+### Performance Improvements
+
+* **git:** also check top-level path to see if it's a git root. Closes [#807](https://github.com/folke/snacks.nvim/issues/807) ([b9e7c51](https://github.com/folke/snacks.nvim/commit/b9e7c51e8f7eea876275e52f1083b58f9d2df92f))
+
 ## [2.17.0](https://github.com/folke/snacks.nvim/compare/v2.16.0...v2.17.0) (2025-01-30)
 
 
