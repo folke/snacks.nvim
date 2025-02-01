@@ -258,10 +258,10 @@ local function setqflist(items, opts)
   end
   if opts and opts.win then
     vim.fn.setloclist(opts.win, qf)
-    vim.cmd("lopen")
+    vim.cmd("botright lopen")
   else
     vim.fn.setqflist(qf)
-    vim.cmd("copen")
+    vim.cmd("botright copen")
   end
 end
 
