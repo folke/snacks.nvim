@@ -56,4 +56,25 @@ function M.idx()
   end
 end
 
+local index_biased_score = function(score, idx)
+  -- thank you Telescope (fuzzy_with_index_bias)
+  -- this will decrease from 2 to 0 unlike in Telescope
+  local descending_index_based_fraction = 2 - math.min(math.pow(idx, 0.25), 2)
+  return descending_index_based_fraction * score
+end
+function M.idx_biased_score()
+  ---@param a snacks.picker.Item
+  ---@param b snacks.picker.Item
+  return function(a, b)
+    local a_score = index_biased_score(a.score, a.idx)
+    local b_score = index_biased_score(b.score, b.idx)
+
+    if a_score == 0 and b_score == 0 then
+      return a.idx < b.idx
+    end
+
+    return a_score > b_score
+  end
+end
+
 return M
