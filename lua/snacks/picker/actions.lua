@@ -386,6 +386,13 @@ function M.cmd(picker, item)
   picker:close()
   if item and item.cmd then
     vim.schedule(function()
+      if item.command and (item.command.nargs == "1" or item.command.nargs == "*" or item.command.nargs == "?") then
+        local keys = ":" .. item.cmd .. " "
+        local escaped = vim.api.nvim_replace_termcodes(keys, true, false, true)
+
+        return vim.api.nvim_feedkeys(escaped, "n", true)
+      end
+
       vim.cmd(item.cmd)
     end)
   end
