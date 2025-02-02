@@ -15,8 +15,6 @@ local M = {}
 ---@class snacks.picker.history.Config: snacks.picker.Config
 ---@field name string
 
-local uv = vim.uv or vim.loop
-
 function M.commands()
   local commands = vim.api.nvim_get_commands({})
   for k, v in pairs(vim.api.nvim_buf_get_commands(0, {})) do
