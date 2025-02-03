@@ -129,9 +129,10 @@ function M.git_log(item, picker)
   if item.date then
     ret[#ret + 1] = { a(item.date, 16), "SnacksPickerGitDate" }
   end
+  ret[#ret + 1] = { " " }
 
   local msg = item.msg ---@type string
-  local type, scope, breaking, body = msg:match("^(%S+)(%(.-%))(!?):%s*(.*)$")
+  local type, scope, breaking, body = msg:match("^(%S+)%s*(%(.-%))(!?):%s*(.*)$")
   if not type then
     type, breaking, body = msg:match("^(%S+)(!?):%s*(.*)$")
   end
