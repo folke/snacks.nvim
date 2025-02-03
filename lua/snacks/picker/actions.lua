@@ -285,6 +285,60 @@ function M.git_checkout(picker, item)
   end
 end
 
+function M.git_create_branch(picker)
+  local branch_name = picker.input:get()
+  if branch_name == "" then
+    Snacks.notify.error("No Branch Name Specified.", { title = "Snacks Picker" })
+    return
+  end
+
+  local check_cmd = { "git", "branch", "--list", branch_name }
+  Snacks.picker.util.cmd(check_cmd, function(data)
+    if data[1] ~= "" then
+      Snacks.notify.error("Branch '" .. branch_name .. "' already exists.", { title = "Snacks Picker" })
+      return
+    end
+
+    picker:close()
+    local cmd = { "git", "checkout", "-b", branch_name }
+    Snacks.picker.util.cmd(cmd, function()
+      Snacks.notify("Creating Branch " .. branch_name, { title = "Snacks Picker" })
+      vim.cmd.checktime()
+    end, {})
+  end, {})
+end
+
+function M.git_delete_branch(picker, item)
+  if item then
+    local what = item.branch
+    if not what then
+      Snacks.notify.warn("No branch or commit found", { title = "Snacks Picker" })
+      return
+    end
+
+    local check_cmd = { "git", "rev-parse", "--abbrev-ref", "HEAD" }
+    Snacks.picker.util.cmd(check_cmd, function(data)
+      print()
+      -- Check if we are on the same branch
+      if data[1]:match(what) ~= nil then
+        Snacks.notify.error("Cannot delete the currently checked-out branch!", { title = "Snacks Picker" })
+        return
+      end
+
+      -- Proceed with deletion
+      local cmd = { "git", "branch", "-d", what }
+      Snacks.picker.util.cmd(cmd, function()
+        Snacks.notify("Deleting Branch " .. what, { title = "Snacks Picker" })
+        vim.cmd.checktime()
+
+        picker.list:set_selected()
+        picker.list:set_target()
+        picker:find()
+      end, {})
+    end, {})
+  end
+end
+
 ---@param items snacks.picker.Item[]
 ---@param opts? {win?:number}
 local function setqflist(items, opts)

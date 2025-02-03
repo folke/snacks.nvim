@@ -190,6 +190,14 @@ M.git_branches = {
   format = "git_branch",
   preview = "git_log",
   confirm = "git_checkout",
+  win = {
+    input = {
+      keys = {
+        ["<c-a>"] = { "git_create_branch", mode = { "n", "i" } },
+        ["<c-x>"] = { "git_delete_branch", mode = { "n", "i" } },
+      },
+    },
+  },
   on_show = function(picker)
     for i, item in ipairs(picker:items()) do
       if item.current then
