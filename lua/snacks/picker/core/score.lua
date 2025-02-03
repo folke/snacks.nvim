@@ -177,6 +177,9 @@ function M:update(pos)
   if not self.prev then
     bonus = (bonus * BONUS_FIRST_CHAR_MULTIPLIER)
   end
+  if not self.opts.boundary_case_bonus then
+    bonus = 0
+  end
 
   self.score = self.score + SCORE_MATCH + bonus
 

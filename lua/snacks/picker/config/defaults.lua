@@ -126,6 +126,7 @@ local defaults = {
     -- so this can have a performance impact for large lists and increase memory usage
     cwd_bonus = false, -- give bonus for matching files in the cwd
     frecency = false, -- frecency bonus
+    boundary_case_bonus = true, -- give boundary/camel bonus
   },
   sort = {
     -- default sort is by score, text length and index
