@@ -7,14 +7,6 @@ local M = {}
 
 local islist = vim.islist or vim.tbl_islist
 
----@class snacks.picker
----@field lsp_definitions? fun(opts?: snacks.picker.lsp.Config):snacks.Picker
----@field lsp_implementations? fun(opts?: snacks.picker.lsp.Config):snacks.Picker
----@field lsp_declarations? fun(opts?: snacks.picker.lsp.Config):snacks.Picker
----@field lsp_type_definitions? fun(opts?: snacks.picker.lsp.Config):snacks.Picker
----@field lsp_references? fun(opts?: snacks.picker.lsp.references.Config):snacks.Picker
----@field lsp_symbols? fun(opts?: snacks.picker.lsp.symbols.Config):snacks.Picker
-
 ---@alias lsp.Symbol lsp.SymbolInformation|lsp.DocumentSymbol
 ---@alias lsp.Loc lsp.Location|lsp.LocationLink
 
@@ -168,6 +160,19 @@ function M.fix_locs(locs)
   end
 end
 
+function M.bufmap()
+  local bufmap = {} ---@type table<string,number>
+  for _, b in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.bo[b].buflisted and vim.bo[b].buftype == "" and vim.api.nvim_buf_is_loaded(b) then
+      local name = vim.api.nvim_buf_get_name(b)
+      if name ~= "" then
+        bufmap[name] = b
+      end
+    end
+  end
+  return bufmap
+end
+
 ---@param method string
 ---@param opts snacks.picker.lsp.Config|{context?:lsp.ReferenceContext}
 ---@param filter snacks.picker.Filter
@@ -177,6 +182,7 @@ function M.get_locations(method, opts, filter)
   local fname = vim.api.nvim_buf_get_name(buf)
   fname = vim.fs.normalize(fname)
   local cursor = vim.api.nvim_win_get_cursor(win)
+  local bufmap = M.bufmap()
 
   ---@async
   ---@param cb async fun(item: snacks.picker.finder.Item)
@@ -218,7 +224,7 @@ function M.get_locations(method, opts, filter)
         ---@type snacks.picker.finder.Item
         local item = {
           text = loc.filename .. " " .. loc.text,
-          buf = loc.bufnr,
+          buf = bufmap[loc.filename],
           file = loc.filename,
           pos = { loc.lnum, loc.col - 1 },
           end_pos = loc.end_lnum and loc.end_col and { loc.end_lnum, loc.end_col - 1 } or nil,
@@ -341,6 +347,7 @@ function M.symbols(opts, ctx)
     end
   end
 
+  local bufmap = M.bufmap()
   local filter = opts.filter[vim.bo[buf].filetype]
   if filter == nil then
     filter = opts.filter.default
@@ -370,6 +377,7 @@ function M.symbols(opts, ctx)
       })
       for _, item in ipairs(items) do
         item.tree = opts.tree
+        item.buf = bufmap[item.file]
         ---@diagnostic disable-next-line: await-in-sync
         cb(item)
       end

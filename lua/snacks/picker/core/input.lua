@@ -178,6 +178,7 @@ function M:set(pattern, search)
   vim.api.nvim_buf_set_lines(self.win.buf, 0, -1, false, {
     self.picker.opts.live and self.filter.search or self.filter.pattern,
   })
+  vim.bo[self.win.buf].modified = false
   vim.api.nvim_win_set_cursor(self.win.win, { 1, #self:get() + 1 })
   self.totals = ""
   self.win.opts.wo.statuscolumn = ""

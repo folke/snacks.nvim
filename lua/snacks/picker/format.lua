@@ -2,6 +2,8 @@
 ---@field [string] snacks.picker.format
 local M = {}
 
+local uv = vim.uv or vim.loop
+
 function M.severity(item, picker)
   local ret = {} ---@type snacks.picker.Highlight[]
   local severity = item.severity
@@ -95,6 +97,17 @@ function M.filename(item, picker)
     end
   end
   ret[#ret + 1] = { " " }
+  if item.type == "link" then
+    local real = uv.fs_realpath(item.file)
+    local broken = not real
+    real = real or uv.fs_readlink(item.file)
+    if real then
+      ret[#ret + 1] = { "-> ", "SnacksPickerDelim" }
+      ret[#ret + 1] =
+        { Snacks.picker.util.truncpath(real, 20), broken and "SnacksPickerLinkBroken" or "SnacksPickerLink" }
+      ret[#ret + 1] = { " " }
+    end
+  end
   return ret
 end
 

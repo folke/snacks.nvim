@@ -74,11 +74,9 @@ end
 ---@param filter snacks.picker.Filter
 ---@return boolean changed
 function M:init(filter)
-  if self.filter and (self.filter.search == filter.search and self.filter.source_id == filter.source_id) then
-    return false
-  end
+  local ret = not (self.filter and (self.filter.search == filter.search and self.filter.source_id == filter.source_id))
   self.filter = filter
-  return true
+  return ret
 end
 
 ---@generic T: table

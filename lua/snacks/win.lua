@@ -859,6 +859,7 @@ function M:set_buf(buf)
   assert(self:valid(), "Window is not valid")
   self.buf = buf
   vim.api.nvim_win_set_buf(self.win, buf)
+  Snacks.util.wo(self.win, self.opts.wo)
 end
 
 function M:map()

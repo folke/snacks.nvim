@@ -5,6 +5,9 @@ local M = {}
 ---@class snacks.picker.jump.Action: snacks.picker.Action
 ---@field cmd? snacks.picker.EditCmd
 
+---@class snacks.picker.layout.Action: snacks.picker.Action
+---@field layout? snacks.picker.layout.Config|string
+
 ---@enum (key) snacks.picker.EditCmd
 local edit_cmd = {
   edit = "buffer",
@@ -90,8 +93,13 @@ function M.jump(picker, _, action)
 
       -- use an existing window if possible
       if cmd == "buffer" and #items == 1 and picker.opts.jump.reuse_win and buf ~= current_buf then
-        win = vim.fn.win_findbuf(buf)[1] or win
-        vim.api.nvim_set_current_win(win)
+        for _, w in ipairs(vim.fn.win_findbuf(buf)) do
+          if vim.api.nvim_win_get_config(w).relative == "" then
+            win = w
+            vim.api.nvim_set_current_win(win)
+            break
+          end
+        end
       end
 
       -- open the first buffer
@@ -149,6 +157,27 @@ M.edit = M.jump
 M.edit_split = M.split
 M.edit_vsplit = M.vsplit
 M.edit_tab = M.tab
+
+function M.layout(picker, _, action)
+  ---@cast action snacks.picker.layout.Action
+  assert(action.layout, "Layout action requires a layout")
+  local opts = type(action.layout) == "table" and { layout = action.layout } or action.layout
+  ---@cast opts snacks.picker.Config
+  local layout = Snacks.picker.config.layout(opts)
+  picker:set_layout(layout)
+  -- Adjust some options for split layouts
+  if (layout.layout.position or "float") ~= "float" then
+    picker.opts.auto_close = false
+    picker.opts.jump.close = false
+    picker:toggle_preview(false)
+    picker.list.win:focus()
+  end
+end
+
+M.layout_top = { action = "layout", layout = "top" }
+M.layout_bottom = { action = "layout", layout = "bottom" }
+M.layout_left = { action = "layout", layout = "left" }
+M.layout_right = { action = "layout", layout = "right" }
 
 function M.toggle_maximize(picker)
   picker.layout:maximize()
@@ -348,9 +377,9 @@ local function setqflist(items, opts)
       filename = Snacks.picker.util.path(item),
       bufnr = item.buf,
       lnum = item.pos and item.pos[1] or 1,
-      col = item.pos and item.pos[2] or 1,
+      col = item.pos and item.pos[2] + 1 or 1,
       end_lnum = item.end_pos and item.end_pos[1] or nil,
-      end_col = item.end_pos and item.end_pos[2] or nil,
+      end_col = item.end_pos and item.end_pos[2] + 1 or nil,
       text = item.line or item.comment or item.label or item.name or item.detail or item.text,
       pattern = item.search,
       valid = true,

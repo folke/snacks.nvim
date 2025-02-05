@@ -42,13 +42,14 @@ M.buffers = {
 ---@field tree? boolean show the file tree (default: true)
 ---@field git_status? boolean show git status (default: true)
 ---@field git_status_open? boolean show recursive git status for open directories
+---@field watch? boolean watch for file changes
 M.explorer = {
   finder = "explorer",
   sort = { fields = { "sort" } },
   tree = true,
+  watch = true,
   git_status = true,
   git_status_open = false,
-  supports_live = true,
   follow_file = true,
   focus = "list",
   auto_close = false,
@@ -58,7 +59,7 @@ M.explorer = {
   -- your config under `opts.picker.sources.explorer`
   -- layout = { layout = { position = "right" } },
   formatters = { file = { filename_only = true } },
-  matcher = { sort_empty = true },
+  matcher = { sort_empty = false, fuzzy = false },
   config = function(opts)
     return require("snacks.picker.source.explorer").setup(opts)
   end,
@@ -77,7 +78,7 @@ M.explorer = {
         ["P"] = "toggle_preview",
         ["y"] = "explorer_yank",
         ["u"] = "explorer_update",
-        ["<c-c>"] = "explorer_cd",
+        ["<c-c>"] = "tcd",
         ["."] = "explorer_focus",
         ["I"] = "toggle_ignored",
         ["H"] = "toggle_hidden",

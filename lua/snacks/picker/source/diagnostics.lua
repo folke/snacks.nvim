@@ -1,9 +1,6 @@
 local M = {}
 local uv = vim.uv or vim.loop
 
----@class snacks.picker
----@field diagnostics fun(opts?: snacks.picker.diagnostics.Config): snacks.Picker
-
 ---@param opts snacks.picker.diagnostics.Config
 ---@type snacks.picker.finder
 function M.diagnostics(opts, ctx)

@@ -1,9 +1,5 @@
 local M = {}
 
----@class snacks.picker
----@field files fun(opts?: snacks.picker.files.Config|{}): snacks.Picker
----@field zoxide fun(opts?: snacks.picker.Config|{}): snacks.Picker
-
 local uv = vim.uv or vim.loop
 
 ---@type {cmd:string[], args:string[], enabled?:boolean, available?:boolean|string}[]
@@ -147,6 +143,9 @@ function M.files(opts, ctx)
   local cmd, args = get_cmd(opts, ctx.filter)
   if not cmd then
     return function() end
+  end
+  if opts.debug.files then
+    Snacks.notify(cmd .. " " .. table.concat(args or {}, " "))
   end
   return require("snacks.picker.source.proc").proc({
     opts,

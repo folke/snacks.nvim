@@ -31,13 +31,20 @@ local function sqlite3_lib()
       "powershell",
       "-Command",
       [[
-            $url = "]] .. url .. [[";
-            $zipPath = "$env:TEMP\sqlite.zip";
-            $extractPath = "$env:TEMP\sqlite";
-            Invoke-WebRequest -Uri $url -OutFile $zipPath;
-            Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force;
-            Move-Item -Path "$extractPath\sqlite3.dll" -Destination "]] .. sqlite_path .. [[" -Force
-            ]],
+        $url = "]] .. url .. [[";
+        $zipPath = "$env:TEMP\sqlite.zip";
+        $extractPath = "$env:TEMP\sqlite";
+        Invoke-WebRequest -Uri $url -OutFile $zipPath;
+        Add-Type -AssemblyName System.IO.Compression.FileSystem;
+        [System.IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $extractPath);
+
+        $dllPath = "$extractPath\sqlite3.dll";
+        if (Test-Path $dllPath) {
+            Move-Item -Path $dllPath -Destination "]] .. sqlite_path .. [[" -Force;
+        } else {
+            Write-Host "sqlite3.dll not found at $dllPath";
+        }
+      ]],
     })
     if vim.v.shell_error ~= 0 then
       Snacks.notify.error("Failed to download `sqlite3.dll`:\n" .. out)

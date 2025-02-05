@@ -83,7 +83,6 @@ function M:close()
   self.win:destroy()
   self.item = nil
   self.win_opts = { main = {}, layout = {}, win = {} }
-  self.state = {}
 end
 
 ---@param main? number

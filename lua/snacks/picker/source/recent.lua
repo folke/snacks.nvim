@@ -2,10 +2,6 @@ local M = {}
 
 local uv = vim.uv or vim.loop
 
----@class snacks.picker
----@field recent fun(opts?: snacks.picker.recent.Config|{}): snacks.Picker
----@field projects fun(opts?: snacks.picker.projects.Config|{}): snacks.Picker
-
 ---@param filter snacks.picker.Filter
 ---@param extra? string[]
 local function oldfiles(filter, extra)

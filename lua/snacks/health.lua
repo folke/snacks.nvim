@@ -14,7 +14,7 @@ local M = setmetatable({}, {
 
 ---@class snacks.health.Tool
 ---@field cmd string|string[]
----@field version? string
+---@field version? string|false
 ---@field enabled? boolean
 
 ---@alias snacks.health.Tool.spec (string|snacks.health.Tool)[]|snacks.health.Tool|string
@@ -91,10 +91,13 @@ function M.have_tool(tools)
       vim.list_extend(all, cmds)
       for _, cmd in ipairs(cmds) do
         if vim.fn.executable(cmd) == 1 then
-          local version = vim.fn.system(cmd .. " --version") or ""
+          local version = tool.version == false and "" or vim.fn.system(cmd .. " --version") or ""
           version = vim.trim(vim.split(version, "\n")[1])
           if tool_version and tool_version > vim.version.parse(version) then
             M.error("'" .. cmd .. "' `" .. version .. "` is too old, expected `" .. tool.version .. "`")
+          elseif tool.version == false then
+            M.ok("'" .. cmd .. "'")
+            version_ok = true
           else
             M.ok("'" .. cmd .. "' `" .. version .. "`")
             version_ok = true

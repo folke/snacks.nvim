@@ -175,4 +175,9 @@ M.vscode = {
   },
 }
 
+M.left = M.sidebar
+M.right = { preset = "sidebar", layout = { position = "right" } }
+M.top = { preset = "ivy", layout = { position = "top" } }
+M.bottom = { preset = "ivy", layout = { position = "bottom" } }
+
 return M

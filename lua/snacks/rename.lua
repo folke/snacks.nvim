@@ -14,7 +14,7 @@ end
 
 -- Prompt for the new filename,
 -- do the rename, and trigger LSP handlers
----@param opts? {file?: string, on_rename?: fun(file:string)}
+---@param opts? {file?: string, on_rename?: fun(new:string, old:string)}
 function M.rename_file(opts)
   opts = opts or {}
   local buf = vim.api.nvim_get_current_buf()
@@ -48,7 +48,7 @@ function M.rename_file(opts)
       vim.api.nvim_buf_delete(buf, { force = true })
       vim.fn.delete(old)
       if opts.on_rename then
-        opts.on_rename(new)
+        opts.on_rename(new, old)
       end
     end)
   end)

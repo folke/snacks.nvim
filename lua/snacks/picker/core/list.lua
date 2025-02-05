@@ -608,7 +608,9 @@ function M:render()
       self.picker:show_preview()
     else
       vim.schedule(function()
-        self.picker:show_preview()
+        if self.picker then
+          self.picker:show_preview()
+        end
       end)
     end
   end

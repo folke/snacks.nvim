@@ -1,8 +1,5 @@
 local M = {}
 
----@class snacks.picker
----@field help fun(opts?: snacks.picker.help.Config): snacks.Picker
-
 ---@param opts snacks.picker.help.Config
 ---@type snacks.picker.finder
 function M.help(opts)

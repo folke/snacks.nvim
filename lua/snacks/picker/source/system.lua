@@ -1,9 +1,5 @@
 local M = {}
 
----@class snacks.picker
----@field cliphist fun(opts?: snacks.picker.proc.Config): snacks.Picker
----@field man fun(opts?: snacks.picker.proc.Config): snacks.Picker
-
 ---@param opts snacks.picker.proc.Config
 ---@type snacks.picker.finder
 function M.cliphist(opts, ctx)

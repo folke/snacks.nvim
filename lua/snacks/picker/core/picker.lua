@@ -86,6 +86,7 @@ end
 ---@param opts? snacks.picker.Config
 ---@return snacks.Picker
 function M.new(opts)
+  ---@type snacks.Picker
   local self = setmetatable({}, M)
   _id = _id + 1
   self.id = _id
@@ -173,7 +174,9 @@ function M.new(opts)
   self.resolved_layout = layout
   self.list = require("snacks.picker.core.list").new(self)
   self.input = require("snacks.picker.core.input").new(self)
-  self.preview = require("snacks.picker.core.preview").new(self.opts, layout.preview == "main" and self.main or nil)
+  local preview_opts = self:preview_opts()
+  local preview_main = preview_opts.main and self.main or nil
+  self.preview = require("snacks.picker.core.preview").new(self.opts, preview_main)
 
   self.title = self.opts.title or Snacks.picker.util.title(self.opts.source or "search")
 
@@ -199,7 +202,7 @@ function M.new(opts)
       return
     end
     if self.opts.auto_close == false then
-      if self.resolved_layout.preview == "main" and self.preview.win:valid() then
+      if self:preview_opts().main and self.preview.win:valid() then
         self:toggle_preview(false)
         on_focus = vim.schedule_wrap(function()
           self:toggle_preview(true)
@@ -255,6 +258,21 @@ function M:norm(cb)
   return true
 end
 
+---@private
+function M:preview_opts()
+  ---@type {enabled: boolean, main: boolean}
+  local ret = { enabled = true, main = false }
+  local p = self.resolved_layout.preview
+  if p == "main" then
+    ret.main = true
+  elseif p == false then
+    ret.enabled = false
+  elseif type(p) == "table" then
+    ret.enabled, ret.main = p.enabled ~= false, p.main == true
+  end
+  return ret
+end
+
 ---@param layout? snacks.picker.layout.Config
 ---@private
 function M:init_layout(layout)
@@ -262,8 +280,9 @@ function M:init_layout(layout)
   self.resolved_layout = vim.deepcopy(layout)
   self.resolved_layout.cycle = self.resolved_layout.cycle == true
   local opts = layout --[[@as snacks.layout.Config]]
-  local preview_main = layout.preview == "main"
-  local preview_hidden = layout.preview == false or preview_main
+  local preview_opts = self:preview_opts()
+  local preview_main = preview_opts.main
+  local preview_hidden = preview_main or not preview_opts.enabled
   local backdrop = nil
   if preview_main then
     backdrop = false
@@ -316,7 +335,7 @@ function M:init_layout(layout)
     end
   end, { buf = true, nested = true })
 
-  self.preview:update(preview_main and self.main or nil)
+  self.preview:update(preview_main and not preview_hidden and self.main or nil)
   -- apply box highlight groups
   local boxwhl = Snacks.picker.highlight.winhl("SnacksPickerBox")
   for _, win in pairs(self.layout.box_wins) do
@@ -334,7 +353,7 @@ function M:toggle_preview(enable)
   if enable == showing then
     return
   end
-  if self.resolved_layout.preview == "main" then
+  if self:preview_opts().main then
     if enable then
       self.preview.win:show()
     else
@@ -553,6 +572,17 @@ function M:current(opts)
   return ret
 end
 
+--- Returns the directory of the current item or the cwd.
+--- When the item is a directory, return item path,
+--- otherwise return the directory of the item.
+function M:dir()
+  local item = self:current()
+  if item then
+    return Snacks.picker.util.dir(item)
+  end
+  return self:cwd()
+end
+
 --- Get the selected items.
 --- If `fallback=true` and there is no selection, return the current item.
 ---@param opts? {fallback?: boolean} default is `false`
@@ -588,6 +618,10 @@ function M:close()
   self.input:stopinsert()
   if self.closed then
     return
+  end
+
+  if self.opts.on_close then
+    self.opts.on_close(self)
   end
 
   self:hist_record(true)

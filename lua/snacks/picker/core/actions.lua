@@ -84,7 +84,9 @@ function M.resolve(action, picker, name, stack)
     end
     stack[#stack + 1] = action
     return M.resolve(
-      (picker.opts.actions or {})[action] or require("snacks.picker.actions")[action],
+      (picker.opts.actions or {})[action]
+        or require("snacks.picker.actions")[action]
+        or require("snacks.explorer.actions").actions[action],
       picker,
       action,
       stack

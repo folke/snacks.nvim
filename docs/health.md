@@ -7,7 +7,7 @@
 ```lua
 ---@class snacks.health.Tool
 ---@field cmd string|string[]
----@field version? string
+---@field version? string|false
 ---@field enabled? boolean
 ```
 

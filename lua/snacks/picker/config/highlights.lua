@@ -10,6 +10,8 @@ Snacks.util.set_hl({
   Label = "SnacksPickerSpecial",
   Totals = "NonText",
   File = "", -- basename of a file path
+  Link = "Comment",
+  LinkBroken = "DiagnosticError",
   Directory = "Directory", -- basename of a directory path
   PathIgnored = "NonText", -- any ignored file or directory
   PathHidden = "NonText", -- any hidden file or directory

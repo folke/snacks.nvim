@@ -2,11 +2,6 @@ local M = {}
 
 local uv = vim.uv or vim.loop
 
----@class snacks.picker
----@field grep fun(opts?: snacks.picker.grep.Config|{}): snacks.Picker
----@field grep_word fun(opts?: snacks.picker.grep.Config|{}): snacks.Picker
----@field grep_buffers fun(opts?: snacks.picker.grep.Config|{}): snacks.Picker
-
 ---@param opts snacks.picker.grep.Config
 ---@param filter snacks.picker.Filter
 local function get_cmd(opts, filter)

@@ -9,6 +9,7 @@ local islist = vim.islist or vim.tbl_islist
 
 ---@class snacks.picker.proc.Config: snacks.picker.Config
 ---@field cmd string
+---@field sep? string
 ---@field args? string[]
 ---@field env? table<string, string>
 ---@field cwd? string
@@ -37,6 +38,7 @@ function M.proc(opts, ctx)
       end
     end
 
+    local sep = opts.sep or "\n"
     local aborted = false
     local stdout = assert(uv.new_pipe())
 
@@ -93,7 +95,7 @@ function M.proc(opts, ctx)
       end
       local from = 1
       while from <= #data do
-        local nl = data:find("\n", from, true)
+        local nl = data:find(sep, from, true)
         if nl then
           local cr = data:byte(nl - 1, nl - 1) == 13 -- \r
           local line = data:sub(from, nl - (cr and 2 or 1))

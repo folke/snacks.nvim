@@ -1,17 +1,5 @@
 local M = {}
 
----@class snacks.picker
----@field commands fun(opts?: snacks.picker.Config): snacks.Picker
----@field marks fun(opts?: snacks.picker.marks.Config): snacks.Picker
----@field jumps fun(opts?: snacks.picker.Config): snacks.Picker
----@field autocmds fun(opts?: snacks.picker.Config): snacks.Picker
----@field highlights fun(opts?: snacks.picker.Config): snacks.Picker
----@field colorschemes fun(opts?: snacks.picker.Config): snacks.Picker
----@field keymaps fun(opts?: snacks.picker.Config): snacks.Picker
----@field registers fun(opts?: snacks.picker.Config): snacks.Picker
----@field command_history fun(opts?: snacks.picker.history.Config): snacks.Picker
----@field search_history fun(opts?: snacks.picker.history.Config): snacks.Picker
-
 ---@class snacks.picker.history.Config: snacks.picker.Config
 ---@field name string
 

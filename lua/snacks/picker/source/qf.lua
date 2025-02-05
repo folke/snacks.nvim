@@ -17,10 +17,6 @@ local M = {}
 ---@field user_data? any Any user data associated with the item.
 ---@field vcol? number Visual column number. Indicates if the column number is a visual column number (when set to 1) or a byte index (when set to 0).
 
----@class snacks.picker
----@field loclist fun(opts?: snacks.picker.Config): snacks.Picker
----@field qflist fun(opts?: snacks.picker.Config): snacks.Picker
-
 ---@class snacks.picker.qf.Config
 ---@field qf_win? number
 ---@field filter? snacks.picker.filter.Config

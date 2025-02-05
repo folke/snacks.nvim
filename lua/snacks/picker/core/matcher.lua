@@ -6,6 +6,8 @@ local Async = require("snacks.picker.util.async")
 
 ---@class snacks.picker.matcher.Config
 ---@field regex? boolean used internally for positions of sources that use regex
+---@field on_match? fun(matcher: snacks.picker.Matcher, item: snacks.picker.Item)
+---@field on_done? fun(matcher: snacks.picker.Matcher)
 
 ---@class snacks.picker.Matcher
 ---@field opts snacks.picker.matcher.Config
@@ -90,6 +92,9 @@ function M:run(picker)
   if not (self.sorting or picker.finder.task:running()) then
     picker.list.items = picker.finder.items
     picker:update({ force = true })
+    if self.opts.on_done then
+      self.opts.on_done(self)
+    end
     return
   end
 
@@ -156,6 +161,11 @@ function M:run(picker)
     until idx >= #picker.finder.items and not picker.finder.task:running()
 
     picker:update({ force = true })
+    if self.opts.on_done then
+      vim.schedule(function()
+        self.opts.on_done(self)
+      end)
+    end
   end)
 end
 
@@ -303,8 +313,8 @@ function M:update(item)
   if item.match_pos then
     item.pos = nil
   end
-  item.match_topk = nil
   local score = self:match(item)
+  item.match_tick, item.match_topk = self.tick, nil
   if score ~= 0 then
     if item.score_add then
       score = score + item.score_add
@@ -322,13 +332,19 @@ function M:update(item)
         score = score + (1 - 1 / (1 + item.frecency)) * BONUS_FRECENCY
       end
       if
-        self.opts.cwd_bonus and (self.cwd == item.cwd or Snacks.picker.util.path(item):find(self.cwd, 1, true) == 1)
+        self.opts.cwd_bonus
+        and (self.cwd == item.cwd or Snacks.picker.util.path(item):find(self.cwd, 1, true) == 1)
       then
         score = score + BONUS_CWD
       end
     end
+    item.score = score
+    if self.opts.on_match then
+      self.opts.on_match(self, item)
+    end
+  else
+    item.score = 0
   end
-  item.match_tick, item.score, item.match_topk = self.tick, score, nil
   return score > 0
 end
 

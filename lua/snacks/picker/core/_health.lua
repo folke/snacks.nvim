@@ -27,9 +27,10 @@ function M.health()
   local have_fd, version_fd = Snacks.health.have_tool({
     { cmd = { "fd", "fdfind" }, version = "v8.4" },
   })
-  local have_find = Snacks.health.have_tool({
-    { cmd = "find", enabled = jit.os:find("Windows") == nil },
-  })
+  local have_find = have_fd
+    or (jit.os:find("Windows") == nil and Snacks.health.have_tool({
+      { cmd = "find", version = false },
+    }))
   if have_rg or have_fd or have_find then
     Snacks.health.ok("`Snacks.picker.files()` is available")
   else
@@ -37,7 +38,7 @@ function M.health()
   end
 
   if not have_fd or not version_fd then
-    Snacks.health.error("'fd' `v8.4` is required for `Snacks.picker.explorer()`")
+    Snacks.health.error("'fd' `v8.4` is required for searching with `Snacks.picker.explorer()`")
   else
     Snacks.health.ok("`Snacks.picker.explorer()` is available")
   end

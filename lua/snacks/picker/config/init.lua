@@ -209,12 +209,20 @@ function M.layout(opts)
   end
 
   -- Resolve the preset
-  local preset = M.resolve(layout.preset or "custom", opts.source)
-  ---@type snacks.picker.layout.Config
-  local ret = vim.deepcopy(opts.layouts and opts.layouts[preset] or {})
+  local layouts = opts.layouts or M.get().layouts or {}
+  local done = {} ---@type table<string, boolean>
+  local todo = { layout } ---@type snacks.picker.layout.Config[]
+  while true do
+    local preset = M.resolve(todo[1].preset or "custom", opts.source)
+    if not preset or done[preset] or not layouts[preset] then
+      break
+    end
+    done[preset] = true
+    table.insert(todo, 1, vim.deepcopy(layouts[preset]))
+  end
 
   -- Merge and return the layout
-  return Snacks.config.merge(ret, layout)
+  return Snacks.config.merge(unpack(todo))
 end
 
 ---@generic T

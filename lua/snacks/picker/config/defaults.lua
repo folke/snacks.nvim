@@ -52,7 +52,7 @@ local M = {}
 ---@field reverse? boolean when true, the list will be reversed (bottom-up)
 ---@field fullscreen? boolean open in fullscreen
 ---@field cycle? boolean cycle through the list
----@field preview? boolean|"main" show preview window in the picker or the main window
+---@field preview? boolean|"main"|{enabled?:boolean, main?:boolean} show preview window in the picker or the main window
 ---@field preset? string|fun(source:string):string
 
 ---@class snacks.picker.win.Config
@@ -99,6 +99,7 @@ local M = {}
 ---@field main? snacks.picker.main.Config main editor window config
 ---@field on_change? fun(picker:snacks.Picker, item?:snacks.picker.Item) called when the cursor changes
 ---@field on_show? fun(picker:snacks.Picker) called when the picker is shown
+---@field on_close? fun(picker:snacks.Picker) called when the picker is closed
 ---@field jump? snacks.picker.jump.Config|{}
 --- Other
 ---@field config? fun(opts:snacks.picker.Config):snacks.picker.Config? custom config function
@@ -218,6 +219,14 @@ local defaults = {
         ["<c-s>"] = { "edit_split", mode = { "i", "n" } },
         ["<c-u>"] = { "list_scroll_up", mode = { "i", "n" } },
         ["<c-v>"] = { "edit_vsplit", mode = { "i", "n" } },
+        ["<c-z>h"] = { "layout_left", mode = { "i", "n" } },
+        ["<c-z><c-h>"] = { "layout_left", mode = { "i", "n" } },
+        ["<c-z>j"] = { "layout_bottom", mode = { "i", "n" } },
+        ["<c-z><c-j>"] = { "layout_bottom", mode = { "i", "n" } },
+        ["<c-z>k"] = { "layout_top", mode = { "i", "n" } },
+        ["<c-z><c-k>"] = { "layout_top", mode = { "i", "n" } },
+        ["<c-z>l"] = { "layout_right", mode = { "i", "n" } },
+        ["<c-z><c-l>"] = { "layout_right", mode = { "i", "n" } },
         ["?"] = "toggle_help_input",
         ["G"] = "list_bottom",
         ["gg"] = "list_top",
@@ -259,6 +268,14 @@ local defaults = {
         ["<c-s>"] = "edit_split",
         ["<c-u>"] = "list_scroll_up",
         ["<c-v>"] = "edit_vsplit",
+        ["<c-z>h"] = { "layout_left", mode = { "i", "n" } },
+        ["<c-z><c-h>"] = { "layout_left", mode = { "i", "n" } },
+        ["<c-z>j"] = { "layout_bottom", mode = { "i", "n" } },
+        ["<c-z><c-j>"] = { "layout_bottom", mode = { "i", "n" } },
+        ["<c-z>k"] = { "layout_top", mode = { "i", "n" } },
+        ["<c-z><c-k>"] = { "layout_top", mode = { "i", "n" } },
+        ["<c-z>l"] = { "layout_right", mode = { "i", "n" } },
+        ["<c-z><c-l>"] = { "layout_right", mode = { "i", "n" } },
         ["?"] = "toggle_help_list",
         ["G"] = "list_bottom",
         ["gg"] = "list_top",
@@ -376,6 +393,8 @@ local defaults = {
   debug = {
     scores = false, -- show scores in the list
     leaks = false, -- show when pickers don't get garbage collected
+    explorer = false, -- show explorer debug info
+    files = false, -- show file debug info
   },
 }
 

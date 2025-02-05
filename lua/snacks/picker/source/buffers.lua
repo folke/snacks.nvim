@@ -1,8 +1,5 @@
 local M = {}
 
----@class snacks.picker
----@field buffers fun(opts?: snacks.picker.buffers.Config): snacks.Picker
-
 ---@param opts snacks.picker.buffers.Config
 ---@type snacks.picker.finder
 function M.buffers(opts, ctx)

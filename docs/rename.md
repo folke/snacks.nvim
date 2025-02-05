@@ -74,6 +74,6 @@ Prompt for the new filename,
 do the rename, and trigger LSP handlers
 
 ```lua
----@param opts? {file?: string, on_rename?: fun(file:string)}
+---@param opts? {file?: string, on_rename?: fun(new:string, old:string)}
 Snacks.rename.rename_file(opts)
 ```
