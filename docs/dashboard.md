@@ -304,7 +304,7 @@ A simple example with a header, keys, recent files, and projects
 
 ### `github`
 
-Advanced example using the GitHub CLI.
+Advanced example using the GitHub CLI (with [`gh-notify` extension](https://github.com/meiji163/gh-notify)). 
 ![image](https://github.com/user-attachments/assets/747d7386-ef05-487f-9550-3e5ef94869fc)
 
 ```lua
