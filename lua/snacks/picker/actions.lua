@@ -350,6 +350,11 @@ function M.git_branch_del(picker, item)
       return
     end
 
+    local ok, choice = pcall(vim.fn.confirm, ("Delete branch %q?"):format(branch), "&Yes\n&Cancel")
+    if not ok or choice == 0 or choice == 2 then -- 0 for <Esc>/<C-c> and 2 for Cancel
+      return
+    end
+
     -- Proceed with deletion
     Snacks.picker.util.cmd({ "git", "branch", "-d", branch }, function()
       Snacks.notify("Deleted Branch `" .. branch .. "`", { title = "Snacks Picker" })
