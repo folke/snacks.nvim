@@ -194,8 +194,8 @@ M.git_branches = {
   win = {
     input = {
       keys = {
-        ["<c-a>"] = { "git_create_branch", mode = { "n", "i" } },
-        ["<c-x>"] = { "git_delete_branch", mode = { "n", "i" } },
+        ["<c-a>"] = { "git_branch_add", mode = { "n", "i" } },
+        ["<c-x>"] = { "git_branch_del", mode = { "n", "i" } },
       },
     },
   },
