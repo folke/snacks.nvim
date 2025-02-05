@@ -43,6 +43,7 @@ function M.setup()
               and "bigfile"
             or nil
         end,
+        { priority = -math.huge },
       },
     },
   })
