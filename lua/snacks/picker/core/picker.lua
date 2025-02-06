@@ -627,14 +627,16 @@ function M:close()
   self:hist_record(true)
   self.closed = true
 
-  M.last = {
-    opts = self.init_opts or {},
-    selected = self:selected({ fallback = false }),
-    cursor = self.list.cursor,
-    topline = self.list.top,
-    filter = self.input.filter,
-  }
-  M.last.opts.live = self.opts.live
+  if self.input.filter.pattern ~= "" then
+    M.last = {
+      opts = self.init_opts or {},
+      selected = self:selected({ fallback = false }),
+      cursor = self.list.cursor,
+      topline = self.list.top,
+      filter = self.input.filter,
+    }
+    M.last.opts.live = self.opts.live
+  end
 
   local current = vim.api.nvim_get_current_win()
   local is_picker_win = vim.tbl_contains({ self.input.win.win, self.list.win.win, self.preview.win.win }, current)
