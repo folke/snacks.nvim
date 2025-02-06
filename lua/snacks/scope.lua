@@ -43,7 +43,7 @@ local defaults = {
     -- detect scope based on treesitter.
     -- falls back to indent based detection if not available
     enabled = true,
-    ignore_injections = false, -- do not ignore injected languages, helpful for languages like vue
+    injections = true, -- include language injections when detecting scope (useful for languages like `vue`)
     ---@type string[]|{enabled?:boolean}
     blocks = {
       enabled = false, -- enable to use the following blocks
@@ -415,7 +415,7 @@ function TSScope:find(opts)
     pos = pos,
     bufnr = opts.buf,
     lang = lang,
-    ignore_injections = opts.treesitter.ignore_injections,
+    ignore_injections = not opts.treesitter.injections,
   })
   if not node then
     return
