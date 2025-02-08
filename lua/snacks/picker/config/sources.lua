@@ -879,6 +879,7 @@ M.scratch = {
         ["<CR>"] = { "scratch_open", mode = { "n", "i" } },
         ["<c-x>"] = { "scratch_delete", mode = { "n", "i" } },
         ["<c-n>"] = { "scratch_new", mode = { "n", "i" } },
+        ["<c-g>"] = { "scratch_grep", mode = { "n", "i" } },
       },
     },
   },
@@ -897,6 +898,30 @@ M.scratch = {
     scratch_new = function(picker)
       picker:close()
       Snacks.scratch.open()
+    end,
+    scratch_grep = function(picker)
+      picker:close()
+      Snacks.picker.grep({
+        cwd = vim.fn.stdpath("data") .. "/scratch",
+        win = {
+          input = {
+            keys = {
+              ["<CR>"] = {
+                "open_scratch",
+                desc = "Open Scratch",
+                mode = { "n", "i" },
+              },
+            },
+          },
+        },
+        actions = {
+          ["open_scratch"] = function(picker)
+            local current = picker:current()._path
+            picker:close()
+            Snacks.scratch.open({ file = current })
+          end,
+        },
+      })
     end,
   },
 }
