@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.20.0](https://github.com/folke/snacks.nvim/compare/v2.19.0...v2.20.0) (2025-02-08)
+
+
+### Features
+
+* **picker.undo:** `ctrl+y` to yank added lines, `ctrl+shift+y` to yank deleted lines ([3baf95d](https://github.com/folke/snacks.nvim/commit/3baf95d3a1005105b57ce53644ff6224ee3afa1c))
+* **picker:** added treesitter symbols picker ([a6beb0f](https://github.com/folke/snacks.nvim/commit/a6beb0f280d3f43513998882faf199acf3818ddf))
+* **terminal:** added `Snacks.terminal.list()`. Closes [#421](https://github.com/folke/snacks.nvim/issues/421). Closes [#759](https://github.com/folke/snacks.nvim/issues/759) ([73c4b62](https://github.com/folke/snacks.nvim/commit/73c4b628963004760ccced0192d1c2633c9e3657))
+
+
+### Bug Fixes
+
+* **explorer:** change grep in item dir keymap to leader-/. Closes [#1000](https://github.com/folke/snacks.nvim/issues/1000) ([9dfa276](https://github.com/folke/snacks.nvim/commit/9dfa276ea424a091f5d5bdc008aff127850441b2))
+* **layout:** take winbar into account for split layouts. Closes [#996](https://github.com/folke/snacks.nvim/issues/996) ([e4e5040](https://github.com/folke/snacks.nvim/commit/e4e5040d9b9b58ac3bc44a6709bbb5e55e58adea))
+* **picker.git:** account for deleted files in git diff. Closes [#1001](https://github.com/folke/snacks.nvim/issues/1001) ([e9e2e69](https://github.com/folke/snacks.nvim/commit/e9e2e6976e3cc7c1110892c9c4a6882dd88ca6fd))
+* **picker.git:** handle git status renames. Closes [#1003](https://github.com/folke/snacks.nvim/issues/1003) ([93ad23a](https://github.com/folke/snacks.nvim/commit/93ad23a0abb4c712722b74e3c066e6b42881fc81))
+* **picker.lines:** use original buf instead of current (which can be the picker on refresh) ([7ccf9c9](https://github.com/folke/snacks.nvim/commit/7ccf9c9d6934a76d5bd835bbd6cf1e764960f14e))
+* **picker.proc:** don't close stdout on proc exit, since it might still contain buffered output. Closes [#966](https://github.com/folke/snacks.nvim/issues/966) ([3b7021e](https://github.com/folke/snacks.nvim/commit/3b7021e7fdf88e13fdf06643ae9a7224e1291495))
+
 ## [2.19.0](https://github.com/folke/snacks.nvim/compare/v2.18.0...v2.19.0) (2025-02-07)
 
 
