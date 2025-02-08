@@ -869,4 +869,36 @@ M.zoxide = {
   },
 }
 
+M.scratch = {
+  finder = "files_scratch",
+  format = "file",
+  win = {
+    preview = { wo = { number = false, relativenumber = false, signcolumn = "no" } },
+    input = {
+      keys = {
+        ["<CR>"] = { "scratch_open", mode = { "n", "i" } },
+        ["<c-x>"] = { "scratch_delete", mode = { "n", "i" } },
+        ["<c-n>"] = { "scratch_new", mode = { "n", "i" } },
+      },
+    },
+  },
+  actions = {
+    scratch_open = function(picker)
+      local current = picker:current().file
+      picker:close()
+      Snacks.scratch.open({ file = current })
+    end,
+    scratch_delete = function(picker)
+      local current = picker:current().file
+      os.remove(current)
+      picker:close()
+      Snacks.picker.scratch()
+    end,
+    scratch_new = function(picker)
+      picker:close()
+      Snacks.scratch.open()
+    end,
+  },
+}
+
 return M
