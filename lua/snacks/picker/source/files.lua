@@ -177,4 +177,21 @@ function M.zoxide(opts, ctx)
   }, ctx)
 end
 
+---@param opts snacks.picker.proc.Config
+---@type snacks.picker.finder
+function M.scratch(opts, ctx)
+  local root = vim.fn.stdpath("data") .. "/scratch"
+  return require("snacks.picker.source.proc").proc({
+    opts,
+    {
+      cmd = "fd",
+      args = { ".", root },
+      ---@param item snacks.picker.finder.Item
+      transform = function(item)
+        item.file = item.text
+      end,
+    },
+  }, ctx)
+end
+
 return M
