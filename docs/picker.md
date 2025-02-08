@@ -63,6 +63,24 @@ Snacks.picker.pick({source = "files", ...})
 }
 ```
 
+Example to set the default layout to "ivy" for the files picker if the screen is wide enough, else "vertical":
+
+```lua
+{
+  "folke/snacks.nvim",
+  ---@type snacks.Config
+  opts = {
+    picker = {
+      sources = {
+        files = {
+          layout = { preset = function() return vim.o.columns >= 120 and "ivy" or "vertical" end },
+        },
+      }
+    }
+  }
+}
+```
+
 ## ⚙️ Config
 
 ```lua
