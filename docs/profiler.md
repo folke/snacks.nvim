@@ -176,7 +176,7 @@ All other fields equal to `true` will match if the trace has a value for that fi
     align = 80,
   },
   pick = {
-    picker = "auto", ---@type snacks.profiler.Picker
+    picker = "snacks", ---@type snacks.profiler.Picker
     ---@type snacks.profiler.Badge.type[]
     badges = { "time", "count", "name" },
     ---@type snacks.profiler.Highlights
@@ -288,7 +288,7 @@ All other fields equal to `true` will match if the trace has a value for that fi
 ```
 
 ```lua
----@alias snacks.profiler.Picker "auto"|"fzf-lua"|"telescope"|"trouble"
+---@alias snacks.profiler.Picker "snacks"|"trouble"
 ---@alias snacks.profiler.Pick.spec snacks.profiler.Pick|{preset?:string}|fun():snacks.profiler.Pick
 ```
 

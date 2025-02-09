@@ -245,12 +245,11 @@ function D:init()
     vim.keymap.set("n", "<esc>", "<cmd>bd<cr>", { silent = true, buffer = self.buf })
   end
   vim.keymap.set("n", "q", "<cmd>bd<cr>", { silent = true, buffer = self.buf })
-  vim.api.nvim_create_autocmd("WinResized", {
+  vim.api.nvim_create_autocmd({ "WinResized", "VimResized" }, {
     group = self.augroup,
-    buffer = self.buf,
-    callback = function(ev)
-      -- only re-render if the same window and size has changed
-      if tonumber(ev.match) == self.win and not vim.deep_equal(self._size, self:size()) then
+    callback = function()
+      -- only re-render if the size has changed
+      if not vim.deep_equal(self._size, self:size()) then
         self:update()
       end
     end,
@@ -260,6 +259,15 @@ function D:init()
     callback = function()
       self.fire("Closed")
       vim.api.nvim_del_augroup_by_id(self.augroup)
+    end,
+  })
+  vim.api.nvim_create_autocmd("WinEnter", {
+    group = self.augroup,
+    callback = function(ev)
+      if ev.buf == self.buf and not vim.api.nvim_win_is_valid(self.win) then
+        self.win = vim.fn.bufwinid(self.buf)
+        self:update()
+      end
     end,
   })
   self.on("Update", function()
@@ -749,13 +757,18 @@ end
 function M.pick(cmd, opts)
   cmd = cmd or "files"
   local config = Snacks.config.get("dashboard", defaults, opts)
+  local picker = Snacks.picker.config.get()
   -- stylua: ignore
   local try = {
     function() return config.preset.pick(cmd, opts) end,
     function() return require("fzf-lua")[cmd](opts) end,
     function() return require("telescope.builtin")[cmd == "files" and "find_files" or cmd](opts) end,
     function() return require("mini.pick").builtin[cmd](opts) end,
+    function() return Snacks.picker(cmd, opts) end,
   }
+  if picker.enabled then
+    table.insert(try, 2, table.remove(try, #try))
+  end
   for _, fn in ipairs(try) do
     if pcall(fn) then
       return
@@ -836,7 +849,7 @@ end
 
 --- Get the most recent files, optionally filtered by the
 --- current working directory or a custom directory.
----@param opts? {limit?:number, cwd?:string|boolean}
+---@param opts? {limit?:number, cwd?:string|boolean, filter?:fun(file:string):boolean?}
 ---@return snacks.dashboard.Gen
 function M.sections.recent_files(opts)
   return function()
@@ -845,14 +858,16 @@ function M.sections.recent_files(opts)
     local root = opts.cwd and vim.fs.normalize(opts.cwd == true and vim.fn.getcwd() or opts.cwd) or ""
     local ret = {} ---@type snacks.dashboard.Section
     for file in M.oldfiles({ filter = { [root] = true } }) do
-      ret[#ret + 1] = {
-        file = file,
-        icon = "file",
-        action = ":e " .. file,
-        autokey = true,
-      }
-      if #ret >= limit then
-        break
+      if not opts.filter or opts.filter(file) then
+        ret[#ret + 1] = {
+          file = file,
+          icon = "file",
+          action = ":e " .. file,
+          autokey = true,
+        }
+        if #ret >= limit then
+          break
+        end
       end
     end
     return ret
@@ -893,15 +908,13 @@ function M.sections.projects(opts)
         if opts.action then
           return opts.action(dir)
         end
+        vim.fn.chdir(dir)
+        local session = M.sections.session()
         -- stylua: ignore
-        if opts.session then
+        if opts.session and session then
           local session_loaded = false
           vim.api.nvim_create_autocmd("SessionLoadPost", { once = true, callback = function() session_loaded = true end })
           vim.defer_fn(function() if not session_loaded and opts.pick then M.pick() end end, 100)
-        end
-        vim.fn.chdir(dir)
-        local session = M.sections.session()
-        if opts.session and session then
           self:action(session.action)
         elseif opts.pick then
           M.pick()
@@ -1081,24 +1094,35 @@ M.status = {
 
 --- Check if the dashboard should be opened
 function M.setup()
+  local explorer = Snacks.config.get("explorer", defaults).enabled == true
+
   M.status.did_setup = true
   local buf = 1
 
+  local skip = false
+  if explorer and vim.fn.argc(-1) == 1 then
+    local arg = vim.fn.argv(0) --[[@as string]]
+    if arg ~= "" and vim.fn.isdirectory(arg) == 1 then
+      skip = true
+    end
+  end
+
   -- don't open the dashboard if there are any arguments
-  if vim.fn.argc(-1) > 0 then
+  if not skip and vim.fn.argc(-1) > 0 then
     M.status.reason = "argc(-1) > 0"
     return
   end
 
   -- don't open dashboard if Neovim was invoked for example `nvim +'Octo issue edit 1'`
-  if vim.api.nvim_buf_get_name(0) ~= "" then
+  if not skip and vim.api.nvim_buf_get_name(0) ~= "" then
     M.status.reason = "buffer has a name"
     return
   end
 
   -- there should be only one non-floating window and it should be the first buffer
   local wins = vim.tbl_filter(function(win)
-    return vim.api.nvim_win_get_config(win).relative == ""
+    local b = vim.api.nvim_win_get_buf(win)
+    return vim.api.nvim_win_get_config(win).relative == "" and not vim.bo[b].filetype:find("snacks")
   end, vim.api.nvim_list_wins())
   if #wins ~= 1 then
     M.status.reason = "more than one non-floating window"

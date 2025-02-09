@@ -31,6 +31,34 @@ M.config = setmetatable({}, {
   end,
 })
 
+local islist = vim.islist or vim.tbl_islist
+local is_dict_like = function(v) -- has string and number keys
+  return type(v) == "table" and (vim.tbl_isempty(v) or not islist(v))
+end
+local is_dict = function(v) -- has only string keys
+  return type(v) == "table" and (vim.tbl_isempty(v) or not v[1])
+end
+
+--- Merges the values similar to vim.tbl_deep_extend with the **force** behavior,
+--- but the values can be any type
+---@generic T
+---@param ... T
+---@return T
+function M.config.merge(...)
+  local ret = select(1, ...)
+  for i = 2, select("#", ...) do
+    local value = select(i, ...)
+    if is_dict_like(ret) and is_dict(value) then
+      for k, v in pairs(value) do
+        ret[k] = M.config.merge(ret[k], v)
+      end
+    elseif value ~= nil then
+      ret = value
+    end
+  end
+  return ret
+end
+
 --- Get an example config from the docs/examples directory.
 ---@param snack string
 ---@param name string
@@ -63,7 +91,7 @@ function M.config.get(snack, defaults, ...)
       table.insert(merge, vim.deepcopy(v))
     end
   end
-  local ret = #merge == 1 and merge[1] or vim.tbl_deep_extend("force", unpack(merge)) --[[@as snacks.Config.base]]
+  local ret = M.config.merge(unpack(merge))
   if type(ret.config) == "function" then
     ret.config(ret, defaults)
   end
@@ -103,17 +131,25 @@ function M.setup(opts)
   local events = {
     BufReadPre = { "bigfile" },
     BufReadPost = { "quickfile", "indent" },
+    BufEnter = { "explorer" },
     LspAttach = { "words" },
-    UIEnter = { "dashboard", "scroll", "input", "scope" },
+    UIEnter = { "dashboard", "scroll", "input", "scope", "picker" },
   }
 
-  local function load(event)
-    for _, snack in ipairs(events[event] or {}) do
+  ---@param event string
+  ---@param ev? vim.api.keyset.create_autocmd.callback_args
+  local function load(event, ev)
+    local todo = events[event] or {}
+    events[event] = nil
+    for _, snack in ipairs(todo) do
       if M.config[snack] and M.config[snack].enabled then
-        (M[snack].setup or M[snack].enable)()
+        if M[snack].setup then
+          M[snack].setup(ev)
+        elseif M[snack].enable then
+          M[snack].enable()
+        end
       end
     end
-    events[event] = nil
   end
 
   if vim.v.vim_did_enter == 1 then
@@ -121,14 +157,25 @@ function M.setup(opts)
     load("UIEnter")
   end
 
+  local group = vim.api.nvim_create_augroup("snacks", { clear = true })
   vim.api.nvim_create_autocmd(vim.tbl_keys(events), {
-    group = vim.api.nvim_create_augroup("snacks", { clear = true }),
+    group = group,
     once = true,
     nested = true,
     callback = function(ev)
-      load(ev.event)
+      load(ev.event, ev)
     end,
   })
+
+  if M.config.image.enabled then
+    vim.api.nvim_create_autocmd("BufReadCmd", {
+      pattern = "*.png,*.jpg,*.jpeg,*.gif,*.bmp",
+      group = group,
+      callback = function(e)
+        require("snacks.image").new(e.buf)
+      end,
+    })
+  end
 
   if M.config.statuscolumn.enabled then
     vim.o.statuscolumn = [[%!v:lua.require'snacks.statuscolumn'.get()]]

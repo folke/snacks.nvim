@@ -6,6 +6,7 @@ M.meta = {
 }
 
 local uv = vim.uv or vim.loop
+local key_cache = {} ---@type table<string, string>
 
 ---@alias snacks.util.hl table<string, string|vim.api.keyset.highlight>
 
@@ -45,7 +46,7 @@ end
 
 --- Set window-local options.
 ---@param win number
----@param wo vim.wo
+---@param wo vim.wo|{}
 function M.wo(win, wo)
   for k, v in pairs(wo or {}) do
     vim.api.nvim_set_option_value(k, v, { scope = "local", win = win })
@@ -54,7 +55,7 @@ end
 
 --- Set buffer-local options.
 ---@param buf number
----@param bo vim.bo
+---@param bo vim.bo|{}
 function M.bo(buf, bo)
   for k, v in pairs(bo or {}) do
     vim.api.nvim_set_option_value(k, v, { buf = buf })
@@ -71,6 +72,9 @@ function M.icon(name, cat)
       return require("mini.icons").get(cat or "file", name)
     end,
     function()
+      if cat == "directory" then
+        return "󰉋 ", "Directory"
+      end
       local Icons = require("nvim-web-devicons")
       if cat == "filetype" then
         return Icons.get_icon_by_filetype(name, { default = false })
@@ -88,7 +92,7 @@ function M.icon(name, cat)
       return ret[2], ret[3]
     end
   end
-  return " "
+  return "󰈔 "
 end
 
 -- Encodes a string to be used as a file name.
@@ -274,6 +278,80 @@ function M.throttle(fn, opts)
       return trailing and run()
     end)
   end
+end
+
+---@generic T
+---@param fn T
+---@param opts? {ms?:number}
+---@return T
+function M.debounce(fn, opts)
+  local timer, ms = assert(uv.new_timer()), opts and opts.ms or 20
+  return function()
+    timer:start(ms, 0, vim.schedule_wrap(fn))
+  end
+end
+
+---@param key string
+function M.normkey(key)
+  if key_cache[key] then
+    return key_cache[key]
+  end
+  local function norm(v)
+    local l = v:lower()
+    if l == "leader" then
+      return M.normkey("<leader>")
+    elseif l == "localleader" then
+      return M.normkey("<localleader>")
+    end
+    return vim.fn.keytrans(M.keycode(("<%s>"):format(v)))
+  end
+  local orig = key
+  key = key:gsub("<lt>", "<")
+  local lower = key:lower()
+  if lower == "<leader>" then
+    key = vim.g.mapleader
+    key = vim.fn.keytrans((not key or key == "") and "\\" or key)
+  elseif lower == "<localleader>" then
+    key = vim.g.maplocalleader
+    key = vim.fn.keytrans((not key or key == "") and "\\" or key)
+  else
+    local extracted = {} ---@type string[]
+    local function extract(v)
+      v = v:sub(2, -2)
+      if v:sub(2, 2) == "-" and v:sub(1, 1):find("[aAmMcCsS]") then
+        local m = v:sub(1, 1):upper()
+        m = m == "A" and "M" or m
+        local k = v:sub(3)
+        if #k > 1 then
+          return norm(v)
+        end
+        if m == "C" then
+          k = k:upper()
+        elseif m == "S" then
+          return k:upper()
+        end
+        return ("<%s-%s>"):format(m, k)
+      end
+      return norm(v)
+    end
+    local placeholder = "_#_"
+    ---@param v string
+    key = key:gsub("(%b<>)", function(v)
+      table.insert(extracted, extract(v))
+      return placeholder
+    end)
+    key = vim.fn.keytrans(key):gsub("<lt>", "<")
+
+    -- Restore extracted %b<> sequences
+    local i = 0
+    key = key:gsub(placeholder, function()
+      i = i + 1
+      return extracted[i] or ""
+    end)
+  end
+  key_cache[orig] = key
+  key_cache[key] = key
+  return key
 end
 
 return M

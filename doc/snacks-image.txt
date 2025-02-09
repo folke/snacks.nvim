@@ -1,0 +1,181 @@
+*snacks-image.txt*                                                 snacks.nvim
+
+==============================================================================
+Table of Contents                             *snacks-image-table-of-contents*
+
+1. Setup                                                  |snacks-image-setup|
+2. Config                                                |snacks-image-config|
+3. Types                                                  |snacks-image-types|
+4. Module                                                |snacks-image-module|
+  - Snacks.image.new()                |snacks-image-module-snacks.image.new()|
+  - Snacks.image.supports()      |snacks-image-module-snacks.image.supports()|
+  - image:convert()                      |snacks-image-module-image:convert()|
+  - image:create()                        |snacks-image-module-image:create()|
+  - image:dim()                              |snacks-image-module-image:dim()|
+  - image:hide()                            |snacks-image-module-image:hide()|
+  - image:ready()                          |snacks-image-module-image:ready()|
+  - image:render()                        |snacks-image-module-image:render()|
+  - image:request()                      |snacks-image-module-image:request()|
+  - image:update()                        |snacks-image-module-image:update()|
+5. Links                                                  |snacks-image-links|
+Image viewer using the Kitty Graphics Protocol
+<https://sw.kovidgoyal.net/kitty/graphics-protocol/>.
+
+Supported terminals:
+
+- kitty <https://sw.kovidgoyal.net/kitty/>
+- wezterm <https://wezfurlong.org/wezterm/>
+- ghostty <https://ghostty.org/>
+
+In order to automatically display the image when openinng an image file, you
+need to enable the `image` plugin in your `snacks` config.
+
+Supported image formats:
+
+- PNG
+- JPEG/JPG
+- GIF
+- BMP
+- WEBP
+
+ImageMagick <https://imagemagick.org/index.php> is required to convert images
+to the supported formats (all except PNG).
+
+
+==============================================================================
+1. Setup                                                  *snacks-image-setup*
+
+>lua
+    -- lazy.nvim
+    {
+      "folke/snacks.nvim",
+      ---@type snacks.Config
+      opts = {
+        image = {
+          -- your image configuration comes here
+          -- or leave it empty to use the default settings
+          -- refer to the configuration section below
+        }
+      }
+    }
+<
+
+
+==============================================================================
+2. Config                                                *snacks-image-config*
+
+>lua
+    ---@class snacks.image.Config
+    ---@field file? string
+    {}
+<
+
+
+==============================================================================
+3. Types                                                  *snacks-image-types*
+
+>lua
+    ---@alias snacks.image.Dim {col: number, row: number, width: number, height: number}
+<
+
+
+==============================================================================
+4. Module                                                *snacks-image-module*
+
+>lua
+    ---@class snacks.Image
+    ---@field id number
+    ---@field buf number
+    ---@field wins table<number, snacks.image.Dim>
+    ---@field opts snacks.image.Config
+    ---@field file string
+    ---@field _convert uv.uv_process_t?
+    Snacks.image = {}
+<
+
+
+`Snacks.image.new()`                                      *Snacks.image.new()*
+
+>lua
+    ---@param buf number
+    ---@param opts? snacks.image.Config
+    Snacks.image.new(buf, opts)
+<
+
+
+`Snacks.image.supports()`                            *Snacks.image.supports()*
+
+>lua
+    ---@param file string
+    Snacks.image.supports(file)
+<
+
+
+IMAGE:CONVERT()                          *snacks-image-module-image:convert()*
+
+>lua
+    image:convert()
+<
+
+
+IMAGE:CREATE()                            *snacks-image-module-image:create()*
+
+>lua
+    image:create()
+<
+
+
+IMAGE:DIM()                                  *snacks-image-module-image:dim()*
+
+>lua
+    ---@param win number
+    ---@return snacks.image.Dim
+    image:dim(win)
+<
+
+
+IMAGE:HIDE()                                *snacks-image-module-image:hide()*
+
+>lua
+    ---@param win? number
+    image:hide(win)
+<
+
+
+IMAGE:READY()                              *snacks-image-module-image:ready()*
+
+>lua
+    image:ready()
+<
+
+
+IMAGE:RENDER()                            *snacks-image-module-image:render()*
+
+>lua
+    ---@param win number
+    image:render(win)
+<
+
+
+IMAGE:REQUEST()                          *snacks-image-module-image:request()*
+
+>lua
+    ---@param opts table<string, string|number>|{data?: string}
+    image:request(opts)
+<
+
+
+IMAGE:UPDATE()                            *snacks-image-module-image:update()*
+
+>lua
+    image:update()
+<
+
+==============================================================================
+5. Links                                                  *snacks-image-links*
+
+1. *Image*: https://github.com/user-attachments/assets/4e8a686c-bf41-4989-9d74-1641ecf2835f
+
+Generated by panvimdoc <https://github.com/kdheepak/panvimdoc>
+
+vim:tw=78:ts=8:noet:ft=help:norl:

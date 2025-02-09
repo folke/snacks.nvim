@@ -8,11 +8,13 @@ Table of Contents                              *snacks-util-table-of-contents*
   - Snacks.util.blend()               |snacks-util-module-snacks.util.blend()|
   - Snacks.util.bo()                     |snacks-util-module-snacks.util.bo()|
   - Snacks.util.color()               |snacks-util-module-snacks.util.color()|
+  - Snacks.util.debounce()         |snacks-util-module-snacks.util.debounce()|
   - Snacks.util.file_decode()   |snacks-util-module-snacks.util.file_decode()|
   - Snacks.util.file_encode()   |snacks-util-module-snacks.util.file_encode()|
   - Snacks.util.icon()                 |snacks-util-module-snacks.util.icon()|
   - Snacks.util.is_transparent()|snacks-util-module-snacks.util.is_transparent()|
   - Snacks.util.keycode()           |snacks-util-module-snacks.util.keycode()|
+  - Snacks.util.normkey()           |snacks-util-module-snacks.util.normkey()|
   - Snacks.util.on_key()             |snacks-util-module-snacks.util.on_key()|
   - Snacks.util.on_module()       |snacks-util-module-snacks.util.on_module()|
   - Snacks.util.redraw()             |snacks-util-module-snacks.util.redraw()|
@@ -51,7 +53,7 @@ Set buffer-local options.
 
 >lua
     ---@param buf number
-    ---@param bo vim.bo
+    ---@param bo vim.bo|{}
     Snacks.util.bo(buf, bo)
 <
 
@@ -62,6 +64,17 @@ Set buffer-local options.
     ---@param group string hl group to get color from
     ---@param prop? string property to get. Defaults to "fg"
     Snacks.util.color(group, prop)
+<
+
+
+`Snacks.util.debounce()`                              *Snacks.util.debounce()*
+
+>lua
+    ---@generic T
+    ---@param fn T
+    ---@param opts? {ms?:number}
+    ---@return T
+    Snacks.util.debounce(fn, opts)
 <
 
 
@@ -111,6 +124,14 @@ Check if the colorscheme is transparent.
 >lua
     ---@param str string
     Snacks.util.keycode(str)
+<
+
+
+`Snacks.util.normkey()`                                *Snacks.util.normkey()*
+
+>lua
+    ---@param key string
+    Snacks.util.normkey(key)
 <
 
 
@@ -210,7 +231,7 @@ Set window-local options.
 
 >lua
     ---@param win number
-    ---@param wo vim.wo
+    ---@param wo vim.wo|{}
     Snacks.util.wo(win, wo)
 <
 

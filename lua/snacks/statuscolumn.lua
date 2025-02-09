@@ -186,6 +186,9 @@ function M._get()
   local win = vim.g.statusline_winid
   local show_signs = vim.v.virtnum == 0 and vim.wo[win].signcolumn ~= "no"
   local components = { "", LINE_NR, "" } -- left, middle, right
+  if not show_signs and not (vim.wo[win].number or vim.wo[win].relativenumber) then
+    return ""
+  end
 
   if show_signs then
     local buf = vim.api.nvim_win_get_buf(win)
@@ -228,13 +231,14 @@ function M._get()
     end
   end
 
-  return table.concat(components, "")
+  local ret = table.concat(components, "")
+  return "%@v:lua.require'snacks.statuscolumn'.click_fold@" .. ret .. "%T"
 end
 
 function M.get()
   local win = vim.g.statusline_winid
   local buf = vim.api.nvim_win_get_buf(win)
-  local key = ("%d:%d:%d:%d"):format(win, buf, vim.v.lnum, vim.v.virtnum and 1 or 0)
+  local key = ("%d:%d:%d:%d"):format(win, buf, vim.v.lnum, vim.v.virtnum ~= 0 and 1 or 0)
   if cache[key] then
     return cache[key]
   end
@@ -254,6 +258,14 @@ function M.health()
   elseif not config.enabled and ready then
     Snacks.health.ok(("is manually configured\n- `vim.o.statuscolumn = %q`"):format(vim.o.statuscolumn))
   end
+end
+
+function M.click_fold()
+  local pos = vim.fn.getmousepos()
+  vim.api.nvim_win_set_cursor(pos.winid, { pos.line, 1 })
+  vim.api.nvim_win_call(pos.winid, function()
+    vim.cmd("normal! za")
+  end)
 end
 
 return M

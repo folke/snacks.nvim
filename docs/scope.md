@@ -49,6 +49,7 @@ in [mini.indentscope](https://github.com/echasnovski/mini.indentscope).
     -- detect scope based on treesitter.
     -- falls back to indent based detection if not available
     enabled = true,
+    injections = true, -- include language injections when detecting scope (useful for languages like `vue`)
     ---@type string[]|{enabled?:boolean}
     blocks = {
       enabled = false, -- enable to use the following blocks

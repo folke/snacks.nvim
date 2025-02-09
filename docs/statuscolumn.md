@@ -57,6 +57,12 @@
 Snacks.statuscolumn()
 ```
 
+### `Snacks.statuscolumn.click_fold()`
+
+```lua
+Snacks.statuscolumn.click_fold()
+```
+
 ### `Snacks.statuscolumn.get()`
 
 ```lua

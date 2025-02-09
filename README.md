@@ -14,13 +14,17 @@ A collection of small QoL plugins for Neovim.
 | [dashboard](https://github.com/folke/snacks.nvim/blob/main/docs/dashboard.md) |  Beautiful declarative dashboards | ‼️ |
 | [debug](https://github.com/folke/snacks.nvim/blob/main/docs/debug.md) | Pretty inspect & backtraces for debugging |  |
 | [dim](https://github.com/folke/snacks.nvim/blob/main/docs/dim.md) | Focus on the active scope by dimming the rest |  |
+| [explorer](https://github.com/folke/snacks.nvim/blob/main/docs/explorer.md) | A file explorer (picker in disguise) | ‼️ |
 | [git](https://github.com/folke/snacks.nvim/blob/main/docs/git.md) | Git utilities |  |
 | [gitbrowse](https://github.com/folke/snacks.nvim/blob/main/docs/gitbrowse.md) | Open the current file, branch, commit, or repo in a browser (e.g. GitHub, GitLab, Bitbucket) |  |
+| [image](https://github.com/folke/snacks.nvim/blob/main/docs/image.md) | Image viewer using Kitty Graphics Protocol, supported by `kitty`, `weztermn` and `ghostty` | ‼️ |
 | [indent](https://github.com/folke/snacks.nvim/blob/main/docs/indent.md) | Indent guides and scopes |  |
 | [input](https://github.com/folke/snacks.nvim/blob/main/docs/input.md) | Better `vim.ui.input` | ‼️ |
+| [layout](https://github.com/folke/snacks.nvim/blob/main/docs/layout.md) | Window layouts |  |
 | [lazygit](https://github.com/folke/snacks.nvim/blob/main/docs/lazygit.md) | Open LazyGit in a float, auto-configure colorscheme and integration with Neovim |  |
 | [notifier](https://github.com/folke/snacks.nvim/blob/main/docs/notifier.md) | Pretty `vim.notify` | ‼️ |
 | [notify](https://github.com/folke/snacks.nvim/blob/main/docs/notify.md) | Utility functions to work with Neovim's `vim.notify` |  |
+| [picker](https://github.com/folke/snacks.nvim/blob/main/docs/picker.md) | Picker for selecting items | ‼️ |
 | [profiler](https://github.com/folke/snacks.nvim/blob/main/docs/profiler.md) | Neovim lua profiler |  |
 | [quickfile](https://github.com/folke/snacks.nvim/blob/main/docs/quickfile.md) | When doing `nvim somefile.txt`, it will render the file as quickly as possible, before loading your plugins. | ‼️ |
 | [rename](https://github.com/folke/snacks.nvim/blob/main/docs/rename.md) | LSP-integrated file renaming with support for plugins like [neo-tree.nvim](https://github.com/nvim-neo-tree/neo-tree.nvim) and [mini.files](https://github.com/echasnovski/mini.files). |  |
@@ -74,10 +78,13 @@ Install the plugin with your package manager:
     -- refer to the configuration section below
     bigfile = { enabled = true },
     dashboard = { enabled = true },
+    explorer = { enabled = true },
     indent = { enabled = true },
     input = { enabled = true },
+    picker = { enabled = true },
     notifier = { enabled = true },
     quickfile = { enabled = true },
+    scope = { enabled = true },
     scroll = { enabled = true },
     statuscolumn = { enabled = true },
     words = { enabled = true },
@@ -101,11 +108,15 @@ Please refer to the readme of each plugin for their specific configuration.
 ---@field bigfile? snacks.bigfile.Config
 ---@field dashboard? snacks.dashboard.Config
 ---@field dim? snacks.dim.Config
+---@field explorer? snacks.explorer.Config
 ---@field gitbrowse? snacks.gitbrowse.Config
+---@field image? snacks.image.Config
 ---@field indent? snacks.indent.Config
 ---@field input? snacks.input.Config
+---@field layout? snacks.layout.Config
 ---@field lazygit? snacks.lazygit.Config
 ---@field notifier? snacks.notifier.Config
+---@field picker? snacks.picker.Config
 ---@field profiler? snacks.profiler.Config
 ---@field quickfile? snacks.quickfile.Config
 ---@field scope? snacks.scope.Config
@@ -162,13 +173,16 @@ See the example below for how to configure `snacks.nvim`.
   opts = {
     bigfile = { enabled = true },
     dashboard = { enabled = true },
+    explorer = { enabled = true },
     indent = { enabled = true },
     input = { enabled = true },
     notifier = {
       enabled = true,
       timeout = 3000,
     },
+    picker = { enabled = true },
     quickfile = { enabled = true },
+    scope = { enabled = true },
     scroll = { enabled = true },
     statuscolumn = { enabled = true },
     words = { enabled = true },
@@ -179,6 +193,64 @@ See the example below for how to configure `snacks.nvim`.
     }
   },
   keys = {
+    -- Top Pickers & Explorer
+    { "<leader><space>", function() Snacks.picker.smart() end, desc = "Smart Find Files" },
+    { "<leader>,", function() Snacks.picker.buffers() end, desc = "Buffers" },
+    { "<leader>/", function() Snacks.picker.grep() end, desc = "Grep" },
+    { "<leader>:", function() Snacks.picker.command_history() end, desc = "Command History" },
+    { "<leader>n", function() Snacks.picker.notifications() end, desc = "Notification History" },
+    { "<leader>e", function() Snacks.explorer() end, desc = "File Explorer" },
+    -- find
+    { "<leader>fb", function() Snacks.picker.buffers() end, desc = "Buffers" },
+    { "<leader>fc", function() Snacks.picker.files({ cwd = vim.fn.stdpath("config") }) end, desc = "Find Config File" },
+    { "<leader>ff", function() Snacks.picker.files() end, desc = "Find Files" },
+    { "<leader>fg", function() Snacks.picker.git_files() end, desc = "Find Git Files" },
+    { "<leader>fp", function() Snacks.picker.projects() end, desc = "Projects" },
+    { "<leader>fr", function() Snacks.picker.recent() end, desc = "Recent" },
+    -- git
+    { "<leader>gb", function() Snacks.picker.git_branches() end, desc = "Git Branches" },
+    { "<leader>gl", function() Snacks.picker.git_log() end, desc = "Git Log" },
+    { "<leader>gL", function() Snacks.picker.git_log_line() end, desc = "Git Log Line" },
+    { "<leader>gs", function() Snacks.picker.git_status() end, desc = "Git Status" },
+    { "<leader>gS", function() Snacks.picker.git_stash() end, desc = "Git Stash" },
+    { "<leader>gd", function() Snacks.picker.git_diff() end, desc = "Git Diff (Hunks)" },
+    { "<leader>gf", function() Snacks.picker.git_log_file() end, desc = "Git Log File" },
+    -- Grep
+    { "<leader>sb", function() Snacks.picker.lines() end, desc = "Buffer Lines" },
+    { "<leader>sB", function() Snacks.picker.grep_buffers() end, desc = "Grep Open Buffers" },
+    { "<leader>sg", function() Snacks.picker.grep() end, desc = "Grep" },
+    { "<leader>sw", function() Snacks.picker.grep_word() end, desc = "Visual selection or word", mode = { "n", "x" } },
+    -- search
+    { '<leader>s"', function() Snacks.picker.registers() end, desc = "Registers" },
+    { '<leader>s/', function() Snacks.picker.search_history() end, desc = "Search History" },
+    { "<leader>sa", function() Snacks.picker.autocmds() end, desc = "Autocmds" },
+    { "<leader>sb", function() Snacks.picker.lines() end, desc = "Buffer Lines" },
+    { "<leader>sc", function() Snacks.picker.command_history() end, desc = "Command History" },
+    { "<leader>sC", function() Snacks.picker.commands() end, desc = "Commands" },
+    { "<leader>sd", function() Snacks.picker.diagnostics() end, desc = "Diagnostics" },
+    { "<leader>sD", function() Snacks.picker.diagnostics_buffer() end, desc = "Buffer Diagnostics" },
+    { "<leader>sh", function() Snacks.picker.help() end, desc = "Help Pages" },
+    { "<leader>sH", function() Snacks.picker.highlights() end, desc = "Highlights" },
+    { "<leader>si", function() Snacks.picker.icons() end, desc = "Icons" },
+    { "<leader>sj", function() Snacks.picker.jumps() end, desc = "Jumps" },
+    { "<leader>sk", function() Snacks.picker.keymaps() end, desc = "Keymaps" },
+    { "<leader>sl", function() Snacks.picker.loclist() end, desc = "Location List" },
+    { "<leader>sm", function() Snacks.picker.marks() end, desc = "Marks" },
+    { "<leader>sM", function() Snacks.picker.man() end, desc = "Man Pages" },
+    { "<leader>sp", function() Snacks.picker.lazy() end, desc = "Search for Plugin Spec" },
+    { "<leader>sq", function() Snacks.picker.qflist() end, desc = "Quickfix List" },
+    { "<leader>sR", function() Snacks.picker.resume() end, desc = "Resume" },
+    { "<leader>su", function() Snacks.picker.undo() end, desc = "Undo History" },
+    { "<leader>uC", function() Snacks.picker.colorschemes() end, desc = "Colorschemes" },
+    -- LSP
+    { "gd", function() Snacks.picker.lsp_definitions() end, desc = "Goto Definition" },
+    { "gD", function() Snacks.picker.lsp_declarations() end, desc = "Goto Declaration" },
+    { "gr", function() Snacks.picker.lsp_references() end, nowait = true, desc = "References" },
+    { "gI", function() Snacks.picker.lsp_implementations() end, desc = "Goto Implementation" },
+    { "gy", function() Snacks.picker.lsp_type_definitions() end, desc = "Goto T[y]pe Definition" },
+    { "<leader>ss", function() Snacks.picker.lsp_symbols() end, desc = "LSP Symbols" },
+    { "<leader>sS", function() Snacks.picker.lsp_workspace_symbols() end, desc = "LSP Workspace Symbols" },
+    -- Other
     { "<leader>z",  function() Snacks.zen() end, desc = "Toggle Zen Mode" },
     { "<leader>Z",  function() Snacks.zen.zoom() end, desc = "Toggle Zoom" },
     { "<leader>.",  function() Snacks.scratch() end, desc = "Toggle Scratch Buffer" },
@@ -187,10 +259,7 @@ See the example below for how to configure `snacks.nvim`.
     { "<leader>bd", function() Snacks.bufdelete() end, desc = "Delete Buffer" },
     { "<leader>cR", function() Snacks.rename.rename_file() end, desc = "Rename File" },
     { "<leader>gB", function() Snacks.gitbrowse() end, desc = "Git Browse", mode = { "n", "v" } },
-    { "<leader>gb", function() Snacks.git.blame_line() end, desc = "Git Blame Line" },
-    { "<leader>gf", function() Snacks.lazygit.log_file() end, desc = "Lazygit Current File History" },
     { "<leader>gg", function() Snacks.lazygit() end, desc = "Lazygit" },
-    { "<leader>gl", function() Snacks.lazygit.log() end, desc = "Lazygit Log (cwd)" },
     { "<leader>un", function() Snacks.notifier.hide() end, desc = "Dismiss All Notifications" },
     { "<c-/>",      function() Snacks.terminal() end, desc = "Toggle Terminal" },
     { "<c-_>",      function() Snacks.terminal() end, desc = "which_key_ignore" },
@@ -250,57 +319,10 @@ See the example below for how to configure `snacks.nvim`.
 
 ## 🌈 Highlight Groups
 
-<details>
-<summary>Click to see all highlight groups</summary>
+Snacks defines **a lot** of highlight groups and it's impossible to document them all.
 
-<!-- hl_start -->
+Instead, you can use the picker to see all the highlight groups.
 
-| Highlight Group               | Default Group           | Description                    |
-| ----------------------------- | ----------------------- | ------------------------------ |
-| **SnacksNormal**              | _NormalFloat_           | Normal for the float window    |
-| **SnacksWinBar**              | _Title_                 | Title of the window            |
-| **SnacksBackdrop**            | _none_                  | Backdrop                       |
-| **SnacksNormalNC**            | _NormalFloat_           | Normal for non-current windows |
-| **SnacksWinBarNC**            | _SnacksWinBar_          | Title for non-current windows  |
-| **SnacksScratchKey**          | _DiagnosticVirtualText_ | Keymap help in the footer      |
-| **SnacksScratchDesc**         | _DiagnosticInfo_        | Keymap help desc in the footer |
-| **SnacksNotifierInfo**        | _none_                  | Notification window for Info   |
-| **SnacksNotifierWarn**        | _none_                  | Notification window for Warn   |
-| **SnacksNotifierDebug**       | _none_                  | Notification window for Debug  |
-| **SnacksNotifierError**       | _none_                  | Notification window for Error  |
-| **SnacksNotifierTrace**       | _none_                  | Notification window for Trace  |
-| **SnacksNotifierIconInfo**    | _none_                  | Icon for Info notification     |
-| **SnacksNotifierIconWarn**    | _none_                  | Icon for Warn notification     |
-| **SnacksNotifierIconDebug**   | _none_                  | Icon for Debug notification    |
-| **SnacksNotifierIconError**   | _none_                  | Icon for Error notification    |
-| **SnacksNotifierIconTrace**   | _none_                  | Icon for Trace notification    |
-| **SnacksNotifierTitleInfo**   | _none_                  | Title for Info notification    |
-| **SnacksNotifierTitleWarn**   | _none_                  | Title for Warn notification    |
-| **SnacksNotifierTitleDebug**  | _none_                  | Title for Debug notification   |
-| **SnacksNotifierTitleError**  | _none_                  | Title for Error notification   |
-| **SnacksNotifierTitleTrace**  | _none_                  | Title for Trace notification   |
-| **SnacksNotifierBorderInfo**  | _none_                  | Border for Info notification   |
-| **SnacksNotifierBorderWarn**  | _none_                  | Border for Warn notification   |
-| **SnacksNotifierBorderDebug** | _none_                  | Border for Debug notification  |
-| **SnacksNotifierBorderError** | _none_                  | Border for Error notification  |
-| **SnacksNotifierBorderTrace** | _none_                  | Border for Trace notification  |
-| **SnacksNotifierFooterInfo**  | _DiagnosticInfo_        | Footer for Info notification   |
-| **SnacksNotifierFooterWarn**  | _DiagnosticWarn_        | Footer for Warn notification   |
-| **SnacksNotifierFooterDebug** | _DiagnosticHint_        | Footer for Debug notification  |
-| **SnacksNotifierFooterError** | _DiagnosticError_       | Footer for Error notification  |
-| **SnacksNotifierFooterTrace** | _DiagnosticHint_        | Footer for Trace notification  |
-| **SnacksDashboardNormal**     | _Normal_                | Normal for the dashboard       |
-| **SnacksDashboardDesc**       | _Special_               | Description text in dashboard  |
-| **SnacksDashboardFile**       | _Special_               | Dashboard file items           |
-| **SnacksDashboardDir**        | _NonText_               | Directory items                |
-| **SnacksDashboardFooter**     | _Title_                 | Dashboard footer text          |
-| **SnacksDashboardHeader**     | _Title_                 | Dashboard header text          |
-| **SnacksDashboardIcon**       | _Special_               | Dashboard icons                |
-| **SnacksDashboardKey**        | _Number_                | Keybind text                   |
-| **SnacksDashboardTerminal**   | _SnacksDashboardNormal_ | Terminal text                  |
-| **SnacksDashboardSpecial**    | _Special_               | Special elements               |
-| **SnacksDashboardTitle**      | _Title_                 | Title text                     |
-
-<!-- hl_end -->
-
-</details>
+```lua
+Snacks.picker.highlights({pattern = "hl_group:^Snacks"})
+```

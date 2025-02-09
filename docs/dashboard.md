@@ -357,7 +357,7 @@ Advanced example using the GitHub CLI.
           icon = " ",
           title = "Open PRs",
           cmd = "gh pr list -L 3",
-          key = "p",
+          key = "P",
           action = function()
             vim.fn.jobstart("gh pr list --web", { detach = true })
           end,
@@ -623,7 +623,7 @@ Get the most recent files, optionally filtered by the
 current working directory or a custom directory.
 
 ```lua
----@param opts? {limit?:number, cwd?:string|boolean}
+---@param opts? {limit?:number, cwd?:string|boolean, filter?:fun(file:string):boolean?}
 ---@return snacks.dashboard.Gen
 Snacks.dashboard.sections.recent_files(opts)
 ```

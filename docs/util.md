@@ -25,7 +25,7 @@ Set buffer-local options.
 
 ```lua
 ---@param buf number
----@param bo vim.bo
+---@param bo vim.bo|{}
 Snacks.util.bo(buf, bo)
 ```
 
@@ -35,6 +35,16 @@ Snacks.util.bo(buf, bo)
 ---@param group string hl group to get color from
 ---@param prop? string property to get. Defaults to "fg"
 Snacks.util.color(group, prop)
+```
+
+### `Snacks.util.debounce()`
+
+```lua
+---@generic T
+---@param fn T
+---@param opts? {ms?:number}
+---@return T
+Snacks.util.debounce(fn, opts)
 ```
 
 ### `Snacks.util.file_decode()`
@@ -79,6 +89,13 @@ Snacks.util.is_transparent()
 ```lua
 ---@param str string
 Snacks.util.keycode(str)
+```
+
+### `Snacks.util.normkey()`
+
+```lua
+---@param key string
+Snacks.util.normkey(key)
 ```
 
 ### `Snacks.util.on_key()`
@@ -171,6 +188,6 @@ Set window-local options.
 
 ```lua
 ---@param win number
----@param wo vim.wo
+---@param wo vim.wo|{}
 Snacks.util.wo(win, wo)
 ```

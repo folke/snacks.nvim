@@ -14,8 +14,13 @@ end
 
 -- Prompt for the new filename,
 -- do the rename, and trigger LSP handlers
-function M.rename_file()
+---@param opts? {file?: string, on_rename?: fun(new:string, old:string)}
+function M.rename_file(opts)
+  opts = opts or {}
   local buf = vim.api.nvim_get_current_buf()
+  if opts.file then
+    buf = vim.fn.bufadd(opts.file)
+  end
   local old = assert(realpath(vim.api.nvim_buf_get_name(buf)))
   local root = assert(realpath(uv.cwd() or "."))
 
@@ -37,9 +42,14 @@ function M.rename_file()
     vim.fn.mkdir(vim.fs.dirname(new), "p")
     M.on_rename_file(old, new, function()
       vim.fn.rename(old, new)
-      vim.cmd.edit(new)
+      if not opts.on_rename then
+        vim.cmd.edit(new)
+      end
       vim.api.nvim_buf_delete(buf, { force = true })
       vim.fn.delete(old)
+      if opts.on_rename then
+        opts.on_rename(new, old)
+      end
     end)
   end)
 end
