@@ -144,6 +144,19 @@ M.command_history = {
   },
   confirm = "cmd",
   formatters = { text = { ft = "vim" } },
+  win = {
+    input = {
+      keys = {
+        ["<c-y>"] = { "accept_completion", mode = { "n", "i" } },
+      },
+    },
+  },
+  actions = {
+    accept_completion = function(picker)
+      local current = picker:current().cmd
+      picker.input:set(current)
+    end,
+  },
 }
 
 -- Neovim commands
