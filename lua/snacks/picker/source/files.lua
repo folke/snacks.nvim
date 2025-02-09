@@ -172,6 +172,7 @@ function M.zoxide(opts, ctx)
       ---@param item snacks.picker.finder.Item
       transform = function(item)
         item.file = item.text
+        item.dir = true
       end,
     },
   }, ctx)
