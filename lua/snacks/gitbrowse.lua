@@ -25,8 +25,8 @@ local defaults = {
     end
     vim.ui.open(url)
   end,
-  ---@type "repo" | "branch" | "file" | "commit" | "permaFile"
-  what = "file", -- what to open. not all remotes support all types
+  ---@type "repo" | "branch" | "file" | "commit" | "permalink"
+  what = "commit", -- what to open. not all remotes support all types
   branch = nil, ---@type string?
   line_start = nil, ---@type number?
   line_end = nil, ---@type number?
@@ -50,19 +50,19 @@ local defaults = {
     ["github%.com"] = {
       branch = "/tree/{branch}",
       file = "/blob/{branch}/{file}#L{line_start}-L{line_end}",
-      permaFile = "/blob/{commit}/{file}#L{line_start}-L{line_end}",
+      permalink = "/blob/{commit}/{file}#L{line_start}-L{line_end}",
       commit = "/commit/{commit}",
     },
     ["gitlab%.com"] = {
       branch = "/-/tree/{branch}",
       file = "/-/blob/{branch}/{file}#L{line_start}-L{line_end}",
-      permaFile = "/-/blob/{commit}/{file}#L{line_start}-L{line_end}",
+      permalink = "/-/blob/{commit}/{file}#L{line_start}-L{line_end}",
       commit = "/-/commit/{commit}",
     },
     ["bitbucket%.org"] = {
       branch = "/src/{branch}",
       file = "/src/{branch}/{file}#lines-{line_start}-L{line_end}",
-      permaFile = "/src/{commit}/{file}#lines-{line_start}-L{line_end}",
+      permalink = "/src/{commit}/{file}#lines-{line_start}-L{line_end}",
       commit = "/commits/{commit}",
     },
   },
@@ -145,15 +145,6 @@ function M._open(opts)
   file = file and (uv.fs_stat(file) or {}).type == "file" and vim.fs.normalize(file) or nil
   local cwd = file and vim.fn.fnamemodify(file, ":h") or vim.fn.getcwd()
 
-  local commit = nil
-  if opts.what == "permaFile" then
-    commit = system({"git", "log", "-n", "1", "--pretty=format:%H", "--", file }, "Failed to get latest commit of file")[1]
-  else
-    local word = vim.fn.expand("<cword>")
-    local is_commit = is_valid_commit_hash(word, cwd)
-    commit = is_commit and word or nil
-  end
-
   ---@type snacks.gitbrowse.Fields
   local fields = {
     branch = opts.branch
@@ -161,8 +152,15 @@ function M._open(opts)
     file = file and system({ "git", "-C", cwd, "ls-files", "--full-name", file }, "Failed to get git file path")[1],
     line_start = opts.line_start,
     line_end = opts.line_end,
-    commit = commit,
   }
+
+  if opts.what == "permalink" then
+    fields.commit =
+      system({ "git", "log", "-n", "1", "--pretty=format:%H", "--", file }, "Failed to get latest commit of file")[1]
+  else
+    local word = vim.fn.expand("<cword>")
+    fields.commit = is_valid_commit_hash(word, cwd) and word or nil
+  end
 
   -- Get visual selection range if in visual mode
   if vim.fn.mode():find("[vV]") then
@@ -182,9 +180,15 @@ function M._open(opts)
   end
   fields.line_count = fields.line_end - fields.line_start + 1
 
-  opts.what = is_commit and "commit" or opts.what == "commit" and not fields.commit and "file" or opts.what
-  opts.what = not is_commit and opts.what == "file" and not fields.file and "branch" or opts.what
-  opts.what = not is_commit and opts.what == "branch" and not fields.branch and "repo" or opts.what
+  if not fields.commit and (opts.what == "commit" or opts.what == "permalink") then
+    opts.what = "file"
+  end
+  if not fields.file then
+    opts.what = "branch"
+  end
+  if not fields.branch then
+    opts.what = "repo"
+  end
 
   local remotes = {} ---@type {name:string, url:string}[]
 
