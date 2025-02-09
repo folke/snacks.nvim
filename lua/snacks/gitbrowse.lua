@@ -59,7 +59,7 @@ local defaults = {
     },
     ["bitbucket%.org"] = {
       branch = "/src/{branch}",
-      file = "/src/{branch}/{file}#lines-{line_start}-L{line_end}",
+      file = "/src/{branch}/{file}#lines-{line_start}:{line_end}",
       commit = "/commits/{commit}",
     },
   },
