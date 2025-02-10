@@ -155,8 +155,10 @@ function M._open(opts)
   }
 
   if opts.what == "permalink" then
-    fields.commit =
-      system({ "git", "log", "-n", "1", "--pretty=format:%H", "--", file }, "Failed to get latest commit of file")[1]
+    fields.commit = system(
+      { "git", "-C", cwd, "log", "-n", "1", "--pretty=format:%H", "--", file },
+      "Failed to get latest commit of file"
+    )[1]
   else
     local word = vim.fn.expand("<cword>")
     fields.commit = is_valid_commit_hash(word, cwd) and word or nil
