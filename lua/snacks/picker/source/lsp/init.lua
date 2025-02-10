@@ -260,6 +260,7 @@ function M.results_to_items(client, results, opts)
       detail = result.detail,
       name = result.name,
       text = "",
+      range = result.range,
     }
     local uri = result.location and result.location.uri or result.uri or opts.default_uri
     local loc = result.location or { range = result.selectionRange or result.range, uri = uri }
