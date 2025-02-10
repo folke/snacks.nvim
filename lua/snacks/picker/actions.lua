@@ -154,7 +154,7 @@ M.confirm = M.jump -- default confirm action
 
 M.split = { action = "confirm", cmd = "split" }
 M.vsplit = { action = "confirm", cmd = "vsplit" }
-M.tab = { action = "confirm", cmd = "tab" }
+M.tab = { action = "confirm", cmd = "tabnew" }
 M.drop = { action = "confirm", cmd = "drop" }
 M.tabdrop = { action = "confirm", cmd = "tabdrop" }
 
