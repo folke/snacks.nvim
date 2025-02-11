@@ -108,6 +108,10 @@ function M.log(opts, ctx)
     args[#args + 1] = file
   end
 
+  if opts.author then
+    table.insert(args, "--author=" .. opts.author)
+  end
+
   local cwd = vim.fs.normalize(file and vim.fn.fnamemodify(file, ":h") or opts and opts.cwd or uv.cwd() or ".") or nil
   return require("snacks.picker.source.proc").proc({
     opts,
