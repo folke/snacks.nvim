@@ -789,9 +789,11 @@ M.spelling = {
 
 ---@class snacks.picker.treesitter.Config: snacks.picker.Config
 ---@field filter table<string, string[]|boolean>? symbol kind filter
+---@field tree? boolean show symbol tree
 M.treesitter = {
   finder = "treesitter_symbols",
   format = "lsp_symbol",
+  tree = true,
   filter = {
     default = {
       "Class",
