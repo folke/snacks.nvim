@@ -256,10 +256,10 @@ function M:init_layout(layout)
     },
     hidden = layout.hidden,
     on_update = function()
-      self:update_titles()
       self.preview:refresh(self)
       self.input:update()
       self.list:update({ force = true })
+      self:update_titles()
     end,
     layout = {
       backdrop = backdrop,

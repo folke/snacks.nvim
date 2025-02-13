@@ -73,3 +73,6 @@ win:
 words:
   - changed-files:
       - any-glob-to-any-file: "lua/snacks/words.lua"
+picker:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/picker/**"

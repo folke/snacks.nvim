@@ -43,6 +43,7 @@ local defaults = {
 local mouse_scrolling = false
 
 M.enabled = false
+local SCROLL_UP, SCROLL_DOWN = Snacks.util.keycode("<c-y>"), Snacks.util.keycode("<c-e>")
 
 local states = {} ---@type table<number, snacks.scroll.State>
 local uv = vim.uv or vim.loop
@@ -207,51 +208,26 @@ function M.disable()
   vim.api.nvim_del_augroup_by_name("snacks_scroll")
 end
 
---- Calculate the target line to scroll to, taking folds into account.
----@param state snacks.scroll.State
----@param line number
----@param amount number
-local function scroll_target(state, line, amount)
-  if amount == 0 then
-    return line
+--- Determines the amount of scrollable lines between two window views,
+--- taking folds and virtual lines into account.
+---@param from vim.fn.winsaveview.ret
+---@param to vim.fn.winsaveview.ret
+local function scroll_lines(win, from, to)
+  if from.topline == to.topline then
+    return math.abs(from.topfill - to.topfill)
   end
-  local count = math.abs(amount)
-  local max = vim.api.nvim_buf_line_count(state.buf)
-  local target = line
-  local up = amount < 0
-  while count > 0 do
-    target = target + (up and -1 or 1)
-    count = count - 1
-    if target < 1 or target > max then
-      break
-    end
-    local fold_start = vim.fn.foldclosed(target)
-    if fold_start > 0 then
-      if up then
-        target = fold_start
-      elseif target ~= fold_start then
-        target = vim.fn.foldclosedend(target) + 1
-      end
-    end
+  if to.topline < from.topline then
+    from, to = to, from
   end
-  return target
-end
-
----@param from number
----@param to number
-local function visible_lines(from, to)
-  from, to = math.min(from, to), math.max(from, to)
-  local from_fold = vim.fn.foldclosed(from)
-  from = from_fold == -1 and from or from_fold
-  local to_fold = vim.fn.foldclosed(to)
-  to = to_fold == -1 and to or to_fold
-  local ret = 0
-  while from < to do
-    ret = ret + 1
-    local fold_end = vim.fn.foldclosedend(from)
-    from = fold_end == -1 and from + 1 or fold_end + 1
+  local start_row, end_row, offset = from.topline - 1, to.topline - 1, 0
+  if from.topfill > 0 then
+    start_row = start_row + 1
+    offset = from.topfill + 1
   end
-  return ret
+  if to.topfill > 0 then
+    offset = offset - to.topfill
+  end
+  return vim.api.nvim_win_text_height(win, { start_row = start_row, end_row = end_row }).all + offset - 1
 end
 
 --- Check if we need to animate the scroll
@@ -281,7 +257,7 @@ function M.check(win)
     stats.mousescroll = stats.mousescroll + 1
     state.current = vim.deepcopy(state.view)
     return
-  elseif math.abs(state.view.topline - state.current.topline) <= 1 then
+  elseif math.abs(state.view.topline - state.current.topline) == 0 then
     stats.skipped = stats.skipped + 1
     state.current = vim.deepcopy(state.view)
     return
@@ -302,34 +278,30 @@ function M.check(win)
     "force",
     vim.deepcopy(repeat_delta <= config.animate_repeat.delay and config.animate_repeat or config.animate),
     {
-      int = true,
+      int = false,
       id = ("scroll_%d"):format(win),
       buf = state.buf,
     }
   )
 
-  local scrolls, lines = 0, 0
-  local from_virtcol, to_virtcol, from_lnum = 0, 0, 0
+  local scrolls = 0
+  local col_from, col_to = 0, 0
+  local move_from, move_to = 0, 0
   vim.api.nvim_win_call(state.win, function()
-    -- reset to current state
-    vim.fn.winrestview(state.current)
+    move_to = vim.fn.winline()
+    vim.fn.winrestview(state.current) -- reset to current state
+    move_from = vim.fn.winline()
     state.current = vim.fn.winsaveview()
     -- calculate the amount of lines to scroll, taking folds into account
-    scrolls = visible_lines(state.current.topline, state.target.topline)
-    scrolls = scrolls * (state.target.topline > state.current.topline and -1 or 1)
-    lines = visible_lines(state.current.lnum, state.target.lnum)
-    from_lnum = state.current.lnum
-    from_virtcol = vim.fn.virtcol({ state.current.lnum, state.current.col })
-    to_virtcol = vim.fn.virtcol({ state.target.lnum, state.target.col })
+    scrolls = scroll_lines(state.win, state.current, state.target)
+    col_from = vim.fn.virtcol({ state.current.lnum, state.current.col })
+    col_to = vim.fn.virtcol({ state.target.lnum, state.target.col })
   end)
-  local info = vim.fn.getwininfo(state.win)[1]
-  local line_count = vim.api.nvim_buf_line_count(state.buf)
-  local height = info.botline - info.topline
-  local scrolloff = math.min(state.scrolloff, math.floor((info.botline - info.topline) / 2))
 
-  if state.current.lnum < state.scrolloff or state.current.lnum > line_count - state.scrolloff then
-    scrolloff = 0
-  end
+  local down = state.target.topline > state.current.topline
+    or (state.target.topline == state.current.topline and state.target.topfill < state.current.topfill)
+
+  local scrolled = 0
 
   state.anim = Snacks.animate(0, scrolls, function(value, ctx)
     if not vim.api.nvim_win_is_valid(win) then
@@ -343,31 +315,48 @@ function M.check(win)
         return
       end
 
-      local topline = math.max(scroll_target(state, state.current.topline, ctx.prev - value), 1)
-      local lnum = scroll_target(state, from_lnum, math.floor(value * -1 * math.abs(lines / scrolls) + 0.5))
+      local count = vim.v.count -- backup count
 
-      -- adjust for scrolloff
-      local botline = topline + height
-      lnum = math.max(lnum, topline + scrolloff)
-      lnum = math.min(lnum, botline - scrolloff)
-      --
-      local virtcol = math.floor(from_virtcol + (to_virtcol - from_virtcol) * value / scrolls + 0.5)
-      local col = virtcol == 0 and 0 or vim.fn.virtcol2col(state.win, lnum, virtcol)
-
-      local old = state.current
-      vim.fn.winrestview({
-        topline = topline,
-        lnum = lnum,
-        col = col,
-        coladd = math.max(virtcol - col, 0),
-      })
-      state.current = vim.fn.winsaveview()
-
-      -- this should never happen, but just in case
-      if state.current.topline ~= topline then
-        state.current = old
-        vim.fn.winrestview(state.current)
+      -- scroll
+      local scroll_target = math.floor(value)
+      local scroll = scroll_target - scrolled --[[@as number]]
+      if scroll > 0 then
+        scrolled = scrolled + scroll
+        vim.cmd(("normal! %d%s"):format(scroll, down and SCROLL_DOWN or SCROLL_UP))
       end
+
+      -- move the cursor vertically
+      local v = vim.fn.winsaveview()
+      local move = math.floor(value * math.abs(move_to - move_from) / scrolls) -- delta to move this step
+      local move_target = move_from + ((move_to < move_from) and -1 or 1) * move -- target line
+      local wl, _wl = vim.fn.winline(), 0
+      local move_down = wl < move_target
+      while wl ~= move_target do
+        vim.cmd(("normal! %s"):format(move_down and "j" or "k"))
+        wl, _wl = vim.fn.winline(), wl
+        if _wl == wl or wl == move_target then
+          break
+        end
+        -- overshot?
+        if (move_down and wl > move_target) or (not move_down and wl < move_target) then
+          vim.cmd(("normal! %s"):format(move_down and "k" or "j"))
+          vim.fn.winrestview({ topline = v.topline, topfill = v.topfill })
+          break
+        end
+      end
+
+      -- fix count
+      if vim.v.count ~= count then
+        vim.cmd(("normal! %dzh"):format(count))
+      end
+
+      -- move the cursor horizontally
+      local lnum = vim.api.nvim_win_get_cursor(win)[1]
+      local virtcol = math.floor(col_from + (col_to - col_from) * value / scrolls + 0.5)
+      local col = virtcol == 0 and 0 or vim.fn.virtcol2col(state.win, lnum, virtcol)
+      vim.fn.winrestview({ col = col, coladd = math.max(virtcol - col, 0) })
+
+      state.current = vim.fn.winsaveview()
     end)
   end, opts)
 end

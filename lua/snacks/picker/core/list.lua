@@ -89,7 +89,6 @@ function M.new(picker)
     },
   })
   self.visible = {}
-  self.visible_count = 0
   self.win = Snacks.win(win_opts)
   self.top, self.cursor = 1, 1
   self.items = {}
@@ -291,6 +290,13 @@ function M:clear()
   self.topk:clear()
   self.top, self.cursor = 1, 1
   self.items = {}
+  if self._current then
+    vim.schedule(function()
+      if self.picker then
+        self.picker:show_preview()
+      end
+    end)
+  end
   self._current = nil
   self.dirty = true
   if next(self.items) == nil then

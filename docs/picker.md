@@ -594,6 +594,7 @@ Snacks.picker.pick({source = "files", ...})
 ---@class snacks.picker.yank.Action: snacks.picker.Action
 ---@field reg? string
 ---@field field? string
+---@field notify? boolean
 ```
 
 ```lua
