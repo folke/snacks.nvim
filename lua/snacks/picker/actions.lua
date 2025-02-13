@@ -11,6 +11,7 @@ local M = {}
 ---@class snacks.picker.yank.Action: snacks.picker.Action
 ---@field reg? string
 ---@field field? string
+---@field notify? boolean
 
 ---@enum (key) snacks.picker.EditCmd
 local edit_cmd = {
@@ -136,8 +137,8 @@ function M.jump(picker, _, action)
   end
 
   if current_empty and vim.api.nvim_buf_is_valid(current_buf) then
-    local w = vim.fn.bufwinid(current_buf)
-    if w == -1 then
+    local w = vim.fn.win_findbuf(current_buf)
+    if #w == 0 then
       vim.api.nvim_buf_delete(current_buf, { force = true })
     end
   end
@@ -435,9 +436,11 @@ function M.yank(picker, item, action)
     local reg = action.reg or vim.v.register
     local value = item[action.field] or item.data or item.text
     vim.fn.setreg(reg, value)
-    local buf = item.buf or vim.api.nvim_win_get_buf(picker.main)
-    local ft = vim.bo[buf].filetype
-    Snacks.notify(("Yanked to register `%s`:\n```%s\n%s\n```"):format(reg, ft, value), { title = "Snacks Picker" })
+    if action.notify ~= false then
+      local buf = item.buf or vim.api.nvim_win_get_buf(picker.main)
+      local ft = vim.bo[buf].filetype
+      Snacks.notify(("Yanked to register `%s`:\n```%s\n%s\n```"):format(reg, ft, value), { title = "Snacks Picker" })
+    end
   end
 end
 M.copy = M.yank
@@ -463,14 +466,14 @@ end
 --- and moves the cursor to the next item.
 function M.select_and_next(picker)
   picker.list:select()
-  M.list_down(picker)
+  picker.list:_move(vim.v.count1)
 end
 
 --- Toggles the selection of the current item,
 --- and moves the cursor to the prev item.
 function M.select_and_prev(picker)
   picker.list:select()
-  M.list_up(picker)
+  picker.list:_move(-vim.v.count1)
 end
 
 --- Selects all items in the list.
@@ -528,7 +531,7 @@ function M.help(picker, item, action)
     local file = Snacks.picker.util.path(item) or ""
     if package.loaded.lazy then
       local plugin = file:match("/([^/]+)/doc/")
-      if plugin then
+      if plugin and require("lazy.core.config").plugins[plugin] then
         require("lazy").load({ plugins = { plugin } })
       end
     end

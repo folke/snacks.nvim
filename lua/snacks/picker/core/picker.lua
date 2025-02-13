@@ -161,7 +161,7 @@ end
 ---@return string? name, snacks.win? win
 function M:current_win()
   local current = vim.api.nvim_get_current_win()
-  for w, win in pairs(self.layout.wins) do
+  for w, win in pairs(self.layout.wins or {}) do
     if win.win == current then
       return w, win
     end
@@ -256,10 +256,10 @@ function M:init_layout(layout)
     },
     hidden = layout.hidden,
     on_update = function()
-      self:update_titles()
       self.preview:refresh(self)
       self.input:update()
       self.list:update({ force = true })
+      self:update_titles()
     end,
     layout = {
       backdrop = backdrop,

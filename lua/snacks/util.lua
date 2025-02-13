@@ -391,4 +391,23 @@ function M.is_float(win)
   return vim.api.nvim_win_get_config(win or 0).relative ~= ""
 end
 
+M.base64 = vim.base64 and vim.base64.encode
+  or function(data)
+    data = tostring(data)
+    local bit = require("bit")
+    local b64chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    local b64, len = "", #data
+    for i = 1, len, 3 do
+      local a, b, c = data:byte(i, i + 2)
+      local buffer = bit.bor(bit.lshift(a, 16), bit.lshift(b or 0, 8), c or 0)
+      for j = 0, 3 do
+        local index = bit.rshift(buffer, (3 - j) * 6) % 64
+        b64 = b64 .. b64chars:sub(index + 1, index + 1)
+      end
+    end
+    local padding = (3 - len % 3) % 3
+    b64 = b64:sub(1, -1 - padding) .. ("="):rep(padding)
+    return b64
+  end
+
 return M
