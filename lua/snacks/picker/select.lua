@@ -51,7 +51,7 @@ function M.select(items, opts, on_choice)
       end,
     },
     on_close = function()
-      if not completed then
+      if completed then
         return
       end
       completed = true
