@@ -8,7 +8,7 @@
 ---@field backdrop? snacks.win
 ---@field keys snacks.win.Keys[]
 ---@field events (snacks.win.Event|{event:string|string[]})[]
----@field meta table<string, string>
+---@field meta table<string, any>
 ---@field closed? boolean
 ---@overload fun(opts? :snacks.win.Config|{}): snacks.win
 local M = setmetatable({}, {

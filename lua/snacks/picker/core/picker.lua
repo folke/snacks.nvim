@@ -416,11 +416,10 @@ function M:update_titles()
       local tpl = win.meta.title_tpl or win.opts.title
       win.meta.title_tpl = tpl
       tpl = type(tpl) == "string" and { { tpl, "FloatTitle" } } or tpl
-      ---@cast tpl -string
+      ---@cast tpl snacks.picker.Text[]
 
       local has_flags = false
-      local is_empty = true
-      local ret = {}
+      local ret = {} ---@type snacks.picker.Text[]
       for _, chunk in ipairs(tpl) do
         local text = chunk[1]
         if text:find("{flags}", 1, true) then
@@ -429,21 +428,17 @@ function M:update_titles()
         end
         text = vim.trim(Snacks.picker.util.tpl(text, data)):gsub("%s+", " ")
         if text ~= "" then
-          is_empty = false
           -- HACK: add extra space when last char is non word like an icon
           text = text:sub(-1):match("[%w%p]") and text or text .. " "
+          ret[#ret + 1] = { text, chunk[2] }
         end
-        ret[#ret + 1] = {
-          text,
-          chunk[2],
-        }
       end
-      if has_flags then
-        vim.list_extend(ret, toggles)
-      end
-      if not is_empty then
-        table.insert(ret, 1, { " ", "FloatTitle" })
+      if #ret > 0 then
         table.insert(ret, { " ", "FloatTitle" })
+        table.insert(ret, 1, { " ", "FloatTitle" })
+      end
+      if has_flags and #toggles > 0 then
+        vim.list_extend(ret, toggles)
       end
       win:set_title(ret)
     end
