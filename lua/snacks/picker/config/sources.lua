@@ -871,14 +871,30 @@ M.zoxide = {
 
 M.scratch = {
   finder = "files_scratch",
-  format = "file",
+  format = function(item, picker)
+    local file = item.item
+    local ret = {} ---@type snacks.picker.Highlight[]
+    local a = Snacks.picker.util.align
+    local icon, icon_hl = file.icon, nil
+    if not icon then
+      icon, icon_hl = Snacks.util.icon(file.ft, "filetype")
+    end
+    ret[#ret + 1] = { a(icon, 3), icon_hl }
+    ret[#ret + 1] = { a(file.name, 20, { truncate = true }) }
+    ret[#ret + 1] = { " " }
+    ret[#ret + 1] = { a(item.branch, 20, { truncate = true }), "Number" }
+    ret[#ret + 1] = { " " }
+    ---@diagnostic disable-next-line: missing-fields
+    vim.list_extend(ret, Snacks.picker.format.filename({ text = "", dir = true, file = file.cwd }, picker))
+    return ret
+  end,
   win = {
     preview = { wo = { number = false, relativenumber = false, signcolumn = "no" } },
     input = {
       keys = {
         ["<CR>"] = { "scratch_open", mode = { "n", "i" } },
         ["<c-x>"] = { "scratch_delete", mode = { "n", "i" } },
-        ["<c-n>"] = { "scratch_new", mode = { "n", "i" } },
+        ["<c-s-n>"] = { "scratch_new", mode = { "n", "i" } },
         ["<c-g>"] = { "scratch_grep", mode = { "n", "i" } },
       },
     },
@@ -889,11 +905,24 @@ M.scratch = {
       picker:close()
       Snacks.scratch.open({ file = current })
     end,
-    scratch_delete = function(picker)
-      local current = picker:current().file
+    scratch_delete = function(picker, item)
+      local current = item.file
+      local index = item.idx
       os.remove(current)
-      picker:close()
-      Snacks.picker.scratch()
+      picker:find({
+        on_done = function()
+          if picker:count() == 0 then
+            picker:close()
+          else
+            local numberofitems = #picker:items()
+            if picker.layout.opts.reverse then
+              picker.list:view(math.max(numberofitems - index + 1, 1))
+            else
+              picker.list:view(math.min(index, numberofitems))
+            end
+          end
+        end,
+      })
     end,
     scratch_new = function(picker)
       picker:close()

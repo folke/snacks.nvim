@@ -197,19 +197,19 @@ end
 
 ---@param opts snacks.picker.proc.Config
 ---@type snacks.picker.finder
-function M.scratch(opts, ctx)
-  local root = vim.fn.stdpath("data") .. "/scratch"
-  return require("snacks.picker.source.proc").proc({
-    opts,
-    {
-      cmd = "fd",
-      args = { ".", root },
-      ---@param item snacks.picker.finder.Item
-      transform = function(item)
-        item.file = item.text
-      end,
-    },
-  }, ctx)
+function M.scratch(opts)
+  local list = Snacks.scratch.list()
+  local items = {}
+  for _, item in ipairs(list) do
+    items[#items + 1] = {
+      file = item.file,
+      item = item,
+      title = item.name,
+      text = Snacks.picker.util.text(item, { "name", "branch", "ft" }),
+      branch = item.branch and ("branch:%s"):format(item.branch) or "",
+    }
+  end
+  return items
 end
 
 return M
