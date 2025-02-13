@@ -526,7 +526,7 @@ function M.help(picker, item, action)
   if item then
     picker:close()
     local file = Snacks.picker.util.path(item) or ""
-    if package.loaded.lazy then
+    if package.loaded.lazy and not vim.startswith(file, vim.env.VIMRUNTIME) then
       local plugin = file:match("/([^/]+)/doc/")
       if plugin then
         require("lazy").load({ plugins = { plugin } })
