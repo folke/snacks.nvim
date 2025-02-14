@@ -539,6 +539,7 @@ M.lsp_references = {
 ---@field tree? boolean show symbol tree
 ---@field filter table<string, string[]|boolean>? symbol kind filter
 ---@field workspace? boolean show workspace symbols
+---@field lsp_result_transform? (fun(result:lsp.ResultItem, item:snacks.picker.finder.Item):snacks.picker.finder.Item) custom LSP result transformer
 M.lsp_symbols = {
   finder = "lsp_symbols",
   format = "lsp_symbol",

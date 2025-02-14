@@ -244,7 +244,7 @@ end
 ---@alias lsp.ResultItem lsp.Symbol|lsp.CallHierarchyItem|{text?:string}
 ---@param client vim.lsp.Client
 ---@param results lsp.ResultItem[]
----@param opts? {default_uri?:string, filter?:(fun(result:lsp.ResultItem):boolean), text_with_file?:boolean}
+---@param opts? {default_uri?:string, filter?:(fun(result:lsp.ResultItem):boolean), text_with_file?:boolean, transformer?:(fun(result:lsp.ResultItem, item:snacks.picker.finder.Item):snacks.picker.finder.Item)}
 function M.results_to_items(client, results, opts)
   opts = opts or {}
   local items = {} ---@type snacks.picker.finder.Item[]
@@ -271,6 +271,10 @@ function M.results_to_items(client, results, opts)
       text = text .. " " .. item.file
     end
     item.text = text
+
+    if opts.transformer and type(opts.transformer) == "function" then
+      item = opts.transformer(result, item)
+    end
 
     if not opts.filter or opts.filter(result) then
       items[#items + 1] = item
@@ -354,6 +358,7 @@ function M.symbols(opts, ctx)
         filter = function(item)
           return want(M.symbol_kind(item.kind))
         end,
+        transformer = opts.lsp_result_transform,
       })
 
       -- Fix sorting
