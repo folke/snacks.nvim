@@ -67,12 +67,14 @@ function M:__newindex(key, value)
   end
 end
 
----@param opts? {source?: string}
+---@param opts? {source?: string, tab?: boolean}
 function M.get(opts)
   opts = opts or {}
   local ret = {} ---@type snacks.Picker[]
   for picker in pairs(M._active) do
-    if not opts.source or picker.opts.source == opts.source then
+    local want = (not opts.source or picker.opts.source == opts.source)
+      and (opts.tab == false or picker:on_current_tab())
+    if want then
       ret[#ret + 1] = picker
     end
   end
@@ -106,6 +108,70 @@ function M.new(opts)
     end,
   })
 
+  self:cleanup()
+
+  self.visual = Snacks.picker.util.visual()
+  self.start_time = uv.hrtime()
+  self._main = require("snacks.picker.core.main").new(self.opts.main)
+  local actions = require("snacks.picker.core.actions").get(self)
+  self.opts.win.input.actions = actions
+  self.opts.win.list.actions = actions
+  self.opts.win.preview.actions = actions
+
+  self.sort = Snacks.picker.config.sort(self.opts)
+
+  self.updater = assert(uv.new_timer())
+  self.matcher = require("snacks.picker.core.matcher").new(self.opts.matcher)
+
+  self.finder = Finder.new(Snacks.picker.config.finder(self.opts.finder) or function()
+    return self.opts.items or {}
+  end)
+
+  self.format = Snacks.picker.config.format(self.opts)
+
+  M._pickers[self] = true
+  M._active[self] = true
+
+  local layout = Snacks.picker.config.layout(self.opts)
+  self.resolved_layout = layout
+  self.list = require("snacks.picker.core.list").new(self)
+  self.input = require("snacks.picker.core.input").new(self)
+  self.preview = require("snacks.picker.core.preview").new(self)
+
+  self.title = self.opts.title or Snacks.picker.util.title(self.opts.source or "search")
+
+  self:init_layout(layout)
+
+  local ref = self:ref()
+  self._throttled_preview = Snacks.util.throttle(function()
+    local this = ref()
+    if this then
+      this:_show_preview()
+    end
+  end, { ms = 60, name = "preview" })
+
+  self:find()
+  return self
+end
+
+function M:is_focused()
+  return self:current_win() ~= nil
+end
+
+---@return string? name, snacks.win? win
+function M:current_win()
+  local current = vim.api.nvim_get_current_win()
+  for w, win in pairs(self.layout.wins or {}) do
+    if win.win == current then
+      return w, win
+    end
+  end
+end
+
+--- Check if any remnants of previous pickers need to be cleaned up.
+--- Normally not needed.
+---@private
+function M:cleanup()
   local picker_count = vim.tbl_count(M._pickers) - vim.tbl_count(M._active)
   if picker_count > 0 then
     -- clear items from previous pickers for garbage collection
@@ -144,104 +210,10 @@ function M.new(opts)
       )
     end
   end
-
-  self.visual = Snacks.picker.util.visual()
-  self.start_time = uv.hrtime()
-  self._main = require("snacks.picker.core.main").new(self.opts.main)
-  local actions = require("snacks.picker.core.actions").get(self)
-  self.opts.win.input.actions = actions
-  self.opts.win.list.actions = actions
-  self.opts.win.preview.actions = actions
-
-  local sort = self.opts.sort or require("snacks.picker.sort").default()
-  sort = type(sort) == "table" and require("snacks.picker.sort").default(sort) or sort
-  ---@cast sort snacks.picker.sort
-  self.sort = sort
-
-  self.updater = assert(uv.new_timer())
-  self.matcher = require("snacks.picker.core.matcher").new(self.opts.matcher)
-
-  self.finder = Finder.new(Snacks.picker.config.finder(self.opts.finder) or function()
-    return self.opts.items or {}
-  end)
-
-  self.format = Snacks.picker.config.format(self.opts)
-
-  M._pickers[self] = true
-  M._active[self] = true
-
-  local layout = Snacks.picker.config.layout(self.opts)
-  self.resolved_layout = layout
-  self.list = require("snacks.picker.core.list").new(self)
-  self.input = require("snacks.picker.core.input").new(self)
-  local preview_opts = self:preview_opts()
-  local preview_main = preview_opts.main and self.main or nil
-  self.preview = require("snacks.picker.core.preview").new(self.opts, preview_main)
-
-  self.title = self.opts.title or Snacks.picker.util.title(self.opts.source or "search")
-
-  -- properly close the picker when the window is closed
-  self.input.win:on("WinClosed", function()
-    self:close()
-  end, { win = true })
-
-  -- close if we enter a window that is not part of the picker
-  local on_focus ---@type fun()?
-  self.input.win:on("WinEnter", function()
-    if not self.layout:valid() then
-      return
-    end
-    if vim.api.nvim_win_get_config(0).relative ~= "" then
-      return
-    end
-    if self:is_focused() then
-      if on_focus then
-        on_focus()
-        on_focus = nil
-      end
-      return
-    end
-    if self.opts.auto_close == false then
-      if self:preview_opts().main and self.preview.win:valid() then
-        self:toggle_preview(false)
-        on_focus = vim.schedule_wrap(function()
-          self:toggle_preview(true)
-        end)
-      end
-      return
-    end
-    vim.schedule(function()
-      self:close()
-    end)
-  end)
-
-  self:init_layout(layout)
-  self.input.win:on("VimResized", function()
-    vim.schedule(function()
-      self:set_layout(Snacks.picker.config.layout(self.opts))
-    end)
-  end)
-
-  local ref = self:ref()
-  self._throttled_preview = Snacks.util.throttle(function()
-    local this = ref()
-    if this then
-      this:_show_preview()
-    end
-  end, { ms = 60, name = "preview" })
-
-  self:find()
-  return self
-end
-
-function M:is_focused()
-  local current = vim.api.nvim_get_current_win()
-  return vim.tbl_contains({ self.input.win.win, self.list.win.win, self.preview.win.win }, current)
 end
 
 function M:on_current_tab()
-  return self.layout:valid()
-    and vim.api.nvim_get_current_tabpage() == vim.api.nvim_win_get_tabpage(self.layout.root.win)
+  return self.layout:valid() and self.layout.root:on_current_tab()
 end
 
 --- Execute the callback in normal mode.
@@ -258,33 +230,16 @@ function M:norm(cb)
   return true
 end
 
----@private
-function M:preview_opts()
-  ---@type {enabled: boolean, main: boolean}
-  local ret = { enabled = true, main = false }
-  local p = self.resolved_layout.preview
-  if p == "main" then
-    ret.main = true
-  elseif p == false then
-    ret.enabled = false
-  elseif type(p) == "table" then
-    ret.enabled, ret.main = p.enabled ~= false, p.main == true
-  end
-  return ret
-end
-
 ---@param layout? snacks.picker.layout.Config
 ---@private
 function M:init_layout(layout)
   layout = layout or Snacks.picker.config.layout(self.opts)
   self.resolved_layout = vim.deepcopy(layout)
   self.resolved_layout.cycle = self.resolved_layout.cycle == true
+  self.preview:update(self)
   local opts = layout --[[@as snacks.layout.Config]]
-  local preview_opts = self:preview_opts()
-  local preview_main = preview_opts.main
-  local preview_hidden = preview_main or not preview_opts.enabled
   local backdrop = nil
-  if preview_main then
+  if self.preview.main then
     backdrop = false
   end
   self.layout = Snacks.layout.new(vim.tbl_deep_extend("force", opts, {
@@ -297,45 +252,21 @@ function M:init_layout(layout)
     wins = {
       input = self.input.win,
       list = self.list.win,
-      preview = not preview_main and self.preview.win or nil,
+      preview = self.preview.win,
     },
-    hidden = { preview_hidden and "preview" or nil },
+    hidden = layout.hidden,
     on_update = function()
-      self:update_titles()
       self.preview:refresh(self)
       self.input:update()
-      self.list:update_cursorline()
+      self.list:update({ force = true })
+      self:update_titles()
     end,
     layout = {
       backdrop = backdrop,
     },
   }))
+  self:attach()
 
-  local left_picker = true -- left a picker window
-  self.layout.root:on("WinLeave", function()
-    left_picker = self:is_focused()
-  end)
-
-  local last_pwin ---@type number?
-  self.layout.root:on("WinEnter", function()
-    if self:is_focused() then
-      last_pwin = vim.api.nvim_get_current_win()
-    end
-  end)
-
-  self.layout.root:on("WinEnter", function()
-    if left_picker then
-      local pos = self.layout.root.opts.position
-      local wincmds = { left = "l", right = "h", top = "j", bottom = "k" }
-      vim.cmd("wincmd " .. wincmds[pos])
-    elseif last_pwin and vim.api.nvim_win_is_valid(last_pwin) then
-      vim.api.nvim_set_current_win(last_pwin)
-    else
-      self.input.win:focus()
-    end
-  end, { buf = true, nested = true })
-
-  self.preview:update(preview_main and self.main or nil)
   -- apply box highlight groups
   local boxwhl = Snacks.picker.highlight.winhl("SnacksPickerBox")
   for _, win in pairs(self.layout.box_wins) do
@@ -344,25 +275,79 @@ function M:init_layout(layout)
   return layout
 end
 
----@param enable? boolean
-function M:toggle_preview(enable)
-  local showing = self.preview.win:valid()
-  if enable == nil then
-    enable = not showing
-  end
-  if enable == showing then
-    return
-  end
-  if self:preview_opts().main then
-    if enable then
-      self.preview.win:show()
-    else
-      self.preview.win:close()
+--- Attaches to the layout
+---@private
+function M:attach()
+  -- Check if we need to load another layout
+  self.layout.root:on("VimResized", function()
+    vim.schedule(function()
+      self:set_layout(Snacks.picker.config.layout(self.opts))
+    end)
+  end)
+
+  -- close if we enter a window that is not part of the picker
+  local preview = false
+  self.layout.root:on("WinEnter", function()
+    if self.closed or Snacks.util.is_float() then
+      return
     end
-  else
-    self.layout:toggle("preview")
-  end
-  self:show_preview()
+    if self:is_focused() then
+      if preview then -- re-open preview when needed
+        self:toggle("preview", { enable = true })
+        preview = false
+      end
+      return
+    end
+    -- close main preview when auto_close is disabled
+    if self.opts.auto_close == false then
+      if self.preview.main and self.preview.win:valid() then
+        self:toggle("preview", { enable = false })
+        preview = true
+      end
+      return
+    end
+    -- close picker when we enter another window
+    vim.schedule(function()
+      self:close()
+    end)
+  end)
+
+  -- Check if we need to auto close any picker windows
+  self.layout.root:on("WinEnter", function()
+    if not self:is_focused() then
+      return
+    end
+    local current = self:current_win()
+    for name, win in pairs(self.layout.wins) do
+      local auto_hide = vim.tbl_contains(self.resolved_layout.auto_hide or {}, name)
+      if name ~= current and auto_hide and win:valid() then
+        self:toggle(name, { enable = false })
+      end
+    end
+  end)
+
+  -- prevent entering the root window for split layouts
+  local left_picker = true -- left a picker window
+  local last_pwin ---@type number?
+  self.layout.root:on("WinLeave", function()
+    left_picker = self:is_focused()
+  end)
+  self.layout.root:on("WinEnter", function()
+    if self:is_focused() then
+      last_pwin = vim.api.nvim_get_current_win()
+    end
+  end)
+  self.layout.root:on("WinEnter", function()
+    if left_picker then
+      local pos = self.layout.root.opts.position
+      local wincmds = { left = "l", right = "h", top = "j", bottom = "k" }
+      vim.cmd("wincmd " .. wincmds[pos])
+    elseif last_pwin and vim.api.nvim_win_is_valid(last_pwin) then
+      vim.api.nvim_set_current_win(last_pwin)
+    else
+      self:focus()
+    end
+  end, { buf = true, nested = true })
 end
 
 --- Set the picker layout. Can be either the name of a preset layout
@@ -383,12 +368,10 @@ function M:set_layout(layout)
       { title = "Snacks Picker", id = "snacks_picker_layout_change" }
     )
   end
+  self.list.reverse = layout.reverse
   self.layout:close({ wins = false })
   self:init_layout(layout)
   self.layout:show()
-  self.list.reverse = layout.reverse
-  self.list:update({ force = true })
-  self.input:update()
 end
 
 -- Get the word under the cursor or the current visual selection
@@ -432,17 +415,30 @@ function M:update_titles()
     if win.opts.title then
       local tpl = win.meta.title_tpl or win.opts.title
       win.meta.title_tpl = tpl
+      tpl = type(tpl) == "string" and { { tpl, "FloatTitle" } } or tpl
+      ---@cast tpl snacks.picker.Text[]
+
+      local has_flags = false
       local ret = {} ---@type snacks.picker.Text[]
-      local title = Snacks.picker.util.tpl(tpl, data)
-      if title:find("{flags}", 1, true) then
-        title = title:gsub("{flags}", "")
-        vim.list_extend(ret, toggles)
+      for _, chunk in ipairs(tpl) do
+        local text = chunk[1]
+        if text:find("{flags}", 1, true) then
+          text = text:gsub("{flags}", "")
+          has_flags = true
+        end
+        text = vim.trim(Snacks.picker.util.tpl(text, data)):gsub("%s+", " ")
+        if text ~= "" then
+          -- HACK: add extra space when last char is non word like an icon
+          text = text:sub(-1):match("[%w%p]") and text or text .. " "
+          ret[#ret + 1] = { text, chunk[2] }
+        end
       end
-      title = vim.trim(title):gsub("%s+", " ")
-      if title ~= "" then
-        -- HACK: add extra space when last char is non word like an icon
-        title = title:sub(-1):match("[%w%p]") and title or title .. " "
-        table.insert(ret, 1, { " " .. title .. " ", "FloatTitle" })
+      if #ret > 0 then
+        table.insert(ret, { " ", "FloatTitle" })
+        table.insert(ret, 1, { " ", "FloatTitle" })
+      end
+      if has_flags and #toggles > 0 then
+        vim.list_extend(ret, toggles)
       end
       win:set_title(ret)
     end
@@ -511,21 +507,58 @@ function M:show()
   end
   self.shown = true
   self.layout:show()
-  if self.preview.main and self:preview_opts().enabled then
-    self.preview.win:show()
+  if self.opts.focus ~= false and self.opts.enter ~= false then
+    self:focus()
   end
-  self:_focus()
   if self.opts.on_show then
     self.opts.on_show(self)
   end
 end
 
-function M:_focus()
-  if self.opts.focus == "input" then
-    self.input.win:focus()
-  elseif self.opts.focus == "list" then
-    self.list.win:focus()
+--- Focuses the given or configured window.
+--- Falls back to the first available window if the window is hidden.
+---@param win? "input"|"list"|"preview"
+---@param opts? {show?: boolean} when enable is true, the window will be shown if hidden
+function M:focus(win, opts)
+  opts = opts or {}
+  if win and opts.show and self.layout:is_hidden(win) then
+    return self:toggle(win, { enable = true, focus = true })
   end
+  win = win or self.opts.focus or "input"
+  local ret ---@type snacks.win?
+  for _, name in ipairs({ "input", "list", "preview" }) do
+    local w = self.layout.wins[name]
+    if w and w:valid() and not self.layout:is_hidden(name) then
+      if name == win then
+        ret = w
+        break
+      end
+      ret = ret or w
+    end
+  end
+  if ret then
+    ret:focus()
+  end
+end
+
+--- Toggle the given window and optionally focus
+---@param win "input"|"list"|"preview"
+---@param opts? {enable?: boolean, focus?: boolean|string}
+function M:toggle(win, opts)
+  opts = opts or {}
+  self.layout:toggle(win, opts.enable, function(enabled)
+    -- called if changed and before updating the layout
+    local focus = opts.focus == true and win or opts.focus or self:current_win() --[[@as string]]
+    if not enabled then
+      -- make sure we don't lose focus when toggling off
+      self:focus(focus)
+    else
+      --- schedule to focus after the layout is updated
+      vim.schedule(function()
+        self:focus(focus)
+      end)
+    end
+  end)
 end
 
 ---@param item snacks.picker.Item?
@@ -627,6 +660,9 @@ function M:close()
   self:hist_record(true)
   self.closed = true
 
+  for toggle in pairs(self.opts.toggles) do
+    self.init_opts[toggle] = self.opts[toggle]
+  end
   M.last = {
     opts = self.init_opts or {},
     selected = self:selected({ fallback = false }),
@@ -639,7 +675,7 @@ function M:close()
   local current = vim.api.nvim_get_current_win()
   local is_picker_win = vim.tbl_contains({ self.input.win.win, self.list.win.win, self.preview.win.win }, current)
   if is_picker_win and vim.api.nvim_win_is_valid(self.main) then
-    vim.api.nvim_set_current_win(self.main)
+    pcall(vim.api.nvim_set_current_win, self.main)
   end
   self.updater:stop()
   if not self.updater:is_closing() then

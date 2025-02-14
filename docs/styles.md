@@ -230,6 +230,20 @@ The other options are used with `:lua Snacks.dashboard()`
 }
 ```
 
+### `snacks_image`
+
+```lua
+{
+  relative = "cursor",
+  border = "rounded",
+  focusable = false,
+  backdrop = false,
+  row = 1,
+  col = 1,
+  -- width/height are automatically set by the image size unless specified below
+}
+```
+
 ### `split`
 
 ```lua

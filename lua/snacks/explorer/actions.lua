@@ -86,7 +86,7 @@ function M.actions.explorer_yank(_, item)
   if not item then
     return
   end
-  vim.fn.setreg("+", item.file)
+  vim.fn.setreg(vim.v.register or "+", item.file)
   Snacks.notify.info("Yanked `" .. item.file .. "`")
 end
 

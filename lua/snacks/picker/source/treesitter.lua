@@ -149,7 +149,7 @@ function M.symbols(opts, ctx)
       item = {
         text = match.text,
         depth = depth or 0,
-        tree = true,
+        tree = opts.tree,
         buf = buf,
         name = match.text,
         kind = kind_mapping[match.kind] or "Unknown",

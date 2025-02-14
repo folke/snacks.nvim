@@ -17,7 +17,12 @@ _G.Snacks = M
 
 ---@class snacks.Config: snacks.plugins.Config
 ---@field styles? table<string, snacks.win.Config>
-local config = {}
+local config = {
+  image = {
+    -- define these here, so that we don't need to load the image module
+    formats = { "png", "jpg", "jpeg", "gif", "bmp", "webp", "tiff", "heic", "avif", "mp4", "mov", "avi", "mkv", "webm" },
+  },
+}
 config.styles = {}
 
 ---@class snacks.config: snacks.Config
@@ -129,7 +134,7 @@ function M.setup(opts)
   config = vim.tbl_deep_extend("force", config, opts or {})
 
   local events = {
-    BufReadPre = { "bigfile" },
+    BufReadPre = { "bigfile", "image" },
     BufReadPost = { "quickfile", "indent" },
     BufEnter = { "explorer" },
     LspAttach = { "words" },
@@ -157,14 +162,26 @@ function M.setup(opts)
     load("UIEnter")
   end
 
+  local group = vim.api.nvim_create_augroup("snacks", { clear = true })
   vim.api.nvim_create_autocmd(vim.tbl_keys(events), {
-    group = vim.api.nvim_create_augroup("snacks", { clear = true }),
+    group = group,
     once = true,
     nested = true,
     callback = function(ev)
       load(ev.event, ev)
     end,
   })
+
+  if M.config.image.enabled and #M.config.image.formats > 0 then
+    vim.api.nvim_create_autocmd("BufReadCmd", {
+      once = true,
+      pattern = "*." .. table.concat(M.config.image.formats, ",*."),
+      group = group,
+      callback = function(e)
+        require("snacks.image").setup(e)
+      end,
+    })
+  end
 
   if M.config.statuscolumn.enabled then
     vim.o.statuscolumn = [[%!v:lua.require'snacks.statuscolumn'.get()]]

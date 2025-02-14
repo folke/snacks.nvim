@@ -7,6 +7,10 @@ local ns = vim.api.nvim_create_namespace("snacks.picker.preview")
 ---@param ctx snacks.picker.preview.ctx
 function M.directory(ctx)
   ctx.preview:reset()
+  ctx.preview:minimal()
+  local path = Snacks.picker.util.path(ctx.item)
+  local name = path and vim.fn.fnamemodify(path, ":t")
+  ctx.preview:set_title(ctx.item.title or name)
   local ls = {} ---@type {file:string, type:"file"|"directory"}[]
   for file, t in vim.fs.dir(ctx.item.file) do
     ls[#ls + 1] = { file = file, type = t }
@@ -28,6 +32,13 @@ function M.directory(ctx)
       virt_text = line,
     })
   end
+end
+
+---@param ctx snacks.picker.preview.ctx
+function M.image(ctx)
+  local buf = ctx.preview:scratch()
+  ctx.preview:set_title(ctx.item.title or vim.fn.fnamemodify(ctx.item.file, ":t"))
+  Snacks.image.attach(buf, { src = Snacks.picker.util.path(ctx.item) })
 end
 
 ---@param ctx snacks.picker.preview.ctx
@@ -68,6 +79,9 @@ function M.file(ctx)
   -- used by some LSP servers that load buffers with custom URIs
   if ctx.item.buf and vim.uri_from_bufnr(ctx.item.buf):sub(1, 4) ~= "file" then
     vim.fn.bufload(ctx.item.buf)
+  elseif ctx.item.file and ctx.item.file:find("^%w+://") then
+    ctx.item.buf = vim.fn.bufadd(ctx.item.file)
+    vim.fn.bufload(ctx.item.buf)
   end
 
   if ctx.item.buf and vim.api.nvim_buf_is_loaded(ctx.item.buf) then
@@ -81,6 +95,11 @@ function M.file(ctx)
       ctx.preview:notify("Item has no `file`", "error")
       return
     end
+
+    if Snacks.image.supports_file(path) then
+      return M.image(ctx)
+    end
+
     -- re-use existing preview when path is the same
     if path ~= Snacks.picker.util.path(ctx.prev) then
       ctx.preview:reset()
@@ -258,12 +277,18 @@ function M.git_show(ctx)
 end
 
 ---@param ctx snacks.picker.preview.ctx
+local function git(ctx, ...)
+  local ret = { "git", "-c", "delta." .. vim.o.background .. "=true" }
+  vim.list_extend(ret, ctx.picker.opts.previewers.git.args or {})
+  vim.list_extend(ret, { ... })
+  return ret
+end
+
+---@param ctx snacks.picker.preview.ctx
 function M.git_log(ctx)
   local native = ctx.picker.opts.previewers.git.native
-  local cmd = {
-    "git",
-    "-c",
-    "delta." .. vim.o.background .. "=true",
+  local cmd = git(
+    ctx,
     "log",
     "--pretty=format:%h %s (%ch)",
     "--abbrev-commit",
@@ -272,8 +297,8 @@ function M.git_log(ctx)
     "--color=never",
     "--no-show-signature",
     "--no-patch",
-    ctx.item.commit,
-  }
+    ctx.item.commit
+  )
   if not native then
     table.insert(cmd, 2, "--no-pager")
   end
@@ -302,13 +327,7 @@ end
 ---@param ctx snacks.picker.preview.ctx
 function M.git_diff(ctx)
   local native = ctx.picker.opts.previewers.git.native
-  local cmd = {
-    "git",
-    "-c",
-    "delta." .. vim.o.background .. "=true",
-    "diff",
-    "HEAD",
-  }
+  local cmd = git(ctx, "diff", "HEAD")
   if ctx.item.file then
     vim.list_extend(cmd, { "--", ctx.item.file })
   end
@@ -321,15 +340,7 @@ end
 ---@param ctx snacks.picker.preview.ctx
 function M.git_stash(ctx)
   local native = ctx.picker.opts.previewers.git.native
-  local cmd = {
-    "git",
-    "-c",
-    "delta." .. vim.o.background .. "=true",
-    "stash",
-    "show",
-    "--patch",
-    ctx.item.stash,
-  }
+  local cmd = git(ctx, "stash", "show", "--patch", ctx.item.stash)
   if not native then
     table.insert(cmd, 2, "--no-pager")
   end

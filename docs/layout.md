@@ -63,7 +63,7 @@
 ---@class snacks.layout
 ---@field opts snacks.layout.Config
 ---@field root snacks.win
----@field wins table<string, snacks.win|{enabled?:boolean}>
+---@field wins table<string, snacks.win|{enabled?:boolean, layout?:boolean}>
 ---@field box_wins snacks.win[]
 ---@field win_opts table<string, snacks.win.Config>
 ---@field closed? boolean
@@ -128,6 +128,13 @@ Toggle fullscreen
 layout:maximize()
 ```
 
+### `layout:needs_layout()`
+
+```lua
+---@param win string
+layout:needs_layout(win)
+```
+
 ### `layout:show()`
 
 Show the layout
@@ -142,7 +149,9 @@ Toggle a window
 
 ```lua
 ---@param win string
-layout:toggle(win)
+---@param enable? boolean
+---@param on_update? fun(enabled: boolean) called when the layout will be updated
+layout:toggle(win, enable, on_update)
 ```
 
 ### `layout:unhide()`

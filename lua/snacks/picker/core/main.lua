@@ -57,7 +57,8 @@ function M:find()
     if win == 0 or not vim.api.nvim_win_is_valid(win) then
       return false
     end
-    if vim.w[win].snacks_main then
+    local buf = vim.api.nvim_win_get_buf(win)
+    if vim.w[win].snacks_main or vim.b[buf].snacks_main then
       return true
     end
     local win_config = vim.api.nvim_win_get_config(win)
@@ -68,7 +69,6 @@ function M:find()
     if vim.w[win].snacks_layout then
       return false
     end
-    local buf = vim.api.nvim_win_get_buf(win)
     -- exclude non-file buffers
     if self.opts.file and vim.bo[buf].buftype ~= "" then
       return false

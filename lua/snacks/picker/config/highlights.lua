@@ -72,6 +72,11 @@ Snacks.util.set_hl({
   ManSection = "Number",
   PickWin = "Search",
   PickWinCurrent = "CurSearch",
+  LspDisabled = "DiagnosticWarn",
+  LspEnabled = "Special",
+  LspAttached = "DiagnosticWarn",
+  LspAttachedBuf = "DiagnosticInfo",
+  LspUnavailable = "DiagnosticError",
   ManPage = "Special",
   -- Icons
   Icon = "Special",

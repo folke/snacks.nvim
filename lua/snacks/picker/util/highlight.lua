@@ -31,6 +31,7 @@ function M.get_highlights(opts)
   local lang = M.get_lang({ lang = opts.lang, ft = ft })
   local parser ---@type vim.treesitter.LanguageTree?
   if lang then
+    lang = lang:lower()
     local ok = false
     if opts.buf then
       ok, parser = pcall(vim.treesitter.get_parser, opts.buf, lang)

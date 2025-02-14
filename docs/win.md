@@ -208,7 +208,7 @@ docs for more information on how to customize these styles
 ---@field backdrop? snacks.win
 ---@field keys snacks.win.Keys[]
 ---@field events (snacks.win.Event|{event:string|string[]})[]
----@field meta table<string, string>
+---@field meta table<string, any>
 ---@field closed? boolean
 Snacks.win = {}
 ```
@@ -347,6 +347,12 @@ win:map()
 ---@param cb fun(self: snacks.win, ev:vim.api.keyset.create_autocmd.callback_args):boolean?
 ---@param opts? snacks.win.Event
 win:on(event, cb, opts)
+```
+
+### `win:on_current_tab()`
+
+```lua
+win:on_current_tab()
 ```
 
 ### `win:on_resize()`

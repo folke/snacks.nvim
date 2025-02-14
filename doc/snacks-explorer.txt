@@ -8,6 +8,7 @@ Table of Contents                          *snacks-explorer-table-of-contents*
 3. Module                                             |snacks-explorer-module|
   - Snacks.explorer()               |snacks-explorer-module-snacks.explorer()|
   - Snacks.explorer.open()     |snacks-explorer-module-snacks.explorer.open()|
+  - Snacks.explorer.reveal() |snacks-explorer-module-snacks.explorer.reveal()|
 4. Links                                               |snacks-explorer-links|
 A file explorer for snacks. This is actually a picker
 <https://github.com/folke/snacks.nvim/blob/main/docs/picker.md#explorer> in
@@ -100,6 +101,16 @@ Shortcut to open the explorer picker
 >lua
     ---@param opts? snacks.picker.explorer.Config|{}
     Snacks.explorer.open(opts)
+<
+
+
+`Snacks.explorer.reveal()`                          *Snacks.explorer.reveal()*
+
+Reveals the given file/buffer or the current buffer in the explorer
+
+>lua
+    ---@param opts? {file?:string, buf?:number}
+    Snacks.explorer.reveal(opts)
 <
 
 ==============================================================================

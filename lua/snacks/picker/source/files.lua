@@ -72,6 +72,23 @@ local function get_cmd(opts, filter)
     end
   end
 
+  -- extensions
+  local ft = opts.ft or {}
+  ft = type(ft) == "string" and { ft } or ft
+  ---@cast ft string[]
+  for _, e in ipairs(ft) do
+    if is_fd then
+      table.insert(args, "-e")
+      table.insert(args, e)
+    elseif is_rg then
+      table.insert(args, "-g")
+      table.insert(args, "*." .. e)
+    elseif is_find then
+      table.insert(args, "-name")
+      table.insert(args, "*." .. e)
+    end
+  end
+
   -- hidden
   if opts.hidden and is_fd_rg then
     table.insert(args, "--hidden")
@@ -172,6 +189,7 @@ function M.zoxide(opts, ctx)
       ---@param item snacks.picker.finder.Item
       transform = function(item)
         item.file = item.text
+        item.dir = true
       end,
     },
   }, ctx)

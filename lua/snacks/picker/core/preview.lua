@@ -6,7 +6,7 @@
 ---@field preview snacks.picker.preview
 ---@field state table<string, any>
 ---@field main? number
----@field win_opts {main: snacks.win.Config, layout: snacks.win.Config, win: snacks.win.Config}
+---@field win_opts {main: snacks.win.Config|{}, layout: snacks.win.Config|{}, win: snacks.win.Config|{}}
 ---@field winhl string
 ---@field title? string
 ---@field split_layout? boolean
@@ -25,9 +25,34 @@ M.__index = M
 local ns = vim.api.nvim_create_namespace("snacks.picker.preview")
 local ns_loc = vim.api.nvim_create_namespace("snacks.picker.preview.loc")
 
----@param opts snacks.picker.Config
----@param main? number
-function M.new(opts, main)
+-- HACK: work-around for buffer-local window options mess. From the docs:
+-- > When editing a buffer that has been edited before, the options from the window
+-- > that was last closed are used again.  If this buffer has been edited in this
+-- > window, the values from back then are used.  Otherwise the values from the
+-- > last closed window where the buffer was edited last are used.
+vim.api.nvim_create_autocmd("BufWinEnter", {
+  group = vim.api.nvim_create_augroup("snacks.picker.preview.wo", { clear = true }),
+  callback = function(ev)
+    if not vim.b[ev.buf].snacks_previewed then
+      return
+    end
+    local reset = { "winhighlight", "cursorline", "number", "relativenumber", "signcolumn" }
+    local wo = {} ---@type table<string, any>
+    for _, k in ipairs(reset) do
+      wo[k] = vim.api.nvim_get_option_value(k, { scope = "global" })
+    end
+    for _, win in ipairs(vim.fn.win_findbuf(ev.buf)) do
+      if not Snacks.util.is_float(win) then -- only reset non-floating windows
+        Snacks.util.wo(win, wo)
+        vim.b[ev.buf].snacks_previewed = nil
+      end
+    end
+  end,
+})
+
+---@param picker snacks.Picker
+function M.new(picker)
+  local opts = picker.opts
   local self = setmetatable({}, M)
   self.opts = opts.previewers
   self.winhl = Snacks.picker.highlight.winhl("SnacksPickerPreview", { CursorLine = "Visual" })
@@ -66,11 +91,10 @@ function M.new(opts, main)
     },
     layout = {
       backdrop = win_opts.backdrop == true,
-      relative = "win",
     },
   }
   self.win = Snacks.win(win_opts)
-  self:update(main)
+  self:update(picker)
   self.state = {}
 
   self.win:on("WinClosed", function()
@@ -87,11 +111,17 @@ function M:close()
   self.win_opts = { main = {}, layout = {}, win = {} }
 end
 
----@param main? number
-function M:update(main)
+---@param picker snacks.Picker
+function M:update(picker)
+  local main = picker.resolved_layout.preview == "main" and picker.main or nil
   self.main = main
   self.win_opts.main.win = main
   self.win.opts = vim.tbl_deep_extend("force", self.win.opts, main and self.win_opts.main or self.win_opts.layout)
+  if not main then
+    self.win.opts.relative = nil
+    self.win.opts.win = nil
+    self.win.layout = nil
+  end
   local winhl = self.winhl
   if main then
     winhl = (vim.wo[main].winhighlight .. ",Normal:Normal," .. "CursorLine:SnacksPickerPreviewCursorLine"):gsub(
@@ -100,9 +130,6 @@ function M:update(main)
     )
   end
   self.win.opts.wo.winhighlight = winhl
-  if main then
-    self.win:update()
-  end
 end
 
 --- refresh the preview after layout change
@@ -114,7 +141,7 @@ function M:refresh(picker)
     self.win:update()
   end
   vim.schedule(function()
-    self:show(picker)
+    picker:show_preview()
   end)
 end
 
@@ -187,6 +214,7 @@ end
 
 ---@param buf number
 function M:set_buf(buf)
+  vim.b[buf].snacks_previewed = true
   self.win:set_buf(buf)
 end
 
@@ -199,6 +227,7 @@ function M:reset()
   else
     self.win:scratch()
   end
+  vim.api.nvim_buf_clear_namespace(self.win.buf, -1, 0, -1)
   self:set_title()
   vim.treesitter.stop(self.win.buf)
   vim.bo[self.win.buf].modifiable = true
@@ -214,6 +243,10 @@ function M:reset()
   vim.o.eventignore = ei
 end
 
+function M:minimal()
+  self:wo({ number = false, relativenumber = false, signcolumn = "no" })
+end
+
 -- create a new scratch buffer
 function M:scratch()
   local buf = vim.api.nvim_create_buf(false, true)
@@ -224,7 +257,7 @@ function M:scratch()
   vim.o.eventignore = ei
   self.win:set_buf(buf)
   self.win:map()
-  self:wo({ number = false, relativenumber = false, signcolumn = "no" })
+  self:minimal()
   return buf
 end
 
@@ -324,7 +357,7 @@ end
 
 function M:is_big()
   local lines = vim.api.nvim_buf_line_count(self.win.buf)
-  if lines > 1000 then
+  if lines > 2000 then
     return true
   end
   local path = self.item and self.item.file and Snacks.picker.util.path(self.item)
@@ -336,6 +369,7 @@ end
 
 ---@param lines string[]
 function M:set_lines(lines)
+  lines = vim.split(table.concat(lines, "\n"), "\n", { plain = true })
   vim.bo[self.win.buf].modifiable = true
   vim.api.nvim_buf_set_lines(self.win.buf, 0, -1, false, lines)
   vim.bo[self.win.buf].modifiable = false

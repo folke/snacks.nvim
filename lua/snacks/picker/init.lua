@@ -95,8 +95,9 @@ function M.health()
   require("snacks.picker.core._health").health()
 end
 
---- Get active pickers, optionally filtered by source
----@param opts? {source?: string}
+--- Get active pickers, optionally filtered by source,
+--- or the current tab
+---@param opts? {source?: string, tab?: boolean} tab defaults to true
 function M.get(opts)
   return require("snacks.picker.core.picker").get(opts)
 end

@@ -20,6 +20,10 @@ ffi.cdef([[
 ]])
 
 local function sqlite3_lib()
+  local opts = Snacks.picker.config.get()
+  if opts.db.sqlite3_path then
+    return opts.db.sqlite3_path
+  end
   if jit.os ~= "Windows" then
     return "sqlite3"
   end

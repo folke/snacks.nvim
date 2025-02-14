@@ -33,6 +33,7 @@ Table of Contents                               *snacks-win-table-of-contents*
   - win:lines()                                |snacks-win-module-win:lines()|
   - win:map()                                    |snacks-win-module-win:map()|
   - win:on()                                      |snacks-win-module-win:on()|
+  - win:on_current_tab()              |snacks-win-module-win:on_current_tab()|
   - win:on_resize()                        |snacks-win-module-win:on_resize()|
   - win:parent_size()                    |snacks-win-module-win:parent_size()|
   - win:redraw()                              |snacks-win-module-win:redraw()|
@@ -271,7 +272,7 @@ SPLIT                                                *snacks-win-styles-split*
     ---@field backdrop? snacks.win
     ---@field keys snacks.win.Keys[]
     ---@field events (snacks.win.Event|{event:string|string[]})[]
-    ---@field meta table<string, string>
+    ---@field meta table<string, any>
     ---@field closed? boolean
     Snacks.win = {}
 <
@@ -430,6 +431,13 @@ WIN:ON()                                          *snacks-win-module-win:on()*
     ---@param cb fun(self: snacks.win, ev:vim.api.keyset.create_autocmd.callback_args):boolean?
     ---@param opts? snacks.win.Event
     win:on(event, cb, opts)
+<
+
+
+WIN:ON_CURRENT_TAB()                  *snacks-win-module-win:on_current_tab()*
+
+>lua
+    win:on_current_tab()
 <
 
 

@@ -41,14 +41,23 @@ end
 function M.color(group, prop)
   prop = prop or "fg"
   local hl = vim.api.nvim_get_hl(0, { name = group, link = false })
-  return hl[prop] and string.format("#%06x", hl[prop])
+  return hl[prop] and string.format("#%06x", hl[prop]) or nil
 end
 
 --- Set window-local options.
 ---@param win number
----@param wo vim.wo|{}
+---@param wo vim.wo|{}|{winhighlight: string|table<string, string>}
 function M.wo(win, wo)
   for k, v in pairs(wo or {}) do
+    if k == "winhighlight" and type(v) == "table" then
+      local parts = {} ---@type string[]
+      for kk, vv in pairs(v) do
+        if vv ~= "" then
+          parts[#parts + 1] = ("%s:%s"):format(kk, vv)
+        end
+      end
+      v = table.concat(parts, ",")
+    end
     vim.api.nvim_set_option_value(k, v, { scope = "local", win = win })
   end
 end
@@ -60,6 +69,29 @@ function M.bo(buf, bo)
   for k, v in pairs(bo or {}) do
     vim.api.nvim_set_option_value(k, v, { buf = buf })
   end
+end
+
+--- Merges vim.wo.winhighlight options.
+--- Option values can be a string or a dictionary.
+---@param ... string|table<string, string>
+function M.winhl(...)
+  local ret = {} ---@type table<string, string>[]
+  for i = 1, select("#", ...) do
+    local winhl = select(i, ...)
+    if type(winhl) == "string" then
+      winhl = vim.trim(winhl)
+      local parts = winhl == "" and {} or vim.split(winhl, ",")
+      winhl = {}
+      for _, p in ipairs(parts) do
+        local k, v = p:match("^%s*(.-):(.-)%s*$")
+        if k and v then
+          winhl[k] = v
+        end
+      end
+    end
+    ret[#ret + 1] = winhl
+  end
+  return Snacks.config.merge(unpack(ret))
 end
 
 --- Get an icon from `mini.icons` or `nvim-web-devicons`.
@@ -280,6 +312,17 @@ function M.throttle(fn, opts)
   end
 end
 
+---@generic T
+---@param fn T
+---@param opts? {ms?:number}
+---@return T
+function M.debounce(fn, opts)
+  local timer, ms = assert(uv.new_timer()), opts and opts.ms or 20
+  return function()
+    timer:start(ms, 0, vim.schedule_wrap(fn))
+  end
+end
+
 ---@param key string
 function M.normkey(key)
   if key_cache[key] then
@@ -342,5 +385,29 @@ function M.normkey(key)
   key_cache[key] = key
   return key
 end
+
+---@param win? number
+function M.is_float(win)
+  return vim.api.nvim_win_get_config(win or 0).relative ~= ""
+end
+
+M.base64 = vim.base64 and vim.base64.encode
+  or function(data)
+    data = tostring(data)
+    local bit = require("bit")
+    local b64chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    local b64, len = "", #data
+    for i = 1, len, 3 do
+      local a, b, c = data:byte(i, i + 2)
+      local buffer = bit.bor(bit.lshift(a, 16), bit.lshift(b or 0, 8), c or 0)
+      for j = 0, 3 do
+        local index = bit.rshift(buffer, (3 - j) * 6) % 64
+        b64 = b64 .. b64chars:sub(index + 1, index + 1)
+      end
+    end
+    local padding = (3 - len % 3) % 3
+    b64 = b64:sub(1, -1 - padding) .. ("="):rep(padding)
+    return b64
+  end
 
 return M

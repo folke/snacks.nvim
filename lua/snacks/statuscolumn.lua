@@ -264,7 +264,9 @@ function M.click_fold()
   local pos = vim.fn.getmousepos()
   vim.api.nvim_win_set_cursor(pos.winid, { pos.line, 1 })
   vim.api.nvim_win_call(pos.winid, function()
-    vim.cmd("normal! za")
+    if vim.fn.foldlevel(pos.line) > 0 then
+      vim.cmd("normal! za")
+    end
   end)
 end
 

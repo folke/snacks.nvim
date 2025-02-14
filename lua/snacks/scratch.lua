@@ -212,7 +212,7 @@ function M.open(opts)
   local buf = vim.fn.bufadd(file)
 
   local closed = false
-  for _, win in ipairs(vim.api.nvim_list_wins()) do
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
     if vim.api.nvim_win_get_buf(win) == buf then
       vim.schedule(function()
         vim.api.nvim_win_call(win, function()

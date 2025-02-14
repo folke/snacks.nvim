@@ -43,7 +43,7 @@ function M.setup(event)
             callback = function()
               local p = ref()
               if p then
-                p:_focus()
+                p:focus()
               end
             end,
           })
@@ -72,6 +72,28 @@ end
 ---@param opts? snacks.picker.explorer.Config|{}
 function M.open(opts)
   return Snacks.picker.explorer(opts)
+end
+
+--- Reveals the given file/buffer or the current buffer in the explorer
+---@param opts? {file?:string, buf?:number}
+function M.reveal(opts)
+  local Actions = require("snacks.explorer.actions")
+  local Tree = require("snacks.explorer.tree")
+  opts = opts or {}
+  local file = vim.fs.normalize(opts.file or vim.api.nvim_buf_get_name(opts.buf or 0))
+  local explorer = Snacks.picker.get({ source = "explorer" })[1] or M.open()
+  local cwd = explorer:cwd()
+  if not Tree:in_cwd(cwd, file) then
+    for parent in vim.fs.parents(file) do
+      if Tree:in_cwd(parent, cwd) then
+        explorer:set_cwd(parent)
+        break
+      end
+    end
+  end
+  Tree:open(file)
+  Actions.update(explorer, { target = file, refresh = true })
+  return explorer
 end
 
 return M

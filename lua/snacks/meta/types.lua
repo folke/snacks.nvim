@@ -11,6 +11,7 @@
 ---@field git snacks.git
 ---@field gitbrowse snacks.gitbrowse
 ---@field health snacks.health
+---@field image snacks.image
 ---@field indent snacks.indent
 ---@field input snacks.input
 ---@field layout snacks.layout
@@ -40,6 +41,7 @@
 ---@field dim? snacks.dim.Config|{}
 ---@field explorer? snacks.explorer.Config|{}
 ---@field gitbrowse? snacks.gitbrowse.Config|{}
+---@field image? snacks.image.Config|{}
 ---@field indent? snacks.indent.Config|{}
 ---@field input? snacks.input.Config|{}
 ---@field layout? snacks.layout.Config|{}

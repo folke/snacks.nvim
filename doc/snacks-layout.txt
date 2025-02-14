@@ -14,6 +14,7 @@ Table of Contents                            *snacks-layout-table-of-contents*
   - layout:is_enabled()             |snacks-layout-module-layout:is_enabled()|
   - layout:is_hidden()               |snacks-layout-module-layout:is_hidden()|
   - layout:maximize()                 |snacks-layout-module-layout:maximize()|
+  - layout:needs_layout()         |snacks-layout-module-layout:needs_layout()|
   - layout:show()                         |snacks-layout-module-layout:show()|
   - layout:toggle()                     |snacks-layout-module-layout:toggle()|
   - layout:unhide()                     |snacks-layout-module-layout:unhide()|
@@ -87,7 +88,7 @@ Table of Contents                            *snacks-layout-table-of-contents*
     ---@class snacks.layout
     ---@field opts snacks.layout.Config
     ---@field root snacks.win
-    ---@field wins table<string, snacks.win|{enabled?:boolean}>
+    ---@field wins table<string, snacks.win|{enabled?:boolean, layout?:boolean}>
     ---@field box_wins snacks.win[]
     ---@field win_opts table<string, snacks.win.Config>
     ---@field closed? boolean
@@ -160,6 +161,14 @@ Toggle fullscreen
 <
 
 
+LAYOUT:NEEDS_LAYOUT()             *snacks-layout-module-layout:needs_layout()*
+
+>lua
+    ---@param win string
+    layout:needs_layout(win)
+<
+
+
 LAYOUT:SHOW()                             *snacks-layout-module-layout:show()*
 
 Show the layout
@@ -175,7 +184,9 @@ Toggle a window
 
 >lua
     ---@param win string
-    layout:toggle(win)
+    ---@param enable? boolean
+    ---@param on_update? fun(enabled: boolean) called when the layout will be updated
+    layout:toggle(win, enable, on_update)
 <
 
 

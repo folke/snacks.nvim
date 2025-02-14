@@ -80,6 +80,8 @@ function M.filename(item, picker)
     base_hl = "SnacksPickerPathIgnored"
   elseif is("hidden") then
     base_hl = "SnacksPickerPathHidden"
+  elseif item.filename_hl then
+    base_hl = item.filename_hl
   end
   local dir_hl = "SnacksPickerDir"
 
@@ -566,6 +568,10 @@ function M.file_git_status(item, picker)
     hl = "SnacksPickerGitStatusStaged"
   else
     hl = "SnacksPickerGitStatus" .. status.status:sub(1, 1):upper() .. status.status:sub(2)
+  end
+
+  if picker.opts.formatters.file.git_status_hl then
+    item.filename_hl = hl
   end
 
   local icon = status.status:sub(1, 1):upper()

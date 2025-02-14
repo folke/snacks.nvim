@@ -169,7 +169,7 @@ end
 
 ---@param opts snacks.picker.Config
 function M.format(opts)
-  local ret = type(opts.format) == "string" and Snacks.picker.format[opts.format]
+  local ret = type(opts.format) == "string" and (Snacks.picker.format[opts.format] or M.field(opts.format))
     or opts.format
     or Snacks.picker.format.file
   ---@cast ret snacks.picker.format
@@ -188,9 +188,17 @@ end
 ---@param opts snacks.picker.Config
 function M.preview(opts)
   local preview = opts.preview or Snacks.picker.preview.file
-  preview = type(preview) == "string" and Snacks.picker.preview[preview] or preview
+  preview = type(preview) == "string" and (Snacks.picker.preview[preview] or M.field(preview)) or preview
   ---@cast preview snacks.picker.preview
   return preview
+end
+
+---@param opts snacks.picker.Config
+function M.sort(opts)
+  local sort = opts.sort or require("snacks.picker.sort").default()
+  sort = type(sort) == "table" and require("snacks.picker.sort").default(sort) or sort
+  ---@cast sort snacks.picker.sort
+  return sort
 end
 
 --- Resolve the layout configuration
@@ -204,25 +212,44 @@ function M.layout(opts)
   local layout = M.resolve(opts.layout or {}, opts.source)
   layout = type(layout) == "string" and { preset = layout } or layout
   ---@cast layout snacks.picker.layout.Config
-  if layout.layout and layout.layout[1] then
-    return layout
-  end
 
-  -- Resolve the preset
-  local layouts = opts.layouts or M.get().layouts or {}
-  local done = {} ---@type table<string, boolean>
-  local todo = { layout } ---@type snacks.picker.layout.Config[]
-  while true do
-    local preset = M.resolve(todo[1].preset or "custom", opts.source)
-    if not preset or done[preset] or not layouts[preset] then
-      break
+  -- only resolve presets when the layout has no layout
+  if not (layout.layout and layout.layout[1]) then
+    -- Resolve the preset
+    local layouts = opts.layouts or M.get().layouts or {}
+    local done = {} ---@type table<string, boolean>
+    local todo = { layout } ---@type snacks.picker.layout.Config[]
+    while true do
+      local preset = M.resolve(todo[1].preset or "custom", opts.source)
+      if not preset or done[preset] or not layouts[preset] then
+        break
+      end
+      done[preset] = true
+      table.insert(todo, 1, vim.deepcopy(layouts[preset]))
     end
-    done[preset] = true
-    table.insert(todo, 1, vim.deepcopy(layouts[preset]))
+
+    -- Merge and return the layout
+    layout = Snacks.config.merge(unpack(todo)) --[[@as snacks.picker.layout.Config]]
   end
 
-  -- Merge and return the layout
-  return Snacks.config.merge(unpack(todo))
+  -- Fix deprecated layout options
+  layout.hidden = layout.hidden or {}
+  if layout.preview == false then
+    table.insert(layout.hidden, "preview")
+    layout.preview = nil
+  elseif type(layout.preview) == "table" then
+    ---@cast layout snacks.picker.layout.Config|{preview: {enabled: boolean, main: boolean}}
+    if layout.preview.enabled == false then
+      table.insert(layout.hidden, "preview")
+    end
+    if layout.preview.main then
+      layout.preview = "main"
+    else
+      layout.preview = nil
+    end
+  end
+
+  return layout
 end
 
 ---@generic T
@@ -253,14 +280,23 @@ function M.finder(finder)
     return require("snacks.picker.core.finder").multi(finders)
   end
   ---@cast finder string
-  local mod, fn = finder:match("^(.-)_(.+)$")
-  if not (mod and fn) then
-    mod, fn = finder, finder
+  return M.field(finder) or nop
+end
+
+--- Resolves a module field
+---@param spec string
+function M.field(spec)
+  local parts = vim.split(spec, ".", { plain = true })
+  local name, field = parts[#parts]:match("^(.-)[_#](.+)$")
+  if name and field then
+    parts[#parts] = name
+  else
+    field = parts[#parts]
   end
   local ok, ret = pcall(function()
-    return require("snacks.picker.source." .. mod)[fn]
+    return require("snacks.picker.source." .. table.concat(parts, "."))[field]
   end)
-  return ok and ret or nop
+  return ok and ret or nil
 end
 
 local did_setup = false

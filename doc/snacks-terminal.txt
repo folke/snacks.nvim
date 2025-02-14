@@ -14,6 +14,7 @@ Table of Contents                          *snacks-terminal-table-of-contents*
   - Snacks.terminal()               |snacks-terminal-module-snacks.terminal()|
   - Snacks.terminal.colorize()|snacks-terminal-module-snacks.terminal.colorize()|
   - Snacks.terminal.get()       |snacks-terminal-module-snacks.terminal.get()|
+  - Snacks.terminal.list()     |snacks-terminal-module-snacks.terminal.list()|
   - Snacks.terminal.open()     |snacks-terminal-module-snacks.terminal.open()|
   - Snacks.terminal.toggle() |snacks-terminal-module-snacks.terminal.toggle()|
 7. Links                                               |snacks-terminal-links|
@@ -198,6 +199,14 @@ Get or create a terminal window. The terminal id is based on the `cmd`, `cwd`,
     ---@param opts? snacks.terminal.Opts| {create?: boolean}
     ---@return snacks.win? terminal, boolean? created
     Snacks.terminal.get(cmd, opts)
+<
+
+
+`Snacks.terminal.list()`                              *Snacks.terminal.list()*
+
+>lua
+    ---@return snacks.win[]
+    Snacks.terminal.list()
 <
 
 

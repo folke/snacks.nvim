@@ -54,17 +54,21 @@ end
 
 -- batch updates and give explorer the time to update before the watcher
 function M.refresh()
-  timer:start(100, 0, function()
-    local picker = Snacks.picker.get({ source = "explorer" })[1]
-    if picker and not picker.closed and Tree:is_dirty(picker:cwd(), picker.opts) then
-      if not picker.list.target then
-        picker.list:set_target()
+  timer:start(
+    100,
+    0,
+    vim.schedule_wrap(function()
+      local picker = Snacks.picker.get({ source = "explorer" })[1]
+      if picker and not picker.closed and Tree:is_dirty(picker:cwd(), picker.opts) then
+        if not picker.list.target then
+          picker.list:set_target()
+        end
+        vim.schedule(function()
+          picker:find()
+        end)
       end
-      vim.schedule(function()
-        picker:find()
-      end)
-    end
-  end)
+    end)
+  )
 end
 
 ---@param cwd string

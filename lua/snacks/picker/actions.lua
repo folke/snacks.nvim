@@ -11,6 +11,7 @@ local M = {}
 ---@class snacks.picker.yank.Action: snacks.picker.Action
 ---@field reg? string
 ---@field field? string
+---@field notify? boolean
 
 ---@enum (key) snacks.picker.EditCmd
 local edit_cmd = {
@@ -136,8 +137,8 @@ function M.jump(picker, _, action)
   end
 
   if current_empty and vim.api.nvim_buf_is_valid(current_buf) then
-    local w = vim.fn.bufwinid(current_buf)
-    if w == -1 then
+    local w = vim.fn.win_findbuf(current_buf)
+    if #w == 0 then
       vim.api.nvim_buf_delete(current_buf, { force = true })
     end
   end
@@ -175,7 +176,7 @@ function M.layout(picker, _, action)
   if (layout.layout.position or "float") ~= "float" then
     picker.opts.auto_close = false
     picker.opts.jump.close = false
-    picker:toggle_preview(false)
+    picker:toggle("preview", { enable = false })
     picker.list.win:focus()
   end
 end
@@ -190,7 +191,11 @@ function M.toggle_maximize(picker)
 end
 
 function M.toggle_preview(picker)
-  picker:toggle_preview()
+  picker:toggle("preview")
+end
+
+function M.toggle_input(picker)
+  picker:toggle("input", { focus = true })
 end
 
 function M.picker_grep(_, item)
@@ -284,15 +289,16 @@ end
 
 function M.git_stage(picker)
   local items = picker:selected({ fallback = true })
-  local cursor = picker.list.cursor
+  local done = 0
   for _, item in ipairs(items) do
     local cmd = item.status:sub(2) == " " and { "git", "restore", "--staged", item.file } or { "git", "add", item.file }
     Snacks.picker.util.cmd(cmd, function(data, code)
-      picker:find({
-        on_done = function()
-          picker.list:view(cursor + 1)
-        end,
-      })
+      done = done + 1
+      if done == #items then
+        picker.list:set_selected()
+        picker.list:set_target()
+        picker:find()
+      end
     end, { cwd = item.cwd })
   end
 end
@@ -428,20 +434,24 @@ end
 function M.yank(picker, item, action)
   ---@cast action snacks.picker.yank.Action
   if item then
-    local reg = action.reg or "+"
+    local reg = action.reg or vim.v.register
     local value = item[action.field] or item.data or item.text
     vim.fn.setreg(reg, value)
-    local buf = item.buf or vim.api.nvim_win_get_buf(picker.main)
-    local ft = vim.bo[buf].filetype
-    Snacks.notify(("Yanked to register `%s`:\n```%s\n%s\n```"):format(reg, ft, value), { title = "Snacks Picker" })
+    if action.notify ~= false then
+      local buf = item.buf or vim.api.nvim_win_get_buf(picker.main)
+      local ft = vim.bo[buf].filetype
+      Snacks.notify(("Yanked to register `%s`:\n```%s\n%s\n```"):format(reg, ft, value), { title = "Snacks Picker" })
+    end
   end
 end
 M.copy = M.yank
 
-function M.put(picker, item)
+function M.put(picker, item, action)
+  ---@cast action snacks.picker.yank.Action
   picker:close()
   if item then
-    vim.api.nvim_put({ item.data or item.text }, "c", true, true)
+    local value = item[action.field] or item.data or item.text
+    vim.api.nvim_put({ value }, "", true, true)
   end
 end
 
@@ -457,14 +467,14 @@ end
 --- and moves the cursor to the next item.
 function M.select_and_next(picker)
   picker.list:select()
-  M.list_down(picker)
+  picker.list:_move(vim.v.count1)
 end
 
 --- Toggles the selection of the current item,
 --- and moves the cursor to the prev item.
 function M.select_and_prev(picker)
   picker.list:select()
-  M.list_up(picker)
+  picker.list:_move(-vim.v.count1)
 end
 
 --- Selects all items in the list.
@@ -477,11 +487,7 @@ function M.cmd(picker, item)
   picker:close()
   if item and item.cmd then
     vim.schedule(function()
-      if item.command and (item.command.nargs ~= "0") then
-        vim.api.nvim_input(":" .. item.cmd .. " ")
-      else
-        vim.cmd(item.cmd)
-      end
+      vim.api.nvim_input(":" .. item.cmd)
     end)
   end
 end
@@ -523,6 +529,14 @@ function M.help(picker, item, action)
   ---@cast action snacks.picker.jump.Action
   if item then
     picker:close()
+    local file = Snacks.picker.util.path(item) or ""
+    if package.loaded.lazy then
+      local plugin = file:match("/([^/]+)/doc/")
+      if plugin and require("lazy.core.config").plugins[plugin] then
+        require("lazy").load({ plugins = { plugin } })
+      end
+    end
+
     local cmd = "help " .. item.text
     if action.cmd == "vsplit" then
       cmd = "vert " .. cmd
@@ -581,9 +595,9 @@ end
 
 function M.toggle_focus(picker)
   if vim.api.nvim_get_current_win() == picker.input.win.win then
-    picker.list.win:focus()
+    picker:focus("list", { show = true })
   else
-    picker.input.win:focus()
+    picker:focus("input", { show = true })
   end
 end
 
@@ -605,15 +619,15 @@ function M.cycle_win(picker)
 end
 
 function M.focus_input(picker)
-  picker.input.win:focus()
+  picker:focus("input", { show = true })
 end
 
 function M.focus_list(picker)
-  picker.list.win:focus()
+  picker:focus("list", { show = true })
 end
 
 function M.focus_preview(picker)
-  picker.preview.win:focus()
+  picker:focus("preview", { show = true })
 end
 
 function M.item_action(picker, item, action)
@@ -634,11 +648,11 @@ function M.list_bottom(picker)
 end
 
 function M.list_down(picker)
-  picker.list:move(1)
+  picker.list:move(vim.v.count1)
 end
 
 function M.list_up(picker)
-  picker.list:move(-1)
+  picker.list:move(-vim.v.count1)
 end
 
 function M.list_scroll_top(picker)

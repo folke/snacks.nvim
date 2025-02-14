@@ -46,6 +46,8 @@ M.buffers = {
 ---@field diagnostics? boolean show diagnostics
 ---@field diagnostics_open? boolean show recursive diagnostics for open directories
 ---@field watch? boolean watch for file changes
+---@field exclude? string[] exclude glob patterns
+---@field include? string[] include glob patterns. These take precedence over `exclude`, `ignored` and `hidden`
 M.explorer = {
   finder = "explorer",
   sort = { fields = { "sort" } },
@@ -193,6 +195,7 @@ M.diagnostics_buffer = {
 ---@field follow? boolean follow symlinks
 ---@field exclude? string[] exclude patterns
 ---@field args? string[] additional arguments
+---@field ft? string|string[] file extension(s)
 ---@field rtp? boolean search in runtimepath
 M.files = {
   finder = "files",
@@ -377,6 +380,7 @@ M.highlights = {
   finder = "vim_highlights",
   format = "hl",
   preview = "preview",
+  confirm = "close",
 }
 
 ---@class snacks.picker.icons.Config: snacks.picker.Config
@@ -474,6 +478,19 @@ M.loclist = {
 ---@field include_current? boolean default false
 ---@field unique_lines? boolean include only locations with unique lines
 ---@field filter? snacks.picker.filter.Config
+
+---@class snacks.picker.lsp.config.Config: snacks.picker.Config
+---@field installed? boolean only show installed servers
+---@field configured? boolean only show configured servers (setup with lspconfig)
+---@field attached? boolean|number only show attached servers. When `number`, show only servers attached to that buffer (can be 0)
+M.lsp_config = {
+  finder = "lsp.config#find",
+  format = "lsp.config#format",
+  preview = "lsp.config#preview",
+  confirm = "close",
+  sort = { fields = { "score:desc", "attached_buf", "attached", "enabled", "installed", "name" } },
+  matcher = { sort_empty = true },
+}
 
 -- LSP declarations
 ---@type snacks.picker.lsp.Config
@@ -613,6 +630,7 @@ M.notifications = {
   format = "notification",
   preview = "preview",
   formatters = { severity = { level = true } },
+  confirm = "close",
 }
 
 -- List all available sources
@@ -771,9 +789,11 @@ M.spelling = {
 
 ---@class snacks.picker.treesitter.Config: snacks.picker.Config
 ---@field filter table<string, string[]|boolean>? symbol kind filter
+---@field tree? boolean show symbol tree
 M.treesitter = {
   finder = "treesitter_symbols",
   format = "lsp_symbol",
+  tree = true,
   filter = {
     default = {
       "Class",

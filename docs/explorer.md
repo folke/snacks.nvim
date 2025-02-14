@@ -85,3 +85,12 @@ Shortcut to open the explorer picker
 ---@param opts? snacks.picker.explorer.Config|{}
 Snacks.explorer.open(opts)
 ```
+
+### `Snacks.explorer.reveal()`
+
+Reveals the given file/buffer or the current buffer in the explorer
+
+```lua
+---@param opts? {file?:string, buf?:number}
+Snacks.explorer.reveal(opts)
+```

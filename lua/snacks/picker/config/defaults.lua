@@ -52,8 +52,10 @@ local M = {}
 ---@field reverse? boolean when true, the list will be reversed (bottom-up)
 ---@field fullscreen? boolean open in fullscreen
 ---@field cycle? boolean cycle through the list
----@field preview? boolean|"main"|{enabled?:boolean, main?:boolean} show preview window in the picker or the main window
+---@field preview? "main" show preview window in the picker or the main window
 ---@field preset? string|fun(source:string):string
+---@field hidden? ("input"|"preview"|"list")[] don't show the given windows when opening the picker. (only "input" and "preview" make sense)
+---@field auto_hide? ("input"|"preview"|"list")[] hide the given windows when not focused (only "input" makes real sense)
 
 ---@class snacks.picker.win.Config
 ---@field input? snacks.win.Config|{} input window config
@@ -85,7 +87,8 @@ local M = {}
 ---@field title? string defaults to a capitalized source name
 ---@field auto_close? boolean automatically close the picker when focusing another window (defaults to true)
 ---@field show_empty? boolean show the picker even when there are no items
----@field focus? "input"|"list"|false where to focus when the picker is opened (defaults to "input")
+---@field focus? "input"|"list" where to focus when the picker is opened (defaults to "input")
+---@field enter? boolean enter the picker when opening it
 ---@field toggles? table<string, string|false|snacks.picker.toggle>
 --- Preset options
 ---@field previewers? snacks.picker.previewers.Config|{}
@@ -103,6 +106,7 @@ local M = {}
 ---@field jump? snacks.picker.jump.Config|{}
 --- Other
 ---@field config? fun(opts:snacks.picker.Config):snacks.picker.Config? custom config function
+---@field db? snacks.picker.db.Config|{}
 ---@field debug? snacks.picker.debug|{}
 local defaults = {
   prompt = " ",
@@ -144,6 +148,7 @@ local defaults = {
       truncate = 40, -- truncate the file path to (roughly) this length
       filename_only = false, -- only show the filename
       icon_width = 2, -- width of the icon (in characters)
+      git_status_hl = true, -- use the git status highlight group for the filename
     },
     selected = {
       show_always = false, -- only show the selected column when there are multiple selections
@@ -160,6 +165,7 @@ local defaults = {
   previewers = {
     git = {
       native = false, -- use native (terminal) or Neovim for previewing git diffs and commits
+      args = {}, -- additional arguments passed to the git command. Useful to set pager options usin `-c ...`
     },
     file = {
       max_size = 1024 * 1024, -- 1MB
@@ -222,14 +228,10 @@ local defaults = {
         ["<c-s>"] = { "edit_split", mode = { "i", "n" } },
         ["<c-u>"] = { "list_scroll_up", mode = { "i", "n" } },
         ["<c-v>"] = { "edit_vsplit", mode = { "i", "n" } },
-        ["<c-z>h"] = { "layout_left", mode = { "i", "n" } },
-        ["<c-z><c-h>"] = { "layout_left", mode = { "i", "n" } },
-        ["<c-z>j"] = { "layout_bottom", mode = { "i", "n" } },
-        ["<c-z><c-j>"] = { "layout_bottom", mode = { "i", "n" } },
-        ["<c-z>k"] = { "layout_top", mode = { "i", "n" } },
-        ["<c-z><c-k>"] = { "layout_top", mode = { "i", "n" } },
-        ["<c-z>l"] = { "layout_right", mode = { "i", "n" } },
-        ["<c-z><c-l>"] = { "layout_right", mode = { "i", "n" } },
+        ["<c-w>H"] = "layout_left",
+        ["<c-w>J"] = "layout_bottom",
+        ["<c-w>K"] = "layout_top",
+        ["<c-w>L"] = "layout_right",
         ["?"] = "toggle_help_input",
         ["G"] = "list_bottom",
         ["gg"] = "list_top",
@@ -271,14 +273,10 @@ local defaults = {
         ["<c-s>"] = "edit_split",
         ["<c-u>"] = "list_scroll_up",
         ["<c-v>"] = "edit_vsplit",
-        ["<c-z>h"] = { "layout_left", mode = { "i", "n" } },
-        ["<c-z><c-h>"] = { "layout_left", mode = { "i", "n" } },
-        ["<c-z>j"] = { "layout_bottom", mode = { "i", "n" } },
-        ["<c-z><c-j>"] = { "layout_bottom", mode = { "i", "n" } },
-        ["<c-z>k"] = { "layout_top", mode = { "i", "n" } },
-        ["<c-z><c-k>"] = { "layout_top", mode = { "i", "n" } },
-        ["<c-z>l"] = { "layout_right", mode = { "i", "n" } },
-        ["<c-z><c-l>"] = { "layout_right", mode = { "i", "n" } },
+        ["<c-w>H"] = "layout_left",
+        ["<c-w>J"] = "layout_bottom",
+        ["<c-w>K"] = "layout_top",
+        ["<c-w>L"] = "layout_right",
         ["?"] = "toggle_help_list",
         ["G"] = "list_bottom",
         ["gg"] = "list_top",
@@ -351,6 +349,12 @@ local defaults = {
       Hint  = " ",
       Info  = " ",
     },
+    lsp = {
+      unavailable = "",
+      enabled = " ",
+      disabled = " ",
+      attached = "󰖩 "
+    },
     kinds = {
       Array         = " ",
       Boolean       = "󰨙 ",
@@ -392,6 +396,13 @@ local defaults = {
       Variable      = "󰀫 ",
     },
   },
+  ---@class snacks.picker.db.Config
+  db = {
+    -- path to the sqlite3 library
+    -- If not set, it will try to load the library by name.
+    -- On Windows it will download the library from the internet.
+    sqlite3_path = nil, ---@type string?
+  },
   ---@class snacks.picker.debug
   debug = {
     scores = false, -- show scores in the list
@@ -399,6 +410,7 @@ local defaults = {
     explorer = false, -- show explorer debug info
     files = false, -- show file debug info
     grep = false, -- show file debug info
+    proc = false, -- show proc debug info
     extmarks = false, -- show extmarks errors
   },
 }

@@ -31,6 +31,7 @@
 ---@field lazy fun(opts?: snacks.picker.Config|{}): snacks.Picker
 ---@field lines fun(opts?: snacks.picker.lines.Config|{}): snacks.Picker
 ---@field loclist fun(opts?: snacks.picker.qf.Config|{}): snacks.Picker
+---@field lsp_config fun(opts?: snacks.picker.lsp.config.Config|{}): snacks.Picker
 ---@field lsp_declarations fun(opts?: snacks.picker.lsp.Config|{}): snacks.Picker
 ---@field lsp_definitions fun(opts?: snacks.picker.lsp.Config|{}): snacks.Picker
 ---@field lsp_implementations fun(opts?: snacks.picker.lsp.Config|{}): snacks.Picker

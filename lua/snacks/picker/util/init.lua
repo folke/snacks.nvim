@@ -376,7 +376,7 @@ function M.pick_win(opts)
   local overlays = {} ---@type snacks.win[]
   local chars = "asdfghjkl"
   local wins = {} ---@type number[]
-  for _, win in ipairs(vim.api.nvim_list_wins()) do
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
     local buf = vim.api.nvim_win_get_buf(win)
     local keep = (opts.float or vim.api.nvim_win_get_config(win).relative == "")
       and (not opts.filter or opts.filter(win, buf))
@@ -528,6 +528,82 @@ function M.modeline(buf)
       end
       return ret
     end
+  end
+end
+
+--- Gets the list of binaries in the PATH.
+--- This won't check if the binary is executable.
+--- On Windows, additional extensions are checked.
+function M.get_bins()
+  local is_win = jit.os:find("Windows")
+  local path = vim.split(os.getenv("PATH") or "", is_win and ";" or ":", { plain = true })
+  local bins = {} ---@type table<string, string>
+  for _, p in ipairs(path) do
+    p = vim.fs.normalize(p)
+    for file, t in vim.fs.dir(p) do
+      if t ~= "directory" then
+        local fpath = p .. "/" .. file
+        local base, ext = file:match("^(.*)%.(%a+)$")
+        if is_win then
+          if base and ext and vim.tbl_contains({ "exe", "bat", "com", "cmd" }, ext) then
+            bins[base] = bins[base] or fpath
+          end
+        else
+          bins[file] = bins[file] or fpath
+        end
+      end
+    end
+  end
+  return bins
+end
+
+---@param glob string
+function M.glob2pattern(glob)
+  local pattern = ""
+  local i = 1
+  while i <= #glob do
+    local c = glob:sub(i, i)
+    if c == "*" then
+      if i + 1 <= #glob and glob:sub(i + 1, i + 1) == "*" then -- '**'
+        pattern = pattern .. ".*"
+        i = i + 2
+      else -- '*'
+        pattern = pattern .. "[^/]*"
+        i = i + 1
+      end
+    elseif c == "?" then
+      pattern = pattern .. "[^/]" -- Match exactly one non-'/' character
+      i = i + 1
+    else
+      c = c:match("^[%^%$%(%)%%%.%[%]%+%-]$") and "%" .. c or c
+      pattern = pattern .. c
+      i = i + 1
+    end
+  end
+  pattern = pattern .. "$"
+  pattern = pattern
+    :gsub("^" .. vim.pesc("[^/]*"), "")
+    :gsub("^" .. vim.pesc(".*"), "")
+    :gsub(vim.pesc("[^/]*$") .. "$", "")
+    :gsub(vim.pesc(".*$") .. "$", "")
+  return pattern
+end
+
+---@param globs string[]
+---@return fun(file: string): boolean
+function M.globber(globs)
+  local patterns = {} ---@type string[]
+  for _, glob in ipairs(globs) do
+    table.insert(patterns, M.glob2pattern(glob))
+  end
+  ---@param file string
+  return function(file)
+    for _, pattern in ipairs(patterns) do
+      if file:find(pattern) then
+        return true
+      end
+    end
+    return false
   end
 end
 

@@ -36,6 +36,9 @@ function M.default(opts)
           av, bv = #av, #bv
         end
         if av ~= bv then
+          if type(av) == "boolean" then
+            av, bv = av and 0 or 1, bv and 0 or 1
+          end
           if field.desc then
             return av > bv
           else

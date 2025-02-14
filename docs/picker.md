@@ -91,7 +91,8 @@ Snacks.picker.pick({source = "files", ...})
 ---@field title? string defaults to a capitalized source name
 ---@field auto_close? boolean automatically close the picker when focusing another window (defaults to true)
 ---@field show_empty? boolean show the picker even when there are no items
----@field focus? "input"|"list"|false where to focus when the picker is opened (defaults to "input")
+---@field focus? "input"|"list" where to focus when the picker is opened (defaults to "input")
+---@field enter? boolean enter the picker when opening it
 ---@field toggles? table<string, string|false|snacks.picker.toggle>
 --- Preset options
 ---@field previewers? snacks.picker.previewers.Config|{}
@@ -109,6 +110,7 @@ Snacks.picker.pick({source = "files", ...})
 ---@field jump? snacks.picker.jump.Config|{}
 --- Other
 ---@field config? fun(opts:snacks.picker.Config):snacks.picker.Config? custom config function
+---@field db? snacks.picker.db.Config|{}
 ---@field debug? snacks.picker.debug|{}
 {
   prompt = " ",
@@ -150,6 +152,7 @@ Snacks.picker.pick({source = "files", ...})
       truncate = 40, -- truncate the file path to (roughly) this length
       filename_only = false, -- only show the filename
       icon_width = 2, -- width of the icon (in characters)
+      git_status_hl = true, -- use the git status highlight group for the filename
     },
     selected = {
       show_always = false, -- only show the selected column when there are multiple selections
@@ -166,6 +169,7 @@ Snacks.picker.pick({source = "files", ...})
   previewers = {
     git = {
       native = false, -- use native (terminal) or Neovim for previewing git diffs and commits
+      args = {}, -- additional arguments passed to the git command. Useful to set pager options usin `-c ...`
     },
     file = {
       max_size = 1024 * 1024, -- 1MB
@@ -228,14 +232,10 @@ Snacks.picker.pick({source = "files", ...})
         ["<c-s>"] = { "edit_split", mode = { "i", "n" } },
         ["<c-u>"] = { "list_scroll_up", mode = { "i", "n" } },
         ["<c-v>"] = { "edit_vsplit", mode = { "i", "n" } },
-        ["<c-z>h"] = { "layout_left", mode = { "i", "n" } },
-        ["<c-z><c-h>"] = { "layout_left", mode = { "i", "n" } },
-        ["<c-z>j"] = { "layout_bottom", mode = { "i", "n" } },
-        ["<c-z><c-j>"] = { "layout_bottom", mode = { "i", "n" } },
-        ["<c-z>k"] = { "layout_top", mode = { "i", "n" } },
-        ["<c-z><c-k>"] = { "layout_top", mode = { "i", "n" } },
-        ["<c-z>l"] = { "layout_right", mode = { "i", "n" } },
-        ["<c-z><c-l>"] = { "layout_right", mode = { "i", "n" } },
+        ["<c-w>H"] = "layout_left",
+        ["<c-w>J"] = "layout_bottom",
+        ["<c-w>K"] = "layout_top",
+        ["<c-w>L"] = "layout_right",
         ["?"] = "toggle_help_input",
         ["G"] = "list_bottom",
         ["gg"] = "list_top",
@@ -277,14 +277,10 @@ Snacks.picker.pick({source = "files", ...})
         ["<c-s>"] = "edit_split",
         ["<c-u>"] = "list_scroll_up",
         ["<c-v>"] = "edit_vsplit",
-        ["<c-z>h"] = { "layout_left", mode = { "i", "n" } },
-        ["<c-z><c-h>"] = { "layout_left", mode = { "i", "n" } },
-        ["<c-z>j"] = { "layout_bottom", mode = { "i", "n" } },
-        ["<c-z><c-j>"] = { "layout_bottom", mode = { "i", "n" } },
-        ["<c-z>k"] = { "layout_top", mode = { "i", "n" } },
-        ["<c-z><c-k>"] = { "layout_top", mode = { "i", "n" } },
-        ["<c-z>l"] = { "layout_right", mode = { "i", "n" } },
-        ["<c-z><c-l>"] = { "layout_right", mode = { "i", "n" } },
+        ["<c-w>H"] = "layout_left",
+        ["<c-w>J"] = "layout_bottom",
+        ["<c-w>K"] = "layout_top",
+        ["<c-w>L"] = "layout_right",
         ["?"] = "toggle_help_list",
         ["G"] = "list_bottom",
         ["gg"] = "list_top",
@@ -356,6 +352,12 @@ Snacks.picker.pick({source = "files", ...})
       Hint  = " ",
       Info  = " ",
     },
+    lsp = {
+      unavailable = "",
+      enabled = " ",
+      disabled = " ",
+      attached = "󰖩 "
+    },
     kinds = {
       Array         = " ",
       Boolean       = "󰨙 ",
@@ -397,6 +399,13 @@ Snacks.picker.pick({source = "files", ...})
       Variable      = "󰀫 ",
     },
   },
+  ---@class snacks.picker.db.Config
+  db = {
+    -- path to the sqlite3 library
+    -- If not set, it will try to load the library by name.
+    -- On Windows it will download the library from the internet.
+    sqlite3_path = nil, ---@type string?
+  },
   ---@class snacks.picker.debug
   debug = {
     scores = false, -- show scores in the list
@@ -404,6 +413,7 @@ Snacks.picker.pick({source = "files", ...})
     explorer = false, -- show explorer debug info
     files = false, -- show file debug info
     grep = false, -- show file debug info
+    proc = false, -- show proc debug info
     extmarks = false, -- show extmarks errors
   },
 }
@@ -586,6 +596,7 @@ Snacks.picker.pick({source = "files", ...})
 ---@class snacks.picker.yank.Action: snacks.picker.Action
 ---@field reg? string
 ---@field field? string
+---@field notify? boolean
 ```
 
 ```lua
@@ -653,8 +664,10 @@ It's a previewer that shows a preview based on the item data.
 ---@field reverse? boolean when true, the list will be reversed (bottom-up)
 ---@field fullscreen? boolean open in fullscreen
 ---@field cycle? boolean cycle through the list
----@field preview? boolean|"main"|{enabled?:boolean, main?:boolean} show preview window in the picker or the main window
+---@field preview? "main" show preview window in the picker or the main window
 ---@field preset? string|fun(source:string):string
+---@field hidden? ("input"|"preview"|"list")[] don't show the given windows when opening the picker. (only "input" and "preview" make sense)
+---@field auto_hide? ("input"|"preview"|"list")[] hide the given windows when not focused (only "input" makes real sense)
 ```
 
 ```lua
@@ -712,10 +725,11 @@ Snacks.picker()
 
 ### `Snacks.picker.get()`
 
-Get active pickers, optionally filtered by source
+Get active pickers, optionally filtered by source,
+or the current tab
 
 ```lua
----@param opts? {source?: string}
+---@param opts? {source?: string, tab?: boolean} tab defaults to true
 Snacks.picker.get(opts)
 ```
 
@@ -932,6 +946,8 @@ Neovim commands
 ---@field diagnostics? boolean show diagnostics
 ---@field diagnostics_open? boolean show recursive diagnostics for open directories
 ---@field watch? boolean watch for file changes
+---@field exclude? string[] exclude glob patterns
+---@field include? string[] include glob patterns. These take precedence over `exclude`, `ignored` and `hidden`
 {
   finder = "explorer",
   sort = { fields = { "sort" } },
@@ -1010,6 +1026,7 @@ Neovim commands
 ---@field follow? boolean follow symlinks
 ---@field exclude? string[] exclude patterns
 ---@field args? string[] additional arguments
+---@field ft? string|string[] file extension(s)
 ---@field rtp? boolean search in runtimepath
 {
   finder = "files",
@@ -1310,6 +1327,7 @@ Neovim help tags
   finder = "vim_highlights",
   format = "hl",
   preview = "preview",
+  confirm = "close",
 }
 ```
 
@@ -1452,6 +1470,27 @@ Loclist
   finder = "qf",
   format = "file",
   qf_win = 0,
+}
+```
+
+### `lsp_config`
+
+```vim
+:lua Snacks.picker.lsp_config(opts?)
+```
+
+```lua
+---@class snacks.picker.lsp.config.Config: snacks.picker.Config
+---@field installed? boolean only show installed servers
+---@field configured? boolean only show configured servers (setup with lspconfig)
+---@field attached? boolean|number only show attached servers. When `number`, show only servers attached to that buffer (can be 0)
+{
+  finder = "lsp.config#find",
+  format = "lsp.config#format",
+  preview = "lsp.config#preview",
+  confirm = "close",
+  sort = { fields = { "score:desc", "attached_buf", "attached", "enabled", "installed", "name" } },
+  matcher = { sort_empty = true },
 }
 ```
 
@@ -1678,6 +1717,7 @@ vim.tbl_extend("force", {}, M.lsp_symbols, {
   format = "notification",
   preview = "preview",
   formatters = { severity = { level = true } },
+  confirm = "close",
 }
 ```
 
@@ -1967,9 +2007,11 @@ Not meant to be used directly.
 ```lua
 ---@class snacks.picker.treesitter.Config: snacks.picker.Config
 ---@field filter table<string, string[]|boolean>? symbol kind filter
+---@field tree? boolean show symbol tree
 {
   finder = "treesitter_symbols",
   format = "lsp_symbol",
+  tree = true,
   filter = {
     default = {
       "Class",
@@ -2532,7 +2574,7 @@ Snacks.picker.actions.preview_scroll_up(picker)
 ### `Snacks.picker.actions.put()`
 
 ```lua
-Snacks.picker.actions.put(picker, item)
+Snacks.picker.actions.put(picker, item, action)
 ```
 
 ### `Snacks.picker.actions.qflist()`
@@ -2614,6 +2656,12 @@ Snacks.picker.actions.toggle_help_input(picker)
 Snacks.picker.actions.toggle_help_list(picker)
 ```
 
+### `Snacks.picker.actions.toggle_input()`
+
+```lua
+Snacks.picker.actions.toggle_input(picker)
+```
+
 ### `Snacks.picker.actions.toggle_live()`
 
 ```lua
@@ -2671,7 +2719,7 @@ local M = {}
 ### `Snacks.picker.picker.get()`
 
 ```lua
----@param opts? {source?: string}
+---@param opts? {source?: string, tab?: boolean}
 Snacks.picker.picker.get(opts)
 ```
 
@@ -2707,6 +2755,13 @@ Get the current item at the cursor
 ```lua
 ---@param opts? {resolve?: boolean} default is `true`
 picker:current(opts)
+```
+
+### `picker:current_win()`
+
+```lua
+---@return string? name, snacks.win? win
+picker:current_win()
 ```
 
 ### `picker:cwd()`
@@ -2749,6 +2804,17 @@ based on the current pattern and search string.
 ```lua
 ---@param opts? { on_done?: fun(), refresh?: boolean }
 picker:find(opts)
+```
+
+### `picker:focus()`
+
+Focuses the given or configured window.
+Falls back to the first available window if the window is hidden.
+
+```lua
+---@param win? "input"|"list"|"preview"
+---@param opts? {show?: boolean} when enable is true, the window will be shown if hidden
+picker:focus(win, opts)
 ```
 
 ### `picker:hist()`
@@ -2859,11 +2925,14 @@ otherwise throttle the preview.
 picker:show_preview()
 ```
 
-### `picker:toggle_preview()`
+### `picker:toggle()`
+
+Toggle the given window and optionally focus
 
 ```lua
----@param enable? boolean
-picker:toggle_preview(enable)
+---@param win "input"|"list"|"preview"
+---@param opts? {enable?: boolean, focus?: boolean|string}
+picker:toggle(win, opts)
 ```
 
 ### `picker:word()`

@@ -151,7 +151,7 @@ function M.input(opts, on_confirm)
   add(opts.prompt, "SnacksInputTitle", opts.prompt_pos)
 
   if next(title) then
-    table.insert(title, { " " })
+    table.insert(title, { " ", "SnacksInputTitle" })
   end
 
   ---@param text? string

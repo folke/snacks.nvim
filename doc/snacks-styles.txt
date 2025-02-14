@@ -15,6 +15,7 @@ Table of Contents                            *snacks-styles-table-of-contents*
   - notification                           |snacks-styles-styles-notification|
   - notification_history           |snacks-styles-styles-notification_history|
   - scratch                                     |snacks-styles-styles-scratch|
+  - snacks_image                           |snacks-styles-styles-snacks_image|
   - split                                         |snacks-styles-styles-split|
   - terminal                                   |snacks-styles-styles-terminal|
   - zen                                             |snacks-styles-styles-zen|
@@ -261,6 +262,21 @@ SCRATCH                                         *snacks-styles-styles-scratch*
 <
 
 
+SNACKS_IMAGE                               *snacks-styles-styles-snacks_image*
+
+>lua
+    {
+      relative = "cursor",
+      border = "rounded",
+      focusable = false,
+      backdrop = false,
+      row = 1,
+      col = 1,
+      -- width/height are automatically set by the image size unless specified below
+    }
+<
+
+
 SPLIT                                             *snacks-styles-styles-split*
 
 >lua
@@ -328,6 +344,9 @@ ZEN                                                 *snacks-styles-styles-zen*
       zindex = 40,
       wo = {
         winhighlight = "NormalFloat:Normal",
+      },
+      w = {
+        snacks_main = true,
       },
     }
 <

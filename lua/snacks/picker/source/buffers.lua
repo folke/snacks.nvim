@@ -25,6 +25,7 @@ function M.buffers(opts, ctx)
         name = "[No Name]" .. (vim.bo[buf].filetype ~= "" and " " .. vim.bo[buf].filetype or "")
       end
       local info = vim.fn.getbufinfo(buf)[1]
+      local mark = vim.api.nvim_buf_get_mark(buf, '"')
       local flags = {
         buf == current_buf and "%" or (buf == alternate_buf and "#" or ""),
         info.hidden == 1 and "h" or "a",
@@ -37,7 +38,7 @@ function M.buffers(opts, ctx)
         text = buf .. " " .. name,
         file = name,
         info = info,
-        pos = { info.lnum, 0 },
+        pos = mark[1] ~= 0 and mark or { info.lnum, 0 },
       })
     end
   end

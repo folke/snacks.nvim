@@ -37,6 +37,16 @@ Snacks.util.bo(buf, bo)
 Snacks.util.color(group, prop)
 ```
 
+### `Snacks.util.debounce()`
+
+```lua
+---@generic T
+---@param fn T
+---@param opts? {ms?:number}
+---@return T
+Snacks.util.debounce(fn, opts)
+```
+
 ### `Snacks.util.file_decode()`
 
 Decodes a file name to a string.
@@ -64,6 +74,13 @@ Get an icon from `mini.icons` or `nvim-web-devicons`.
 ---@param cat? string defaults to "file"
 ---@return string, string?
 Snacks.util.icon(name, cat)
+```
+
+### `Snacks.util.is_float()`
+
+```lua
+---@param win? number
+Snacks.util.is_float(win)
 ```
 
 ### `Snacks.util.is_transparent()`
@@ -172,12 +189,22 @@ Get a buffer or global variable.
 Snacks.util.var(buf, name, default)
 ```
 
+### `Snacks.util.winhl()`
+
+Merges vim.wo.winhighlight options.
+Option values can be a string or a dictionary.
+
+```lua
+---@param ... string|table<string, string>
+Snacks.util.winhl(...)
+```
+
 ### `Snacks.util.wo()`
 
 Set window-local options.
 
 ```lua
 ---@param win number
----@param wo vim.wo|{}
+---@param wo vim.wo|{}|{winhighlight: string|table<string, string>}
 Snacks.util.wo(win, wo)
 ```

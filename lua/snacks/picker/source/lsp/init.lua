@@ -260,6 +260,8 @@ function M.results_to_items(client, results, opts)
       detail = result.detail,
       name = result.name,
       text = "",
+      range = result.range,
+      item = result,
     }
     local uri = result.location and result.location.uri or result.uri or opts.default_uri
     local loc = result.location or { range = result.selectionRange or result.range, uri = uri }
@@ -356,12 +358,14 @@ function M.symbols(opts, ctx)
       })
 
       -- Fix sorting
-      table.sort(items, function(a, b)
-        if a.pos[1] == b.pos[1] then
-          return a.pos[2] < b.pos[2]
-        end
-        return a.pos[1] < b.pos[1]
-      end)
+      if not opts.workspace then
+        table.sort(items, function(a, b)
+          if a.pos[1] == b.pos[1] then
+            return a.pos[2] < b.pos[2]
+          end
+          return a.pos[1] < b.pos[1]
+        end)
+      end
 
       -- fix last
       local last = {} ---@type table<snacks.picker.finder.Item, snacks.picker.finder.Item>

@@ -17,6 +17,7 @@ A collection of small QoL plugins for Neovim.
 | [explorer](https://github.com/folke/snacks.nvim/blob/main/docs/explorer.md) | A file explorer (picker in disguise) | ‼️ |
 | [git](https://github.com/folke/snacks.nvim/blob/main/docs/git.md) | Git utilities |  |
 | [gitbrowse](https://github.com/folke/snacks.nvim/blob/main/docs/gitbrowse.md) | Open the current file, branch, commit, or repo in a browser (e.g. GitHub, GitLab, Bitbucket) |  |
+| [image](https://github.com/folke/snacks.nvim/blob/main/docs/image.md) | Image viewer using Kitty Graphics Protocol, supported by `kitty`, `wezterm` and `ghostty` | ‼️ |
 | [indent](https://github.com/folke/snacks.nvim/blob/main/docs/indent.md) | Indent guides and scopes |  |
 | [input](https://github.com/folke/snacks.nvim/blob/main/docs/input.md) | Better `vim.ui.input` | ‼️ |
 | [layout](https://github.com/folke/snacks.nvim/blob/main/docs/layout.md) | Window layouts |  |
@@ -109,6 +110,7 @@ Please refer to the readme of each plugin for their specific configuration.
 ---@field dim? snacks.dim.Config
 ---@field explorer? snacks.explorer.Config
 ---@field gitbrowse? snacks.gitbrowse.Config
+---@field image? snacks.image.Config
 ---@field indent? snacks.indent.Config
 ---@field input? snacks.input.Config
 ---@field layout? snacks.layout.Config
@@ -127,7 +129,12 @@ Please refer to the readme of each plugin for their specific configuration.
 ---@field words? snacks.words.Config
 ---@field zen? snacks.zen.Config
 ---@field styles? table<string, snacks.win.Config>
-{}
+{
+  image = {
+    -- define these here, so that we don't need to load the image module
+    formats = { "png", "jpg", "jpeg", "gif", "bmp", "webp", "tiff", "heic", "avif", "mp4", "mov", "avi", "mkv", "webm" },
+  },
+}
 ```
 
 <!-- config:end -->

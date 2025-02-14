@@ -5,9 +5,10 @@ Table of Contents                            *snacks-rename-table-of-contents*
 
 1. Usage                                                 |snacks-rename-usage|
 2. mini.files                                       |snacks-rename-mini.files|
-3. neo-tree.nvim                                 |snacks-rename-neo-tree.nvim|
-4. nvim-tree                                         |snacks-rename-nvim-tree|
-5. Module                                               |snacks-rename-module|
+3. oil.nvim                                           |snacks-rename-oil.nvim|
+4. neo-tree.nvim                                 |snacks-rename-neo-tree.nvim|
+5. nvim-tree                                         |snacks-rename-nvim-tree|
+6. Module                                               |snacks-rename-module|
   - Snacks.rename.on_rename_file()|snacks-rename-module-snacks.rename.on_rename_file()|
   - Snacks.rename.rename_file()|snacks-rename-module-snacks.rename.rename_file()|
 LSP-integrated file renaming with support for plugins like neo-tree.nvim
@@ -33,7 +34,22 @@ LSP-integrated file renaming with support for plugins like neo-tree.nvim
 
 
 ==============================================================================
-3. neo-tree.nvim                                 *snacks-rename-neo-tree.nvim*
+3. oil.nvim                                           *snacks-rename-oil.nvim*
+
+>lua
+    vim.api.nvim_create_autocmd("User", {
+      pattern = "OilActionsPost",
+      callback = function(event)
+          if event.data.actions.type == "move" then
+              Snacks.rename.on_rename_file(event.data.actions.src_url, event.data.actions.dest_url)
+          end
+      end,
+    })
+<
+
+
+==============================================================================
+4. neo-tree.nvim                                 *snacks-rename-neo-tree.nvim*
 
 >lua
     {
@@ -54,7 +70,7 @@ LSP-integrated file renaming with support for plugins like neo-tree.nvim
 
 
 ==============================================================================
-4. nvim-tree                                         *snacks-rename-nvim-tree*
+5. nvim-tree                                         *snacks-rename-nvim-tree*
 
 >lua
     local prev = { new_name = "", old_name = "" } -- Prevents duplicate events
@@ -74,7 +90,7 @@ LSP-integrated file renaming with support for plugins like neo-tree.nvim
 
 
 ==============================================================================
-5. Module                                               *snacks-rename-module*
+6. Module                                               *snacks-rename-module*
 
 
 `Snacks.rename.on_rename_file()`                   *Snacks.rename.on_rename_file()*

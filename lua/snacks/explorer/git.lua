@@ -130,6 +130,10 @@ function M._update(cwd, results)
     end
   end
 
+  if vim.fn.isdirectory(cwd .. "/.git") == 1 then
+    add_git_status(cwd .. "/.git", "!!")
+  end
+
   for _, s in ipairs(results) do
     local is_dir = s.file:sub(-1) == "/"
     local path = is_dir and s.file:sub(1, -2) or s.file

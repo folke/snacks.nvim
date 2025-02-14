@@ -15,6 +15,12 @@
 ---@field children table<string, snacks.picker.explorer.Node>
 ---@field severity? number
 
+---@class snacks.picker.explorer.Filter
+---@field hidden? boolean show hidden files
+---@field ignored? boolean show ignored files
+---@field exclude? string[] globs to exclude
+---@field include? string[] globs to exclude
+
 local uv = vim.uv or vim.loop
 
 local function norm(path)
@@ -196,19 +202,40 @@ function Tree:walk(node, fn, opts)
   return false
 end
 
+---@param filter snacks.picker.explorer.Filter
+function Tree:filter(filter)
+  local exclude = filter.exclude and #filter.exclude > 0 and Snacks.picker.util.globber(filter.exclude)
+  local include = filter.include and #filter.include > 0 and Snacks.picker.util.globber(filter.include)
+  return function(node)
+    -- takes precedence over all other filters
+    if include and include(node.path) then
+      return true
+    end
+    if node.hidden and not filter.hidden then
+      return false
+    end
+    if node.ignored and not filter.ignored then
+      return false
+    end
+    if exclude and exclude(node.path) then
+      return false
+    end
+    return true
+  end
+end
+
 ---@param cwd string
 ---@param cb fun(node: snacks.picker.explorer.Node)
----@param opts? {hidden?: boolean, ignored?: boolean, expand?: boolean}
+---@param opts? {expand?: boolean}|snacks.picker.explorer.Filter
 function Tree:get(cwd, cb, opts)
   opts = opts or {}
   assert_dir(cwd)
   local node = self:find(cwd)
   node.open = true
+  local filter = self:filter(opts)
   self:walk(node, function(n)
     if n ~= node then
-      if n.hidden and not opts.hidden then
-        return false
-      elseif n.ignored and not opts.ignored then
+      if not filter(n) then
         return false
       end
     end
@@ -220,7 +247,7 @@ function Tree:get(cwd, cb, opts)
 end
 
 ---@param cwd string
----@param opts? {hidden?: boolean, ignored?: boolean}
+---@param opts? snacks.picker.explorer.Filter
 function Tree:is_dirty(cwd, opts)
   opts = opts or {}
   if require("snacks.explorer.git").is_dirty(cwd) then
@@ -231,7 +258,7 @@ function Tree:is_dirty(cwd, opts)
     if n.dir and n.open and not n.expanded then
       dirty = true
     end
-  end, { hidden = opts.hidden, ignored = opts.ignored, expand = false })
+  end, { hidden = opts.hidden, ignored = opts.ignored, exclude = opts.exclude, include = opts.include, expand = false })
   return dirty
 end
 

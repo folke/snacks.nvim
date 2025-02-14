@@ -68,6 +68,16 @@ Snacks.config.style("terminal", {
 ---@type table<string, snacks.win>
 local terminals = {}
 
+local function jobstart(cmd, opts)
+  opts = opts or {}
+  local fn = vim.fn.jobstart
+  if vim.fn.has("nvim-0.11") == 0 and opts.term then
+    opts.term = nil
+    fn = vim.fn.termopen
+  end
+  return fn(cmd, vim.tbl_isempty(opts) and vim.empty_dict() or opts)
+end
+
 --- Open a new terminal window.
 ---@param cmd? string | string[]
 ---@param opts? snacks.terminal.Opts
@@ -142,14 +152,11 @@ function M.open(cmd, opts)
 
   terminal:show()
   vim.api.nvim_buf_call(terminal.buf, function()
-    local term_opts = {
+    jobstart(cmd or M.parse(opts.shell or vim.o.shell), {
       cwd = opts.cwd,
       env = opts.env,
-    }
-    vim.fn.termopen(
-      cmd or M.parse(opts.shell or vim.o.shell),
-      vim.tbl_isempty(term_opts) and vim.empty_dict() or term_opts
-    )
+      term = true,
+    })
   end)
 
   vim.cmd("noh")

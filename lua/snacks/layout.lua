@@ -1,7 +1,7 @@
 ---@class snacks.layout
 ---@field opts snacks.layout.Config
 ---@field root snacks.win
----@field wins table<string, snacks.win|{enabled?:boolean}>
+---@field wins table<string, snacks.win|{enabled?:boolean, layout?:boolean}>
 ---@field box_wins snacks.win[]
 ---@field win_opts table<string, snacks.win.Config>
 ---@field closed? boolean
@@ -57,7 +57,7 @@ function M.new(opts)
       end
     end
   end
-  self.opts.layout.zindex = zindex
+  self.opts.layout.zindex = zindex + 2
 
   -- wrap the split layout in a vertical box
   -- this is needed since a simple split window can't have borders/titles
@@ -86,18 +86,9 @@ function M.new(opts)
       local has_border = box.border and box.border ~= "" and box.border ~= "none"
       local is_root = box.id == 1
       if is_root or has_border then
-        local backdrop = box.backdrop
-        if backdrop == nil then
-          backdrop = 60
-        end
-        if is_root and backdrop then
-          backdrop = type(backdrop) == "number" and { blend = backdrop } or backdrop
-          backdrop = backdrop == true and {} or backdrop
-          ---@cast backdrop snacks.win.Backdrop
-          backdrop.win = backdrop.win or {}
-          backdrop.win.zindex = 20
-        else
-          backdrop = false
+        local backdrop = false
+        if is_root then
+          backdrop = nil
         end
         self.box_wins[box.id] = Snacks.win(Snacks.win.resolve(box, {
           relative = is_root and (box.relative or "editor") or "win",
@@ -120,6 +111,9 @@ function M.new(opts)
 
   for w, win in pairs(self.wins) do
     self.win_opts[w] = vim.deepcopy(win.opts)
+    if win.opts.relative == "win" then
+      win.layout = false
+    end
   end
 
   -- close layout when any win is closed
@@ -140,6 +134,9 @@ function M.new(opts)
     if self.closed then
       return true
     end
+    if not self.root:on_current_tab() then
+      return
+    end
     local sp = vim.fn.screenpos(self.root.win, 1, 1)
     if not vim.deep_equal(sp, self.screenpos) then
       self.screenpos = sp
@@ -151,6 +148,9 @@ function M.new(opts)
 
   -- update layout on VimResized
   self.root:on("VimResized", function()
+    if not self.root:on_current_tab() then
+      return
+    end
     self:update()
   end)
   if self.opts.show ~= false then
@@ -183,6 +183,12 @@ function M:each(cb, opts)
   _each(opts.box or self.opts.layout)
 end
 
+---@param win string
+function M:needs_layout(win)
+  local w = self.wins[win]
+  return w and w.layout ~= false and not self:is_hidden(win)
+end
+
 --- Check if a window is hidden
 ---@param win string
 function M:is_hidden(win)
@@ -191,14 +197,26 @@ end
 
 --- Toggle a window
 ---@param win string
-function M:toggle(win)
+---@param enable? boolean
+---@param on_update? fun(enabled: boolean) called when the layout will be updated
+function M:toggle(win, enable, on_update)
   self.opts.hidden = self.opts.hidden or {}
-  if self:is_hidden(win) then
+  local enabled = not self:is_hidden(win)
+  if enable == nil then
+    enable = not enabled
+  end
+  if enable == enabled then
+    return
+  end
+  if enable then
     self.opts.hidden = vim.tbl_filter(function(w)
       return w ~= win
     end, self.opts.hidden)
   else
     table.insert(self.opts.hidden, win)
+  end
+  if on_update then
+    on_update(enable)
   end
   self:update()
 end
@@ -280,7 +298,7 @@ function M:update_box(box, parent)
 
   local children = {} ---@type snacks.layout.Widget[]
   for c, child in ipairs(box) do
-    if not (child.win and self:is_hidden(child.win)) then
+    if not child.win or self:needs_layout(child.win) then
       children[#children + 1] = child
     end
     box[c] = nil
@@ -332,7 +350,7 @@ function M:update_box(box, parent)
   local offset = 0
   for c, child in ipairs(box) do
     dims[c][pos_main] = offset
-    local wins = self:get_wins(child)
+    local wins = self:get_wins(child, { layout = true })
     for _, win in ipairs(wins) do
       win.opts[pos_main] = win.opts[pos_main] + offset
     end
@@ -358,14 +376,19 @@ function M:update_box(box, parent)
 end
 
 ---@param widget? snacks.layout.Widget
+---@param opts? {layout: boolean}
 ---@package
-function M:get_wins(widget)
+function M:get_wins(widget, opts)
+  opts = opts or {}
   local ret = {} ---@type snacks.win[]
   self:each(function(w)
     if w.box and self.box_wins[w.id] then
       table.insert(ret, self.box_wins[w.id])
     elseif w.win and self:is_enabled(w.win) then
-      table.insert(ret, self.wins[w.win])
+      local win = self.wins[w.win]
+      if not (opts.layout and win.layout == false) then
+        table.insert(ret, self.wins[w.win])
+      end
     end
   end, { box = widget })
   return ret
@@ -415,8 +438,7 @@ function M:update_win(win, parent)
   w.enabled = true
   assert(w, ("win %s not part of layout"):format(win.win))
   -- add win opts from layout
-  w.opts = vim.tbl_extend(
-    "force",
+  w.opts = Snacks.config.merge(
     vim.deepcopy(self.win_opts[win.win] or {}),
     {
       width = 0,
@@ -439,8 +461,8 @@ function M:update_win(win, parent)
     w.opts.win = nil
   end
   -- adjust max width / height
-  w.opts.max_width = math.min(parent.width, w.opts.max_width or parent.width)
-  w.opts.max_height = math.min(parent.height, w.opts.max_height or parent.height)
+  w.opts.max_width = math.max(math.min(parent.width, w.opts.max_width or parent.width), 1)
+  w.opts.max_height = math.max(math.min(parent.height, w.opts.max_height or parent.height), 1)
   -- resolve width / height relative to parent box
   local dim = w:dim(parent)
   w.opts.width, w.opts.height = dim.width, dim.height
@@ -494,7 +516,7 @@ end
 --- Check if the window has been used in the layout
 ---@param w string
 function M:is_enabled(w)
-  return not self:is_hidden(w) and self.wins[w].enabled
+  return not self:is_hidden(w) and (self.wins[w].enabled or self.wins[w].layout == false)
 end
 
 function M:hide()
