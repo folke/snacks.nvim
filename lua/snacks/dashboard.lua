@@ -240,6 +240,7 @@ function D:init()
   vim.o.ei = "all"
   Snacks.util.wo(self.win, Snacks.config.styles.dashboard.wo)
   Snacks.util.bo(self.buf, Snacks.config.styles.dashboard.bo)
+  vim.b[self.buf].snacks_main = true
   vim.o.ei = ""
   if self:is_float() then
     vim.keymap.set("n", "<esc>", "<cmd>bd<cr>", { silent = true, buffer = self.buf })
@@ -254,7 +255,7 @@ function D:init()
       end
     end,
   })
-  vim.api.nvim_create_autocmd("BufWipeout", {
+  vim.api.nvim_create_autocmd({ "BufWipeout", "BufDelete" }, {
     buffer = self.buf,
     callback = function()
       self.fire("Closed")
@@ -696,6 +697,9 @@ function D:keys()
 end
 
 function D:update()
+  if not (self.buf and vim.api.nvim_buf_is_valid(self.buf)) then
+    return
+  end
   self.fire("UpdatePre")
   self._size = self:size()
 
@@ -738,18 +742,8 @@ end
 ---@param cat? string
 ---@return snacks.dashboard.Text
 function M.icon(name, cat)
-  -- stylua: ignore
-  local try = {
-    function() return require("mini.icons").get(cat or "file", name) end,
-    function() return require("nvim-web-devicons").get_icon(name) end,
-  }
-  for _, fn in ipairs(try) do
-    local ok, icon, hl = pcall(fn)
-    if ok then
-      return { icon, hl = hl, width = 2 }
-    end
-  end
-  return { " ", hl = "icon", width = 2 }
+  local icon, hl = Snacks.util.icon(name, cat)
+  return { icon or " ", hl = hl or "icon", width = 2 }
 end
 
 -- Used by the default preset to pick something

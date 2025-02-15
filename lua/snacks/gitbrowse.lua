@@ -186,10 +186,10 @@ function M._open(opts)
   if not fields.commit and (opts.what == "commit" or opts.what == "permalink") then
     opts.what = "file"
   end
-  if not fields.file then
+  if not fields.commit and not fields.file then
     opts.what = "branch"
   end
-  if not fields.branch then
+  if not fields.commit and not fields.branch then
     opts.what = "repo"
   end
 

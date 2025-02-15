@@ -23,10 +23,13 @@ function M.directory(ctx)
     return a.file < b.file
   end)
   for i, item in ipairs(ls) do
-    local cat = item.type == "directory" and "directory" or "file"
-    local hl = item.type == "directory" and "Directory" or nil
+    local is_dir = item.type == "directory"
+    local cat = is_dir and "directory" or "file"
+    local hl = is_dir and "Directory" or nil
     local path = item.file
-    local icon, icon_hl = Snacks.util.icon(path, cat)
+    local icon, icon_hl = Snacks.util.icon(path, cat, {
+      fallback = ctx.picker.opts.icons.files,
+    })
     local line = { { icon .. " ", icon_hl }, { path, hl } }
     vim.api.nvim_buf_set_extmark(ctx.buf, ns, i - 1, 0, {
       virt_text = line,
@@ -38,7 +41,7 @@ end
 function M.image(ctx)
   local buf = ctx.preview:scratch()
   ctx.preview:set_title(ctx.item.title or vim.fn.fnamemodify(ctx.item.file, ":t"))
-  Snacks.image.new(buf, { file = Snacks.picker.util.path(ctx.item) })
+  Snacks.image.buf.attach(buf, { src = Snacks.picker.util.path(ctx.item) })
 end
 
 ---@param ctx snacks.picker.preview.ctx
@@ -176,6 +179,12 @@ function M.cmd(cmd, ctx, opts)
   local line ---@type string?
   local l = 0
 
+  if ctx.picker.opts.debug.proc then
+    local args = vim.deepcopy(cmd)
+    table.remove(args, 1)
+    require("snacks.picker.source.proc").debug({ cmd = cmd[1], args = args, cwd = ctx.item.cwd })
+  end
+
   ---@param text string
   local function add_line(text)
     l = l + 1
@@ -266,9 +275,11 @@ function M.git_show(ctx)
     "show",
     ctx.item.commit,
   }
-  if ctx.item.file then
+  local pathspec = ctx.item.files or ctx.item.file
+  pathspec = type(pathspec) == "table" and pathspec or { pathspec }
+  if #pathspec > 0 then
     cmd[#cmd + 1] = "--"
-    cmd[#cmd + 1] = ctx.item.file
+    vim.list_extend(cmd, pathspec)
   end
   if not native then
     table.insert(cmd, 2, "--no-pager")

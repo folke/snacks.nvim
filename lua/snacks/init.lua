@@ -17,7 +17,12 @@ _G.Snacks = M
 
 ---@class snacks.Config: snacks.plugins.Config
 ---@field styles? table<string, snacks.win.Config>
-local config = {}
+local config = {
+  image = {
+    -- define these here, so that we don't need to load the image module
+    formats = { "png", "jpg", "jpeg", "gif", "bmp", "webp", "tiff", "heic", "avif", "mp4", "mov", "avi", "mkv", "webm" },
+  },
+}
 config.styles = {}
 
 ---@class snacks.config: snacks.Config
@@ -129,7 +134,7 @@ function M.setup(opts)
   config = vim.tbl_deep_extend("force", config, opts or {})
 
   local events = {
-    BufReadPre = { "bigfile" },
+    BufReadPre = { "bigfile", "image" },
     BufReadPost = { "quickfile", "indent" },
     BufEnter = { "explorer" },
     LspAttach = { "words" },
@@ -167,12 +172,13 @@ function M.setup(opts)
     end,
   })
 
-  if M.config.image.enabled then
+  if M.config.image.enabled and #M.config.image.formats > 0 then
     vim.api.nvim_create_autocmd("BufReadCmd", {
-      pattern = "*.png,*.jpg,*.jpeg,*.gif,*.bmp,*.webp",
+      once = true,
+      pattern = "*." .. table.concat(M.config.image.formats, ",*."),
       group = group,
       callback = function(e)
-        require("snacks.image").new(e.buf)
+        require("snacks.image").setup(e)
       end,
     })
   end

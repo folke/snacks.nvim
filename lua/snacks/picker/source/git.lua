@@ -38,7 +38,9 @@ function M.grep(opts, ctx)
   if opts.need_search ~= false and ctx.filter.search == "" then
     return function() end
   end
-  local args = { "-c", "core.quotepath=false", "grep", "--line-number", "--column", "--no-color", "-I" }
+  local args = { "-c", "core.quotepath=false" }
+  vim.list_extend(args, opts.args or {})
+  vim.list_extend(args, { "grep", "--line-number", "--column", "--no-color", "-I" })
   if opts.untracked then
     table.insert(args, "--untracked")
   elseif opts.submodules then
@@ -88,9 +90,6 @@ function M.log(opts, ctx)
     "--no-show-signature",
     "--no-patch",
   }
-  if opts.follow and not opts.current_file then
-    opts.follow = nil
-  end
 
   local file ---@type string?
   if opts.current_line then
@@ -107,32 +106,61 @@ function M.log(opts, ctx)
     args[#args + 1] = "--"
     args[#args + 1] = file
   end
-
+  
   if opts.author then
     table.insert(args, "--author=" .. opts.author)
   end
 
+  local Proc = require("snacks.picker.source.proc")
+  file = file and vim.fs.normalize(file) or nil
+
   local cwd = vim.fs.normalize(file and vim.fn.fnamemodify(file, ":h") or opts and opts.cwd or uv.cwd() or ".") or nil
-  return require("snacks.picker.source.proc").proc({
-    opts,
-    {
-      cwd = cwd,
-      cmd = "git",
-      args = args,
-      ---@param item snacks.picker.finder.Item
-      transform = function(item)
-        local commit, msg, date = item.text:match("^(%S+) (.*) %((.*)%)$")
-        if not commit then
-          error(item.text)
+  cwd = Snacks.git.get_root(cwd) or cwd
+
+  local renames = { file } ---@type string[]
+  return function(cb)
+    if file then
+      -- detect renames
+      local is_rename = false
+      Proc.proc({
+        cmd = "git",
+        cwd = cwd,
+        args = { "log", "-z", "--follow", "--name-status", "--pretty=format:''", "--diff-filter=R", "--", file },
+      }, ctx)(function(item)
+        for _, text in ipairs(vim.split(item.text, "\0")) do
+          if text:find("^R%d%d%d$") then
+            is_rename = true
+          elseif is_rename then
+            is_rename = false
+            renames[#renames + 1] = text
+          end
         end
-        item.cwd = cwd
-        item.commit = commit
-        item.msg = msg
-        item.date = date
-        item.file = file
-      end,
-    },
-  }, ctx)
+      end)
+    end
+
+    Proc.proc({
+      opts,
+      {
+        cwd = cwd,
+        cmd = "git",
+        args = args,
+        ---@param item snacks.picker.finder.Item
+        transform = function(item)
+          local commit, msg, date = item.text:match("^(%S+) (.*) %((.*)%)$")
+          if not commit then
+            Snacks.notify.error(("failed to parse log item:\n%q"):format(item.text))
+            return false
+          end
+          item.cwd = cwd
+          item.commit = commit
+          item.msg = msg
+          item.date = date
+          item.file = file
+          item.files = renames
+        end,
+      },
+    }, ctx)(cb)
+  end
 end
 
 ---@param opts snacks.picker.git.status.Config

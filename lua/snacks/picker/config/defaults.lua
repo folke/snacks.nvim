@@ -87,7 +87,8 @@ local M = {}
 ---@field title? string defaults to a capitalized source name
 ---@field auto_close? boolean automatically close the picker when focusing another window (defaults to true)
 ---@field show_empty? boolean show the picker even when there are no items
----@field focus? "input"|"list"|false where to focus when the picker is opened (defaults to "input")
+---@field focus? "input"|"list" where to focus when the picker is opened (defaults to "input")
+---@field enter? boolean enter the picker when opening it
 ---@field toggles? table<string, string|false|snacks.picker.toggle>
 --- Preset options
 ---@field previewers? snacks.picker.previewers.Config|{}
@@ -147,6 +148,7 @@ local defaults = {
       truncate = 40, -- truncate the file path to (roughly) this length
       filename_only = false, -- only show the filename
       icon_width = 2, -- width of the icon (in characters)
+      git_status_hl = true, -- use the git status highlight group for the filename
     },
     selected = {
       show_always = false, -- only show the selected column when there are multiple selections
@@ -224,6 +226,7 @@ local defaults = {
         ["<c-p>"] = { "list_up", mode = { "i", "n" } },
         ["<c-q>"] = { "qflist", mode = { "i", "n" } },
         ["<c-s>"] = { "edit_split", mode = { "i", "n" } },
+        ["<c-t>"] = { "tab", mode = { "n", "i" } },
         ["<c-u>"] = { "list_scroll_up", mode = { "i", "n" } },
         ["<c-v>"] = { "edit_vsplit", mode = { "i", "n" } },
         ["<c-w>H"] = "layout_left",
@@ -268,7 +271,9 @@ local defaults = {
         ["<c-k>"] = "list_up",
         ["<c-n>"] = "list_down",
         ["<c-p>"] = "list_up",
+        ["<c-q>"] = "qflist",
         ["<c-s>"] = "edit_split",
+        ["<c-t>"] = "tab",
         ["<c-u>"] = "list_scroll_up",
         ["<c-v>"] = "edit_vsplit",
         ["<c-w>H"] = "layout_left",
@@ -308,6 +313,9 @@ local defaults = {
   icons = {
     files = {
       enabled = true, -- show file icons
+      dir = "󰉋 ",
+      dir_open = "󰝰 ",
+      file = "󰈔 "
     },
     keymaps = {
       nowait = "󰓅 "
@@ -408,6 +416,7 @@ local defaults = {
     explorer = false, -- show explorer debug info
     files = false, -- show file debug info
     grep = false, -- show file debug info
+    proc = false, -- show proc debug info
     extmarks = false, -- show extmarks errors
   },
 }

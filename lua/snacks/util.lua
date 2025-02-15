@@ -97,15 +97,18 @@ end
 --- Get an icon from `mini.icons` or `nvim-web-devicons`.
 ---@param name string
 ---@param cat? string defaults to "file"
+---@param opts? { fallback?: {dir?:string, file?:string} }
 ---@return string, string?
-function M.icon(name, cat)
+function M.icon(name, cat, opts)
+  opts = opts or {}
+  opts.fallback = opts.fallback or {}
   local try = {
     function()
       return require("mini.icons").get(cat or "file", name)
     end,
     function()
       if cat == "directory" then
-        return "󰉋 ", "Directory"
+        return opts.fallback.dir or "󰉋 ", "Directory"
       end
       local Icons = require("nvim-web-devicons")
       if cat == "filetype" then
@@ -124,7 +127,7 @@ function M.icon(name, cat)
       return ret[2], ret[3]
     end
   end
-  return "󰈔 "
+  return opts.fallback.file or "󰈔 "
 end
 
 -- Encodes a string to be used as a file name.
@@ -390,5 +393,24 @@ end
 function M.is_float(win)
   return vim.api.nvim_win_get_config(win or 0).relative ~= ""
 end
+
+M.base64 = vim.base64 and vim.base64.encode
+  or function(data)
+    data = tostring(data)
+    local bit = require("bit")
+    local b64chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    local b64, len = "", #data
+    for i = 1, len, 3 do
+      local a, b, c = data:byte(i, i + 2)
+      local buffer = bit.bor(bit.lshift(a, 16), bit.lshift(b or 0, 8), c or 0)
+      for j = 0, 3 do
+        local index = bit.rshift(buffer, (3 - j) * 6) % 64
+        b64 = b64 .. b64chars:sub(index + 1, index + 1)
+      end
+    end
+    local padding = (3 - len % 3) % 3
+    b64 = b64:sub(1, -1 - padding) .. ("="):rep(padding)
+    return b64
+  end
 
 return M

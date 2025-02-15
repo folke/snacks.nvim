@@ -438,8 +438,7 @@ function M:update_win(win, parent)
   w.enabled = true
   assert(w, ("win %s not part of layout"):format(win.win))
   -- add win opts from layout
-  w.opts = vim.tbl_extend(
-    "force",
+  w.opts = Snacks.config.merge(
     vim.deepcopy(self.win_opts[win.win] or {}),
     {
       width = 0,
@@ -452,7 +451,7 @@ function M:update_win(win, parent)
       win = self.root.win,
       backdrop = false,
       resize = false,
-      zindex = self.root.opts.zindex + win.depth,
+      zindex = (self.opts.layout.zindex or 50) + win.depth + 1,
       w = { snacks_layout = true },
     }
   )
@@ -462,8 +461,8 @@ function M:update_win(win, parent)
     w.opts.win = nil
   end
   -- adjust max width / height
-  w.opts.max_width = math.min(parent.width, w.opts.max_width or parent.width)
-  w.opts.max_height = math.min(parent.height, w.opts.max_height or parent.height)
+  w.opts.max_width = math.max(math.min(parent.width, w.opts.max_width or parent.width), 1)
+  w.opts.max_height = math.max(math.min(parent.height, w.opts.max_height or parent.height), 1)
   -- resolve width / height relative to parent box
   local dim = w:dim(parent)
   w.opts.width, w.opts.height = dim.width, dim.height

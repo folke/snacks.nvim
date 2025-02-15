@@ -24,6 +24,7 @@ Table of Contents                              *snacks-util-table-of-contents*
   - Snacks.util.set_hl()             |snacks-util-module-snacks.util.set_hl()|
   - Snacks.util.throttle()         |snacks-util-module-snacks.util.throttle()|
   - Snacks.util.var()                   |snacks-util-module-snacks.util.var()|
+  - Snacks.util.winhl()               |snacks-util-module-snacks.util.winhl()|
   - Snacks.util.wo()                     |snacks-util-module-snacks.util.wo()|
 
 ==============================================================================
@@ -234,13 +235,24 @@ Get a buffer or global variable.
 <
 
 
+`Snacks.util.winhl()`                                    *Snacks.util.winhl()*
+
+Merges vim.wo.winhighlight options. Option values can be a string or a
+dictionary.
+
+>lua
+    ---@param ... string|table<string, string>
+    Snacks.util.winhl(...)
+<
+
+
 `Snacks.util.wo()`                                          *Snacks.util.wo()*
 
 Set window-local options.
 
 >lua
     ---@param win number
-    ---@param wo vim.wo|{}
+    ---@param wo vim.wo|{}|{winhighlight: string|table<string, string>}
     Snacks.util.wo(win, wo)
 <
 

@@ -25,6 +25,31 @@ M.__index = M
 local ns = vim.api.nvim_create_namespace("snacks.picker.preview")
 local ns_loc = vim.api.nvim_create_namespace("snacks.picker.preview.loc")
 
+-- HACK: work-around for buffer-local window options mess. From the docs:
+-- > When editing a buffer that has been edited before, the options from the window
+-- > that was last closed are used again.  If this buffer has been edited in this
+-- > window, the values from back then are used.  Otherwise the values from the
+-- > last closed window where the buffer was edited last are used.
+vim.api.nvim_create_autocmd("BufWinEnter", {
+  group = vim.api.nvim_create_augroup("snacks.picker.preview.wo", { clear = true }),
+  callback = function(ev)
+    if not vim.b[ev.buf].snacks_previewed then
+      return
+    end
+    local reset = { "winhighlight", "cursorline", "number", "relativenumber", "signcolumn" }
+    local wo = {} ---@type table<string, any>
+    for _, k in ipairs(reset) do
+      wo[k] = vim.api.nvim_get_option_value(k, { scope = "global" })
+    end
+    for _, win in ipairs(vim.fn.win_findbuf(ev.buf)) do
+      if not Snacks.util.is_float(win) then -- only reset non-floating windows
+        Snacks.util.wo(win, wo)
+        vim.b[ev.buf].snacks_previewed = nil
+      end
+    end
+  end,
+})
+
 ---@param picker snacks.Picker
 function M.new(picker)
   local opts = picker.opts
@@ -116,7 +141,7 @@ function M:refresh(picker)
     self.win:update()
   end
   vim.schedule(function()
-    self:show(picker)
+    picker:show_preview()
   end)
 end
 
@@ -189,6 +214,7 @@ end
 
 ---@param buf number
 function M:set_buf(buf)
+  vim.b[buf].snacks_previewed = true
   self.win:set_buf(buf)
 end
 
@@ -331,7 +357,7 @@ end
 
 function M:is_big()
   local lines = vim.api.nvim_buf_line_count(self.win.buf)
-  if lines > 1000 then
+  if lines > 2000 then
     return true
   end
   local path = self.item and self.item.file and Snacks.picker.util.path(self.item)

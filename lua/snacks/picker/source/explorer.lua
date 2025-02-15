@@ -71,14 +71,16 @@ function State.new(picker)
     end
   end)
 
-  picker.list.win:on("DiagnosticChanged", function(_, ev)
-    local p = ref()
-    if p then
-      require("snacks.explorer.diagnostics").update(p:cwd())
-      p.list:set_target()
-      p:find()
-    end
-  end)
+  if opts.diagnostics then
+    picker.list.win:on("DiagnosticChanged", function(_, ev)
+      local p = ref()
+      if p then
+        require("snacks.explorer.diagnostics").update(p:cwd())
+        p.list:set_target()
+        p:find()
+      end
+    end)
+  end
 
   -- schedule initial follow
   if opts.follow_file then

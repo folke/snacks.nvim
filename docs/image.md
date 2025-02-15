@@ -4,25 +4,35 @@
 
 Image viewer using the [Kitty Graphics Protocol](https://sw.kovidgoyal.net/kitty/graphics-protocol/).
 
-Supported terminals:
+Terminal support:
 
 - [kitty](https://sw.kovidgoyal.net/kitty/)
-- [wezterm](https://wezfurlong.org/wezterm/)
 - [ghostty](https://ghostty.org/)
+- [wezterm](https://wezfurlong.org/wezterm/)
+  Wezterm has only limited support for the kitty graphics protocol.
+  Inline image rendering is not supported.
+- [tmux](https://github.com/tmux/tmux)
+  Snacks automatically tries to enable `allow-passthrough=on` for tmux,
+  but you may need to enable it manually in your tmux configuration.
+- [zellij](https://github.com/zellij-org/zellij) is **not** supported,
+  since they don't have any support for passthrough
 
-In order to automatically display the image when openinng an image file,
+Image will be transferred to the terminal by filename or by sending the image
+date in case `ssh` is detected.
+
+In some cases you may need to force snacks to detect or not detect a certain
+environment. You can do this by setting `SNACKS_${ENV_NAME}` to `true` or `false`.
+
+For example, to force detection of **ghostty** you can set `SNACKS_GHOSTTY=true`.
+
+In order to automatically display the image when opening an image file,
+or to have imaged displayed in supported document formats like `markdown` or `html`,
 you need to enable the `image` plugin in your `snacks` config.
-
-Supported image formats:
-
-- PNG
-- JPEG/JPG
-- GIF
-- BMP
-- WEBP
 
 [ImageMagick](https://imagemagick.org/index.php) is required to convert images
 to the supported formats (all except PNG).
+
+In case of issues, make sure to run `:checkhealth snacks`.
 
 <!-- docgen -->
 
@@ -47,10 +57,35 @@ to the supported formats (all except PNG).
 
 ```lua
 ---@class snacks.image.Config
----@field file? string
+---@field enabled? boolean enable image viewer
 ---@field wo? vim.wo|{} options for windows showing the image
+---@field bo? vim.bo|{} options for the image buffer
+---@field formats? string[]
+--- Resolves a reference to an image with src in a file (currently markdown only).
+--- Return the absolute path or url to the image.
+--- When `nil`, the path is resolved relative to the file.
+---@field resolve? fun(file: string, src: string): string?
 {
+  formats = { "png", "jpg", "jpeg", "gif", "bmp", "webp", "tiff", "heic", "avif", "mp4", "mov", "avi", "mkv", "webm" },
   force = false, -- try displaying the image, even if the terminal does not support it
+  doc = {
+    -- enable image viewer for documents
+    -- a treesitter parser must be available for the enabled languages.
+    -- supported language injections: markdown, html
+    enabled = true,
+    lang = { "markdown", "html", "norg" },
+    -- render the image inline in the buffer
+    -- if your env doesn't support unicode placeholders, this will be disabled
+    -- takes precedence over `opts.float` on supported terminals
+    inline = true,
+    -- render the image in a floating window
+    -- only used if `opts.inline` is disabled
+    float = true,
+    max_width = 80,
+    max_height = 40,
+  },
+  -- window options applied to windows displaying image buffers
+  -- an image buffer is a buffer with `filetype=image`
   wo = {
     wrap = false,
     number = false,
@@ -62,38 +97,82 @@ to the supported formats (all except PNG).
     spell = false,
     statuscolumn = "",
   },
+  env = {},
 }
+```
+
+## 🎨 Styles
+
+Check the [styles](https://github.com/folke/snacks.nvim/blob/main/docs/styles.md)
+docs for more information on how to customize these styles
+
+### `snacks_image`
+
+```lua
+{
+  relative = "cursor",
+  border = "rounded",
+  focusable = false,
+  backdrop = false,
+  row = 1,
+  col = 1,
+  -- width/height are automatically set by the image size unless specified below
+}
+```
+
+## 📚 Types
+
+```lua
+---@alias snacks.image.Size {width: number, height: number}
+---@alias snacks.image.Pos {[1]: number, [2]: number}
+---@alias snacks.image.Loc snacks.image.Pos|snacks.image.Size|{zindex?: number}
+```
+
+```lua
+---@class snacks.image.Env
+---@field name string
+---@field env table<string, string|true>
+---@field supported? boolean default: false
+---@field placeholders? boolean default: false
+---@field setup? fun(): boolean?
+---@field transform? fun(data: string): string
+---@field detected? boolean
+---@field remote? boolean this is a remote client, so full transfer of the image data is required
+```
+
+```lua
+---@class snacks.image.Opts
+---@field pos? snacks.image.Pos (row, col) (1,0)-indexed. defaults to the top-left corner
+---@field inline? boolean render the image inline in the buffer
+---@field width? number
+---@field min_width? number
+---@field max_width? number
+---@field height? number
+---@field min_height? number
+---@field max_height? number
+---@field on_update? fun(placement: snacks.image.Placement)
+---@field on_update_pre? fun(placement: snacks.image.Placement)
 ```
 
 ## 📦 Module
 
 ```lua
 ---@class snacks.image
----@field id number
----@field buf number
----@field opts snacks.image.Config
----@field file string
----@field augroup number
----@field _convert uv.uv_process_t?
+---@field terminal snacks.image.terminal
+---@field image snacks.Image
+---@field placement snacks.image.Placement
+---@field util snacks.image.util
+---@field buf snacks.image.buf
+---@field doc snacks.image.doc
 Snacks.image = {}
 ```
 
-### `Snacks.image.dim()`
+### `Snacks.image.hover()`
 
-Get the dimensions of a PNG file
-
-```lua
----@param file string
----@return number width, number height
-Snacks.image.dim(file)
-```
-
-### `Snacks.image.new()`
+Show the image at the cursor in a floating window
 
 ```lua
----@param buf number
----@param opts? snacks.image.Config
-Snacks.image.new(buf, opts)
+Snacks.image.hover()
 ```
 
 ### `Snacks.image.supports()`
@@ -120,84 +199,4 @@ Check if the terminal supports the kitty graphics protocol
 
 ```lua
 Snacks.image.supports_terminal()
-```
-
-### `image:close()`
-
-```lua
-image:close()
-```
-
-### `image:convert()`
-
-```lua
----@param file string
-image:convert(file)
-```
-
-### `image:create()`
-
-```lua
-image:create()
-```
-
-### `image:grid_size()`
-
-```lua
-image:grid_size()
-```
-
-### `image:hide()`
-
-```lua
-image:hide()
-```
-
-### `image:ready()`
-
-```lua
-image:ready()
-```
-
-### `image:render()`
-
-Renders the unicode placeholder grid in the buffer
-
-```lua
----@param width number
----@param height number
-image:render(width, height)
-```
-
-### `image:render_fallback()`
-
-```lua
-image:render_fallback()
-```
-
-### `image:request()`
-
-```lua
----@param opts table<string, string|number>|{data?: string}
-image:request(opts)
-```
-
-### `image:set_cursor()`
-
-```lua
----@param pos {[1]: number, [2]: number}
-image:set_cursor(pos)
-```
-
-### `image:update()`
-
-```lua
-image:update()
-```
-
-### `image:wins()`
-
-```lua
----@return number[]
-image:wins()
 ```

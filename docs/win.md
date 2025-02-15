@@ -208,7 +208,7 @@ docs for more information on how to customize these styles
 ---@field backdrop? snacks.win
 ---@field keys snacks.win.Keys[]
 ---@field events (snacks.win.Event|{event:string|string[]})[]
----@field meta table<string, string>
+---@field meta table<string, any>
 ---@field closed? boolean
 Snacks.win = {}
 ```

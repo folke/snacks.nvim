@@ -49,6 +49,7 @@ Table of Contents                            *snacks-picker-table-of-contents*
   - lazy                                          |snacks-picker-sources-lazy|
   - lines                                        |snacks-picker-sources-lines|
   - loclist                                    |snacks-picker-sources-loclist|
+  - lsp_config                              |snacks-picker-sources-lsp_config|
   - lsp_declarations                  |snacks-picker-sources-lsp_declarations|
   - lsp_definitions                    |snacks-picker-sources-lsp_definitions|
   - lsp_implementations            |snacks-picker-sources-lsp_implementations|
@@ -270,7 +271,8 @@ below.
     ---@field title? string defaults to a capitalized source name
     ---@field auto_close? boolean automatically close the picker when focusing another window (defaults to true)
     ---@field show_empty? boolean show the picker even when there are no items
-    ---@field focus? "input"|"list"|false where to focus when the picker is opened (defaults to "input")
+    ---@field focus? "input"|"list" where to focus when the picker is opened (defaults to "input")
+    ---@field enter? boolean enter the picker when opening it
     ---@field toggles? table<string, string|false|snacks.picker.toggle>
     --- Preset options
     ---@field previewers? snacks.picker.previewers.Config|{}
@@ -330,6 +332,7 @@ below.
           truncate = 40, -- truncate the file path to (roughly) this length
           filename_only = false, -- only show the filename
           icon_width = 2, -- width of the icon (in characters)
+          git_status_hl = true, -- use the git status highlight group for the filename
         },
         selected = {
           show_always = false, -- only show the selected column when there are multiple selections
@@ -346,6 +349,7 @@ below.
       previewers = {
         git = {
           native = false, -- use native (terminal) or Neovim for previewing git diffs and commits
+          args = {}, -- additional arguments passed to the git command. Useful to set pager options usin `-c ...`
         },
         file = {
           max_size = 1024 * 1024, -- 1MB
@@ -406,16 +410,13 @@ below.
             ["<c-p>"] = { "list_up", mode = { "i", "n" } },
             ["<c-q>"] = { "qflist", mode = { "i", "n" } },
             ["<c-s>"] = { "edit_split", mode = { "i", "n" } },
+            ["<c-t>"] = { "tab", mode = { "n", "i" } },
             ["<c-u>"] = { "list_scroll_up", mode = { "i", "n" } },
             ["<c-v>"] = { "edit_vsplit", mode = { "i", "n" } },
-            ["<c-z>h"] = { "layout_left", mode = { "i", "n" } },
-            ["<c-z><c-h>"] = { "layout_left", mode = { "i", "n" } },
-            ["<c-z>j"] = { "layout_bottom", mode = { "i", "n" } },
-            ["<c-z><c-j>"] = { "layout_bottom", mode = { "i", "n" } },
-            ["<c-z>k"] = { "layout_top", mode = { "i", "n" } },
-            ["<c-z><c-k>"] = { "layout_top", mode = { "i", "n" } },
-            ["<c-z>l"] = { "layout_right", mode = { "i", "n" } },
-            ["<c-z><c-l>"] = { "layout_right", mode = { "i", "n" } },
+            ["<c-w>H"] = "layout_left",
+            ["<c-w>J"] = "layout_bottom",
+            ["<c-w>K"] = "layout_top",
+            ["<c-w>L"] = "layout_right",
             ["?"] = "toggle_help_input",
             ["G"] = "list_bottom",
             ["gg"] = "list_top",
@@ -454,17 +455,15 @@ below.
             ["<c-k>"] = "list_up",
             ["<c-n>"] = "list_down",
             ["<c-p>"] = "list_up",
+            ["<c-q>"] = "qflist",
             ["<c-s>"] = "edit_split",
+            ["<c-t>"] = "tab",
             ["<c-u>"] = "list_scroll_up",
             ["<c-v>"] = "edit_vsplit",
-            ["<c-z>h"] = { "layout_left", mode = { "i", "n" } },
-            ["<c-z><c-h>"] = { "layout_left", mode = { "i", "n" } },
-            ["<c-z>j"] = { "layout_bottom", mode = { "i", "n" } },
-            ["<c-z><c-j>"] = { "layout_bottom", mode = { "i", "n" } },
-            ["<c-z>k"] = { "layout_top", mode = { "i", "n" } },
-            ["<c-z><c-k>"] = { "layout_top", mode = { "i", "n" } },
-            ["<c-z>l"] = { "layout_right", mode = { "i", "n" } },
-            ["<c-z><c-l>"] = { "layout_right", mode = { "i", "n" } },
+            ["<c-w>H"] = "layout_left",
+            ["<c-w>J"] = "layout_bottom",
+            ["<c-w>K"] = "layout_top",
+            ["<c-w>L"] = "layout_right",
             ["?"] = "toggle_help_list",
             ["G"] = "list_bottom",
             ["gg"] = "list_top",
@@ -536,6 +535,12 @@ below.
           Hint  = " ",
           Info  = " ",
         },
+        lsp = {
+          unavailable = "",
+          enabled = " ",
+          disabled = " ",
+          attached = "󰖩 "
+        },
         kinds = {
           Array         = " ",
           Boolean       = "󰨙 ",
@@ -591,6 +596,7 @@ below.
         explorer = false, -- show explorer debug info
         files = false, -- show file debug info
         grep = false, -- show file debug info
+        proc = false, -- show proc debug info
         extmarks = false, -- show extmarks errors
       },
     }
@@ -781,6 +787,24 @@ TROUBLE                                       *snacks-picker-examples-trouble*
     ---@class snacks.picker.yank.Action: snacks.picker.Action
     ---@field reg? string
     ---@field field? string
+    ---@field notify? boolean
+<
+
+>lua
+    ---@alias snacks.Picker.ref (fun():snacks.Picker?)|{value?: snacks.Picker}
+<
+
+>lua
+    ---@class snacks.picker.Last
+    ---@field cursor number
+    ---@field topline number
+    ---@field opts? snacks.picker.Config
+    ---@field selected snacks.picker.Item[]
+    ---@field filter snacks.picker.Filter
+<
+
+>lua
+    ---@alias snacks.picker.history.Record {pattern: string, search: string, live?: boolean}
 <
 
 >lua
@@ -859,23 +883,6 @@ that shows a preview based on the item data.
     ---@field input? snacks.win.Config|{} input window config
     ---@field list? snacks.win.Config|{} result list window config
     ---@field preview? snacks.win.Config|{} preview window config
-<
-
->lua
-    ---@alias snacks.Picker.ref (fun():snacks.Picker?)|{value?: snacks.Picker}
-<
-
->lua
-    ---@class snacks.picker.Last
-    ---@field cursor number
-    ---@field topline number
-    ---@field opts? snacks.picker.Config
-    ---@field selected snacks.picker.Item[]
-    ---@field filter snacks.picker.Filter
-<
-
->lua
-    ---@alias snacks.picker.history.Record {pattern: string, search: string, live?: boolean}
 <
 
 
@@ -987,7 +994,6 @@ BUFFERS                                        *snacks-picker-sources-buffers*
       win = {
         input = {
           keys = {
-            ["dd"] = "bufdelete",
             ["<c-x>"] = { "bufdelete", mode = { "n", "i" } },
           },
         },
@@ -1147,6 +1153,8 @@ EXPLORER                                      *snacks-picker-sources-explorer*
     ---@field diagnostics? boolean show diagnostics
     ---@field diagnostics_open? boolean show recursive diagnostics for open directories
     ---@field watch? boolean watch for file changes
+    ---@field exclude? string[] exclude glob patterns
+    ---@field include? string[] include glob patterns. These take precedence over `exclude`, `ignored` and `hidden`
     {
       finder = "explorer",
       sort = { fields = { "sort" } },
@@ -1320,6 +1328,7 @@ Grep in git files
 
 >lua
     ---@class snacks.picker.git.grep.Config: snacks.picker.Config
+    ---@field args? string[] additional arguments to pass to `git grep`
     ---@field untracked? boolean search in untracked files
     ---@field submodules? boolean search in submodule files
     ---@field need_search? boolean require a search pattern
@@ -1541,6 +1550,7 @@ HIGHLIGHTS                                  *snacks-picker-sources-highlights*
       finder = "vim_highlights",
       format = "hl",
       preview = "preview",
+      confirm = "close",
     }
 <
 
@@ -1689,6 +1699,28 @@ Loclist
       finder = "qf",
       format = "file",
       qf_win = 0,
+    }
+<
+
+
+LSP_CONFIG                                  *snacks-picker-sources-lsp_config*
+
+>vim
+    :lua Snacks.picker.lsp_config(opts?)
+<
+
+>lua
+    ---@class snacks.picker.lsp.config.Config: snacks.picker.Config
+    ---@field installed? boolean only show installed servers
+    ---@field configured? boolean only show configured servers (setup with lspconfig)
+    ---@field attached? boolean|number only show attached servers. When `number`, show only servers attached to that buffer (can be 0)
+    {
+      finder = "lsp.config#find",
+      format = "lsp.config#format",
+      preview = "lsp.config#preview",
+      confirm = "close",
+      sort = { fields = { "score:desc", "attached_buf", "attached", "enabled", "installed", "name" } },
+      matcher = { sort_empty = true },
     }
 <
 
@@ -1925,6 +1957,7 @@ NOTIFICATIONS                            *snacks-picker-sources-notifications*
       format = "notification",
       preview = "preview",
       formatters = { severity = { level = true } },
+      confirm = "close",
     }
 <
 
@@ -2228,9 +2261,11 @@ TREESITTER                                  *snacks-picker-sources-treesitter*
 >lua
     ---@class snacks.picker.treesitter.Config: snacks.picker.Config
     ---@field filter table<string, string[]|boolean>? symbol kind filter
+    ---@field tree? boolean show symbol tree
     {
       finder = "treesitter_symbols",
       format = "lsp_symbol",
+      tree = true,
       filter = {
         default = {
           "Class",
@@ -2851,7 +2886,7 @@ SNACKS.PICKER.ACTIONS.PREVIEW_SCROLL_UP()*snacks-picker-snacks.picker.actions-sn
 SNACKS.PICKER.ACTIONS.PUT()*snacks-picker-snacks.picker.actions-snacks.picker.actions.put()*
 
 >lua
-    Snacks.picker.actions.put(picker, item)
+    Snacks.picker.actions.put(picker, item, action)
 <
 
 

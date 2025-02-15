@@ -57,9 +57,11 @@ function M.filename(item, picker)
   end
 
   if picker.opts.icons.files.enabled ~= false then
-    local icon, hl = Snacks.util.icon(name, cat)
+    local icon, hl = Snacks.util.icon(name, cat, {
+      fallback = picker.opts.icons.files,
+    })
     if item.dir and item.open then
-      icon = " "
+      icon = picker.opts.icons.files.dir_open
     end
     icon = Snacks.picker.util.align(icon, picker.opts.formatters.file.icon_width or 2)
     ret[#ret + 1] = { icon, hl, virtual = true }
@@ -80,6 +82,8 @@ function M.filename(item, picker)
     base_hl = "SnacksPickerPathIgnored"
   elseif is("hidden") then
     base_hl = "SnacksPickerPathHidden"
+  elseif item.filename_hl then
+    base_hl = item.filename_hl
   end
   local dir_hl = "SnacksPickerDir"
 
@@ -566,6 +570,10 @@ function M.file_git_status(item, picker)
     hl = "SnacksPickerGitStatusStaged"
   else
     hl = "SnacksPickerGitStatus" .. status.status:sub(1, 1):upper() .. status.status:sub(2)
+  end
+
+  if picker.opts.formatters.file.git_status_hl then
+    item.filename_hl = hl
   end
 
   local icon = status.status:sub(1, 1):upper()

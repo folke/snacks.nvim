@@ -161,7 +161,7 @@ end
 ---@return string? name, snacks.win? win
 function M:current_win()
   local current = vim.api.nvim_get_current_win()
-  for w, win in pairs(self.layout.wins) do
+  for w, win in pairs(self.layout.wins or {}) do
     if win.win == current then
       return w, win
     end
@@ -256,10 +256,10 @@ function M:init_layout(layout)
     },
     hidden = layout.hidden,
     on_update = function()
-      self:update_titles()
       self.preview:refresh(self)
       self.input:update()
       self.list:update({ force = true })
+      self:update_titles()
     end,
     layout = {
       backdrop = backdrop,
@@ -415,17 +415,30 @@ function M:update_titles()
     if win.opts.title then
       local tpl = win.meta.title_tpl or win.opts.title
       win.meta.title_tpl = tpl
+      tpl = type(tpl) == "string" and { { tpl, "FloatTitle" } } or tpl
+      ---@cast tpl snacks.picker.Text[]
+
+      local has_flags = false
       local ret = {} ---@type snacks.picker.Text[]
-      local title = Snacks.picker.util.tpl(tpl, data)
-      if title:find("{flags}", 1, true) then
-        title = title:gsub("{flags}", "")
-        vim.list_extend(ret, toggles)
+      for _, chunk in ipairs(tpl) do
+        local text = chunk[1]
+        if text:find("{flags}", 1, true) then
+          text = text:gsub("{flags}", "")
+          has_flags = true
+        end
+        text = vim.trim(Snacks.picker.util.tpl(text, data)):gsub("%s+", " ")
+        if text ~= "" then
+          -- HACK: add extra space when last char is non word like an icon
+          text = text:sub(-1):match("[%w%p]") and text or text .. " "
+          ret[#ret + 1] = { text, chunk[2] }
+        end
       end
-      title = vim.trim(title):gsub("%s+", " ")
-      if title ~= "" then
-        -- HACK: add extra space when last char is non word like an icon
-        title = title:sub(-1):match("[%w%p]") and title or title .. " "
-        table.insert(ret, 1, { " " .. title .. " ", "FloatTitle" })
+      if #ret > 0 then
+        table.insert(ret, { " ", "FloatTitle" })
+        table.insert(ret, 1, { " ", "FloatTitle" })
+      end
+      if has_flags and #toggles > 0 then
+        vim.list_extend(ret, toggles)
       end
       win:set_title(ret)
     end
@@ -481,6 +494,13 @@ M._throttled_preview = M._show_preview
 -- Show the preview. Show instantly when no item is yet in the preview,
 -- otherwise throttle the preview.
 function M:show_preview()
+  if self.closed then
+    return
+  end
+  -- don't show preview when cursor is not on target
+  if self.list.target then
+    return
+  end
   if not self.preview.item then
     return self:_show_preview()
   end
@@ -494,7 +514,9 @@ function M:show()
   end
   self.shown = true
   self.layout:show()
-  self:focus()
+  if self.opts.focus ~= false and self.opts.enter ~= false then
+    self:focus()
+  end
   if self.opts.on_show then
     self.opts.on_show(self)
   end
@@ -645,6 +667,9 @@ function M:close()
   self:hist_record(true)
   self.closed = true
 
+  for toggle in pairs(self.opts.toggles) do
+    self.init_opts[toggle] = self.opts[toggle]
+  end
   M.last = {
     opts = self.init_opts or {},
     selected = self:selected({ fallback = false }),

@@ -110,8 +110,8 @@ function M.have_tool(tools)
   if found then
     return true, version_ok
   end
-  all = vim.tbl_map(function()
-    return "'" .. tostring(_) .. "'"
+  all = vim.tbl_map(function(t)
+    return "'" .. tostring(t) .. "'"
   end, all)
   if #all == 1 then
     M.error("Tool not found: " .. all[1])

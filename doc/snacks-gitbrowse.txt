@@ -60,6 +60,7 @@ Open the repo of the active file in the browser (e.g., GitHub)
         { "^git@(.+):(.+)%.git$"              , "https://%1/%2" },
         { "^git@(.+):(.+)$"                   , "https://%1/%2" },
         { "^git@(.+)/(.+)$"                   , "https://%1/%2" },
+        { "^org%-%d+@(.+):(.+)%.git$"         , "https://%1/%2" },
         { "^ssh://git@(.*)$"                  , "https://%1" },
         { "^ssh://([^:/]+)(:%d+)/(.*)$"       , "https://%1/%3" },
         { "^ssh://([^/]+)/(.*)$"              , "https://%1/%2" },

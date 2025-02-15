@@ -29,7 +29,7 @@ function M.symbol_kind(kind)
       end
     end
   end
-  return kinds[kind]
+  return kinds[kind] or "Unknown"
 end
 
 --- Neovim 0.11 uses a lua class for clients, while older versions use a table.
@@ -260,6 +260,8 @@ function M.results_to_items(client, results, opts)
       detail = result.detail,
       name = result.name,
       text = "",
+      range = result.range,
+      item = result,
     }
     local uri = result.location and result.location.uri or result.uri or opts.default_uri
     local loc = result.location or { range = result.selectionRange or result.range, uri = uri }

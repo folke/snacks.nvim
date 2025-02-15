@@ -91,7 +91,8 @@ Snacks.picker.pick({source = "files", ...})
 ---@field title? string defaults to a capitalized source name
 ---@field auto_close? boolean automatically close the picker when focusing another window (defaults to true)
 ---@field show_empty? boolean show the picker even when there are no items
----@field focus? "input"|"list"|false where to focus when the picker is opened (defaults to "input")
+---@field focus? "input"|"list" where to focus when the picker is opened (defaults to "input")
+---@field enter? boolean enter the picker when opening it
 ---@field toggles? table<string, string|false|snacks.picker.toggle>
 --- Preset options
 ---@field previewers? snacks.picker.previewers.Config|{}
@@ -151,6 +152,7 @@ Snacks.picker.pick({source = "files", ...})
       truncate = 40, -- truncate the file path to (roughly) this length
       filename_only = false, -- only show the filename
       icon_width = 2, -- width of the icon (in characters)
+      git_status_hl = true, -- use the git status highlight group for the filename
     },
     selected = {
       show_always = false, -- only show the selected column when there are multiple selections
@@ -228,6 +230,7 @@ Snacks.picker.pick({source = "files", ...})
         ["<c-p>"] = { "list_up", mode = { "i", "n" } },
         ["<c-q>"] = { "qflist", mode = { "i", "n" } },
         ["<c-s>"] = { "edit_split", mode = { "i", "n" } },
+        ["<c-t>"] = { "tab", mode = { "n", "i" } },
         ["<c-u>"] = { "list_scroll_up", mode = { "i", "n" } },
         ["<c-v>"] = { "edit_vsplit", mode = { "i", "n" } },
         ["<c-w>H"] = "layout_left",
@@ -272,7 +275,9 @@ Snacks.picker.pick({source = "files", ...})
         ["<c-k>"] = "list_up",
         ["<c-n>"] = "list_down",
         ["<c-p>"] = "list_up",
+        ["<c-q>"] = "qflist",
         ["<c-s>"] = "edit_split",
+        ["<c-t>"] = "tab",
         ["<c-u>"] = "list_scroll_up",
         ["<c-v>"] = "edit_vsplit",
         ["<c-w>H"] = "layout_left",
@@ -311,6 +316,9 @@ Snacks.picker.pick({source = "files", ...})
   icons = {
     files = {
       enabled = true, -- show file icons
+      dir = "󰉋 ",
+      dir_open = "󰝰 ",
+      file = "󰈔 "
     },
     keymaps = {
       nowait = "󰓅 "
@@ -411,6 +419,7 @@ Snacks.picker.pick({source = "files", ...})
     explorer = false, -- show explorer debug info
     files = false, -- show file debug info
     grep = false, -- show file debug info
+    proc = false, -- show proc debug info
     extmarks = false, -- show extmarks errors
   },
 }
@@ -593,6 +602,7 @@ Snacks.picker.pick({source = "files", ...})
 ---@class snacks.picker.yank.Action: snacks.picker.Action
 ---@field reg? string
 ---@field field? string
+---@field notify? boolean
 ```
 
 ```lua
@@ -789,7 +799,6 @@ Snacks.picker.select(...)
   win = {
     input = {
       keys = {
-        ["dd"] = "bufdelete",
         ["<c-x>"] = { "bufdelete", mode = { "n", "i" } },
       },
     },
@@ -984,7 +993,8 @@ Neovim commands
         ["m"] = "explorer_move",
         ["o"] = "explorer_open", -- open with system application
         ["P"] = "toggle_preview",
-        ["y"] = "explorer_yank",
+        ["y"] = { "explorer_yank", mode = { "n", "x" } },
+        ["p"] = "explorer_paste",
         ["u"] = "explorer_update",
         ["<c-c>"] = "tcd",
         ["<leader>/"] = "picker_grep",
@@ -1112,6 +1122,7 @@ Grep in git files
 
 ```lua
 ---@class snacks.picker.git.grep.Config: snacks.picker.Config
+---@field args? string[] additional arguments to pass to `git grep`
 ---@field untracked? boolean search in untracked files
 ---@field submodules? boolean search in submodule files
 ---@field need_search? boolean require a search pattern
@@ -1323,6 +1334,7 @@ Neovim help tags
   finder = "vim_highlights",
   format = "hl",
   preview = "preview",
+  confirm = "close",
 }
 ```
 
@@ -1712,6 +1724,7 @@ vim.tbl_extend("force", {}, M.lsp_symbols, {
   format = "notification",
   preview = "preview",
   formatters = { severity = { level = true } },
+  confirm = "close",
 }
 ```
 
@@ -2001,9 +2014,11 @@ Not meant to be used directly.
 ```lua
 ---@class snacks.picker.treesitter.Config: snacks.picker.Config
 ---@field filter table<string, string[]|boolean>? symbol kind filter
+---@field tree? boolean show symbol tree
 {
   finder = "treesitter_symbols",
   format = "lsp_symbol",
+  tree = true,
   filter = {
     default = {
       "Class",

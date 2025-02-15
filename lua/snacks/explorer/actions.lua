@@ -82,12 +82,18 @@ function M.actions.explorer_open(_, item)
   end
 end
 
-function M.actions.explorer_yank(_, item)
-  if not item then
-    return
+function M.actions.explorer_yank(picker)
+  local files = {} ---@type string[]
+  if vim.fn.mode():find("^[vV]") then
+    picker.list:select()
   end
-  vim.fn.setreg(vim.v.register or "+", item.file)
-  Snacks.notify.info("Yanked `" .. item.file .. "`")
+  for _, item in ipairs(picker:selected({ fallback = true })) do
+    table.insert(files, Snacks.picker.util.path(item))
+  end
+  picker.list:set_selected() -- clear selection
+  local value = table.concat(files, "\n")
+  vim.fn.setreg(vim.v.register or "+", value, "l")
+  Snacks.notify.info("Yanked " .. #files .. " files")
 end
 
 function M.actions.explorer_up(picker)
@@ -122,6 +128,22 @@ function M.actions.explorer_git_next(picker, item)
   if node then
     M.update(picker, { target = node.path })
   end
+end
+
+function M.actions.explorer_paste(picker)
+  local files = vim.split(vim.fn.getreg(vim.v.register or "+") or "", "\n", { plain = true })
+  files = vim.tbl_filter(function(file)
+    return file ~= "" and vim.fn.filereadable(file) == 1
+  end, files)
+
+  if #files == 0 then
+    return Snacks.notify.warn(("The `%s` register does not contain any files"):format(vim.v.register or "+"))
+  end
+  local dir = picker:dir()
+  Snacks.picker.util.copy(files, dir)
+  Tree:refresh(dir)
+  Tree:open(dir)
+  M.update(picker, { target = dir })
 end
 
 function M.actions.explorer_git_prev(picker, item)

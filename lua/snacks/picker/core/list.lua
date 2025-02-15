@@ -89,7 +89,6 @@ function M.new(picker)
     },
   })
   self.visible = {}
-  self.visible_count = 0
   self.win = Snacks.win(win_opts)
   self.top, self.cursor = 1, 1
   self.items = {}
@@ -151,14 +150,16 @@ function M.new(picker)
   return self
 end
 
+--- View the list at the given cursor and top.
+--- These are the normalized values, so are unaffected by reverse.
 ---@param cursor number
 ---@param top? number
 ---@param render? boolean
 function M:view(cursor, top, render)
   if top then
-    self:scroll(top, true, false)
+    self:_scroll(top, true, false)
   end
-  self:move(cursor, true, render)
+  self:_move(cursor, true, render)
   if self.cursor < cursor then
     self.target = { cursor = cursor, top = top }
   else
@@ -168,9 +169,14 @@ end
 
 --- Sets the target cursor/top for the next render.
 --- Useful to keep the cursor/top, right before triggering a `find`.
+--- If an existing target is set, it will be kept, unless `opts.force` is set.
 ---@param cursor? number
 ---@param top? number
-function M:set_target(cursor, top)
+---@param opts? {force?: boolean}
+function M:set_target(cursor, top, opts)
+  if self.target and not (opts and opts.force) then
+    return
+  end
   self.target = { cursor = cursor or self.cursor, top = top or self.top }
 end
 
@@ -291,6 +297,13 @@ function M:clear()
   self.topk:clear()
   self.top, self.cursor = 1, 1
   self.items = {}
+  if self._current then
+    vim.schedule(function()
+      if self.picker then
+        self.picker:show_preview()
+      end
+    end)
+  end
   self._current = nil
   self.dirty = true
   if next(self.items) == nil then
@@ -341,7 +354,7 @@ end
 ---@param idx number
 ---@return snacks.picker.Item?
 function M:get(idx)
-  return self.topk:get(idx) or self.items[idx] or self.picker.finder.items[idx]
+  return self.topk:get(idx) or self.items[idx]
 end
 
 function M:height()
@@ -607,6 +620,10 @@ function M:render()
   -- force redraw if list changed
   if redraw then
     self.win:redraw()
+  end
+
+  if self.target then
+    return
   end
 
   -- check if current item changed

@@ -72,8 +72,9 @@ Get an icon from `mini.icons` or `nvim-web-devicons`.
 ```lua
 ---@param name string
 ---@param cat? string defaults to "file"
+---@param opts? { fallback?: {dir?:string, file?:string} }
 ---@return string, string?
-Snacks.util.icon(name, cat)
+Snacks.util.icon(name, cat, opts)
 ```
 
 ### `Snacks.util.is_float()`
