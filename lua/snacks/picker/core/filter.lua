@@ -101,8 +101,8 @@ function M:match(item)
   end
   if self.opts.paths then
     for _, p in ipairs(self.paths) do
-      if (path:sub(1, #p.path) == p.path) ~= p.want then
-        return false
+      if path:find("^" .. p.path) then
+        return p.want
       end
     end
   end
