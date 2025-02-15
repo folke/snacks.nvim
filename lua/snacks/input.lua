@@ -12,6 +12,7 @@ M.meta = {
 }
 
 ---@alias snacks.input.Pos "left"|"title"|false
+---@alias snacks.input.StartMode "insert"|"normal"|"visual"|"select"
 
 ---@class snacks.input.Config
 ---@field enabled? boolean
@@ -19,6 +20,7 @@ M.meta = {
 ---@field icon? string
 ---@field icon_pos? snacks.input.Pos
 ---@field prompt_pos? snacks.input.Pos
+---@field start_mode? snacks.input.StartMode
 local defaults = {
   icon = " ",
   icon_hl = "SnacksInputIcon",
@@ -26,6 +28,7 @@ local defaults = {
   prompt_pos = "title",
   win = { style = "input" },
   expand = true,
+  start_mode = "insert",
 }
 
 Snacks.util.set_hl({
@@ -225,11 +228,20 @@ function M.input(opts, on_confirm)
   local win = Snacks.win(opts.win)
   ctx = { opts = opts, win = win }
   vim.fn.prompt_setprompt(win.buf, "")
-  vim.cmd.startinsert()
   if opts.default then
     vim.api.nvim_buf_set_lines(win.buf, 0, -1, false, { opts.default })
-    vim.api.nvim_win_set_cursor(win.win, { 1, #opts.default })
   end
+
+  if opts.start_mode == "insert" then
+    vim.cmd.startinsert({ bang = true })
+  elseif opts.start_mode == "normal" then
+    vim.cmd.stopinsert()
+  elseif opts.start_mode == "visual" then
+    vim.cmd.normal({ "V", bang = true })
+  elseif opts.start_mode == "select" then
+    vim.cmd.normal({ "gH", bang = true })
+  end
+
   vim.fn.prompt_setcallback(win.buf, function(text)
     confirm(text)
     win:close()
