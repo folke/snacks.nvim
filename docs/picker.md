@@ -324,6 +324,7 @@ Snacks.picker.pick({source = "files", ...})
       vertical = "│ ",
       middle   = "├╴",
       last     = "└╴",
+      open_dir = "󰝰 ",
     },
     undo = {
       saved   = " ",

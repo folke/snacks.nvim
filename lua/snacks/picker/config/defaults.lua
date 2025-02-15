@@ -321,6 +321,7 @@ local defaults = {
       vertical = "│ ",
       middle   = "├╴",
       last     = "└╴",
+      open_dir = "󰝰 ",
     },
     undo = {
       saved   = " ",
