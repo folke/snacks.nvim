@@ -233,6 +233,7 @@ M.git_branches = {
 
 -- Find git files
 ---@class snacks.picker.git.files.Config: snacks.picker.Config
+---@field args? string[] additional arguments to pass to `git ls-files`
 ---@field untracked? boolean show untracked files
 ---@field submodules? boolean show submodule files
 M.git_files = {
@@ -262,6 +263,7 @@ M.git_grep = {
 
 -- Git log
 ---@class snacks.picker.git.log.Config: snacks.picker.Config
+---@field args? string[] additional arguments to pass to `git log`
 ---@field follow? boolean track file history across renames
 ---@field current_file? boolean show current file log
 ---@field current_line? boolean show current line log
@@ -300,6 +302,7 @@ M.git_stash = {
 }
 
 ---@class snacks.picker.git.status.Config: snacks.picker.Config
+---@field args? string[] additional arguments to pass to `git status`
 ---@field ignored? boolean show ignored files
 M.git_status = {
   finder = "git_status",

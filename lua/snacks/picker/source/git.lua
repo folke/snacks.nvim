@@ -7,7 +7,9 @@ local commit_pat = ("[a-z0-9]"):rep(7)
 ---@param opts snacks.picker.git.files.Config
 ---@type snacks.picker.finder
 function M.files(opts, ctx)
-  local args = { "-c", "core.quotepath=false", "ls-files", "--exclude-standard", "--cached" }
+  local args = { "-c", "core.quotepath=false" }
+  vim.list_extend(args, opts.args or {})
+  vim.list_extend(args, { "ls-files", "--exclude-standard", "--cached" })
   if opts.untracked then
     table.insert(args, "--others")
   elseif opts.submodules then
@@ -80,7 +82,9 @@ end
 ---@param opts snacks.picker.git.log.Config
 ---@type snacks.picker.finder
 function M.log(opts, ctx)
-  local args = {
+  local args = {}
+  vim.list_extend(args, opts.args or {})
+  vim.list_extend(args, {
     "log",
     "--pretty=format:%h %s (%ch)",
     "--abbrev-commit",
@@ -89,7 +93,7 @@ function M.log(opts, ctx)
     "--color=never",
     "--no-show-signature",
     "--no-patch",
-  }
+  })
 
   local file ---@type string?
   if opts.current_line then
@@ -161,13 +165,15 @@ end
 ---@param opts snacks.picker.git.status.Config
 ---@type snacks.picker.finder
 function M.status(opts, ctx)
-  local args = {
+  local args = {}
+  vim.list_extend(args, opts.args or {})
+  vim.list_extend(args, {
     "--no-pager",
     "status",
     "-uall",
     "--porcelain=v1",
     "-z",
-  }
+  })
   if opts.ignored then
     table.insert(args, "--ignored=matching")
   end
@@ -204,7 +210,10 @@ end
 ---@param opts snacks.picker.Config
 ---@type snacks.picker.finder
 function M.diff(opts, ctx)
-  local args = { "--no-pager", "diff", "--no-color", "--no-ext-diff" }
+  local args = {}
+  vim.list_extend(args, opts.args or {})
+  vim.list_extend(args, {
+    "--no-pager", "diff", "--no-color", "--no-ext-diff" })
   local file, line ---@type string?, number?
   local header, hunk = {}, {} ---@type string[], string[]
   local header_len = 4
@@ -256,7 +265,9 @@ end
 ---@param opts snacks.picker.Config
 ---@type snacks.picker.finder
 function M.branches(opts, ctx)
-  local args = { "--no-pager", "branch", "--no-color", "-vvl" }
+  local args = {}
+  vim.list_extend(args, opts.args or {})
+  vim.list_extend(args, { "--no-pager", "branch", "--no-color", "-vvl" })
   local cwd = vim.fs.normalize(opts and opts.cwd or uv.cwd() or ".") or nil
   cwd = Snacks.git.get_root(cwd)
 
@@ -300,7 +311,9 @@ end
 ---@param opts snacks.picker.Config
 ---@type snacks.picker.finder
 function M.stash(opts, ctx)
-  local args = { "--no-pager", "stash", "list" }
+  local args = {}
+  vim.list_extend(args, opts.args or {})
+  vim.list_extend(args, { "--no-pager", "stash", "list" })
   local cwd = vim.fs.normalize(opts and opts.cwd or uv.cwd() or ".") or nil
   cwd = Snacks.git.get_root(cwd)
 
