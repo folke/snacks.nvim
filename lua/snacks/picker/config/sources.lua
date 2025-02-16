@@ -270,6 +270,7 @@ M.git_log = {
   format = "git_log",
   preview = "git_show",
   confirm = "git_checkout",
+  sort = { fields = { "score:desc", "idx" } },
 }
 
 ---@type snacks.picker.git.log.Config
@@ -280,6 +281,7 @@ M.git_log_file = {
   current_file = true,
   follow = true,
   confirm = "git_checkout",
+  sort = { fields = { "score:desc", "idx" } },
 }
 
 ---@type snacks.picker.git.log.Config
@@ -290,6 +292,7 @@ M.git_log_line = {
   current_line = true,
   follow = true,
   confirm = "git_checkout",
+  sort = { fields = { "score:desc", "idx" } },
 }
 
 M.git_stash = {
