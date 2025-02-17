@@ -171,7 +171,9 @@ function M.setup(ev)
         local lang = vim.treesitter.language.get_lang(ft)
         if vim.tbl_contains(langs, lang) then
           vim.schedule(function()
-            M.doc.attach(e.buf)
+            if vim.api.nvim_buf_is_valid(e.buf) then
+              M.doc.attach(e.buf)
+            end
           end)
         end
       end,
