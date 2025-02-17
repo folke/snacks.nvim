@@ -795,10 +795,9 @@ function M.oldfiles(opts)
     table.insert(filter, { path = vim.fs.normalize(path), want = want })
   end
   local done = {} ---@type table<string, boolean>
-  local i = 1
   return function()
-    while vim.v.oldfiles[i] do
-      local file = vim.fs.normalize(vim.v.oldfiles[i], { _fast = true, expand_env = false })
+    for _, oldfile in ipairs(vim.v.oldfiles) do
+      local file = vim.fs.normalize(oldfile, { _fast = true, expand_env = false })
       local want = not done[file]
       if want then
         done[file] = true
@@ -809,7 +808,6 @@ function M.oldfiles(opts)
           end
         end
       end
-      i = i + 1
       if want and uv.fs_stat(file) then
         return file
       end
