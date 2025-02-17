@@ -796,9 +796,10 @@ function M.oldfiles(opts)
   end
   local done = {} ---@type table<string, boolean>
   local i = 1
+  local oldfiles = vim.v.oldfiles
   return function()
-    while vim.v.oldfiles[i] do
-      local file = vim.fs.normalize(vim.v.oldfiles[i], { _fast = true, expand_env = false })
+    while oldfiles[i] do
+      local file = vim.fs.normalize(oldfiles[i], { _fast = true, expand_env = false })
       local want = not done[file]
       if want then
         done[file] = true
