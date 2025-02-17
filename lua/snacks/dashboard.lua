@@ -39,10 +39,19 @@ math.randomseed(os.time())
 ---@field title? string
 ---@field text? string|snacks.dashboard.Text[]
 
----@alias snacks.dashboard.Format.ctx {width?:number}
+---@alias snacks.dashboard.Template fun(opts):snacks.dashboard.Gen
+---@alias snacks.dashboard.Format.alias snacks.dashboard.Text|snacks.dashboard.Format|snacks.dashboard.Format.function
+---@alias snacks.dashboard.Format.function fun(item:snacks.dashboard.Item, ctx:snacks.dashboard.Format.ctx):snacks.dashboard.Text>
+---@alias snacks.dashboard.Format.ctx {width?:number, dashboard:snacks.dashboard.Class}
 ---@alias snacks.dashboard.Action string|fun(self:snacks.dashboard.Class)
 ---@alias snacks.dashboard.Gen fun(self:snacks.dashboard.Class):snacks.dashboard.Section?
 ---@alias snacks.dashboard.Section snacks.dashboard.Item|snacks.dashboard.Gen|snacks.dashboard.Section[]
+
+---@class snacks.dashboard.Format
+---@field hl? string
+---@field priority? number determines order in which format will be checked
+---@field align? "left" | "center" | "right"
+---@field format snacks.dashboard.Format.function
 
 ---@class snacks.dashboard.Text
 ---@field [1] string the text
@@ -72,8 +81,16 @@ math.randomseed(os.time())
 
 ---@class snacks.dashboard.Config
 ---@field enabled? boolean
+---@field extensions (snacks.dashboard.Extension | fun(snacks.dashboard.Class):snacks.dashboard.Extension)[]
 ---@field sections snacks.dashboard.Section
----@field formats table<string, snacks.dashboard.Text|fun(item:snacks.dashboard.Item, ctx:snacks.dashboard.Format.ctx):snacks.dashboard.Text>
+---@field templates table<string, snacks.dashboard.Template>
+---@field formats table<string, snacks.dashboard.Format.alias>
+
+---@class snacks.dashboard.Extension
+---@field templates table<string, snacks.dashboard.Template>
+---@field formats table<string, snacks.dashboard.Format.alias>
+
+
 local defaults = {
   width = 60,
   row = nil, -- dashboard position. nil for center
@@ -109,14 +126,19 @@ local defaults = {
 ██║ ╚████║███████╗╚██████╔╝ ╚████╔╝ ██║██║ ╚═╝ ██║
 ╚═╝  ╚═══╝╚══════╝ ╚═════╝   ╚═══╝  ╚═╝╚═╝     ╚═╝]],
   },
+  -- An easy entry point to extend the available templates and formats
+  extensions = {},
   -- item field formatters
   formats = {
-    icon = function(item)
-      if item.file and item.icon == "file" or item.icon == "directory" then
-        return M.icon(item.file, item.icon)
+    icon = {
+      align = "left",
+      format = function(item)
+        if item.file and item.icon == "file" or item.icon == "directory" then
+          return M.icon(item.file, item.icon)
+        end
+        return { item.icon, width = 2, hl = "icon" }
       end
-      return { item.icon, width = 2, hl = "icon" }
-    end,
+    },
     footer = { "%s", align = "center" },
     header = { "%s", align = "center" },
     file = function(item, ctx)
@@ -133,6 +155,20 @@ local defaults = {
       local dir, file = fname:match("^(.*)/(.+)$")
       return dir and { { dir .. "/", hl = "dir" }, { file, hl = "file" } } or { { fname, hl = "file" } }
     end,
+    label = { "%s", align = "right" },
+    key = { "%s", align = "right" },
+    title = { "%s" },
+    desc = { "%s" },
+  },
+  -- The available section templates
+  templates = {
+    --session
+    --recent_files
+    --projects
+    --header
+    --keys
+    --terminal
+    --startup
   },
   sections = {
     { section = "header" },
@@ -201,11 +237,19 @@ Snacks.util.set_hl(links, { prefix = "SnacksDashboard", default = true })
 ---@field buf? number the buffer to use. If not provided, a new buffer will be created
 ---@field win? number the window to use. If not provided, a new floating window will be created
 
+---@class snacks.dashboard.FormatKeys
+---@field left string[]
+---@field center string[]
+---@field right string[]
+
 ---@class snacks.dashboard.Class
 ---@field opts snacks.dashboard.Opts
 ---@field buf number
 ---@field win number
 ---@field _size? {width:number, height:number}
+---@field formats table<string, snacks.dashboard.Format.alias>
+---@field format_keys snacks.dashboard.FormatKeys
+---@field templates table<string, snacks.dashboard.Template>
 ---@field items snacks.dashboard.Item[]
 ---@field row? number
 ---@field col? number
@@ -314,11 +358,15 @@ function D:format_field(item, field, width)
   if type(item[field]) == "table" then
     return item[field]
   end
-  local format = self.opts.formats[field]
+  local format = self.formats[field]
   if format == nil then
     return { item[field], hl = field }
   elseif type(format) == "function" then
-    return format(item, { width = width })
+    return format(item, { width = width, dashboard = self })
+  elseif type(format) == "table" and type(format.format) == "function" then
+    local result = format.format(item, { width = width, dashboard = self })
+    result.hl = result.hl or format.hl or field
+    return result
   else
     local text = format and vim.deepcopy(format) or { "%s" }
     text.hl = text.hl or field
@@ -394,6 +442,31 @@ function D:block(texts)
   return ret
 end
 
+--- Get the formatters for the provided alignment
+---@param align "left" | "center" | "right
+function D:get_formatters(formats, align)
+  local results = {}
+  for key,formatter in pairs(formats) do
+    if type(formatter) == 'table' then
+      if (formatter.align or "center") == align then
+        table.insert(results, { key, priority = formatter.priority or 0 })
+      end
+    elseif align == "center" then
+      table.insert(results, { key, priority = 0 })
+    end
+  end
+
+  table.sort(results, function(a, b)
+    return a.priority > b.priority
+  end)
+
+  for i,key in ipairs(results) do
+    results[i] = key[1]
+  end
+
+  return results
+end
+
 ---@param item snacks.dashboard.Item
 function D:format(item)
   local width = item.indent or 0
@@ -421,9 +494,9 @@ function D:format(item)
   end
 
   local block = item.text and self:block(self:texts(item.text))
-  local left = block and { width = 0 } or find({ "icon" }, { align = "left", padding = 1 })
-  local right = block and { width = 0 } or find({ "label", "key" }, { align = "right", padding = 1 })
-  local center = block or find({ "header", "footer", "title", "desc", "file" }, { flex = true, multi = true })
+  local left = block and { width = 0 } or find(self.format_keys.left, { align = "left", padding = 1 })
+  local right = block and { width = 0 } or find(self.format_keys.right, { align = "right", padding = 1 })
+  local center = block or find(self.format_keys.center, { flex = true, multi = true })
 
   local padding = self:padding(item)
   local ret = { width = self.opts.width } ---@type snacks.dashboard.Block
@@ -485,7 +558,7 @@ function D:resolve(item, results, parent)
     local first_child = #results + 1
     if item.section then -- add section items
       self:trace("resolve." .. item.section)
-      local items = M.sections[item.section](item) ---@type snacks.dashboard.Section?
+      local items = self.templates[item.section](item) ---@type snacks.dashboard.Section?
       self:resolve(items, results, item)
       self:trace()
     end
@@ -696,12 +769,53 @@ function D:keys()
   end
 end
 
+---@param opts snacks.dashboard.Opts
+function D:resolve_templates(opts, extensions)
+  local templates = opts.templates
+  for _,ext in pairs(extensions) do
+    if type(ext.templates) == "table" then
+      templates = vim.tbl_extend("force", templates, ext.templates)
+    end
+  end
+
+  return templates
+end
+
+---@param opts snacks.dashboard.Opts
+function D:resolve_formats(opts, extensions)
+  local formats = opts.formats
+  for _,ext in pairs(extensions) do
+    if type(ext.formats) == "table" then
+      formats = vim.tbl_extend("force", formats, ext.formats)
+    end
+  end
+
+  return formats
+end
+
 function D:update()
   if not (self.buf and vim.api.nvim_buf_is_valid(self.buf)) then
     return
   end
   self.fire("UpdatePre")
   self._size = self:size()
+
+  local extensions = {}
+  for _,ext in pairs(self.opts.extensions or {}) do
+    if type(ext) == "table" then
+      table.insert(extensions, ext)
+    elseif type(ext) == "function" then
+      table.insert(extensions, ext(self))
+    end
+  end
+
+  self.templates = self:resolve_templates(self.opts, extensions)
+  self.formats = self:resolve_formats(self.opts, extensions)
+  self.format_keys = {
+    left = self:get_formatters(self.formats, "left"),
+    center = self:get_formatters(self.formats, "center"),
+    right = self:get_formatters(self.formats, "right")
+  }
 
   self.items = self:resolve(self.opts.sections)
 
@@ -1079,6 +1193,8 @@ function M.sections.startup(opts)
     },
   }
 end
+
+defaults.templates = M.sections
 
 M.status = {
   did_setup = false,
