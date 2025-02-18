@@ -72,6 +72,7 @@ In case of issues, make sure to run `:checkhealth snacks`.
 --- Return the absolute path or url to the image.
 --- When `nil`, the path is resolved relative to the file.
 ---@field resolve? fun(file: string, src: string): string?
+---@field magick? table<string, (string|number)[]>
 {
   formats = {
     "png",
@@ -127,6 +128,11 @@ In case of issues, make sure to run `:checkhealth snacks`.
     placement = false,
   },
   env = {},
+  magick = {
+    default = { "{src}[0]", "-scale", "1920x1080>" },
+    math = { "-density", 600, "{src}[0]", "-trim" },
+    pdf = { "-density", 300, "{src}[0]", "-background", "white", "-alpha", "remove", "-trim" },
+  },
 }
 ```
 

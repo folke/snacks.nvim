@@ -5,7 +5,8 @@
 ---@field sent? boolean image data is sent
 ---@field placements table<number, snacks.image.Placement> image placements
 ---@field augroup number
----@field _proc? snacks.spawn.Proc
+---@field info? snacks.image.Info
+---@field _convert? snacks.image.Convert
 local M = {}
 M.__index = M
 
@@ -39,9 +40,7 @@ function M.new(src)
   self.placements = {}
   self.augroup = vim.api.nvim_create_augroup("snacks.image." .. self.id, { clear = true })
 
-  if self._proc then
-    self._proc:run()
-  end
+  self:run()
   if self:ready() then
     self:on_ready()
   end
@@ -51,6 +50,7 @@ end
 
 function M:on_ready()
   if not self.sent then
+    self.info = self._convert and self._convert.meta.info or nil
     self:send()
   end
 end
@@ -62,41 +62,44 @@ function M:on_send()
 end
 
 function M:failed()
-  if self._proc and self._proc:running() then
+  if self._convert and not self._convert:done() then
     return false
   end
-  if self._proc and self._proc:failed() then
+  if self._convert and self._convert:error() then
     return true
   end
   return self.file and vim.fn.filereadable(self.file) == 0
 end
 
 function M:ready()
-  if self._proc and self._proc:running() then
+  if self._convert and not self._convert:done() then
     return false
   end
   return self.file and vim.fn.filereadable(self.file) == 1
 end
 
+function M:run()
+  if not self._convert then
+    return
+  end
+  self._convert:run(function(convert)
+    if convert:error() then
+      vim.schedule(function()
+        for _, p in pairs(self.placements) do
+          p:error()
+        end
+      end)
+    else
+      vim.schedule(function()
+        self:on_ready()
+      end)
+    end
+  end)
+end
+
 function M:convert()
-  local png, proc = Snacks.image.convert.convert(self.src, {
-    run = false,
-    on_exit = function(procs, err)
-      if err then
-        vim.schedule(function()
-          for _, p in pairs(self.placements) do
-            p:error()
-          end
-        end)
-      else
-        vim.schedule(function()
-          self:on_ready()
-        end)
-      end
-    end,
-  })
-  self._proc = proc
-  return png
+  self._convert = Snacks.image.convert.convert({ src = self.src })
+  return self._convert.file
 end
 
 -- create the image

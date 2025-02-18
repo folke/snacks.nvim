@@ -13,5 +13,5 @@
   (#eq? @lang "mermaid")
   (code_fence_content) @image.content
   (#set! injection.language "mermaid")
-  (#set! ext "mmd")
+  (#set! image.ext "mmd")
 ) @image

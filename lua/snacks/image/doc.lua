@@ -19,8 +19,11 @@ M.transforms = {
     img.src = line:sub(col + 1)
   end,
   latex = function(img, ctx)
+    if not img.content then
+      return
+    end
     local fg = Snacks.util.color({ "@markup.math.latex", "Special", "Normal" }) or "#000000"
-    img.ext = "tex"
+    img.ext = "math.tex"
     local content = vim.trim(img.content or "")
     content = content:gsub("^%$+`?", ""):gsub("`?%$+$", "")
     content = content:gsub("^\\[%[%(]", ""):gsub("\\[%]%)]$", "")
@@ -31,7 +34,7 @@ M.transforms = {
 \documentclass[preview,border=2pt,varwidth]{standalone}
 \usepackage{xcolor, amsmath, amssymb}
 \begin{document}
-{ \large \color[HTML]{%s}
+{ \Large \color[HTML]{%s}
 %s}
 \end{document}
     ]]):format(fg:upper():sub(2), content)
@@ -122,7 +125,7 @@ function M.find(buf, from, to)
       local range = vim.treesitter.get_range(ctx.pos.node, buf, ctx.pos.meta)
       ---@type snacks.image.match
       local img = {
-        ext = meta.ext,
+        ext = meta["image.ext"],
         id = ctx.pos.node:id(),
         pos = {
           range[1] == range[4] and (range[1] + 1) or (range[4] + 1),

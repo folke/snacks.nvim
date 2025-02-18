@@ -19,5 +19,5 @@
 
 (element
   (start_tag (tag_name) @tag (#eq? @tag "svg"))
-  (#set! ext "svg")
+  (#set! image.ext "svg")
 ) @image @image.content

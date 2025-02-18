@@ -76,7 +76,9 @@ function Proc:run()
   self.stderr = assert(uv.new_pipe())
   self.data = { [self.stdout] = {}, [self.stderr] = {} }
   if self.opts.debug then
-    Snacks.debug.cmd({ cmd = self.opts.cmd, args = self.opts.args, cwd = self.opts.cwd })
+    vim.schedule(function()
+      Snacks.debug.cmd({ cmd = self.opts.cmd, args = self.opts.args, cwd = self.opts.cwd })
+    end)
   end
   local opts = vim.tbl_deep_extend("force", self.opts, {
     stdio = { nil, self.stdout, self.stderr },
@@ -147,7 +149,7 @@ function Proc:on_exit()
       end
     end
     check:stop()
-    check:close()
+    close(check)
     close(self.stdout)
     close(self.stderr)
     if self.opts.on_exit then
