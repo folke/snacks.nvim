@@ -385,10 +385,7 @@ function M.undo(opts, ctx)
     item.removed_lines = table.concat(removed_lines, "\n")
     item.added = #added_lines
     item.removed = #removed_lines
-    item.preview = {
-      text = diff,
-      ft = "diff",
-    }
+    item.diff = diff
   end
 
   ---@param entries? vim.fn.undotree.entry[]

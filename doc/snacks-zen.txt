@@ -1,4 +1,4 @@
-*snacks-zen.txt*                                                   snacks.nvim
+*snacks-zen*                                                    snacks_zen
 
 ==============================================================================
 Table of Contents                               *snacks-zen-table-of-contents*

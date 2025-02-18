@@ -219,7 +219,8 @@ end
 
 ---@param opts? snacks.zen.Config
 function M.zoom(opts)
-  return M.zen(Snacks.config.get("zen", defaults.zoom, opts))
+  opts = Snacks.config.get("zen", defaults, opts)
+  return M.zen(opts and opts.zoom or nil)
 end
 
 return M

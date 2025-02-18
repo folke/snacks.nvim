@@ -272,6 +272,7 @@ M.git_log = {
   format = "git_log",
   preview = "git_show",
   confirm = "git_checkout",
+  sort = { fields = { "score:desc", "idx" } },
 }
 
 ---@type snacks.picker.git.log.Config
@@ -282,6 +283,7 @@ M.git_log_file = {
   current_file = true,
   follow = true,
   confirm = "git_checkout",
+  sort = { fields = { "score:desc", "idx" } },
 }
 
 ---@type snacks.picker.git.log.Config
@@ -292,6 +294,7 @@ M.git_log_line = {
   current_line = true,
   follow = true,
   confirm = "git_checkout",
+  sort = { fields = { "score:desc", "idx" } },
 }
 
 M.git_stash = {
@@ -821,7 +824,7 @@ M.treesitter = {
 M.undo = {
   finder = "vim_undo",
   format = "undo",
-  preview = "preview",
+  preview = "diff",
   confirm = "item_action",
   win = {
     preview = { wo = { number = false, relativenumber = false, signcolumn = "no" } },

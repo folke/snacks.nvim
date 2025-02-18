@@ -1,4 +1,4 @@
-*snacks-gitbrowse.txt*                                             snacks.nvim
+*snacks-gitbrowse*                                        snacks_gitbrowse
 
 ==============================================================================
 Table of Contents                         *snacks-gitbrowse-table-of-contents*

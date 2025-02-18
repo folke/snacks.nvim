@@ -1,4 +1,4 @@
-*snacks-git.txt*                                                   snacks.nvim
+*snacks-git*                                                    snacks_git
 
 ==============================================================================
 Table of Contents                               *snacks-git-table-of-contents*

@@ -1,4 +1,4 @@
-*snacks-lazygit.txt*                                               snacks.nvim
+*snacks-lazygit*                                            snacks_lazygit
 
 ==============================================================================
 Table of Contents                           *snacks-lazygit-table-of-contents*

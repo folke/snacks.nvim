@@ -1,4 +1,4 @@
-*snacks-util.txt*                                                  snacks.nvim
+*snacks-util*                                                  snacks_util
 
 ==============================================================================
 Table of Contents                              *snacks-util-table-of-contents*
@@ -63,7 +63,7 @@ Set buffer-local options.
 `Snacks.util.color()`                                    *Snacks.util.color()*
 
 >lua
-    ---@param group string hl group to get color from
+    ---@param group string|string[] hl group to get color from
     ---@param prop? string property to get. Defaults to "fg"
     Snacks.util.color(group, prop)
 <
@@ -107,8 +107,9 @@ Get an icon from `mini.icons` or `nvim-web-devicons`.
 >lua
     ---@param name string
     ---@param cat? string defaults to "file"
+    ---@param opts? { fallback?: {dir?:string, file?:string} }
     ---@return string, string?
-    Snacks.util.icon(name, cat)
+    Snacks.util.icon(name, cat, opts)
 <
 
 

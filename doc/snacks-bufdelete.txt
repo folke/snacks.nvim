@@ -1,4 +1,4 @@
-*snacks-bufdelete.txt*                                             snacks.nvim
+*snacks-bufdelete*                                        snacks_bufdelete
 
 ==============================================================================
 Table of Contents                         *snacks-bufdelete-table-of-contents*

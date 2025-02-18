@@ -53,6 +53,13 @@ Show a notification with a pretty backtrace
 Snacks.debug.backtrace(msg, opts)
 ```
 
+### `Snacks.debug.cmd()`
+
+```lua
+---@param opts {cmd: string|string[], args?: string[], cwd?: string, group?: boolean, notify?: boolean}
+Snacks.debug.cmd(opts)
+```
+
 ### `Snacks.debug.inspect()`
 
 Show a notification with a pretty printed dump of the object(s)

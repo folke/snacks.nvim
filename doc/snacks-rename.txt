@@ -1,4 +1,4 @@
-*snacks-rename.txt*                                                snacks.nvim
+*snacks-rename*                                              snacks_rename
 
 ==============================================================================
 Table of Contents                            *snacks-rename-table-of-contents*

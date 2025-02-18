@@ -1,4 +1,4 @@
-*snacks-input.txt*                                                 snacks.nvim
+*snacks-input*                                                snacks_input
 
 ==============================================================================
 Table of Contents                             *snacks-input-table-of-contents*

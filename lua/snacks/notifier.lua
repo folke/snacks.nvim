@@ -425,6 +425,7 @@ function N:update()
     local keep = not notif.shown -- not shown yet
       or timeout == 0 -- no timeout
       or (notif.win and notif.win:win_valid() and vim.api.nvim_get_current_win() == notif.win.win) -- current window
+      or (notif.win and notif.win:buf_valid() and vim.api.nvim_get_current_buf() == notif.win.buf) -- current buffer
       or (notif.keep and notif.keep(notif)) -- custom keep
       or (self.opts.keep and self.opts.keep(notif)) -- global keep
       or (notif.shown + timeout / 1e3 > now) -- not timed out

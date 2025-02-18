@@ -32,7 +32,7 @@ Snacks.util.bo(buf, bo)
 ### `Snacks.util.color()`
 
 ```lua
----@param group string hl group to get color from
+---@param group string|string[] hl group to get color from
 ---@param prop? string property to get. Defaults to "fg"
 Snacks.util.color(group, prop)
 ```
@@ -165,6 +165,12 @@ Ensures the hl groups are always set, even after a colorscheme change.
 ---@param groups snacks.util.hl
 ---@param opts? { prefix?:string, default?:boolean, managed?:boolean }
 Snacks.util.set_hl(groups, opts)
+```
+
+### `Snacks.util.spinner()`
+
+```lua
+Snacks.util.spinner()
 ```
 
 ### `Snacks.util.throttle()`

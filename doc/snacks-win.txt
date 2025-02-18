@@ -1,4 +1,4 @@
-*snacks-win.txt*                                                   snacks.nvim
+*snacks-win*                                                    snacks_win
 
 ==============================================================================
 Table of Contents                               *snacks-win-table-of-contents*
@@ -24,6 +24,7 @@ Table of Contents                               *snacks-win-table-of-contents*
   - win:destroy()                            |snacks-win-module-win:destroy()|
   - win:dim()                                    |snacks-win-module-win:dim()|
   - win:execute()                            |snacks-win-module-win:execute()|
+  - win:fixbuf()                              |snacks-win-module-win:fixbuf()|
   - win:focus()                                |snacks-win-module-win:focus()|
   - win:has_border()                      |snacks-win-module-win:has_border()|
   - win:hide()                                  |snacks-win-module-win:hide()|
@@ -362,6 +363,13 @@ WIN:EXECUTE()                                *snacks-win-module-win:execute()*
 >lua
     ---@param actions string|string[]
     win:execute(actions)
+<
+
+
+WIN:FIXBUF()                                  *snacks-win-module-win:fixbuf()*
+
+>lua
+    win:fixbuf()
 <
 
 

@@ -1,4 +1,4 @@
-*snacks-init.txt*                                                  snacks.nvim
+*snacks-init*                                                  snacks_init
 
 ==============================================================================
 Table of Contents                              *snacks-init-table-of-contents*

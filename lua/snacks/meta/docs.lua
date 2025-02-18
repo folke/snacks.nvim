@@ -674,6 +674,7 @@ function M.fix_titles()
   for file, t in vim.fs.dir("doc", { depth = 1 }) do
     if t == "file" and file:find("%.txt$") then
       local lines = vim.fn.readfile("doc/" .. file) --[[@as string[] ]]
+      lines[1] = lines[1]:gsub("%.txt", ""):gsub("%.nvim", "")
       for i, line in ipairs(lines) do
         -- Example: SNACKS.GIT.BLAME_LINE()            *snacks-git-module-snacks.git.blame_line()*
         local func = line:gsub("^SNACKS.*module%-snacks(.+%(%))%*$", "Snacks%1")

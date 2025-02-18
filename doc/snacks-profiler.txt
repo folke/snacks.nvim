@@ -1,4 +1,4 @@
-*snacks-profiler.txt*                                              snacks.nvim
+*snacks-profiler*                                          snacks_profiler
 
 ==============================================================================
 Table of Contents                          *snacks-profiler-table-of-contents*

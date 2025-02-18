@@ -1,4 +1,4 @@
-*snacks-bigfile.txt*                                               snacks.nvim
+*snacks-bigfile*                                            snacks_bigfile
 
 ==============================================================================
 Table of Contents                           *snacks-bigfile-table-of-contents*

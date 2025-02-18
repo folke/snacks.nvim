@@ -1,4 +1,4 @@
-*snacks-toggle.txt*                                                snacks.nvim
+*snacks-toggle*                                              snacks_toggle
 
 ==============================================================================
 Table of Contents                            *snacks-toggle-table-of-contents*

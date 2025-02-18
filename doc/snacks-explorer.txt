@@ -1,4 +1,4 @@
-*snacks-explorer.txt*                                              snacks.nvim
+*snacks-explorer*                                          snacks_explorer
 
 ==============================================================================
 Table of Contents                          *snacks-explorer-table-of-contents*

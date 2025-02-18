@@ -6,7 +6,6 @@
 local M = {}
 M.__index = M
 
-local uv = vim.uv or vim.loop
 local ns = vim.api.nvim_create_namespace("snacks.picker.input")
 
 ---@param picker snacks.Picker
@@ -144,7 +143,7 @@ function M:update()
   end
   local line = {} ---@type snacks.picker.Highlight[]
   if self.picker:is_active() then
-    line[#line + 1] = { M.spinner(), "SnacksPickerSpinner" }
+    line[#line + 1] = { Snacks.util.spinner(), "SnacksPickerSpinner" }
     line[#line + 1] = { " " }
   end
   local selected = #self.picker.list.selected
@@ -186,11 +185,6 @@ function M:set(pattern, search)
   self.win.opts.wo.statuscolumn = ""
   self:update()
   self.picker:update_titles()
-end
-
-function M.spinner()
-  local spinner = { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" }
-  return spinner[math.floor(uv.hrtime() / (1e6 * 80)) % #spinner + 1]
 end
 
 return M

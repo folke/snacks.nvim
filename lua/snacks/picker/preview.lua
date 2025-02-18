@@ -167,7 +167,7 @@ end
 
 ---@param cmd string[]
 ---@param ctx snacks.picker.preview.ctx
----@param opts? {add?:fun(text:string, row:number), env?:table<string, string>, pty?:boolean, ft?:string}
+---@param opts? {add?:fun(text:string, row:number), env?:table<string, string>, pty?:boolean, ft?:string, input?:string}
 function M.cmd(cmd, ctx, opts)
   opts = opts or {}
   local buf = ctx.preview:scratch()
@@ -182,7 +182,9 @@ function M.cmd(cmd, ctx, opts)
   if ctx.picker.opts.debug.proc then
     local args = vim.deepcopy(cmd)
     table.remove(args, 1)
-    require("snacks.picker.source.proc").debug({ cmd = cmd[1], args = args, cwd = ctx.item.cwd })
+    vim.schedule(function()
+      Snacks.debug.cmd({ cmd = cmd[1], args = args, cwd = ctx.item.cwd, group = true })
+    end)
   end
 
   ---@param text string
@@ -219,7 +221,10 @@ function M.cmd(cmd, ctx, opts)
   local jid = vim.fn.jobstart(cmd, {
     height = pty and vim.api.nvim_win_get_height(ctx.win) or nil,
     width = pty and vim.api.nvim_win_get_width(ctx.win) or nil,
-    pty = pty,
+    -- a bit weird, but we need to set `pty` to `nil` when `opts.input` is set
+    -- otherwise the job never receives the input.
+    -- Probably won't work with all commands
+    pty = not opts.input and pty or nil,
     cwd = ctx.item.cwd or ctx.picker.opts.cwd,
     env = vim.tbl_extend("force", {
       PAGER = "cat",
@@ -246,7 +251,20 @@ function M.cmd(cmd, ctx, opts)
         )
       end
     end,
+    sync = true,
   })
+  if jid <= 0 then
+    Snacks.notify.error(("Failed to start terminal **cmd** `%s`"):format(cmd))
+    if chan then
+      vim.fn.chanclose(chan)
+    end
+    return
+  end
+
+  if opts.input then
+    vim.fn.chansend(jid, opts.input .. "\n")
+    vim.fn.chanclose(jid, "stdin")
+  end
   if opts.ft then
     ctx.preview:highlight({ ft = opts.ft })
   end
@@ -260,9 +278,7 @@ function M.cmd(cmd, ctx, opts)
       end
     end,
   })
-  if jid <= 0 then
-    Snacks.notify.error(("Failed to start terminal **cmd** `%s`"):format(cmd))
-  end
+  return jid
 end
 
 ---@param ctx snacks.picker.preview.ctx
@@ -332,6 +348,23 @@ function M.git_log(ctx)
         Snacks.picker.highlight.set(ctx.buf, ns, row, hl)
       end
     end or nil,
+  })
+end
+
+---@param ctx snacks.picker.preview.ctx
+function M.diff(ctx)
+  local native = ctx.picker.opts.previewers.git.native
+  if ctx.item.diff and native then
+    ctx.item.preview = { text = ctx.item.diff, ft = "diff" }
+    return M.preview(ctx)
+  end
+  local cmd = vim.deepcopy(ctx.picker.opts.previewers.diff.cmd)
+  if cmd[1] == "delta" then
+    table.insert(cmd, 2, "--" .. vim.o.background)
+  end
+  M.cmd(cmd, ctx, {
+    pty = true,
+    input = ctx.item.diff,
   })
 end
 

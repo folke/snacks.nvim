@@ -1,4 +1,4 @@
-*snacks-scope.txt*                                                 snacks.nvim
+*snacks-scope*                                                snacks_scope
 
 ==============================================================================
 Table of Contents                             *snacks-scope-table-of-contents*
