@@ -207,6 +207,10 @@ M.files = {
   supports_live = true,
 }
 
+---@class snacks.picker.git.Config: snacks.picker.Config
+---@field args? string[] additional arguments to pass to `git ls-files`
+
+---@type snacks.picker.git.Config
 M.git_branches = {
   finder = "git_branches",
   format = "git_branch",
@@ -220,6 +224,7 @@ M.git_branches = {
       },
     },
   },
+  ---@param picker snacks.Picker
   on_show = function(picker)
     for i, item in ipairs(picker:items()) do
       if item.current then
@@ -232,8 +237,7 @@ M.git_branches = {
 }
 
 -- Find git files
----@class snacks.picker.git.files.Config: snacks.picker.Config
----@field args? string[] additional arguments to pass to `git ls-files`
+---@class snacks.picker.git.files.Config: snacks.picker.git.Config
 ---@field untracked? boolean show untracked files
 ---@field submodules? boolean show submodule files
 M.git_files = {
@@ -245,8 +249,7 @@ M.git_files = {
 }
 
 -- Grep in git files
----@class snacks.picker.git.grep.Config: snacks.picker.Config
----@field args? string[] additional arguments to pass to `git grep`
+---@class snacks.picker.git.grep.Config: snacks.picker.git.Config
 ---@field untracked? boolean search in untracked files
 ---@field submodules? boolean search in submodule files
 ---@field need_search? boolean require a search pattern
@@ -262,8 +265,7 @@ M.git_grep = {
 }
 
 -- Git log
----@class snacks.picker.git.log.Config: snacks.picker.Config
----@field args? string[] additional arguments to pass to `git log`
+---@class snacks.picker.git.log.Config: snacks.picker.git.Config
 ---@field follow? boolean track file history across renames
 ---@field current_file? boolean show current file log
 ---@field current_line? boolean show current line log
@@ -304,8 +306,7 @@ M.git_stash = {
   confirm = "git_stash_apply",
 }
 
----@class snacks.picker.git.status.Config: snacks.picker.Config
----@field args? string[] additional arguments to pass to `git status`
+---@class snacks.picker.git.status.Config: snacks.picker.git.Config
 ---@field ignored? boolean show ignored files
 M.git_status = {
   finder = "git_status",
@@ -320,6 +321,7 @@ M.git_status = {
   },
 }
 
+---@type snacks.picker.git.Config
 M.git_diff = {
   finder = "git_diff",
   format = "file",
