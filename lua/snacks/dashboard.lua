@@ -48,7 +48,6 @@ math.randomseed(os.time())
 ---@alias snacks.dashboard.Section snacks.dashboard.Item|snacks.dashboard.Gen|snacks.dashboard.Section[]
 
 ---@class snacks.dashboard.Format
----@field hl? string
 ---@field priority? number determines order in which format will be checked
 ---@field align? "left" | "center" | "right"
 ---@field format snacks.dashboard.Format.function
@@ -364,9 +363,7 @@ function D:format_field(item, field, width)
   elseif type(format) == "function" then
     return format(item, { width = width, dashboard = self })
   elseif type(format) == "table" and type(format.format) == "function" then
-    local result = format.format(item, { width = width, dashboard = self })
-    result.hl = result.hl or format.hl or field
-    return result
+    return format.format(item, { width = width, dashboard = self })
   else
     local text = format and vim.deepcopy(format) or { "%s" }
     text.hl = text.hl or field
