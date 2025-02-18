@@ -495,7 +495,7 @@ end
 function M.search(picker, item)
   picker:close()
   if item then
-    vim.api.nvim_input("/" .. item.text)
+    vim.api.nvim_input("/" .. item.text:gsub("<", "<lt>"))
   end
 end
 
