@@ -100,6 +100,10 @@ function M.log(opts, ctx)
     "--no-patch"
   )
 
+  if opts.author then
+    table.insert(args, "--author=" .. opts.author)
+  end
+
   local file ---@type string?
   if opts.current_line then
     local cursor = vim.api.nvim_win_get_cursor(ctx.filter.current_win)
@@ -114,10 +118,6 @@ function M.log(opts, ctx)
     end
     args[#args + 1] = "--"
     args[#args + 1] = file
-  end
-  
-  if opts.author then
-    table.insert(args, "--author=" .. opts.author)
   end
 
   local Proc = require("snacks.picker.source.proc")
