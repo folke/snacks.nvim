@@ -52,6 +52,7 @@ function M.fit(file, cells, opts)
   local img_pixels ---@type snacks.image.Size
   if opts.info then
     local terminal = Snacks.image.terminal.size()
+    img_pixels = {}
     img_pixels.height = opts.info.size.height / opts.info.dpi.height * 96 * terminal.scale
     img_pixels.width = opts.info.size.width / opts.info.dpi.width * 96 * terminal.scale
   else
