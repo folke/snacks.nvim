@@ -1,4 +1,4 @@
-*snacks-indent.txt*                                                snacks.nvim
+*snacks-indent*                                              snacks_indent
 
 ==============================================================================
 Table of Contents                            *snacks-indent-table-of-contents*

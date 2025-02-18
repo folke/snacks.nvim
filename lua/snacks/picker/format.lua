@@ -168,7 +168,7 @@ function M.git_log(item, picker)
   local ret = {} ---@type snacks.picker.Highlight[]
   ret[#ret + 1] = { picker.opts.icons.git.commit, "SnacksPickerGitCommit" }
   local c = item.commit or item.branch or "HEAD"
-  ret[#ret + 1] = { a(c, 7, { truncate = true }), "SnacksPickerGitCommit" }
+  ret[#ret + 1] = { a(c, 8, { truncate = true }), "SnacksPickerGitCommit" }
 
   ret[#ret + 1] = { " " }
   if item.date then

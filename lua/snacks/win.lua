@@ -804,60 +804,7 @@ function M:show()
     group = self.augroup,
     nested = true,
     callback = function()
-      -- window closes, so delete the autocmd
-      if not self:win_valid() then
-        return true
-      end
-
-      if not self:on_current_tab() then
-        return
-      end
-
-      local buf = vim.api.nvim_win_get_buf(self.win)
-
-      -- same buffer
-      if buf == self.buf then
-        return
-      end
-
-      -- don't swap if fixbuf is disabled
-      if self.opts.fixbuf == false then
-        self.buf = buf
-        -- update window options
-        Snacks.util.wo(self.win, self.opts.wo)
-        return
-      end
-
-      -- another buffer was opened in this window
-      -- find another window to swap with
-      local main ---@type number?
-      for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-        local win_buf = vim.api.nvim_win_get_buf(win)
-        local is_float = vim.api.nvim_win_get_config(win).zindex ~= nil
-        if win ~= self.win and not is_float then
-          if vim.bo[win_buf].buftype == "" or vim.b[win_buf].snacks_main or vim.w[win].snacks_main then
-            main = win
-            break
-          end
-        end
-      end
-
-      if main then
-        vim.api.nvim_win_set_buf(self.win, self.buf)
-        vim.api.nvim_win_set_buf(main, buf)
-        vim.api.nvim_set_current_win(main)
-        vim.cmd.stopinsert()
-      else
-        -- no main window found, so close this window
-        vim.api.nvim_win_set_buf(self.win, self.buf)
-        vim.schedule(function()
-          vim.cmd.stopinsert()
-          vim.cmd("sbuffer " .. buf)
-          if self.win and vim.api.nvim_win_is_valid(self.win) then
-            vim.api.nvim_win_close(self.win, true)
-          end
-        end)
-      end
+      return self:fixbuf()
     end,
   })
 
@@ -865,6 +812,63 @@ function M:show()
   self:drop()
 
   return self
+end
+
+function M:fixbuf()
+  -- window closes, so delete the autocmd
+  if not self:win_valid() then
+    return true
+  end
+
+  if not self:on_current_tab() then
+    return
+  end
+
+  local buf = vim.api.nvim_win_get_buf(self.win)
+
+  -- same buffer
+  if buf == self.buf then
+    return
+  end
+
+  -- don't swap if fixbuf is disabled
+  if self.opts.fixbuf == false then
+    self.buf = buf
+    -- update window options
+    Snacks.util.wo(self.win, self.opts.wo)
+    return
+  end
+
+  -- another buffer was opened in this window
+  -- find another window to swap with
+  local main ---@type number?
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    local win_buf = vim.api.nvim_win_get_buf(win)
+    local is_float = vim.api.nvim_win_get_config(win).zindex ~= nil
+    if win ~= self.win and not is_float then
+      if vim.bo[win_buf].buftype == "" or vim.b[win_buf].snacks_main or vim.w[win].snacks_main then
+        main = win
+        break
+      end
+    end
+  end
+
+  if main then
+    vim.api.nvim_win_set_buf(self.win, self.buf)
+    vim.api.nvim_win_set_buf(main, buf)
+    vim.api.nvim_set_current_win(main)
+    vim.cmd.stopinsert()
+  else
+    -- no main window found, so close this window
+    vim.api.nvim_win_set_buf(self.win, self.buf)
+    vim.schedule(function()
+      vim.cmd.stopinsert()
+      vim.cmd("sbuffer " .. buf)
+      if self.win and vim.api.nvim_win_is_valid(self.win) then
+        vim.api.nvim_win_close(self.win, true)
+      end
+    end)
+  end
 end
 
 ---@param buf number

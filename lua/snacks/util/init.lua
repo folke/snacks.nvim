@@ -5,6 +5,8 @@ M.meta = {
   desc = "Utility functions for Snacks _(library)_",
 }
 
+M.is_win = jit.os:find("Windows")
+
 local uv = vim.uv or vim.loop
 local key_cache = {} ---@type table<string, string>
 
@@ -36,12 +38,18 @@ function M.set_hl(groups, opts)
   end
 end
 
----@param group string hl group to get color from
+---@param group string|string[] hl group to get color from
 ---@param prop? string property to get. Defaults to "fg"
 function M.color(group, prop)
   prop = prop or "fg"
-  local hl = vim.api.nvim_get_hl(0, { name = group, link = false })
-  return hl[prop] and string.format("#%06x", hl[prop]) or nil
+  group = type(group) == "table" and group or { group }
+  ---@cast group string[]
+  for _, g in ipairs(group) do
+    local hl = vim.api.nvim_get_hl(0, { name = g, link = false })
+    if hl[prop] then
+      return string.format("#%06x", hl[prop])
+    end
+  end
 end
 
 --- Set window-local options.
@@ -392,6 +400,11 @@ end
 ---@param win? number
 function M.is_float(win)
   return vim.api.nvim_win_get_config(win or 0).relative ~= ""
+end
+
+function M.spinner()
+  local spinner = { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" }
+  return spinner[math.floor(uv.hrtime() / (1e6 * 80)) % #spinner + 1]
 end
 
 M.base64 = vim.base64 and vim.base64.encode

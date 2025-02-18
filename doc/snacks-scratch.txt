@@ -1,4 +1,4 @@
-*snacks-scratch.txt*                                               snacks.nvim
+*snacks-scratch*                                            snacks_scratch
 
 ==============================================================================
 Table of Contents                           *snacks-scratch-table-of-contents*

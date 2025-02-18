@@ -1,4 +1,4 @@
-*snacks-notifier.txt*                                              snacks.nvim
+*snacks-notifier*                                          snacks_notifier
 
 ==============================================================================
 Table of Contents                          *snacks-notifier-table-of-contents*

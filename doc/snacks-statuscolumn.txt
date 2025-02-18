@@ -1,4 +1,4 @@
-*snacks-statuscolumn.txt*                                          snacks.nvim
+*snacks-statuscolumn*                                  snacks_statuscolumn
 
 ==============================================================================
 Table of Contents                      *snacks-statuscolumn-table-of-contents*

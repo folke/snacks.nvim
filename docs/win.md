@@ -289,6 +289,12 @@ win:dim(parent)
 win:execute(actions)
 ```
 
+### `win:fixbuf()`
+
+```lua
+win:fixbuf()
+```
+
 ### `win:focus()`
 
 ```lua

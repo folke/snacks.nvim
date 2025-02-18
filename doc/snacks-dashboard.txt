@@ -1,4 +1,4 @@
-*snacks-dashboard.txt*                                             snacks.nvim
+*snacks-dashboard*                                        snacks_dashboard
 
 ==============================================================================
 Table of Contents                         *snacks-dashboard-table-of-contents*

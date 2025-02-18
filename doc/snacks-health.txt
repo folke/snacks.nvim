@@ -1,4 +1,4 @@
-*snacks-health.txt*                                                snacks.nvim
+*snacks-health*                                              snacks_health
 
 ==============================================================================
 Table of Contents                            *snacks-health-table-of-contents*

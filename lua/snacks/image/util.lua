@@ -30,8 +30,8 @@ end
 function M.pixels_to_cells(size)
   local terminal = Snacks.image.terminal.size()
   return M.norm({
-    width = size.width / terminal.cell_width * terminal.scale,
-    height = size.height / terminal.cell_height * terminal.scale,
+    width = size.width / terminal.cell_width,
+    height = size.height / terminal.cell_height,
   })
 end
 
@@ -46,17 +46,28 @@ end
 
 ---@param file string
 ---@param cells snacks.image.Size size in rows x columns
-function M.fit(file, cells)
-  local img_pixels = M.dim(file)
+---@param opts? { full?: boolean, info?: snacks.image.Info }
+function M.fit(file, cells, opts)
+  opts = opts or {}
+  local img_pixels ---@type snacks.image.Size
+  if opts.info then
+    local terminal = Snacks.image.terminal.size()
+    img_pixels = {}
+    img_pixels.height = opts.info.size.height / opts.info.dpi.height * 96 * terminal.scale
+    img_pixels.width = opts.info.size.width / opts.info.dpi.width * 96 * terminal.scale
+  else
+    img_pixels = M.dim(file)
+  end
   local img_cells = M.pixels_to_cells(img_pixels)
 
+  local ret = vim.deepcopy(cells)
+  -- if not opts.full then
   if img_cells.width <= cells.width and img_cells.height <= cells.height then
     return img_cells
   end
-
-  local ret = vim.deepcopy(cells)
   ret.width = math.min(cells.width, img_cells.width)
   ret.height = math.min(cells.height, img_cells.height)
+  -- end
 
   local scale = ret.width / ret.height
   local img_scale = img_cells.width / img_cells.height

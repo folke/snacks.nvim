@@ -1,4 +1,4 @@
-*snacks-terminal.txt*                                              snacks.nvim
+*snacks-terminal*                                          snacks_terminal
 
 ==============================================================================
 Table of Contents                          *snacks-terminal-table-of-contents*

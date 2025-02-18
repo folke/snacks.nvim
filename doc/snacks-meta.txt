@@ -1,4 +1,4 @@
-*snacks-meta.txt*                                                  snacks.nvim
+*snacks-meta*                                                  snacks_meta
 
 ==============================================================================
 Table of Contents                              *snacks-meta-table-of-contents*

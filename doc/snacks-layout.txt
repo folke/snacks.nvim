@@ -1,4 +1,4 @@
-*snacks-layout.txt*                                                snacks.nvim
+*snacks-layout*                                              snacks_layout
 
 ==============================================================================
 Table of Contents                            *snacks-layout-table-of-contents*

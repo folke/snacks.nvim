@@ -1,0 +1,64 @@
+\documentclass{article}
+\usepackage{graphicx}  % For images
+\usepackage{amsmath}  % For math symbols
+\usepackage{amssymb}  % For extra math symbols
+
+\begin{document}
+
+\section{Image Tests}
+
+Inline image:
+
+\includegraphics[width=0.5\textwidth]{test.png}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.7\textwidth]{test.png}
+    \caption{Test image centered in a figure environment.}
+    \label{fig:test_image}
+\end{figure}
+
+\newpage
+
+\section{Math Tests}
+
+Inline math: \(E=mc^2$ and $\int_0^1 x^2 \,dx\)
+
+Inline math: $E=mc^2$ and $\int_0^1 x^2 \,dx$
+
+Displayed equation:
+
+\[
+    f(x) = \sum_{n=0}^{\infty} \frac{x^n}{n!}
+\]
+
+Equation environment:
+
+\begin{equation}
+    a^2 + b^2 = c^2
+    \label{eq:pythagoras}
+\end{equation}
+
+Aligned equations:
+
+\begin{align}
+    x^2 + y^2 &= r^2 \\
+    \nabla \cdot \mathbf{E} &= \frac{\rho}{\varepsilon_0}
+\end{align}
+
+Multiline equations:
+
+\begin{multline}
+    a + b + c + d + e + f + g + h + i + j + k = \\
+    l + m + n + o + p + q + r + s + t + u + v
+\end{multline}
+
+\newpage
+
+\section{Testing Referencing}
+
+Referencing an equation: See Eq.~\ref{eq:pythagoras}.
+
+Referencing an image: See Fig.~\ref{fig:test_image}.
+
+\end{document}

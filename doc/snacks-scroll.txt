@@ -1,4 +1,4 @@
-*snacks-scroll.txt*                                                snacks.nvim
+*snacks-scroll*                                              snacks_scroll
 
 ==============================================================================
 Table of Contents                            *snacks-scroll-table-of-contents*

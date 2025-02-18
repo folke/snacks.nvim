@@ -5,10 +5,11 @@
 ---@field util snacks.image.util
 ---@field buf snacks.image.buf
 ---@field doc snacks.image.doc
+---@field convert snacks.image.convert
 local M = setmetatable({}, {
   ---@param M snacks.image
   __index = function(M, k)
-    if vim.tbl_contains({ "terminal", "image", "placement", "util", "doc", "buf" }, k) then
+    if vim.tbl_contains({ "terminal", "image", "placement", "util", "doc", "buf", "convert" }, k) then
       M[k] = require("snacks.image." .. k)
     end
     return rawget(M, k)
@@ -43,15 +44,31 @@ M.meta = {
 --- Return the absolute path or url to the image.
 --- When `nil`, the path is resolved relative to the file.
 ---@field resolve? fun(file: string, src: string): string?
+---@field magick? table<string, (string|number)[]>
 local defaults = {
-  formats = { "png", "jpg", "jpeg", "gif", "bmp", "webp", "tiff", "heic", "avif", "mp4", "mov", "avi", "mkv", "webm" },
+  formats = {
+    "png",
+    "jpg",
+    "jpeg",
+    "gif",
+    "bmp",
+    "webp",
+    "tiff",
+    "heic",
+    "avif",
+    "mp4",
+    "mov",
+    "avi",
+    "mkv",
+    "webm",
+    "pdf",
+  },
   force = false, -- try displaying the image, even if the terminal does not support it
   doc = {
     -- enable image viewer for documents
     -- a treesitter parser must be available for the enabled languages.
     -- supported language injections: markdown, html
     enabled = true,
-    lang = { "markdown", "html", "norg" },
     -- render the image inline in the buffer
     -- if your env doesn't support unicode placeholders, this will be disabled
     -- takes precedence over `opts.float` on supported terminals
@@ -62,6 +79,7 @@ local defaults = {
     max_width = 80,
     max_height = 40,
   },
+  img_dirs = { "img", "images", "assets", "static", "public", "media", "attachments" },
   -- window options applied to windows displaying image buffers
   -- an image buffer is a buffer with `filetype=image`
   wo = {
@@ -75,8 +93,18 @@ local defaults = {
     spell = false,
     statuscolumn = "",
   },
-  debug = false,
+  cache = vim.fn.stdpath("cache") .. "/snacks/image",
+  debug = {
+    request = false,
+    convert = false,
+    placement = false,
+  },
   env = {},
+  magick = {
+    default = { "{src}[0]", "-scale", "1920x1080>" },
+    math = { "-density", 600, "{src}[0]", "-trim" },
+    pdf = { "-density", 300, "{src}[0]", "-background", "white", "-alpha", "remove", "-trim" },
+  },
 }
 M.config = Snacks.config.get("image", defaults)
 
@@ -89,6 +117,11 @@ Snacks.config.style("snacks_image", {
   col = 1,
   -- width/height are automatically set by the image size unless specified below
 })
+
+Snacks.util.set_hl({
+  Spinner = "Special",
+  Loading = "NonText",
+}, { prefix = "SnacksImage", default = true })
 
 ---@class snacks.image.Opts
 ---@field pos? snacks.image.Pos (row, col) (1,0)-indexed. defaults to the top-left corner
@@ -126,6 +159,14 @@ function M.hover()
   M.doc.hover()
 end
 
+---@return string[]
+function M.langs()
+  local queries = vim.api.nvim_get_runtime_file("queries/*/images.scm", true)
+  return vim.tbl_map(function(q)
+    return q:match("queries/(.-)/images%.scm")
+  end, queries)
+end
+
 ---@private
 ---@param ev? vim.api.keyset.create_autocmd.callback_args
 function M.setup(ev)
@@ -155,14 +196,17 @@ function M.setup(ev)
     })
   end
   if M.config.enabled and M.config.doc.enabled then
+    local langs = M.langs()
     vim.api.nvim_create_autocmd("FileType", {
       group = group,
       callback = function(e)
         local ft = vim.bo[e.buf].filetype
         local lang = vim.treesitter.language.get_lang(ft)
-        if vim.tbl_contains(M.config.doc.lang, lang) then
+        if vim.tbl_contains(langs, lang) then
           vim.schedule(function()
-            M.doc.attach(e.buf)
+            if vim.api.nvim_buf_is_valid(e.buf) then
+              M.doc.attach(e.buf)
+            end
           end)
         end
       end,
@@ -176,7 +220,8 @@ end
 ---@private
 function M.health()
   Snacks.health.have_tool({ "kitty", "wezterm", "ghostty" })
-  if not Snacks.health.have_tool("magick") then
+  local is_win = jit.os:find("Windows")
+  if not Snacks.health.have_tool({ "magick", not is_win and "convert" or nil }) then
     Snacks.health.error("`magick` is required to convert images. Only PNG files will be displayed.")
   end
   local env = M.terminal.env()
@@ -207,14 +252,33 @@ function M.health()
     )
   )
 
-  M.doc.queries()
-  for lang, q in pairs(M.doc._queries) do
-    if q.query then
-      Snacks.health.ok("Images rendering for `" .. lang .. "` is available")
+  for _, lang in ipairs(M.langs()) do
+    local ok, parser = pcall(vim.treesitter.get_string_parser, "", lang)
+    if ok and parser then
+      Snacks.health.ok("Image rendering for `" .. lang .. "` is available")
     else
-      Snacks.health.warn("Images rendering for `" .. lang .. "` is not available.\nMissing treesitter parser.")
+      Snacks.health.warn("Image rendering for `" .. lang .. "` is not available")
     end
   end
+
+  if Snacks.health.have_tool("gs") then
+    Snacks.health.ok("PDF files are supported")
+  else
+    Snacks.health.warn("`gs` is required to render PDF files")
+  end
+
+  if Snacks.health.have_tool({ "tectonic", "pdflatex" }) then
+    Snacks.health.ok("LaTeX math equations are supported")
+  else
+    Snacks.health.warn("`tectonic` or `pdflatex` is required to render LaTeX math equations")
+  end
+
+  if Snacks.health.have_tool("mmdc") then
+    Snacks.health.ok("Mermaid diagrams are supported")
+  else
+    Snacks.health.warn("`mmdc` is required to render Mermaid diagrams")
+  end
+
   if env.supported then
     Snacks.health.ok("your terminal supports the kitty graphics protocol")
   elseif M.config.force then

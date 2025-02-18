@@ -71,7 +71,7 @@ local terminals = {}
 local function jobstart(cmd, opts)
   opts = opts or {}
   local fn = vim.fn.jobstart
-  if vim.fn.has("nvim-0.11") == 0 and opts.term then
+  if vim.fn.termopen then
     opts.term = nil
     fn = vim.fn.termopen
   end
