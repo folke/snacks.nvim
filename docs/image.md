@@ -8,7 +8,7 @@
 - open images in a wide range of formats:
   `pdf`, `png`, `jpg`, `jpeg`, `gif`, `bmp`, `webp`, `tiff`, `heic`, `avif`, `mp4`, `mov`, `avi`, `mkv`, `webm`
 - Supports inline image rendering in:
-  `markdown`, `html`, `norg`, `tsx`, `javascript`, `css`, `vue`, `scss`, `latex`, `typst`, `vue`
+  `markdown`, `html`, `norg`, `tsx`, `javascript`, `css`, `vue`, `svelte`, `scss`, `latex`, `typst`
 - LaTex math expressions in `markdown` and `latex` documents
 
 Terminal support:
