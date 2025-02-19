@@ -52,14 +52,26 @@ M.transforms = {
       end
     end
     table.sort(packages)
+    local custom_cmds = {}
+    local cmds_patterns = { "\\DeclareMathOperator", "\\DeclarePairedDelimiter", "\\renewcommand", "\\newcommand" }
+  
+    for _, line in ipairs(vim.api.nvim_buf_get_lines(ctx.buf, 0, -1, false)) do
+      for _, pattern in ipairs(cmds_patterns) do
+        if line:find(pattern) then
+          table.insert(custom_cmds, line)
+          break -- Exit inner loop early once a match is found
+        end
+      end
+    end
     img.content = ([[
 \documentclass[preview,border=2pt,varwidth]{standalone}
 \usepackage{%s}
+%s
 \begin{document}
 { \Large \color[HTML]{%s}
 %s}
 \end{document}
-    ]]):format(table.concat(packages, ", "), fg:upper():sub(2), content)
+    ]]):format(table.concat(packages, ", "), table.concat(custom_cmds, "\n"), fg:upper():sub(2), content)
   end,
 }
 
