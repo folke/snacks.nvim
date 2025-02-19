@@ -198,7 +198,7 @@ function M.hover_close()
 end
 
 --- Get the image at the cursor (if any)
----@return string? image_src, snacks.image.Pos? image_pos
+---@return string? image_src, snacks.image.Pos? image_pos, string? image_id
 function M.at_cursor()
   local cursor = vim.api.nvim_win_get_cursor(0)
   local imgs = M.find(vim.api.nvim_get_current_buf(), cursor[1], cursor[1] + 1)
@@ -209,7 +209,7 @@ function M.at_cursor()
         (range[1] == range[3] and cursor[2] >= range[2] and cursor[2] <= range[4])
         or (range[1] ~= range[3] and cursor[1] >= range[1] and cursor[1] <= range[3])
       then
-        return img.src, img.pos
+        return img.src, img.pos, img.id
       end
     end
   end
@@ -274,6 +274,44 @@ function M.hover()
       end
     end,
   })
+end
+
+---@param buf integer
+function M.hover_inline(buf)
+  local imgs = {} ---@type table<string, snacks.image.Placement>
+  return function()
+    local found = {} ---@type table<string, boolean>
+    for _, i in ipairs(M.find(buf)) do
+      found[i.id] = true
+    end
+    for nid, img in pairs(imgs) do
+      if not found[nid] then
+        img:close()
+        imgs[nid] = nil
+      end
+    end
+    local src, pos, id = M.at_cursor()
+    if not src or not id then
+      return
+    end
+
+    local imag = imgs[id] ---@type snacks.image.Placement?
+
+    if imag then
+      imag:close()
+      imgs[id] = nil
+    else
+      imag = Snacks.image.placement.new(
+        buf,
+        src,
+        Snacks.config.merge({}, Snacks.image.config.doc, {
+          pos = pos,
+          inline = true
+        })
+      )
+      imgs[id] = imag
+    end
+  end
 end
 
 ---@param buf number

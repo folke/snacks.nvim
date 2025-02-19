@@ -170,6 +170,19 @@ function M.hover()
   M.doc.hover()
 end
 
+local bufs = {}
+
+--- Show the image inline
+function M.hover_inline()
+  local buf = vim.api.nvim_get_current_buf()
+  if not bufs[buf] then
+    bufs[buf] = M.doc.hover_inline(buf)
+    bufs[buf]()
+  else
+    bufs[buf]()
+  end
+end
+
 ---@return string[]
 function M.langs()
   local queries = vim.api.nvim_get_runtime_file("queries/*/images.scm", true)
