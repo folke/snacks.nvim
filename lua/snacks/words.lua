@@ -18,7 +18,9 @@ local defaults = {
   foldopen = true, -- open folds after jumping
   jumplist = true, -- set jump point before jumping
   modes = { "n", "i", "c" }, -- modes to show references
-  exclude_ft = {}, -- filetypes to exclude
+  filter = function(buf) -- what buffers to enable `snacks.words`
+    return vim.g.snacks_words ~= false and vim.b[buf].snacks_words ~= false
+  end,
 }
 
 M.enabled = false
@@ -100,14 +102,10 @@ function M.is_enabled(opts)
     end
   end
 
-  if not vim.tbl_isempty(config.exclude_ft) then
-    local ft = vim.bo[vim.api.nvim_get_current_buf()].filetype
-    if vim.tbl_contains(config.exclude_ft, ft) then
-      return false
-    end
-  end
-
   local buf = opts.buf or vim.api.nvim_get_current_buf()
+  if not config.filter(buf) then
+    return false
+  end
   local clients = (vim.lsp.get_clients or vim.lsp.get_active_clients)({ bufnr = buf })
   clients = vim.tbl_filter(function(client)
     return client.supports_method("textDocument/documentHighlight", { bufnr = buf })
