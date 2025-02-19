@@ -18,6 +18,7 @@ local defaults = {
   foldopen = true, -- open folds after jumping
   jumplist = true, -- set jump point before jumping
   modes = { "n", "i", "c" }, -- modes to show references
+  exclude_ft = {}, -- filetypes to exclude
 }
 
 M.enabled = false
@@ -95,6 +96,13 @@ function M.is_enabled(opts)
     mode = mode:sub(1, 2) == "no" and "o" or mode
     mode = mode:sub(1, 1):match("[ncitsvo]") or "n"
     if not vim.tbl_contains(config.modes, mode) then
+      return false
+    end
+  end
+
+  if not vim.tbl_isempty(config.exclude_ft) then
+    local ft = vim.bo[vim.api.nvim_get_current_buf()].filetype
+    if vim.tbl_contains(config.exclude_ft, ft) then
       return false
     end
   end
