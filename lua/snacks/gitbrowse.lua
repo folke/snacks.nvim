@@ -66,6 +66,12 @@ local defaults = {
       permalink = "/src/{commit}/{file}#lines-{line_start}-L{line_end}",
       commit = "/commits/{commit}",
     },
+    ["git.sr.ht"] = {
+      branch = "/tree/{branch}",
+      file = "/tree/{branch}/item/{file}",
+      permalink = "/tree/{commit}/item/{file}#L{line_start}",
+      commit = "/commit/{commit}",
+    },
   },
 }
 
