@@ -95,7 +95,7 @@ function M.new(opts)
   self.init_opts = opts
   self.opts = Snacks.picker.config.get(opts)
   if self.opts.source == "resume" then
-    return M.resume()
+    return M.resume(self.opts)
   end
 
   self.history = require("snacks.picker.util.history").new("picker_" .. (self.opts.source or "custom"), {
@@ -446,8 +446,9 @@ function M:update_titles()
 end
 
 --- Resume the last picker
+---@param opts? snacks.picker.Config
 ---@private
-function M.resume()
+function M.resume(opts)
   local last = M.last
   if not last then
     Snacks.notify.error("No picker to resume")
@@ -455,7 +456,9 @@ function M.resume()
   end
   last.opts.pattern = last.filter.pattern
   last.opts.search = last.filter.search
-  local ret = M.new(last.opts)
+  -- override with new opts if provided, but ensure last source is preserved
+  opts = opts and vim.tbl_extend("force", last.opts, opts, { source = last.opts.source }) or last.opts
+  local ret = M.new(opts)
   ret:show()
   ret.list:set_selected(last.selected)
   ret.list:update()
