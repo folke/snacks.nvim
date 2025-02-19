@@ -25,6 +25,7 @@ M.transforms = {
     local fg = Snacks.util.color("SnacksImageMath") or "#000000"
     img.content = ([[
 #set page(width: auto, height: auto, margin: (x: 2pt, y: 2pt))
+#show math.equation.where(block: false): set text(top-edge: "bounds", bottom-edge: "bounds")
 #set text(size: 12pt, fill: rgb("%s"))
 %s
 %s]]):format(fg, M.get_header(ctx.buf), img.content)
