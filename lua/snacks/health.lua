@@ -125,14 +125,27 @@ end
 ---@param langs string[]|string
 function M.has_lang(langs)
   langs = type(langs) == "string" and { langs } or langs --[[@as string[] ]]
+  local ret = {} ---@type table<string, boolean>
+  local available, missing = {}, {} ---@type string[], string[]
   for _, lang in ipairs(langs) do
-    local has_lang = pcall(vim.treesitter.language.add, lang)
+    local has_lang = pcall(vim.treesitter.get_string_parser, "", lang)
+    ret[lang] = has_lang
+    lang = ("`%s`"):format(lang)
     if has_lang then
-      Snacks.health.ok("Treesitter language `" .. lang .. "` is available")
+      available[#available + 1] = lang
     else
-      Snacks.health.warn("Treesitter language `" .. lang .. "` is not available")
+      missing[#missing + 1] = lang
     end
   end
+  table.sort(available)
+  table.sort(missing)
+  if #available > 0 then
+    M.ok("Available Treesitter languages:\n  " .. table.concat(available, ", "))
+  end
+  if #missing > 0 then
+    M.warn("Missing Treesitter languages:\n  " .. table.concat(missing, ", "))
+  end
+  return ret, #available, #missing
 end
 
 return M

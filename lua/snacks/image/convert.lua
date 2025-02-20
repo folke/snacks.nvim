@@ -39,9 +39,9 @@ local uv = vim.uv or vim.loop
 ---@field cmd (fun(step: snacks.image.step):(snacks.image.Proc|snacks.image.Proc[])?)|snacks.image.Proc|snacks.image.Proc[]
 ---@field ft? string
 ---@field file? fun(convert: snacks.image.Convert, meta: snacks.image.meta): string
----@field available? boolean
 ---@field depends? string[]
 ---@field on_done? fun(step: snacks.image.step)
+---@field on_error? fun(step: snacks.image.step):boolean? when return true, continue to next step
 ---@field pipe? boolean
 
 ---@type table<string, snacks.image.cmd>
@@ -81,11 +81,15 @@ local commands = {
   },
   tex = {
     ft = "pdf",
+    file = function(convert, ctx)
+      ctx.pdf = Snacks.image.config.cache .. "/" .. vim.fs.basename(ctx.src):gsub("%.tex$", ".pdf")
+      return convert:tmpfile("pdf")
+    end,
     cmd = {
       {
         cwd = "{dirname}",
         cmd = "tectonic",
-        args = { "--outdir", "{cache}", "{src}" },
+        args = { "-Z", "continue-on-errors", "--outdir", "{cache}", "{src}" },
       },
       {
         cmd = "pdflatex",
@@ -94,9 +98,15 @@ local commands = {
       },
     },
     on_done = function(step)
-      local pdf = Snacks.image.config.cache .. "/" .. vim.fs.basename(step.meta.src):gsub("%.tex$", ".pdf")
+      local pdf = assert(step.meta.pdf, "No pdf file")
       if uv.fs_stat(pdf) then
         uv.fs_rename(pdf, step.file)
+      end
+    end,
+    on_error = function(step)
+      local pdf = assert(step.meta.pdf, "No pdf file")
+      if step.meta.pdf and vim.fn.getfsize(pdf) > 0 then
+        return true
       end
     end,
   },
@@ -146,29 +156,29 @@ local commands = {
     end,
   },
   convert = {
-    depends = { "identify" },
     ft = "png",
     cmd = function(step)
       local formats = vim.deepcopy(Snacks.image.config.convert.magick or {})
       local args = formats.default or { "{src}[0]" }
       local info = step.meta.info
-      local fts = { vim.fs.basename(step.file):match("%.([^%.]+)%.png") } ---@type string[]
-      if info then
-        local vector = vim.tbl_contains({ "pdf", "svg", "eps", "ai", "mvg" }, info.format)
-        if vector then
-          args = { "-density", 300, "{src}[0]" }
-        end
-        if info.format then
-          fts[#fts + 1] = info.format
-        end
+      local format = info and info.format or vim.fn.fnamemodify(step.meta.src, ":e")
+
+      local vector = vim.tbl_contains({ "pdf", "svg", "eps", "ai", "mvg" }, format)
+      if vector then
+        args = formats.vector or args
       end
+
+      local fts = { vim.fs.basename(step.file):match("%.([^%.]+)%.png") } ---@type string[]
+      fts[#fts + 1] = format
+
       for _, ft in ipairs(fts) do
         local fmt = formats[ft]
         if fmt then
-          args = fmt
+          args = type(fmt) == "function" and fmt() or fmt
           break
         end
       end
+
       args[#args + 1] = "{file}"
       return {
         { cmd = "magick", args = args },
@@ -236,6 +246,7 @@ function Convert:error()
   return self._err
 end
 
+---@param ft string
 function Convert:tmpfile(ft)
   return Snacks.image.config.cache .. "/" .. self.prefix .. "." .. ft
 end
@@ -270,7 +281,10 @@ function Convert:ft(src)
 end
 
 function Convert:resolve()
-  self:_resolve("url")
+  if M.is_uri(self.src) then
+    self:_resolve("url")
+    self:_resolve("identify")
+  end
   while self:ft() ~= "png" do
     local ft = self:ft()
     local target = commands[ft] and ft or "convert"
@@ -299,7 +313,9 @@ function Convert:run(cb)
       step.done = true
       step.err = err
     end
-    if err then
+    if step and err and step.cmd.on_error and step.cmd.on_error(step) then
+      -- keep going
+    elseif err then
       if Snacks.image.config.convert.notify then
         local title = step and ("Conversion failed at step `%s`"):format(step.name) or "Conversion failed"
         if step and step.proc then

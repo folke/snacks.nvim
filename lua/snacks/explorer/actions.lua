@@ -182,7 +182,7 @@ function M.actions.explorer_rename(picker, item)
     return
   end
   Snacks.rename.rename_file({
-    file = item.file,
+    from = item.file,
     on_rename = function(new, old)
       Tree:refresh(vim.fs.dirname(old))
       Tree:refresh(vim.fs.dirname(new))
@@ -205,12 +205,7 @@ function M.actions.explorer_move(picker)
   M.confirm("Move " .. what .. " to " .. t .. "?", function()
     for _, from in ipairs(paths) do
       local to = target .. "/" .. vim.fn.fnamemodify(from, ":t")
-      Snacks.rename.on_rename_file(from, to, function()
-        local ok, err = pcall(vim.fn.rename, from, to)
-        if not ok then
-          Snacks.notify.error("Failed to move `" .. from .. "`:\n- " .. err)
-        end
-      end)
+      Snacks.rename.rename_file({ from = from, to = to })
       Tree:refresh(vim.fs.dirname(from))
     end
     Tree:refresh(target)
@@ -263,7 +258,9 @@ function M.actions.explorer_del(picker)
   M.confirm("Delete " .. what .. "?", function()
     for _, path in ipairs(paths) do
       local ok, err = pcall(vim.fn.delete, path, "rf")
-      if not ok then
+      if ok then
+        Snacks.bufdelete({ file = path, force = true })
+      else
         Snacks.notify.error("Failed to delete `" .. path .. "`:\n- " .. err)
       end
       Tree:refresh(vim.fs.dirname(path))

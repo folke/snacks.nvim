@@ -226,6 +226,7 @@ function M.diff(opts, ctx)
         local diff = table.concat(header, "\n") .. "\n" .. table.concat(hunk, "\n")
         cb({
           text = file .. ":" .. line,
+          diff = diff,
           file = file,
           pos = { line, 0 },
           preview = { text = diff, ft = "diff", loc = false },

@@ -51,9 +51,8 @@
 ---@field qflist fun(opts?: snacks.picker.qf.Config|{}): snacks.Picker
 ---@field recent fun(opts?: snacks.picker.recent.Config|{}): snacks.Picker
 ---@field registers fun(opts?: snacks.picker.Config|{}): snacks.Picker
----@field resume fun(opts?: snacks.picker.Config|{}): snacks.Picker
+---@field resume fun(): snacks.Picker
 ---@field search_history fun(opts?: snacks.picker.history.Config|{}): snacks.Picker
----@field select fun(opts?: snacks.picker.Config|{}): snacks.Picker
 ---@field smart fun(opts?: snacks.picker.smart.Config|{}): snacks.Picker
 ---@field spelling fun(opts?: snacks.picker.Config|{}): snacks.Picker
 ---@field treesitter fun(opts?: snacks.picker.treesitter.Config|{}): snacks.Picker

@@ -106,6 +106,9 @@ In case of issues, make sure to run `:checkhealth snacks`.
     float = true,
     max_width = 80,
     max_height = 40,
+    -- Set to `true`, to conceal the image text when rendering inline.
+    -- (experimental)
+    conceal = false,
   },
   img_dirs = { "img", "images", "assets", "static", "public", "media", "attachments" },
   -- window options applied to windows displaying image buffers
@@ -131,6 +134,12 @@ In case of issues, make sure to run `:checkhealth snacks`.
   ---@class snacks.image.convert.Config
   convert = {
     notify = true, -- show a notification on error
+    math = {
+      font_size = "Large", -- see https://www.sascha-frank.com/latex-font-size.html
+      -- for latex documents, the doc packages are included automatically,
+      -- but you can add more packages here. Useful for markdown documents.
+      packages = { "amsmath", "amssymb", "amsfonts", "amscd", "mathtools" },
+    },
     ---@type snacks.image.args
     mermaid = function()
       local theme = vim.o.background == "light" and "neutral" or "dark"
@@ -138,9 +147,10 @@ In case of issues, make sure to run `:checkhealth snacks`.
     end,
     ---@type table<string,snacks.image.args>
     magick = {
-      default = { "{src}[0]", "-scale", "1920x1080>" },
-      math = { "-density", 600, "{src}[0]", "-trim" },
-      pdf = { "-density", 300, "{src}[0]", "-background", "white", "-alpha", "remove", "-trim" },
+      default = { "{src}[0]", "-scale", "1920x1080>" }, -- default for raster images
+      vector = { "-density", 192, "{src}[0]" }, -- used by vector images like svg
+      math = { "-density", 192, "{src}[0]", "-trim" },
+      pdf = { "-density", 192, "{src}[0]", "-background", "white", "-alpha", "remove", "-trim" },
     },
   },
 }
@@ -188,6 +198,7 @@ docs for more information on how to customize these styles
 ```lua
 ---@class snacks.image.Opts
 ---@field pos? snacks.image.Pos (row, col) (1,0)-indexed. defaults to the top-left corner
+---@field range? Range4
 ---@field inline? boolean render the image inline in the buffer
 ---@field width? number
 ---@field min_width? number

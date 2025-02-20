@@ -283,7 +283,7 @@ end
 
 ---@param ctx snacks.picker.preview.ctx
 function M.git_show(ctx)
-  local native = ctx.picker.opts.previewers.git.native
+  local builtin = ctx.picker.opts.previewers.git.builtin
   local cmd = {
     "git",
     "-c",
@@ -297,10 +297,10 @@ function M.git_show(ctx)
     cmd[#cmd + 1] = "--"
     vim.list_extend(cmd, pathspec)
   end
-  if not native then
+  if builtin then
     table.insert(cmd, 2, "--no-pager")
   end
-  M.cmd(cmd, ctx, { ft = not native and "git" or nil })
+  M.cmd(cmd, ctx, { ft = builtin and "git" or nil })
 end
 
 ---@param ctx snacks.picker.preview.ctx
@@ -313,7 +313,7 @@ end
 
 ---@param ctx snacks.picker.preview.ctx
 function M.git_log(ctx)
-  local native = ctx.picker.opts.previewers.git.native
+  local builtin = ctx.picker.opts.previewers.git.builtin
   local cmd = git(
     ctx,
     "log",
@@ -326,14 +326,14 @@ function M.git_log(ctx)
     "--no-patch",
     ctx.item.commit
   )
-  if not native then
+  if builtin then
     table.insert(cmd, 2, "--no-pager")
   end
   local row = 0
   M.cmd(cmd, ctx, {
-    ft = not native and "git" or nil,
+    ft = builtin and "git" or nil,
     ---@param text string
-    add = not native and function(text)
+    add = builtin and function(text)
       local commit, msg, date = text:match("^(%S+) (.*) %((.*)%)$")
       if commit then
         row = row + 1
@@ -353,8 +353,8 @@ end
 
 ---@param ctx snacks.picker.preview.ctx
 function M.diff(ctx)
-  local native = ctx.picker.opts.previewers.git.native
-  if ctx.item.diff and native then
+  local builtin = ctx.picker.opts.previewers.diff.builtin
+  if builtin then
     ctx.item.preview = { text = ctx.item.diff, ft = "diff" }
     return M.preview(ctx)
   end
@@ -370,25 +370,25 @@ end
 
 ---@param ctx snacks.picker.preview.ctx
 function M.git_diff(ctx)
-  local native = ctx.picker.opts.previewers.git.native
+  local builtin = ctx.picker.opts.previewers.git.builtin
   local cmd = git(ctx, "diff", "HEAD")
   if ctx.item.file then
     vim.list_extend(cmd, { "--", ctx.item.file })
   end
-  if not native then
+  if builtin then
     table.insert(cmd, 2, "--no-pager")
   end
-  M.cmd(cmd, ctx, { ft = not native and "diff" or nil })
+  M.cmd(cmd, ctx, { ft = builtin and "diff" or nil })
 end
 
 ---@param ctx snacks.picker.preview.ctx
 function M.git_stash(ctx)
-  local native = ctx.picker.opts.previewers.git.native
+  local builtin = ctx.picker.opts.previewers.git.builtin
   local cmd = git(ctx, "stash", "show", "--patch", ctx.item.stash)
-  if not native then
+  if builtin then
     table.insert(cmd, 2, "--no-pager")
   end
-  M.cmd(cmd, ctx, { ft = not native and "diff" or nil })
+  M.cmd(cmd, ctx, { ft = builtin and "diff" or nil })
 end
 
 ---@param ctx snacks.picker.preview.ctx

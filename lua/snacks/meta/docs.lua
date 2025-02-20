@@ -602,9 +602,15 @@ function M.picker_types(types)
   lines[#lines + 1] = ""
   lines[#lines + 1] = "---@class snacks.picker"
   for _, source in ipairs(sources) do
-    local t = types[source] or "snacks.picker.Config"
-    t = t:gsub("|.*", "") .. "|{}"
-    lines[#lines + 1] = ("---@field %s fun(opts?: %s): snacks.Picker"):format(source, t)
+    if source ~= "select" then
+      local t = types[source] or "snacks.picker.Config"
+      t = t:gsub("|.*", "") .. "|{}"
+      if source == "resume" then
+        lines[#lines + 1] = ("---@field %s fun(): snacks.Picker"):format(source)
+      else
+        lines[#lines + 1] = ("---@field %s fun(opts?: %s): snacks.Picker"):format(source, t)
+      end
+    end
   end
   vim.fn.writefile(lines, "lua/snacks/picker/types.lua")
 end

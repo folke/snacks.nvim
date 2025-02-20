@@ -83,10 +83,11 @@ Snacks.rename.on_rename_file(from, to, rename)
 
 ### `Snacks.rename.rename_file()`
 
-Prompt for the new filename,
+Renames the provided file, or the current buffer's file.
+Prompt for the new filename if `to` is not provided.
 do the rename, and trigger LSP handlers
 
 ```lua
----@param opts? {file?: string, on_rename?: fun(new:string, old:string)}
+---@param opts? {from?: string, to?:string, on_rename?: fun(to:string, from:string, ok:boolean)}
 Snacks.rename.rename_file(opts)
 ```

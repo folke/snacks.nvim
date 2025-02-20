@@ -511,6 +511,7 @@ function M:close(opts)
   local win = self.win
   local buf = wipe and self.buf
   local scratch_buf = self.scratch_buf ~= self.buf and self.scratch_buf or nil
+  self:on_close()
 
   self.win = nil
   self.scratch_buf = nil
@@ -570,7 +571,6 @@ function M:close(opts)
   if vim.tbl_contains(event_stack, "WinClosed") or not pcall(close) then
     vim.schedule(try_close)
   end
-  self:on_close()
 end
 
 function M:hide()

@@ -164,11 +164,11 @@ local defaults = {
   ---@class snacks.picker.previewers.Config
   previewers = {
     diff = {
-      native = false, -- use native (terminal) or Neovim for previewing git diffs and commits
+      builtin = true, -- use Neovim for previewing diffs (true) or use an external tool (false)
       cmd = { "delta" }, -- example to show a diff with delta
     },
     git = {
-      native = false, -- use native (terminal) or Neovim for previewing git diffs and commits
+      builtin = true, -- use Neovim for previewing git output (true) or use git (false)
       args = {}, -- additional arguments passed to the git command. Useful to set pager options usin `-c ...`
     },
     file = {

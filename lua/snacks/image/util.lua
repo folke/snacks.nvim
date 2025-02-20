@@ -39,8 +39,8 @@ end
 ---@return snacks.image.Size
 function M.norm(size)
   return {
-    width = math.max(1, math.floor(size.width + 0.5)),
-    height = math.max(1, math.floor(size.height + 0.5)),
+    width = math.max(1, math.ceil(size.width)),
+    height = math.max(1, math.ceil(size.height)),
   }
 end
 

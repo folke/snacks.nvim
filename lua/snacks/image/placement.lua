@@ -201,7 +201,17 @@ function M:render_grid(loc)
   if self.opts.inline then
     local padding = string.rep(" ", loc[2])
     vim.api.nvim_buf_clear_namespace(self.buf, self.ns, 0, -1)
-    self.extmark_id = vim.api.nvim_buf_set_extmark(self.buf, self.ns, loc[1] - 1, 0, {
+    local start_row, start_col = loc[1] - 1, loc[2]
+    local end_row, end_col ---@type number?, number?
+    local conceal = Snacks.image.config.doc.conceal and " " or nil
+    if self.opts.range and conceal then
+      start_row, start_col = self.opts.range[1] - 1, self.opts.range[2]
+      end_row, end_col = self.opts.range[3] - 1, self.opts.range[4]
+    end
+    self.extmark_id = vim.api.nvim_buf_set_extmark(self.buf, self.ns, start_row, start_col, {
+      end_row = end_row,
+      end_col = end_col,
+      conceal = conceal,
       id = self.extmark_id,
       ---@param l string
       virt_lines = vim.tbl_map(function(l)

@@ -102,8 +102,21 @@ function M.get(opts)
     end
   end
 
+  M.fix_old(opts)
+
   M.multi(opts)
   return opts
+end
+
+--- Fixes old config options
+---@param opts snacks.picker.Config
+function M.fix_old(opts)
+  if opts.previewers.diff.native ~= nil then
+    opts.previewers.diff.builtin = not opts.previewers.diff.native
+  end
+  if opts.previewers.git.native ~= nil then
+    opts.previewers.git.builtin = not opts.previewers.git.native
+  end
 end
 
 ---@param opts snacks.picker.Config

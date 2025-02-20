@@ -18,6 +18,9 @@ local defaults = {
   foldopen = true, -- open folds after jumping
   jumplist = true, -- set jump point before jumping
   modes = { "n", "i", "c" }, -- modes to show references
+  filter = function(buf) -- what buffers to enable `snacks.words`
+    return vim.g.snacks_words ~= false and vim.b[buf].snacks_words ~= false
+  end,
 }
 
 M.enabled = false
@@ -100,6 +103,9 @@ function M.is_enabled(opts)
   end
 
   local buf = opts.buf or vim.api.nvim_get_current_buf()
+  if not config.filter(buf) then
+    return false
+  end
   local clients = (vim.lsp.get_clients or vim.lsp.get_active_clients)({ bufnr = buf })
   clients = vim.tbl_filter(function(client)
     return client.supports_method("textDocument/documentHighlight", { bufnr = buf })
@@ -128,9 +134,10 @@ function M.get()
   return ret, current
 end
 
----@param count number
+---@param count? number
 ---@param cycle? boolean
 function M.jump(count, cycle)
+  count = count or 1
   local words, idx = M.get()
   if not idx then
     return

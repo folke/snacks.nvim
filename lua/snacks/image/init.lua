@@ -78,6 +78,9 @@ local defaults = {
     float = true,
     max_width = 80,
     max_height = 40,
+    -- Set to `true`, to conceal the image text when rendering inline.
+    -- (experimental)
+    conceal = false,
   },
   img_dirs = { "img", "images", "assets", "static", "public", "media", "attachments" },
   -- window options applied to windows displaying image buffers
@@ -103,6 +106,12 @@ local defaults = {
   ---@class snacks.image.convert.Config
   convert = {
     notify = true, -- show a notification on error
+    math = {
+      font_size = "Large", -- see https://www.sascha-frank.com/latex-font-size.html
+      -- for latex documents, the doc packages are included automatically,
+      -- but you can add more packages here. Useful for markdown documents.
+      packages = { "amsmath", "amssymb", "amsfonts", "amscd", "mathtools" },
+    },
     ---@type snacks.image.args
     mermaid = function()
       local theme = vim.o.background == "light" and "neutral" or "dark"
@@ -110,9 +119,10 @@ local defaults = {
     end,
     ---@type table<string,snacks.image.args>
     magick = {
-      default = { "{src}[0]", "-scale", "1920x1080>" },
-      math = { "-density", 600, "{src}[0]", "-trim" },
-      pdf = { "-density", 300, "{src}[0]", "-background", "white", "-alpha", "remove", "-trim" },
+      default = { "{src}[0]", "-scale", "1920x1080>" }, -- default for raster images
+      vector = { "-density", 192, "{src}[0]" }, -- used by vector images like svg
+      math = { "-density", 192, "{src}[0]", "-trim" },
+      pdf = { "-density", 192, "{src}[0]", "-background", "white", "-alpha", "remove", "-trim" },
     },
   },
 }
@@ -136,6 +146,7 @@ Snacks.util.set_hl({
 
 ---@class snacks.image.Opts
 ---@field pos? snacks.image.Pos (row, col) (1,0)-indexed. defaults to the top-left corner
+---@field range? Range4
 ---@field inline? boolean render the image inline in the buffer
 ---@field width? number
 ---@field min_width? number
@@ -276,13 +287,9 @@ function M.health()
     )
   )
 
-  for _, lang in ipairs(M.langs()) do
-    local ok, parser = pcall(vim.treesitter.get_string_parser, "", lang)
-    if ok and parser then
-      Snacks.health.ok("Image rendering for `" .. lang .. "` is available")
-    else
-      Snacks.health.warn("Image rendering for `" .. lang .. "` is not available")
-    end
+  local langs, _, missing = Snacks.health.has_lang(M.langs())
+  if missing > 0 then
+    Snacks.health.warn("Image rendering in docs with missing treesitter parsers won't work")
   end
 
   if Snacks.health.have_tool("gs") then
@@ -292,9 +299,13 @@ function M.health()
   end
 
   if Snacks.health.have_tool({ "tectonic", "pdflatex" }) then
-    Snacks.health.ok("LaTeX math equations are supported")
+    if langs.latex then
+      Snacks.health.ok("LaTeX math equations are supported")
+    else
+      Snacks.health.warn("The `latex` treesitter parser is required to render LaTeX math expressions")
+    end
   else
-    Snacks.health.warn("`tectonic` or `pdflatex` is required to render LaTeX math equations")
+    Snacks.health.warn("`tectonic` or `pdflatex` is required to render LaTeX math expressions")
   end
 
   if Snacks.health.have_tool("mmdc") then
