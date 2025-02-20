@@ -102,10 +102,39 @@ function M.winhl(...)
   return Snacks.config.merge(unpack(ret))
 end
 
+---@alias snacks.util.IconParamOpts { fallback?: {dir?:string, file?:string} }
+---@alias snacks.util.IconFun fun(name: string, cat?: 'file'|string, opts?: snacks.util.IconParamOpts): string, string?
+
+local icon_fallback_file = "󰈔 "
+
+--- Get an icon from `nvim-web-devicons`.
+---@type snacks.util.IconFun
+function M.icon_from_nvim_web_devicons(name, cat, opts)
+  opts = opts or {}
+  opts.fallback = opts.fallback or {}
+  if cat == "directory" then
+    return opts.fallback.dir or "󰉋 ", "Directory"
+  end
+  local Icons = require("nvim-web-devicons")
+  local icon, hl ---@type string?, string?
+  if cat == "filetype" then
+    icon, hl = Icons.get_icon_by_filetype(name, { default = false })
+  elseif cat == "file" then
+    local ext = name:match("%.(%w+)$")
+    icon, hl = Icons.get_icon(name, ext, { default = false })
+  elseif cat == "extension" then
+    icon, hl = Icons.get_icon(nil, name, { default = false })
+  end
+  if icon then
+    return icon, hl
+  end
+  return opts.fallback.file or icon_fallback_file
+end
+
 --- Get an icon from `mini.icons` or `nvim-web-devicons`.
 ---@param name string
 ---@param cat? string defaults to "file"
----@param opts? { fallback?: {dir?:string, file?:string} }
+---@param opts? snacks.util.IconParamOpts
 ---@return string, string?
 function M.icon(name, cat, opts)
   opts = opts or {}
@@ -115,18 +144,7 @@ function M.icon(name, cat, opts)
       return require("mini.icons").get(cat or "file", name)
     end,
     function()
-      if cat == "directory" then
-        return opts.fallback.dir or "󰉋 ", "Directory"
-      end
-      local Icons = require("nvim-web-devicons")
-      if cat == "filetype" then
-        return Icons.get_icon_by_filetype(name, { default = false })
-      elseif cat == "file" then
-        local ext = name:match("%.(%w+)$")
-        return Icons.get_icon(name, ext, { default = false }) --[[@as string, string]]
-      elseif cat == "extension" then
-        return Icons.get_icon(nil, name, { default = false }) --[[@as string, string]]
-      end
+      return M.icon_from_nvim_web_devicons(name, cat, opts)
     end,
   }
   for _, fn in ipairs(try) do
@@ -135,7 +153,7 @@ function M.icon(name, cat, opts)
       return ret[2], ret[3]
     end
   end
-  return opts.fallback.file or "󰈔 "
+  return opts.fallback.file or icon_fallback_file
 end
 
 -- Encodes a string to be used as a file name.
