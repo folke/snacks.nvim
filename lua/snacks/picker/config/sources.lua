@@ -365,6 +365,7 @@ M.grep_buffers = {
 ---@type snacks.picker.grep.Config|{}
 M.grep_word = {
   finder = "grep",
+  regex = false,
   format = "file",
   search = function(picker)
     return picker:word()
