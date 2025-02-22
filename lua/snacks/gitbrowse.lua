@@ -170,7 +170,7 @@ function M._open(opts)
     local word = vim.fn.expand("<cword>")
     fields.commit = is_valid_commit_hash(word, cwd) and word or nil
 
-    if not fields.commit then
+    if not fields.commit and not vim.fn.mode():find("[vV]") then
       local line_number = vim.fn.line('.')
       local blame_output = vim.fn.system(string.format("git blame -L %d,%d %s", line_number, line_number, file))
       local commit_hash = blame_output:match("^(%w+)")
