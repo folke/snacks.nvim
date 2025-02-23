@@ -55,7 +55,7 @@ Gamma function:
 
 Pythagora's theorem:
 
-$$a^2+b^2=c^2$$
+$$a^2+b^2=c^2+d^2$$
 
 Logarithms: 
 
@@ -63,7 +63,7 @@ $$\log ab=\log a+\log b$$
 
 Navier-Stokes equation:
 
-$$\rho\left(\frac{\partial \textbf{v}}{\partial t}+\textbf{v}\cdot\nabla\textbf{v}\right)+\nabla p=\nabla\cdot\textbf{T}+\textbf{f}$$
+$$\rho\left(\frac{\partial \textbf{v}}{\partial t}+\textbf{v}\cdot\nabla\textbf{v}\right)+\nabla p-\nabla\cdot\textbf{T}=\textbf{f}$$
 
 Law of gravity:
 
@@ -135,7 +135,7 @@ Euler-Masceroni constant:
 Binomial expansion:
 
 \[
-  (a+b)^n = \sum_{k=0}^n \binom{n}{k} a^k b^{n-k}  
+(a+b)^n = \sum_{k=0}^n \binom{n}{k} a^k b^{n-k}  
 \]
 
 Gauss:
@@ -166,4 +166,24 @@ $$1=0.999999999999999999\ldots$$
 
 Just for fun: $6 + 9 + 6 \cdot 9 = 69$
 
+Quadratic equation:
+
+\[
+  ax^2+bx+c=0 \implies x_{1,2}=\frac{-b\pm\sqrt{b^2-4ac}}{2a}  
+\]
+
+Two more ways to calculate pi:
+
+\begin{equation*}
+  \pi=\sum_{k=0}^\infty\left[\frac{1}{16^k}\left(\frac{4}{8k+1}-\frac{2}{8k+4}-\frac{1}{8k+5}-\frac{1}{8k+6} \right) \right]
+\end{equation*}
+
+\begin{equation*}
+  \frac{2}{\pi}=\frac{\sqrt{2}}{2}\cdot\frac{\sqrt{2+\sqrt{2}}}{2}\cdot\frac{\sqrt{2+\sqrt{2+\sqrt{2}}}}{2}\cdot\ldots
+\end{equation*}
+
+Cauchy's integral formula:
+
+$$f(a)=\frac{1}{2\pi i}\int_{C} \frac{f(z)}{z-a} dz $$
 \end{document}
+
