@@ -1,16 +1,18 @@
 \documentclass{article}
-\usepackage{graphicx}  % For images
-\usepackage{amsmath}  % For math symbols
-\usepackage{amssymb}  % For extra math symbols
-\usepackage{multirow}  % For extra math symbols
+\usepackage{graphicx, amsmath, amssymb, multirow}
+\usepackage{geometry} 
+\geometry{
+  a4paper,
+  total={170mm,257mm},
+  left=20mm,
+  top=20mm,
+}
 
 \begin{document}
 
 \section{Image Tests}
 
-Inline image:
-
-\includegraphics[width=0.5\textwidth]{test.png}
+Inline image: \includegraphics[width=0.15\textwidth]{test.png}
 
 \begin{figure}[h]
     \centering
@@ -21,54 +23,148 @@ Inline image:
 
 \newpage
 
+\section{Some beautiful mathematical equations}
 
-\section{Math Tests}
+Ramanujan's formula:
 
+$$\frac{1}{\pi}=\frac{2\sqrt{2}}{9801}\sum_{k=0}^\infty\frac{(4k)! (1103+26390k)}{(k!)^4 396^{4k}}$$
 
-$
-  cases(
-  E_x = E_0 e^(j omega t - y z),
-  H_y = gamma / (j omega mu_0) E_x = eta^e E_0 e^(j omega - y z) = H_0 e^(j omega t - y z)
- )
-$
+Euler's formula: $e^{i\pi}+1=0$
 
-Inline math: \(E=mc^2$ and $\int_0^1 x^2 \,dx\)
+Area of triangle with sides a,b,c is: 
 
-Inline math: $E=mc^2$ and $\int_0^1 x^2 \,dx$
+$$A=\frac{1}{2} \sqrt{s(s-a)(s-b)(s-c)},\quad s=\frac{a+b+c}{2}$$
 
-Displayed equation:
+The most important formula in calculus:
 
 \[
-    f(x) = \sum_{n=0}^{\infty} \frac{x^n}{n!}
+  f'(x)=\lim_{h\to 0}\frac{f(x+h)-f(x)}{h}
 \]
 
-Equation environment:
+Einstain's field equations:
+
+\[
+R_{\mu\nu}-\frac{1}{2}g_{\mu\nu}R+\Lambda g_{\mu\nu}=\frac{8\pi G}{c^4}T_{\mu\nu}
+\]
+
+Gamma function:
+
+\[
+  \Gamma(z) = \int_0^\infty t^{z-1} e^{-t} dt,\quad\Gamma(z+1) = z \Gamma(z)
+\]
+
+Pythagora's theorem:
+
+$$a^2+b^2=c^2$$
+
+Logarithms: 
+
+$$\log ab=\log a+\log b$$
+
+Navier-Stokes equation:
+
+$$\rho\left(\frac{\partial \textbf{v}}{\partial t}+\textbf{v}\cdot\nabla\textbf{v}\right)+\nabla p=\nabla\cdot\textbf{T}+\textbf{f}$$
+
+Law of gravity:
+
+$$F=G\frac{m_1m_2}{r^2}$$
+
+Fourier transform:
+
+\[
+  F(\omega) = \int_{-\infty}^\infty f(t) e^{-2\pi i t \omega} dt
+\]
+
+Maxwell's equations: 
 
 \begin{equation}
-    a^2 + b^2 = c^2
-    \label{eq:pythagoras}
+\nabla \times \textbf{E}=\frac{\rho}{\epsilon_0}
 \end{equation}
 
-Aligned equations:
+\begin{equation}
+\nabla \times \textbf{E}=\frac{\rho}{\epsilon_0}
+\end{equation}
 
-\begin{align}
-    x^2 + y^2 &= r^2 \\
-    \nabla \cdot \mathbf{E} &= \frac{\rho}{\varepsilon_0}
-\end{align}
+\begin{equation}
+\nabla \cdot \textbf{H}=0,\quad \nabla \times \textbf{E}=-\frac 1c\frac{\partial \textbf{H}}{\partial t}
+\end{equation}
+
+\begin{equation}
+\nabla \times \textbf{H}=\frac 1c\frac{\partial \textbf{E}}{\partial t}
+\end{equation}
+
+Schroedinger equation:
+
+\[
+i \hbar \frac{\partial \psi}{\partial t} = H\Psi
+\]
+
+Chaos theory:
+
+$$x_{t+1}=kx_t(1-x_t)$$
+
+Information theory:
+
+\[
+  H=-\sum p(x)\log p(x)
+\]
+
+Black-Scholes equation:
+
+$$\frac12\sigma^2S^2\frac{\partial^2V}{\partial S^2}+rS\frac{\partial V}{\partial S}+\frac{\partial V}{\partial t}-rV=0$$
+
+Second law or thermodynamics:
+
+$$dS\ge 0$$
+
+Mass-energy equivalence:
+
+$$E=mc^2$$
+
+Basel problem:
+\[
+  \frac{\pi^2}{6}=\sum_{n=1}^\infty \frac{1}{n^2}
+\]
+
+Euler-Masceroni constant:
+
+\[
+\gamma = \lim_{n\to\infty}(\sum_{n=1}^\infty \frac{1}{n}-\log n)\approx 0.5772156649\ldots
+\]
+
+Binomial expansion:
+
+\[
+  (a+b)^n = \sum_{k=0}^n \binom{n}{k} a^k b^{n-k}  
+\]
+
+Gauss:
+
+$$\int_{-\infty}^\infty e^{-x^2} dx = \sqrt{\pi}$$
+
+The Callan-Symanzik equation:
+
+\[
+\left[M\frac{\partial}{\partial M}+\beta(g)\frac{\partial}{\partial g}+n\gamma\right]G^n(x_1,x_2,...,x_n;M,g)=0
+\]
+
+Minimal surface equation:
+
+$$\mathcal{A}(u)=\int_\Omega(1+|\nabla u|^2)^{1/2} dx_1 dx_2 ... dx_n$$ 
 
 Multiline equations:
 
-\begin{multline}
-    a + b + c + d + e + f + g + h + i + j + k = \\
-    l + m + n + o + p + q + r + s + t + u + v
-\end{multline}
+\begin{eqnarray*}
+\cos{2\theta} & = & \cos^2\theta - \sin^2\theta \\
+              & = & 2\cos^2\theta - 1 \\
+              & = & 1 - 2\sin^2\theta
+\end{eqnarray*}
 
-\newpage
+And finally:
 
-\section{Testing Referencing}
+$$1=0.999999999999999999\ldots$$
 
-Referencing an equation: See Eq.~\ref{eq:pythagoras}.
-
-Referencing an image: See Fig.~\ref{fig:test_image}.
+Just for fun: $6 + 9 + 6 \cdot 9 = 69$
 
 \end{document}
+
