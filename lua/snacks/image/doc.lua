@@ -330,6 +330,72 @@ function M.hover()
   })
 end
 
+---@param buf integer
+function M.hover_inline(buf)
+  local imgs = {} ---@type table<string, table<snacks.image.Placement>>
+  return function()
+    local found = {} ---@type table<string, table<snacks.image.Pos>>
+    for _, i in ipairs(M.find(buf)) do
+      if found[i.src] == nil then
+        found[i.src] = {}
+      end
+      table.insert(found[i.src], i.pos)
+    end
+    for src, img in pairs(imgs) do
+      if not found[src] then
+        for _, imag in ipairs(img) do
+          imag:close()
+        end
+        imgs[src] = nil
+      else
+        for id, imag in ipairs(img) do
+          local found_ = false
+          for _, pos in ipairs(found[src]) do
+            if imag.opts.pos[1] == pos[1] and imag.opts.pos[2] == pos[2] then
+              found_ = true
+            end
+          end
+          if not found_ then
+            imag:close()
+            table.remove(img, id)
+          end
+        end
+      end
+    end
+    local src, pos = M.at_cursor()
+    if not src or not pos then
+      return
+    end
+
+    if not imgs[src] then
+      imgs[src] = {}
+    end
+
+    local found_ = false
+
+    for id, imag in ipairs(imgs[src]) do
+      if imag.opts.pos[1] == pos[1] and imag.opts.pos[2] == pos[2] then
+        imag:close()
+        table.remove(imgs[src], id)
+        found_ = true
+        break
+      end
+    end
+
+    if not found_ then
+      local imag = Snacks.image.placement.new(
+        buf,
+        src,
+        Snacks.config.merge({}, Snacks.image.config.doc, {
+          pos = pos,
+          inline = true
+        })
+      )
+      table.insert(imgs[src], imag)
+    end
+  end
+end
+
 ---@param buf number
 function M.inline(buf)
   local imgs = {} ---@type table<string, snacks.image.Placement>
