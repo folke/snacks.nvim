@@ -25,8 +25,8 @@ local defaults = {
     end
     vim.ui.open(url)
   end,
-  ---@type "repo" | "branch" | "file" | "commit"
-  what = "file", -- what to open. not all remotes support all types
+  ---@type "repo" | "branch" | "file" | "commit" | "permalink"
+  what = "commit", -- what to open. not all remotes support all types
   branch = nil, ---@type string?
   line_start = nil, ---@type number?
   line_end = nil, ---@type number?
@@ -37,6 +37,7 @@ local defaults = {
     { "^git@(.+):(.+)%.git$"              , "https://%1/%2" },
     { "^git@(.+):(.+)$"                   , "https://%1/%2" },
     { "^git@(.+)/(.+)$"                   , "https://%1/%2" },
+    { "^org%-%d+@(.+):(.+)%.git$"         , "https://%1/%2" },
     { "^ssh://git@(.*)$"                  , "https://%1" },
     { "^ssh://([^:/]+)(:%d+)/(.*)$"       , "https://%1/%3" },
     { "^ssh://([^/]+)/(.*)$"              , "https://%1/%2" },
@@ -50,17 +51,26 @@ local defaults = {
     ["github%.com"] = {
       branch = "/tree/{branch}",
       file = "/blob/{branch}/{file}#L{line_start}-L{line_end}",
+      permalink = "/blob/{commit}/{file}#L{line_start}-L{line_end}",
       commit = "/commit/{commit}",
     },
     ["gitlab%.com"] = {
       branch = "/-/tree/{branch}",
       file = "/-/blob/{branch}/{file}#L{line_start}-L{line_end}",
+      permalink = "/-/blob/{commit}/{file}#L{line_start}-L{line_end}",
       commit = "/-/commit/{commit}",
     },
     ["bitbucket%.org"] = {
       branch = "/src/{branch}",
       file = "/src/{branch}/{file}#lines-{line_start}-L{line_end}",
+      permalink = "/src/{commit}/{file}#lines-{line_start}-L{line_end}",
       commit = "/commits/{commit}",
+    },
+    ["git.sr.ht"] = {
+      branch = "/tree/{branch}",
+      file = "/tree/{branch}/item/{file}",
+      permalink = "/tree/{commit}/item/{file}#L{line_start}",
+      commit = "/commit/{commit}",
     },
   },
 }
@@ -139,10 +149,9 @@ end
 function M._open(opts)
   opts = Snacks.config.get("gitbrowse", defaults, opts)
   local file = vim.api.nvim_buf_get_name(0) ---@type string?
-  file = file and (uv.fs_stat(file) or {}).type == "file" and vim.fs.normalize(file) or nil
+  file = file and (uv.fs_stat(file) or {}).type == "file" and svim.fs.normalize(file) or nil
   local cwd = file and vim.fn.fnamemodify(file, ":h") or vim.fn.getcwd()
-  local word = vim.fn.expand("<cword>")
-  local is_commit = is_valid_commit_hash(word, cwd)
+
   ---@type snacks.gitbrowse.Fields
   local fields = {
     branch = opts.branch
@@ -150,8 +159,17 @@ function M._open(opts)
     file = file and system({ "git", "-C", cwd, "ls-files", "--full-name", file }, "Failed to get git file path")[1],
     line_start = opts.line_start,
     line_end = opts.line_end,
-    commit = is_commit and word or nil,
   }
+
+  if opts.what == "permalink" then
+    fields.commit = system(
+      { "git", "-C", cwd, "log", "-n", "1", "--pretty=format:%H", "--", file },
+      "Failed to get latest commit of file"
+    )[1]
+  else
+    local word = vim.fn.expand("<cword>")
+    fields.commit = is_valid_commit_hash(word, cwd) and word or nil
+  end
 
   -- Get visual selection range if in visual mode
   if vim.fn.mode():find("[vV]") then
@@ -171,9 +189,15 @@ function M._open(opts)
   end
   fields.line_count = fields.line_end - fields.line_start + 1
 
-  opts.what = is_commit and "commit" or opts.what == "commit" and not fields.commit and "file" or opts.what
-  opts.what = not is_commit and opts.what == "file" and not fields.file and "branch" or opts.what
-  opts.what = not is_commit and opts.what == "branch" and not fields.branch and "repo" or opts.what
+  if not fields.commit and (opts.what == "commit" or opts.what == "permalink") then
+    opts.what = "file"
+  end
+  if not fields.commit and not fields.file then
+    opts.what = "branch"
+  end
+  if not fields.commit and not fields.branch then
+    opts.what = "repo"
+  end
 
   local remotes = {} ---@type {name:string, url:string}[]
 

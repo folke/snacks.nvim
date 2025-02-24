@@ -32,9 +32,19 @@ Snacks.util.bo(buf, bo)
 ### `Snacks.util.color()`
 
 ```lua
----@param group string hl group to get color from
+---@param group string|string[] hl group to get color from
 ---@param prop? string property to get. Defaults to "fg"
 Snacks.util.color(group, prop)
+```
+
+### `Snacks.util.debounce()`
+
+```lua
+---@generic T
+---@param fn T
+---@param opts? {ms?:number}
+---@return T
+Snacks.util.debounce(fn, opts)
 ```
 
 ### `Snacks.util.file_decode()`
@@ -62,8 +72,16 @@ Get an icon from `mini.icons` or `nvim-web-devicons`.
 ```lua
 ---@param name string
 ---@param cat? string defaults to "file"
+---@param opts? { fallback?: {dir?:string, file?:string} }
 ---@return string, string?
-Snacks.util.icon(name, cat)
+Snacks.util.icon(name, cat, opts)
+```
+
+### `Snacks.util.is_float()`
+
+```lua
+---@param win? number
+Snacks.util.is_float(win)
 ```
 
 ### `Snacks.util.is_transparent()`
@@ -149,6 +167,12 @@ Ensures the hl groups are always set, even after a colorscheme change.
 Snacks.util.set_hl(groups, opts)
 ```
 
+### `Snacks.util.spinner()`
+
+```lua
+Snacks.util.spinner()
+```
+
 ### `Snacks.util.throttle()`
 
 ```lua
@@ -172,12 +196,22 @@ Get a buffer or global variable.
 Snacks.util.var(buf, name, default)
 ```
 
+### `Snacks.util.winhl()`
+
+Merges vim.wo.winhighlight options.
+Option values can be a string or a dictionary.
+
+```lua
+---@param ... string|table<string, string>
+Snacks.util.winhl(...)
+```
+
 ### `Snacks.util.wo()`
 
 Set window-local options.
 
 ```lua
 ---@param win number
----@param wo vim.wo|{}
+---@param wo vim.wo|{}|{winhighlight: string|table<string, string>}
 Snacks.util.wo(win, wo)
 ```

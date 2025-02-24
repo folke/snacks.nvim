@@ -5,43 +5,77 @@ M.meta = {
   desc = "LSP-integrated file renaming with support for plugins like [neo-tree.nvim](https://github.com/nvim-neo-tree/neo-tree.nvim) and [mini.files](https://github.com/echasnovski/mini.files).",
 }
 
-local uv = vim.uv or vim.loop
-
----@param path string
-local function realpath(path)
-  return vim.fs.normalize(uv.fs_realpath(path) or path)
-end
-
--- Prompt for the new filename,
+-- Renames the provided file, or the current buffer's file.
+-- Prompt for the new filename if `to` is not provided.
 -- do the rename, and trigger LSP handlers
-function M.rename_file()
-  local buf = vim.api.nvim_get_current_buf()
-  local old = assert(realpath(vim.api.nvim_buf_get_name(buf)))
-  local root = assert(realpath(uv.cwd() or "."))
+---@param opts? {from?: string, to?:string, on_rename?: fun(to:string, from:string, ok:boolean)}
+function M.rename_file(opts)
+  opts = opts or {}
+  local from = vim.fn.fnamemodify(opts.from or opts.file or vim.api.nvim_buf_get_name(0), ":p")
+  local to = opts.to and vim.fn.fnamemodify(opts.to, ":p") or nil
 
-  if old:find(root, 1, true) ~= 1 then
-    root = vim.fn.fnamemodify(old, ":p:h")
+  local function rename()
+    assert(to, "to is required")
+    M.on_rename_file(from, to, function()
+      local ok = M._rename(from, to)
+      if opts.on_rename then
+        opts.on_rename(to, from, ok)
+      end
+    end)
   end
 
-  local extra = old:sub(#root + 2)
+  if to then
+    return rename()
+  end
+
+  local root = vim.fn.getcwd()
+
+  if from:find(root, 1, true) ~= 1 then
+    root = vim.fn.fnamemodify(from, ":p:h")
+  end
+
+  local extra = from:sub(#root + 2)
 
   vim.ui.input({
     prompt = "New File Name: ",
     default = extra,
     completion = "file",
-  }, function(new)
-    if not new or new == "" or new == extra then
+  }, function(value)
+    if not value or value == "" or value == extra then
       return
     end
-    new = vim.fs.normalize(root .. "/" .. new)
-    vim.fn.mkdir(vim.fs.dirname(new), "p")
-    M.on_rename_file(old, new, function()
-      vim.fn.rename(old, new)
-      vim.cmd.edit(new)
-      vim.api.nvim_buf_delete(buf, { force = true })
-      vim.fn.delete(old)
-    end)
+    to = svim.fs.normalize(root .. "/" .. value)
+    rename()
   end)
+end
+
+--- Rename a file and update buffers
+---@param from string
+---@param to string
+---@return boolean ok
+function M._rename(from, to)
+  from = vim.fn.fnamemodify(from, ":p")
+  to = vim.fn.fnamemodify(to, ":p")
+  -- rename the file
+  local ret = vim.fn.rename(from, to)
+  if ret ~= 0 then
+    Snacks.notify.error("Failed to rename file: `" .. from .. "`")
+    return false
+  end
+
+  -- replace buffer in all windows
+  local from_buf = vim.fn.bufnr(from)
+  if from_buf >= 0 then
+    local to_buf = vim.fn.bufadd(to)
+    vim.bo[to_buf].buflisted = true
+    for _, win in ipairs(vim.fn.win_findbuf(from_buf)) do
+      vim.api.nvim_win_call(win, function()
+        vim.cmd("buffer " .. to_buf)
+      end)
+    end
+    vim.api.nvim_buf_delete(from_buf, { force = true })
+  end
+  return true
 end
 
 --- Lets LSP clients know that a file has been renamed

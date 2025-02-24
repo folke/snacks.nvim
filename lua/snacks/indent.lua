@@ -303,7 +303,7 @@ end
 ---@private
 function M.render_scope(scope, state)
   local indent = (scope.indent or 2)
-  local hl = get_hl(scope.indent + 1, config.scope.hl)
+  local hl = get_hl(math.floor(scope.indent / state.shiftwidth) + 1, config.scope.hl)
   local from, to = bounds(scope, state)
   local col = indent - state.leftcol
 
@@ -350,7 +350,7 @@ function M.render_chunk(scope, state)
     return
   end
   local from, to = bounds(scope, state)
-  local hl = get_hl(scope.indent + 1, config.chunk.hl)
+  local hl = get_hl(math.floor(scope.indent / state.shiftwidth) + 1, config.chunk.hl)
   local char = config.chunk.char
 
   ---@param l number

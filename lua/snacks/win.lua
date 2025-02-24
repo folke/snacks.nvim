@@ -8,7 +8,7 @@
 ---@field backdrop? snacks.win
 ---@field keys snacks.win.Keys[]
 ---@field events (snacks.win.Event|{event:string|string[]})[]
----@field meta table<string, string>
+---@field meta table<string, any>
 ---@field closed? boolean
 ---@overload fun(opts? :snacks.win.Config|{}): snacks.win
 local M = setmetatable({}, {
@@ -355,7 +355,7 @@ end
 function M:toggle_help(opts)
   opts = opts or {}
   local col_width, key_width = opts.col_width or 30, opts.key_width or 10
-  for _, win in ipairs(vim.api.nvim_list_wins()) do
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
     local buf = vim.api.nvim_win_get_buf(win)
     if vim.bo[buf].filetype == "snacks_win_help" then
       vim.api.nvim_win_close(win, true)
@@ -372,16 +372,33 @@ function M:toggle_help(opts)
   self:on("WinClosed", function()
     win:close()
   end, { win = true })
+  self:on("BufLeave", function()
+    win:close()
+  end, { buf = true })
   local dim = win:dim()
-  local cols = math.floor((dim.width - 1) / col_width)
-  local rows = math.ceil(#self.keys / cols)
-  win.opts.height = rows
+
+  -- NOTE: we use the actual buffer keymaps instead of self.keys,
+  -- since we want to show all keymaps, not just the ones we've defined on the window
   local keys = {} ---@type vim.api.keyset.get_keymap[]
   vim.list_extend(keys, vim.api.nvim_buf_get_keymap(self.buf, "n"))
   vim.list_extend(keys, vim.api.nvim_buf_get_keymap(self.buf, "i"))
   table.sort(keys, function(a, b)
     return (a.desc or a.lhs or "") < (b.desc or b.lhs or "")
   end)
+
+  local done = {} ---@type table<string, boolean>
+  keys = vim.tbl_filter(function(keymap)
+    local key = Snacks.util.normkey(keymap.lhs or "")
+    if done[key] or (keymap.desc and keymap.desc:find("which%-key")) then
+      return false
+    end
+    done[key] = true
+    return true
+  end, keys)
+
+  local cols = math.floor((dim.width - 1) / col_width)
+  local rows = math.ceil(#keys / cols)
+  win.opts.height = rows
   local help = {} ---@type {[1]:string, [2]:string}[][]
   local row, col = 0, 1
 
@@ -396,25 +413,20 @@ function M:toggle_help(opts)
     return align == "right" and (string.rep(" ", len - w) .. str) or (str .. string.rep(" ", len - w))
   end
 
-  local done = {} ---@type table<string, boolean>
   for _, keymap in ipairs(keys) do
-    local key = vim.fn.keytrans(Snacks.util.keycode(keymap.lhs or ""))
-    key = key == "<NL>" and "<C-J>" or key
-    if not done[key] and not (keymap.desc and keymap.desc:find("which%-key")) then
-      done[key] = true
-      row = row + 1
-      if row > rows then
-        row, col = 1, col + 1
-      end
-      help[row] = help[row] or {}
-      vim.list_extend(help[row], {
-        { trunc(key, key_width, "right"), "SnacksWinKey" },
-        { " " },
-        { "➜", "SnacksWinKeySep" },
-        { " " },
-        { trunc(keymap.desc or "", col_width - key_width - 3), "SnacksWinKeyDesc" },
-      })
+    local key = Snacks.util.normkey(keymap.lhs or "")
+    row = row + 1
+    if row > rows then
+      row, col = 1, col + 1
     end
+    help[row] = help[row] or {}
+    vim.list_extend(help[row], {
+      { trunc(key, key_width, "right"), "SnacksWinKey" },
+      { " " },
+      { "➜", "SnacksWinKeySep" },
+      { " " },
+      { trunc(keymap.desc or "", col_width - key_width - 3), "SnacksWinKeyDesc" },
+    })
   end
   win:show()
   for l, line in ipairs(help) do
@@ -479,11 +491,26 @@ function M:redraw()
   end
 end
 
+---@param left? boolean
+function M:hscroll(left)
+  vim.api.nvim_win_call(self.win, function()
+    vim.cmd(("normal! %s"):format(left and "zh" or "zl"))
+  end)
+end
+
 ---@param up? boolean
 function M:scroll(up)
   vim.api.nvim_win_call(self.win, function()
     vim.cmd(("normal! %s"):format(up and SCROLL_UP or SCROLL_DOWN))
   end)
+end
+
+function M:destroy()
+  self:close()
+  self.events = {}
+  self.keys = {}
+  self.meta = {}
+  -- self.opts = {}
 end
 
 ---@param opts? { buf: boolean }
@@ -493,17 +520,31 @@ function M:close(opts)
 
   local win = self.win
   local buf = wipe and self.buf
+  local scratch_buf = self.scratch_buf ~= self.buf and self.scratch_buf or nil
+  self:on_close()
 
   self.win = nil
+  self.scratch_buf = nil
   if buf then
     self.buf = nil
   end
+
   local close = function()
     if win and vim.api.nvim_win_is_valid(win) then
-      vim.api.nvim_win_close(win, true)
+      local ok, err = pcall(vim.api.nvim_win_close, win, true)
+      if not ok and (err and err:find("E444")) then
+        -- last window, so creat a split and close it again
+        vim.cmd("silent! vsplit")
+        pcall(vim.api.nvim_win_close, win, true)
+      elseif not ok then
+        error(err)
+      end
     end
     if buf and vim.api.nvim_buf_is_valid(buf) then
       vim.api.nvim_buf_delete(buf, { force = true })
+    end
+    if scratch_buf and vim.api.nvim_buf_is_valid(scratch_buf) then
+      vim.api.nvim_buf_delete(scratch_buf, { force = true })
     end
     if self.augroup then
       pcall(vim.api.nvim_del_augroup_by_id, self.augroup)
@@ -514,10 +555,24 @@ function M:close(opts)
   local try_close ---@type fun()
   try_close = function()
     local ok, err = pcall(close)
-    if not ok and err and err:find("E565") and retries < 10 then
+    if ok or not err then
+      return
+    end
+
+    -- command window is open
+    if err:find("E11") then
+      vim.defer_fn(try_close, 200)
+      return
+    end
+
+    -- text lock
+    if err:find("E565") and retries < 20 then
       retries = retries + 1
       vim.defer_fn(try_close, 50)
-    elseif not ok then
+      return
+    end
+
+    if not ok then
       Snacks.notify.error("Failed to close window: " .. err)
     end
   end
@@ -526,7 +581,6 @@ function M:close(opts)
   if vim.tbl_contains(event_stack, "WinClosed") or not pcall(close) then
     vim.schedule(try_close)
   end
-  self:on_close()
 end
 
 function M:hide()
@@ -569,6 +623,12 @@ function M:set_title(title, pos)
   self.opts.title = title
   self.opts.title_pos = pos
   if not self:valid() then
+    return
+  end
+  -- Don't try to update if the relative window is invalid.
+  -- It will be fixed once a full update is done.
+  local relative_win = vim.api.nvim_win_get_config(self.win).win
+  if relative_win and not vim.api.nvim_win_is_valid(relative_win) then
     return
   end
   vim.api.nvim_win_set_config(self.win, {
@@ -638,11 +698,13 @@ function M:open_win()
   local opts = self:win_opts()
   if position == "float" then
     self.win = vim.api.nvim_open_win(self.buf, enter, opts)
+  elseif position == "current" then
+    self.win = vim.api.nvim_get_current_win()
   else
     local parent = self.opts.win or 0
     local vertical = position == "left" or position == "right"
     if parent == 0 then
-      for _, win in ipairs(vim.api.nvim_list_wins()) do
+      for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
         if
           vim.w[win].snacks_win
           and vim.w[win].snacks_win.relative == relative
@@ -686,7 +748,7 @@ function M:equalize()
     return vim.w[win].snacks_win
       and vim.w[win].snacks_win.relative == self.opts.relative
       and vim.w[win].snacks_win.position == self.opts.position
-  end, vim.api.nvim_list_wins())
+  end, vim.api.nvim_tabpage_list_wins(0))
   if #all <= 1 then
     return
   end
@@ -710,6 +772,10 @@ function M:update()
       vim.api.nvim_win_set_config(self.win, opts)
     end
   end
+end
+
+function M:on_current_tab()
+  return self:win_valid() and vim.api.nvim_get_current_tabpage() == vim.api.nvim_win_get_tabpage(self.win)
 end
 
 function M:show()
@@ -766,43 +832,87 @@ function M:show()
   -- swap buffers when opening a new buffer in the same window
   vim.api.nvim_create_autocmd("BufWinEnter", {
     group = self.augroup,
+    nested = true,
     callback = function()
-      -- window closes, so delete the autocmd
-      if not self:win_valid() then
-        return true
-      end
-
-      local buf = vim.api.nvim_win_get_buf(self.win)
-
-      -- same buffer
-      if buf == self.buf then
-        return
-      end
-
-      -- don't swap if fixbuf is disabled
-      if self.opts.fixbuf == false then
-        self.buf = buf
-        -- update window options
-        Snacks.util.wo(self.win, self.opts.wo)
-        return
-      end
-
-      -- another buffer was opened in this window
-      -- find another window to swap with
-      for _, win in ipairs(vim.api.nvim_list_wins()) do
-        if win ~= self.win and vim.bo[vim.api.nvim_win_get_buf(win)].buftype == "" then
-          vim.schedule(function()
-            vim.api.nvim_win_set_buf(self.win, self.buf)
-            vim.api.nvim_win_set_buf(win, buf)
-            vim.api.nvim_set_current_win(win)
-            vim.cmd.stopinsert()
-          end)
-          return
-        end
-      end
+      return self:fixbuf()
     end,
   })
 
+  self:map()
+  self:drop()
+
+  return self
+end
+
+function M:fixbuf()
+  -- window closes, so delete the autocmd
+  if not self:win_valid() then
+    return true
+  end
+
+  if not self:on_current_tab() then
+    return
+  end
+
+  local buf = vim.api.nvim_win_get_buf(self.win)
+
+  -- same buffer
+  if buf == self.buf then
+    return
+  end
+
+  -- don't swap if fixbuf is disabled
+  if self.opts.fixbuf == false then
+    self.buf = buf
+    -- update window options
+    Snacks.util.wo(self.win, self.opts.wo)
+    return
+  end
+
+  -- another buffer was opened in this window
+  -- find another window to swap with
+  local main ---@type number?
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    local win_buf = vim.api.nvim_win_get_buf(win)
+    local is_float = vim.api.nvim_win_get_config(win).zindex ~= nil
+    if win ~= self.win and not is_float then
+      if vim.bo[win_buf].buftype == "" or vim.b[win_buf].snacks_main or vim.w[win].snacks_main then
+        main = win
+        break
+      end
+    end
+  end
+
+  if main then
+    vim.api.nvim_win_set_buf(self.win, self.buf)
+    vim.api.nvim_win_set_buf(main, buf)
+    vim.api.nvim_set_current_win(main)
+    vim.cmd.stopinsert()
+  else
+    -- no main window found, so close this window
+    vim.api.nvim_win_set_buf(self.win, self.buf)
+    vim.schedule(function()
+      vim.cmd.stopinsert()
+      vim.cmd("sbuffer " .. buf)
+      if self.win and vim.api.nvim_win_is_valid(self.win) then
+        vim.api.nvim_win_close(self.win, true)
+      end
+    end)
+  end
+end
+
+---@param buf number
+function M:set_buf(buf)
+  assert(self:valid(), "Window is not valid")
+  self.buf = buf
+  vim.api.nvim_win_set_buf(self.win, buf)
+  Snacks.util.wo(self.win, self.opts.wo)
+end
+
+function M:map()
+  if not self:buf_valid() then
+    return
+  end
   for _, spec in pairs(self.keys) do
     local opts = vim.deepcopy(spec)
     opts[1] = nil
@@ -828,10 +938,6 @@ function M:show()
     ---@cast spec snacks.win.Keys
     vim.keymap.set(spec.mode or "n", spec[1], rhs, opts)
   end
-
-  self:drop()
-
-  return self
 end
 
 ---@private
@@ -858,7 +964,7 @@ end
 function M:add_padding()
   local listchars = vim.split(self.opts.wo.listchars or "", ",")
   listchars = vim.tbl_filter(function(s)
-    return not s:find("eol:")
+    return not s:find("eol:") and s ~= ""
   end, listchars)
   table.insert(listchars, "eol: ")
   self.opts.wo.listchars = table.concat(listchars, ",")
@@ -1122,10 +1228,12 @@ function M:dim(parent)
   ret.height = size(self.opts.height, parent.height, border.top + border.bottom)
   ret.height = math.max(ret.height, self.opts.min_height or 0, 1)
   ret.height = math.min(ret.height, self.opts.max_height or ret.height, parent.height)
+  ret.height = math.max(ret.height, 1)
 
   ret.width = size(self.opts.width, parent.width, border.left + border.right)
   ret.width = math.max(ret.width, self.opts.min_width or 0, 1)
   ret.width = math.min(ret.width, self.opts.max_width or ret.width, parent.width)
+  ret.width = math.max(ret.width, 1)
 
   ret.row = pos(self.opts.row, ret.height, parent.height, border.top, border.bottom)
   ret.col = pos(self.opts.col, ret.width, parent.width, border.left, border.right)

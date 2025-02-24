@@ -16,6 +16,19 @@ vim.api.nvim_create_autocmd("User", {
 })
 ```
 
+## [oil.nvim](https://github.com/stevearc/oil.nvim)
+
+```lua
+vim.api.nvim_create_autocmd("User", {
+  pattern = "OilActionsPost",
+  callback = function(event)
+      if event.data.actions.type == "move" then
+          Snacks.rename.on_rename_file(event.data.actions.src_url, event.data.actions.dest_url)
+      end
+  end,
+})
+```
+
 ## [neo-tree.nvim](https://github.com/nvim-neo-tree/neo-tree.nvim)
 
 ```lua
@@ -70,9 +83,11 @@ Snacks.rename.on_rename_file(from, to, rename)
 
 ### `Snacks.rename.rename_file()`
 
-Prompt for the new filename,
+Renames the provided file, or the current buffer's file.
+Prompt for the new filename if `to` is not provided.
 do the rename, and trigger LSP handlers
 
 ```lua
-Snacks.rename.rename_file()
+---@param opts? {from?: string, to?:string, on_rename?: fun(to:string, from:string, ok:boolean)}
+Snacks.rename.rename_file(opts)
 ```

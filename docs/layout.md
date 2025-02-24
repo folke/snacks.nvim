@@ -29,6 +29,7 @@
 ---@field fullscreen? boolean open in fullscreen
 ---@field hidden? string[] list of windows that will be excluded from the layout (but can be toggled)
 ---@field on_update? fun(layout: snacks.layout)
+---@field on_update_pre? fun(layout: snacks.layout)
 {
   layout = {
     width = 0.6,
@@ -63,10 +64,12 @@
 ---@class snacks.layout
 ---@field opts snacks.layout.Config
 ---@field root snacks.win
----@field wins table<string, snacks.win|{enabled?:boolean}>
+---@field wins table<string, snacks.win|{enabled?:boolean, layout?:boolean}>
 ---@field box_wins snacks.win[]
 ---@field win_opts table<string, snacks.win.Config>
 ---@field closed? boolean
+---@field split? boolean
+---@field screenpos number[]?
 Snacks.layout = {}
 ```
 
@@ -92,6 +95,12 @@ layout:close(opts)
 ---@param cb fun(widget: snacks.layout.Widget, parent?: snacks.layout.Box)
 ---@param opts? {wins?:boolean, boxes?:boolean, box?:snacks.layout.Box}
 layout:each(cb, opts)
+```
+
+### `layout:hide()`
+
+```lua
+layout:hide()
 ```
 
 ### `layout:is_enabled()`
@@ -120,6 +129,13 @@ Toggle fullscreen
 layout:maximize()
 ```
 
+### `layout:needs_layout()`
+
+```lua
+---@param win string
+layout:needs_layout(win)
+```
+
 ### `layout:show()`
 
 Show the layout
@@ -134,7 +150,15 @@ Toggle a window
 
 ```lua
 ---@param win string
-layout:toggle(win)
+---@param enable? boolean
+---@param on_update? fun(enabled: boolean) called when the layout will be updated
+layout:toggle(win, enable, on_update)
+```
+
+### `layout:unhide()`
+
+```lua
+layout:unhide()
 ```
 
 ### `layout:valid()`

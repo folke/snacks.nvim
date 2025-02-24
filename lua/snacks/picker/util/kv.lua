@@ -11,7 +11,7 @@ local uv = vim.uv or vim.loop
 ---@alias snacks.picker.KeyValue.entry {key:string, value:number}
 
 ---@param path string
----@param opts? {max_size?: number, cmp?: fun(a,b)}
+---@param opts? {max_size?: number, cmp?: fun(a:snacks.picker.KeyValue.entry, b:snacks.picker.KeyValue.entry): boolean}
 function M.new(path, opts)
   local self = setmetatable({}, M)
   self.data = {}
@@ -39,7 +39,11 @@ function M:set(key, value)
 end
 
 function M:get(key)
-  return self.data[key] or 0
+  return self.data[key]
+end
+
+function M:get_all()
+  return self.data
 end
 
 function M:close()

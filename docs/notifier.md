@@ -120,6 +120,7 @@ vim.api.nvim_create_autocmd("LspProgress", {
 ---@class snacks.notifier.Config
 ---@field enabled? boolean
 ---@field keep? fun(notif: snacks.notifier.Notif): boolean # global keep function
+---@field filter? fun(notif: snacks.notifier.Notif): boolean # filter our unwanted notifications (return false to hide)
 {
   timeout = 3000, -- default timeout in ms
   width = { min = 40, max = 0.4 },

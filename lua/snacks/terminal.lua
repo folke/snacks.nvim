@@ -13,7 +13,8 @@ M.meta = {
 }
 
 ---@class snacks.terminal.Config
----@field win? snacks.win.Config
+---@field win? snacks.win.Config|{}
+---@field shell? string|string[] The shell to use. Defaults to `vim.o.shell`
 ---@field override? fun(cmd?: string|string[], opts?: snacks.terminal.Opts) Use this to use a different terminal implementation
 local defaults = {
   win = { style = "terminal" },
@@ -22,7 +23,10 @@ local defaults = {
 ---@class snacks.terminal.Opts: snacks.terminal.Config
 ---@field cwd? string
 ---@field env? table<string, string>
----@field interactive? boolean
+---@field start_insert? boolean start insert mode when starting the terminal
+---@field auto_insert? boolean start insert mode when entering the terminal buffer
+---@field auto_close? boolean close the terminal buffer when the process exits
+---@field interactive? boolean shortcut for `start_insert`, `auto_close` and `auto_insert` (default: true)
 
 Snacks.config.style("terminal", {
   bo = {
@@ -64,6 +68,16 @@ Snacks.config.style("terminal", {
 ---@type table<string, snacks.win>
 local terminals = {}
 
+local function jobstart(cmd, opts)
+  opts = opts or {}
+  local fn = vim.fn.jobstart
+  if vim.fn.termopen then
+    opts.term = nil
+    fn = vim.fn.termopen
+  end
+  return fn(cmd, vim.tbl_isempty(opts) and vim.empty_dict() or opts)
+end
+
 --- Open a new terminal window.
 ---@param cmd? string | string[]
 ---@param opts? snacks.terminal.Opts
@@ -72,15 +86,21 @@ function M.open(cmd, opts)
   opts = Snacks.config.get("terminal", defaults --[[@as snacks.terminal.Opts]], opts)
   opts.win = Snacks.win.resolve("terminal", {
     position = cmd and "float" or "bottom",
-  }, opts.win)
-  opts.win.wo.winbar = opts.win.wo.winbar or (opts.win.position == "float" and "" or (id .. ": %{b:term_title}"))
+  }, opts.win, { show = false })
+  opts = vim.deepcopy(opts)
+  opts.win.wo.winbar = opts.win.wo.winbar
+    or (opts.win.position == "float" and "" or (id .. ": %{get(b:, 'term_title', '')}"))
 
   if opts.override then
     return opts.override(cmd, opts)
   end
 
-  local on_buf = opts.win and opts.win.on_buf
+  local interactive = opts.interactive ~= false
+  local auto_insert = opts.auto_insert or (opts.auto_insert == nil and interactive)
+  local start_insert = opts.start_insert or (opts.start_insert == nil and interactive)
+  local auto_close = opts.auto_close or (opts.auto_close == nil and interactive)
 
+  local on_buf = opts.win and opts.win.on_buf
   ---@param self snacks.terminal
   opts.win.on_buf = function(self)
     self.cmd = cmd
@@ -90,37 +110,55 @@ function M.open(cmd, opts)
     end
   end
 
+  local on_win = opts.win and opts.win.on_win
+  ---@param self snacks.terminal
+  opts.win.on_win = function(self)
+    if start_insert and vim.api.nvim_get_current_buf() == self.buf then
+      vim.cmd.startinsert()
+    end
+    if on_win then
+      on_win(self)
+    end
+  end
+
   local terminal = Snacks.win(opts.win)
 
-  vim.api.nvim_buf_call(terminal.buf, function()
-    local term_opts = {
-      cwd = opts.cwd,
-      env = opts.env,
-    }
-    vim.fn.termopen(cmd or M.parse(vim.o.shell), vim.tbl_isempty(term_opts) and vim.empty_dict() or term_opts)
+  if auto_insert then
+    terminal:on("BufEnter", function()
+      vim.cmd.startinsert()
+    end, { buf = true })
+  end
+
+  if auto_close then
+    terminal:on("TermClose", function()
+      if type(vim.v.event) == "table" and vim.v.event.status ~= 0 then
+        Snacks.notify.error("Terminal exited with code " .. vim.v.event.status .. ".\nCheck for any errors.")
+        return
+      end
+      terminal:close()
+      vim.cmd.checktime()
+    end, { buf = true })
+  end
+
+  terminal:on("ExitPre", function()
+    terminal:close()
   end)
 
-  if opts.interactive ~= false then
-    vim.cmd.startinsert()
-    vim.api.nvim_create_autocmd("TermClose", {
-      once = true,
-      buffer = terminal.buf,
-      callback = function()
-        if type(vim.v.event) == "table" and vim.v.event.status ~= 0 then
-          Snacks.notify.error("Terminal exited with code " .. vim.v.event.status .. ".\nCheck for any errors.")
-          return
-        end
-        terminal:close()
-        vim.cmd.checktime()
-      end,
+  terminal:on("BufWipeout", function()
+    vim.schedule(function()
+      terminal:close()
+    end)
+  end, { buf = true })
+
+  terminal:show()
+  vim.api.nvim_buf_call(terminal.buf, function()
+    jobstart(cmd or M.parse(opts.shell or vim.o.shell), {
+      cwd = opts.cwd,
+      env = opts.env,
+      term = true,
     })
-    vim.api.nvim_create_autocmd("BufEnter", {
-      buffer = terminal.buf,
-      callback = function()
-        vim.cmd.startinsert()
-      end,
-    })
-  end
+  end)
+
   vim.cmd("noh")
   return terminal
 end
@@ -136,10 +174,21 @@ function M.get(cmd, opts)
   local id = vim.inspect({ cmd = cmd, cwd = opts.cwd, env = opts.env, count = vim.v.count1 })
   local created = false
   if not (terminals[id] and terminals[id]:buf_valid()) and (opts.create ~= false) then
-    terminals[id] = M.open(cmd, opts)
+    local ret = M.open(cmd, opts)
+    ret:on("BufWipeout", function()
+      terminals[id] = nil
+    end, { buf = true })
+    terminals[id] = ret
     created = true
   end
   return terminals[id], created
+end
+
+---@return snacks.win[]
+function M.list()
+  return vim.tbl_filter(function(t)
+    return t:buf_valid()
+  end, terminals)
 end
 
 --- Toggle a terminal window.
@@ -155,8 +204,12 @@ end
 --- - spaces inside quotes (only double quotes are supported) are preserved
 --- - backslash
 ---@private
----@param cmd string
+---@param cmd string|string[]
+---@return string[]
 function M.parse(cmd)
+  if type(cmd) == "table" then
+    return cmd
+  end
   local args = {}
   local in_quotes, escape_next, current = false, false, ""
   local function add()
@@ -221,7 +274,8 @@ end
 
 ---@private
 function M.health()
-  local cmd = M.parse(vim.o.shell)
+  local opts = Snacks.config.get("terminal", defaults --[[@as snacks.terminal.Opts]])
+  local cmd = M.parse(opts.shell or vim.o.shell)
   local ok = cmd[1] and (vim.fn.executable(cmd[1]) == 1)
   local msg = ("shell %s\n- `vim.o.shell`: %s\n- `parsed`: %s"):format(
     ok and "configured" or "not found",

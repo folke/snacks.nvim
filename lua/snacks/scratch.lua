@@ -101,7 +101,7 @@ function M.list()
       local decoded = Snacks.util.file_decode(file)
       local count, icon, name, cwd, branch, ft = decoded:match("^(%d*)|([^|]*)|([^|]*)|([^|]*)|([^|]*)%.([^|]*)$")
       if count and icon and name and cwd and branch and ft then
-        file = vim.fs.normalize(root .. "/" .. file)
+        file = svim.fs.normalize(root .. "/" .. file)
         table.insert(ret, {
           file = file,
           stat = uv.fs_stat(file),
@@ -182,7 +182,7 @@ function M.open(opts)
       opts.filekey.count and tostring(vim.v.count1) or "",
       opts.icon or "",
       opts.name:gsub("|", " "),
-      opts.filekey.cwd and vim.fs.normalize(assert(uv.cwd())) or "",
+      opts.filekey.cwd and svim.fs.normalize(assert(uv.cwd())) or "",
       branch,
     }
 
@@ -190,7 +190,7 @@ function M.open(opts)
     local fname = Snacks.util.file_encode(table.concat(filekey, "|") .. "." .. ft)
     file = opts.root .. "/" .. fname
   end
-  file = vim.fs.normalize(file)
+  file = svim.fs.normalize(file)
 
   local icon, icon_hl = unpack(type(opts.icon) == "table" and opts.icon or { opts.icon, nil })
   ---@cast icon string
@@ -212,7 +212,7 @@ function M.open(opts)
   local buf = vim.fn.bufadd(file)
 
   local closed = false
-  for _, win in ipairs(vim.api.nvim_list_wins()) do
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
     if vim.api.nvim_win_get_buf(win) == buf then
       vim.schedule(function()
         vim.api.nvim_win_call(win, function()

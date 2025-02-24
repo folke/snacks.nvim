@@ -76,7 +76,142 @@ function M.get(opts)
   end
 
   -- Merge the configs
-  return Snacks.config.merge(unpack(todo))
+  opts = Snacks.config.merge(unpack(todo))
+  if opts.cwd == true or opts.cwd == "" then
+    opts.cwd = nil
+  elseif opts.cwd then
+    opts.cwd = svim.fs.normalize(vim.fn.fnamemodify(opts.cwd, ":p"))
+  end
+  for _, t in ipairs(todo) do
+    if t.config then
+      opts = t.config(opts) or opts
+    end
+  end
+
+  -- add hl groups and actions for toggles
+  opts.actions = opts.actions or {}
+  for name in pairs(opts.toggles) do
+    local hl = table.concat(vim.tbl_map(function(a)
+      return a:sub(1, 1):upper() .. a:sub(2)
+    end, vim.split(name, "_")))
+    Snacks.util.set_hl({ [hl] = "SnacksPickerToggle" }, { default = true, prefix = "SnacksPickerToggle" })
+    opts.actions["toggle_" .. name] = function(picker)
+      picker.opts[name] = not picker.opts[name]
+      picker.list:set_target()
+      picker:find()
+    end
+  end
+
+  M.fix_old(opts)
+
+  M.multi(opts)
+  return opts
+end
+
+--- Fixes old config options
+---@param opts snacks.picker.Config
+function M.fix_old(opts)
+  if opts.previewers.diff.native ~= nil then
+    opts.previewers.diff.builtin = not opts.previewers.diff.native
+  end
+  if opts.previewers.git.native ~= nil then
+    opts.previewers.git.builtin = not opts.previewers.git.native
+  end
+end
+
+---@param opts snacks.picker.Config
+function M.multi(opts)
+  if not opts.multi then
+    return opts
+  end
+  local Finder = require("snacks.picker.core.finder")
+
+  local finders = {} ---@type snacks.picker.finder[]
+  local formats = {} ---@type snacks.picker.format[]
+  local previews = {} ---@type snacks.picker.preview[]
+  local confirms = {} ---@type snacks.picker.Action.spec[]
+
+  local sources = {} ---@type snacks.picker.Config[]
+  for _, source in ipairs(opts.multi) do
+    if type(source) == "string" then
+      source = { source = source }
+    end
+    ---@cast source snacks.picker.Config
+    source = Snacks.config.merge({}, opts.sources[source.source], source) --[[@as snacks.picker.Config]]
+    source.actions = source.actions or {}
+    if source.confirm then
+      source.actions.confirm = source.confirm
+    end
+    local finder = M.finder(source.finder)
+    finders[#finders + 1] = function(fopts, ctx)
+      fopts = Snacks.config.merge({}, vim.deepcopy(source), fopts)
+      -- Update source filter when needed
+      if not vim.tbl_isempty(fopts.filter or {}) then
+        ctx = setmetatable({}, { __index = ctx })
+        ctx.filter = ctx.filter:clone():init(fopts)
+      end
+      return finder(fopts, ctx)
+    end
+    confirms[#confirms + 1] = source.actions.confirm or "jump"
+    previews[#previews + 1] = M.preview(source)
+    formats[#formats + 1] = M.format(source)
+    sources[#sources + 1] = source
+
+    -- merge keys
+    for w, win in pairs(source.win or {}) do
+      if win.keys then
+        opts.win = opts.win or {}
+        opts.win[w] = opts.win[w] or {}
+        opts.win[w].keys = Snacks.config.merge(opts.win[w].keys or {}, win.keys)
+      end
+    end
+  end
+
+  opts.finder = opts.finder or Finder.multi(finders)
+  opts.format = opts.format or function(item, picker)
+    return formats[item.source_id](item, picker)
+  end
+  opts.preview = opts.preview or function(ctx)
+    return previews[ctx.item.source_id](ctx)
+  end
+  opts.confirm = opts.confirm
+    or function(picker, item, action)
+      return confirms[item.source_id](picker, item, action)
+    end
+end
+
+---@param opts snacks.picker.Config
+function M.format(opts)
+  local ret = type(opts.format) == "string" and (Snacks.picker.format[opts.format] or M.field(opts.format))
+    or opts.format
+    or Snacks.picker.format.file
+  ---@cast ret snacks.picker.format
+  return ret
+end
+
+---@param opts snacks.picker.Config
+function M.transform(opts)
+  local ret = type(opts.transform) == "string" and require("snacks.picker.transform")[opts.transform]
+    or opts.transform
+    or nil
+  ---@cast ret snacks.picker.transform?
+  return ret
+end
+
+---@param opts snacks.picker.Config
+function M.preview(opts)
+  local preview = opts.preview or Snacks.picker.preview.file
+  preview = type(preview) == "string" and (Snacks.picker.preview[preview] or M.field(preview)) or preview
+  ---@cast preview snacks.picker.preview
+  return preview
+end
+
+---@param opts snacks.picker.Config
+function M.sort(opts)
+  local sort = opts.sort or require("snacks.picker.sort").default()
+  sort = type(sort) == "table" and require("snacks.picker.sort").default(sort) or sort
+  ---@cast sort snacks.picker.sort
+  return sort
 end
 
 --- Resolve the layout configuration
@@ -90,17 +225,44 @@ function M.layout(opts)
   local layout = M.resolve(opts.layout or {}, opts.source)
   layout = type(layout) == "string" and { preset = layout } or layout
   ---@cast layout snacks.picker.layout.Config
-  if layout.layout and layout.layout[1] then
-    return layout
+
+  -- only resolve presets when the layout has no layout
+  if not (layout.layout and layout.layout[1]) then
+    -- Resolve the preset
+    local layouts = opts.layouts or M.get().layouts or {}
+    local done = {} ---@type table<string, boolean>
+    local todo = { layout } ---@type snacks.picker.layout.Config[]
+    while true do
+      local preset = M.resolve(todo[1].preset or "custom", opts.source)
+      if not preset or done[preset] or not layouts[preset] then
+        break
+      end
+      done[preset] = true
+      table.insert(todo, 1, vim.deepcopy(layouts[preset]))
+    end
+
+    -- Merge and return the layout
+    layout = Snacks.config.merge(unpack(todo)) --[[@as snacks.picker.layout.Config]]
   end
 
-  -- Resolve the preset
-  local preset = M.resolve(layout.preset or "custom", opts.source)
-  ---@type snacks.picker.layout.Config
-  local ret = vim.deepcopy(opts.layouts and opts.layouts[preset] or {})
+  -- Fix deprecated layout options
+  layout.hidden = layout.hidden or {}
+  if layout.preview == false then
+    table.insert(layout.hidden, "preview")
+    layout.preview = nil
+  elseif type(layout.preview) == "table" then
+    ---@cast layout snacks.picker.layout.Config|{preview: {enabled: boolean, main: boolean}}
+    if layout.preview.enabled == false then
+      table.insert(layout.hidden, "preview")
+    end
+    if layout.preview.main then
+      layout.preview = "main"
+    else
+      layout.preview = nil
+    end
+  end
 
-  -- Merge and return the layout
-  return Snacks.config.merge(ret, layout)
+  return layout
 end
 
 ---@generic T
@@ -131,14 +293,23 @@ function M.finder(finder)
     return require("snacks.picker.core.finder").multi(finders)
   end
   ---@cast finder string
-  local mod, fn = finder:match("^(.-)_(.+)$")
-  if not (mod and fn) then
-    mod, fn = finder, finder
+  return M.field(finder) or nop
+end
+
+--- Resolves a module field
+---@param spec string
+function M.field(spec)
+  local parts = vim.split(spec, ".", { plain = true })
+  local name, field = parts[#parts]:match("^(.-)[_#](.+)$")
+  if name and field then
+    parts[#parts] = name
+  else
+    field = parts[#parts]
   end
   local ok, ret = pcall(function()
-    return require("snacks.picker.source." .. mod)[fn]
+    return require("snacks.picker.source." .. table.concat(parts, "."))[field]
   end)
-  return ok and ret or nop
+  return ok and ret or nil
 end
 
 local did_setup = false
@@ -168,6 +339,9 @@ function M.wrap(source, opts)
     if not config.sources[source] then
       return
     end
+  end
+  if rawget(Snacks.picker, source) then
+    return Snacks.picker[source]
   end
   ---@type fun(opts: snacks.picker.Config): snacks.Picker
   local ret = function(_opts)

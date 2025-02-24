@@ -16,6 +16,7 @@ M.autocmds = {
 ---@field unloaded? boolean show loaded buffers
 ---@field current? boolean show current buffer
 ---@field nofile? boolean show `buftype=nofile` buffers
+---@field modified? boolean show only modified buffers
 ---@field sort_lastused? boolean sort by last used
 ---@field filter? snacks.picker.filter.Config
 M.buffers = {
@@ -28,11 +29,84 @@ M.buffers = {
   win = {
     input = {
       keys = {
-        ["dd"] = "bufdelete",
         ["<c-x>"] = { "bufdelete", mode = { "n", "i" } },
       },
     },
     list = { keys = { ["dd"] = "bufdelete" } },
+  },
+}
+
+---@class snacks.picker.explorer.Config: snacks.picker.files.Config|{}
+---@field follow_file? boolean follow the file from the current buffer
+---@field tree? boolean show the file tree (default: true)
+---@field git_status? boolean show git status (default: true)
+---@field git_status_open? boolean show recursive git status for open directories
+---@field git_untracked? boolean needed to show untracked git status
+---@field diagnostics? boolean show diagnostics
+---@field diagnostics_open? boolean show recursive diagnostics for open directories
+---@field watch? boolean watch for file changes
+---@field exclude? string[] exclude glob patterns
+---@field include? string[] include glob patterns. These take precedence over `exclude`, `ignored` and `hidden`
+M.explorer = {
+  finder = "explorer",
+  sort = { fields = { "sort" } },
+  supports_live = true,
+  tree = true,
+  watch = true,
+  diagnostics = true,
+  diagnostics_open = false,
+  git_status = true,
+  git_status_open = false,
+  git_untracked = true,
+  follow_file = true,
+  focus = "list",
+  auto_close = false,
+  jump = { close = false },
+  layout = { preset = "sidebar", preview = false },
+  -- to show the explorer to the right, add the below to
+  -- your config under `opts.picker.sources.explorer`
+  -- layout = { layout = { position = "right" } },
+  formatters = {
+    file = { filename_only = true },
+    severity = { pos = "right" },
+  },
+  matcher = { sort_empty = false, fuzzy = false },
+  config = function(opts)
+    return require("snacks.picker.source.explorer").setup(opts)
+  end,
+  win = {
+    list = {
+      keys = {
+        ["<BS>"] = "explorer_up",
+        ["l"] = "confirm",
+        ["h"] = "explorer_close", -- close directory
+        ["a"] = "explorer_add",
+        ["d"] = "explorer_del",
+        ["r"] = "explorer_rename",
+        ["c"] = "explorer_copy",
+        ["m"] = "explorer_move",
+        ["o"] = "explorer_open", -- open with system application
+        ["P"] = "toggle_preview",
+        ["y"] = { "explorer_yank", mode = { "n", "x" } },
+        ["p"] = "explorer_paste",
+        ["u"] = "explorer_update",
+        ["<c-c>"] = "tcd",
+        ["<leader>/"] = "picker_grep",
+        ["<c-t>"] = "terminal",
+        ["."] = "explorer_focus",
+        ["I"] = "toggle_ignored",
+        ["H"] = "toggle_hidden",
+        ["Z"] = "explorer_close_all",
+        ["]g"] = "explorer_git_next",
+        ["[g"] = "explorer_git_prev",
+        ["]d"] = "explorer_diagnostic_next",
+        ["[d"] = "explorer_diagnostic_prev",
+        ["]w"] = "explorer_warn_next",
+        ["[w"] = "explorer_warn_prev",
+        ["]e"] = "explorer_error_next",
+        ["[e"] = "explorer_error_prev",
+      },
+    },
   },
 }
 
@@ -71,6 +145,7 @@ M.command_history = {
     preset = "vscode",
   },
   confirm = "cmd",
+  formatters = { text = { ft = "vim" } },
 }
 
 -- Neovim commands
@@ -96,6 +171,7 @@ M.diagnostics = {
       "lnum",
     },
   },
+  matcher = { sort_empty = true },
   -- only show diagnostics from the cwd by default
   filter = { cwd = true },
 }
@@ -107,46 +183,99 @@ M.diagnostics_buffer = {
   sort = {
     fields = { "severity", "file", "lnum" },
   },
+  matcher = { sort_empty = true },
   filter = { buf = true },
 }
 
 ---@class snacks.picker.files.Config: snacks.picker.proc.Config
----@field cmd? string
+---@field cmd? "fd"| "rg"| "find" command to use. Leave empty to auto-detect
 ---@field hidden? boolean show hidden files
 ---@field ignored? boolean show ignored files
 ---@field dirs? string[] directories to search
 ---@field follow? boolean follow symlinks
 ---@field exclude? string[] exclude patterns
+---@field args? string[] additional arguments
+---@field ft? string|string[] file extension(s)
+---@field rtp? boolean search in runtimepath
 M.files = {
   finder = "files",
   format = "file",
+  show_empty = true,
   hidden = false,
   ignored = false,
   follow = false,
   supports_live = true,
 }
 
+---@class snacks.picker.git.Config: snacks.picker.Config
+---@field args? string[] additional arguments to pass to `git ls-files`
+
+---@type snacks.picker.git.Config
+M.git_branches = {
+  finder = "git_branches",
+  format = "git_branch",
+  preview = "git_log",
+  confirm = "git_checkout",
+  win = {
+    input = {
+      keys = {
+        ["<c-a>"] = { "git_branch_add", mode = { "n", "i" } },
+        ["<c-x>"] = { "git_branch_del", mode = { "n", "i" } },
+      },
+    },
+  },
+  ---@param picker snacks.Picker
+  on_show = function(picker)
+    for i, item in ipairs(picker:items()) do
+      if item.current then
+        picker.list:view(i)
+        Snacks.picker.actions.list_scroll_center(picker)
+        break
+      end
+    end
+  end,
+}
+
 -- Find git files
----@class snacks.picker.git.files.Config: snacks.picker.Config
+---@class snacks.picker.git.files.Config: snacks.picker.git.Config
 ---@field untracked? boolean show untracked files
 ---@field submodules? boolean show submodule files
 M.git_files = {
   finder = "git_files",
+  show_empty = true,
   format = "file",
   untracked = false,
   submodules = false,
 }
 
+-- Grep in git files
+---@class snacks.picker.git.grep.Config: snacks.picker.git.Config
+---@field untracked? boolean search in untracked files
+---@field submodules? boolean search in submodule files
+---@field need_search? boolean require a search pattern
+M.git_grep = {
+  finder = "git_grep",
+  format = "file",
+  untracked = false,
+  need_search = true,
+  submodules = false,
+  show_empty = true,
+  supports_live = true,
+  live = true,
+}
+
 -- Git log
----@class snacks.picker.git.log.Config: snacks.picker.Config
+---@class snacks.picker.git.log.Config: snacks.picker.git.Config
 ---@field follow? boolean track file history across renames
 ---@field current_file? boolean show current file log
 ---@field current_line? boolean show current line log
+---@field author? string filter commits by author
 M.git_log = {
   finder = "git_log",
   format = "git_log",
   preview = "git_show",
-  confirm = "close",
+  confirm = "git_checkout",
+  sort = { fields = { "score:desc", "idx" } },
 }
 
 ---@type snacks.picker.git.log.Config
@@ -156,7 +285,8 @@ M.git_log_file = {
   preview = "git_show",
   current_file = true,
   follow = true,
-  confirm = "close",
+  confirm = "git_checkout",
+  sort = { fields = { "score:desc", "idx" } },
 }
 
 ---@type snacks.picker.git.log.Config
@@ -166,9 +296,19 @@ M.git_log_line = {
   preview = "git_show",
   current_line = true,
   follow = true,
-  confirm = "close",
+  confirm = "git_checkout",
+  sort = { fields = { "score:desc", "idx" } },
 }
 
+M.git_stash = {
+  finder = "git_stash",
+  format = "git_stash",
+  preview = "git_stash",
+  confirm = "git_stash_apply",
+}
+
+---@class snacks.picker.git.status.Config: snacks.picker.git.Config
+---@field ignored? boolean show ignored files
 M.git_status = {
   finder = "git_status",
   format = "git_status",
@@ -182,10 +322,11 @@ M.git_status = {
   },
 }
 
+---@type snacks.picker.git.Config
 M.git_diff = {
   finder = "git_diff",
   format = "file",
-  preview = "preview",
+  preview = "diff",
 }
 
 ---@class snacks.picker.grep.Config: snacks.picker.proc.Config
@@ -200,14 +341,18 @@ M.git_diff = {
 ---@field buffers? boolean search in open buffers
 ---@field need_search? boolean require a search pattern
 ---@field exclude? string[] exclude patterns
+---@field args? string[] additional arguments
+---@field rtp? boolean search in runtimepath
 M.grep = {
   finder = "grep",
+  regex = true,
   format = "file",
+  show_empty = true,
   live = true, -- live grep by default
   supports_live = true,
 }
 
----@type snacks.picker.grep.Config
+---@type snacks.picker.grep.Config|{}
 M.grep_buffers = {
   finder = "grep",
   format = "file",
@@ -217,9 +362,10 @@ M.grep_buffers = {
   supports_live = true,
 }
 
----@type snacks.picker.grep.Config
+---@type snacks.picker.grep.Config|{}
 M.grep_word = {
   finder = "grep",
+  regex = false,
   format = "file",
   search = function(picker)
     return picker:word()
@@ -237,11 +383,7 @@ M.help = {
   previewers = {
     file = { ft = "help" },
   },
-  win = {
-    preview = {
-      minimal = true,
-    },
-  },
+  win = { preview = { minimal = true } },
   confirm = "help",
 }
 
@@ -249,6 +391,17 @@ M.highlights = {
   finder = "vim_highlights",
   format = "hl",
   preview = "preview",
+  confirm = "close",
+}
+
+---@class snacks.picker.icons.Config: snacks.picker.Config
+---@field icon_sources? string[]
+M.icons = {
+  icon_sources = { "nerd_fonts", "emoji" },
+  finder = "icons",
+  format = "icon",
+  layout = { preset = "vscode" },
+  confirm = "put",
 }
 
 M.jumps = {
@@ -259,20 +412,49 @@ M.jumps = {
 ---@class snacks.picker.keymaps.Config: snacks.picker.Config
 ---@field global? boolean show global keymaps
 ---@field local? boolean show buffer keymaps
+---@field plugs? boolean show plugin keymaps
 ---@field modes? string[]
 M.keymaps = {
   finder = "vim_keymaps",
   format = "keymap",
   preview = "preview",
   global = true,
+  plugs = false,
   ["local"] = true,
   modes = { "n", "v", "x", "s", "o", "i", "c", "t" },
+  ---@param picker snacks.Picker
   confirm = function(picker, item)
-    picker:close()
-    if item then
-      vim.api.nvim_input(item.item.lhs)
-    end
+    picker:norm(function()
+      if item then
+        picker:close()
+        vim.api.nvim_input(item.item.lhs)
+      end
+    end)
   end,
+  actions = {
+    toggle_global = function(picker)
+      picker.opts.global = not picker.opts.global
+      picker:find()
+    end,
+    toggle_buffer = function(picker)
+      picker.opts["local"] = not picker.opts["local"]
+      picker:find()
+    end,
+  },
+  win = {
+    input = {
+      keys = {
+        ["<a-g>"] = { "toggle_global", mode = { "n", "i" }, desc = "Toggle Global Keymaps" },
+        ["<a-b>"] = { "toggle_buffer", mode = { "n", "i" }, desc = "Toggle Buffer Keymaps" },
+      },
+    },
+  },
+}
+
+--- Search for a lazy.nvim plugin spec
+M.lazy = {
+  finder = "lazy_spec",
+  pattern = "'",
 }
 
 -- Search lines in the current buffer
@@ -285,6 +467,7 @@ M.lines = {
     preview = "main",
     preset = "ivy",
   },
+  jump = { match = true },
   -- allow any window to be used as the main window
   main = { current = true },
   ---@param picker snacks.Picker
@@ -309,6 +492,19 @@ M.loclist = {
 ---@field include_current? boolean default false
 ---@field unique_lines? boolean include only locations with unique lines
 ---@field filter? snacks.picker.filter.Config
+
+---@class snacks.picker.lsp.config.Config: snacks.picker.Config
+---@field installed? boolean only show installed servers
+---@field configured? boolean only show configured servers (setup with lspconfig)
+---@field attached? boolean|number only show attached servers. When `number`, show only servers attached to that buffer (can be 0)
+M.lsp_config = {
+  finder = "lsp.config#find",
+  format = "lsp.config#format",
+  preview = "lsp.config#preview",
+  confirm = "close",
+  sort = { fields = { "score:desc", "attached_buf", "attached", "enabled", "installed", "name" } },
+  matcher = { sort_empty = true },
+}
 
 -- LSP declarations
 ---@type snacks.picker.lsp.Config
@@ -354,12 +550,13 @@ M.lsp_references = {
 
 -- LSP document symbols
 ---@class snacks.picker.lsp.symbols.Config: snacks.picker.Config
----@field hierarchy? boolean show symbol hierarchy
+---@field tree? boolean show symbol tree
 ---@field filter table<string, string[]|boolean>? symbol kind filter
+---@field workspace? boolean show workspace symbols
 M.lsp_symbols = {
   finder = "lsp_symbols",
   format = "lsp_symbol",
-  hierarchy = true,
+  tree = true,
   filter = {
     default = {
       "Class",
@@ -398,6 +595,14 @@ M.lsp_symbols = {
   },
 }
 
+---@type snacks.picker.lsp.symbols.Config
+M.lsp_workspace_symbols = vim.tbl_extend("force", {}, M.lsp_symbols, {
+  workspace = true,
+  tree = false,
+  supports_live = true,
+  live = true, -- live by default
+})
+
 -- LSP type definitions
 ---@type snacks.picker.lsp.Config
 M.lsp_type_definitions = {
@@ -432,6 +637,16 @@ M.marks = {
   ["local"] = true,
 }
 
+---@class snacks.picker.notifications.Config: snacks.picker.Config
+---@field filter? snacks.notifier.level|fun(notif: snacks.notifier.Notif): boolean
+M.notifications = {
+  finder = "snacks_notifier",
+  format = "notification",
+  preview = "preview",
+  formatters = { severity = { level = true } },
+  confirm = "close",
+}
+
 -- List all available sources
 M.pickers = {
   finder = "meta_pickers",
@@ -439,7 +654,9 @@ M.pickers = {
   confirm = function(picker, item)
     picker:close()
     if item then
-      Snacks.picker(item.text)
+      vim.schedule(function()
+        Snacks.picker(item.text)
+      end)
     end
   end,
 }
@@ -469,13 +686,43 @@ M.picker_preview = {
 -- Open recent projects
 ---@class snacks.picker.projects.Config: snacks.picker.Config
 ---@field filter? snacks.picker.filter.Config
+---@field dev? string|string[] top-level directories containing multiple projects (sub-folders that contains a root pattern)
+---@field projects? string[] list of project directories
+---@field patterns? string[] patterns to detect project root directories
+---@field recent? boolean include project directories of recent files
 M.projects = {
   finder = "recent_projects",
   format = "file",
+  dev = { "~/dev", "~/projects" },
   confirm = "load_session",
+  patterns = { ".git", "_darcs", ".hg", ".bzr", ".svn", "package.json", "Makefile" },
+  recent = true,
+  matcher = {
+    frecency = true, -- use frecency boosting
+    sort_empty = true, -- sort even when the filter is empty
+    cwd_bonus = false,
+  },
+  sort = { fields = { "score:desc", "idx" } },
   win = {
-    preview = {
-      minimal = true,
+    preview = { minimal = true },
+    input = {
+      keys = {
+        -- every action will always first change the cwd of the current tabpage to the project
+        ["<c-e>"] = { { "tcd", "picker_explorer" }, mode = { "n", "i" } },
+        ["<c-f>"] = { { "tcd", "picker_files" }, mode = { "n", "i" } },
+        ["<c-g>"] = { { "tcd", "picker_grep" }, mode = { "n", "i" } },
+        ["<c-r>"] = { { "tcd", "picker_recent" }, mode = { "n", "i" } },
+        ["<c-w>"] = { { "tcd" }, mode = { "n", "i" } },
+        ["<c-t>"] = {
+          function(picker)
+            vim.cmd("tabnew")
+            Snacks.notify("New tab opened")
+            picker:close()
+            Snacks.picker.projects()
+          end,
+          mode = { "n", "i" },
+        },
+      },
     },
   },
 }
@@ -520,21 +767,31 @@ M.search_history = {
   name = "search",
   format = "text",
   preview = "none",
-  layout = {
-    preset = "vscode",
-  },
+  layout = { preset = "vscode" },
   confirm = "search",
+  formatters = { text = { ft = "regex" } },
+}
+
+--- Config used by `vim.ui.select`.
+--- Not meant to be used directly.
+M.select = {
+  items = {}, -- these are set dynamically
+  main = { current = true },
+  layout = { preset = "select" },
 }
 
 ---@class snacks.picker.smart.Config: snacks.picker.Config
 ---@field finders? string[] list of finders to use
 ---@field filter? snacks.picker.filter.Config
 M.smart = {
-  finder = "smart",
-  finders = { "buffers", "recent", "files" },
-  format = "file",
-  -- sort the results even when the filter is empty (frecency)
-  matcher = { sort_empty = true },
+  multi = { "buffers", "recent", "files" },
+  format = "file", -- use `file` format for all sources
+  matcher = {
+    cwd_bonus = true, -- boost cwd matches
+    frecency = true, -- use frecency boosting
+    sort_empty = true, -- sort even when the filter is empty
+  },
+  transform = "unique_file",
 }
 
 M.spelling = {
@@ -542,6 +799,60 @@ M.spelling = {
   format = "text",
   layout = { preset = "vscode" },
   confirm = "item_action",
+}
+
+---@class snacks.picker.treesitter.Config: snacks.picker.Config
+---@field filter table<string, string[]|boolean>? symbol kind filter
+---@field tree? boolean show symbol tree
+M.treesitter = {
+  finder = "treesitter_symbols",
+  format = "lsp_symbol",
+  tree = true,
+  filter = {
+    default = {
+      "Class",
+      "Enum",
+      "Field",
+      "Function",
+      "Method",
+      "Module",
+      "Namespace",
+      "Struct",
+      "Trait",
+    },
+    -- set to `true` to include all symbols
+    markdown = true,
+    help = true,
+  },
+}
+
+---@class snacks.picker.undo.Config: snacks.picker.Config
+---@field diff? vim.diff.Opts
+M.undo = {
+  finder = "vim_undo",
+  format = "undo",
+  preview = "diff",
+  confirm = "item_action",
+  win = {
+    preview = { wo = { number = false, relativenumber = false, signcolumn = "no" } },
+    input = {
+      keys = {
+        ["<c-y>"] = { "yank_add", mode = { "n", "i" } },
+        ["<c-s-y>"] = { "yank_del", mode = { "n", "i" } },
+      },
+    },
+  },
+  actions = {
+    yank_add = { action = "yank", field = "added_lines" },
+    yank_del = { action = "yank", field = "removed_lines" },
+  },
+  icons = { tree = { last = "┌╴" } }, -- the tree is upside down
+  diff = {
+    ctxlen = 4,
+    ignore_cr_at_eol = true,
+    ignore_whitespace_change_at_eol = true,
+    indent_heuristic = true,
+  },
 }
 
 -- Open a project from zoxide

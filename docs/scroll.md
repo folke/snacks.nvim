@@ -66,7 +66,6 @@ Similar plugins:
 ---@field current vim.fn.winsaveview.ret
 ---@field target vim.fn.winsaveview.ret
 ---@field scrolloff number
----@field virtualedit? string
 ---@field changedtick number
 ---@field last number vim.uv.hrtime of last scroll
 ```

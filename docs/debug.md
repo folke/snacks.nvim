@@ -30,6 +30,20 @@ What this does:
 ## 📚 Types
 
 ```lua
+---@class snacks.debug.cmd
+---@field cmd string|string[]
+---@field level? snacks.notifier.level
+---@field title? string
+---@field args? string[]
+---@field cwd? string
+---@field group? boolean
+---@field notify? boolean
+---@field footer? string
+---@field header? string
+---@field props? table<string, string>
+```
+
+```lua
 ---@alias snacks.debug.Trace {name: string, time: number, [number]:snacks.debug.Trace}
 ---@alias snacks.debug.Stat {name:string, time:number, count?:number, depth?:number}
 ```
@@ -51,6 +65,13 @@ Show a notification with a pretty backtrace
 ---@param msg? string|string[]
 ---@param opts? snacks.notify.Opts
 Snacks.debug.backtrace(msg, opts)
+```
+
+### `Snacks.debug.cmd()`
+
+```lua
+---@param opts snacks.debug.cmd
+Snacks.debug.cmd(opts)
 ```
 
 ### `Snacks.debug.inspect()`

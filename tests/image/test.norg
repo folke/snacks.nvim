@@ -1,0 +1,7 @@
+# Test
+
+- foo
+
+.image ./test.png
+
+.image test.png

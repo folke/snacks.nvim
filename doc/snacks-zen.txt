@@ -1,4 +1,4 @@
-*snacks-zen.txt*                                                   snacks.nvim
+*snacks-zen*                                                    snacks_zen
 
 ==============================================================================
 Table of Contents                               *snacks-zen-table-of-contents*
@@ -106,6 +106,9 @@ ZEN                                                    *snacks-zen-styles-zen*
       zindex = 40,
       wo = {
         winhighlight = "NormalFloat:Normal",
+      },
+      w = {
+        snacks_main = true,
       },
     }
 <

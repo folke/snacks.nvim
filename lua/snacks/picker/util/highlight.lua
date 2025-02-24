@@ -1,7 +1,22 @@
 ---@class snacks.picker.highlight
 local M = {}
 
----@param opts? {buf?:number, code?:string, ft?:string, lang?:string, file?:string}
+M.langs = {} ---@type table<string, boolean>
+
+---@param opts? {lang?:string, ft?:string}
+function M.get_lang(opts)
+  opts = opts or {}
+  local lang = opts.lang or (opts.ft and vim.treesitter.language.get_lang(opts.ft)) or nil
+  if not lang then
+    return
+  end
+  if M.langs[lang] == nil then
+    M.langs[lang] = pcall(vim.treesitter.language.add, lang)
+  end
+  return M.langs[lang] and lang or nil
+end
+
+---@param opts? {buf?:number, code?:string, ft?:string, lang?:string, file?:string, extmarks?:boolean}
 function M.get_highlights(opts)
   opts = opts or {}
   local source = assert(opts.buf or opts.code, "buf or code is required")
@@ -13,9 +28,10 @@ function M.get_highlights(opts)
     or (opts.buf and vim.bo[opts.buf].filetype)
     or (opts.file and vim.filetype.match({ filename = opts.file, buf = 0 }))
     or vim.bo.filetype
-  local lang = opts.lang or vim.treesitter.language.get_lang(ft)
+  local lang = M.get_lang({ lang = opts.lang, ft = ft })
   local parser ---@type vim.treesitter.LanguageTree?
   if lang then
+    lang = lang:lower()
     local ok = false
     if opts.buf then
       ok, parser = pcall(vim.treesitter.get_parser, opts.buf, lang)
@@ -65,7 +81,7 @@ function M.get_highlights(opts)
   end
 
   --- Add buffer extmarks
-  if opts.buf then
+  if opts.buf and opts.extmarks then
     local extmarks = vim.api.nvim_buf_get_extmarks(opts.buf, -1, 0, -1, { details = true })
     for _, extmark in pairs(extmarks) do
       local row = extmark[2] + 1
@@ -90,11 +106,15 @@ function M.get_highlights(opts)
 end
 
 ---@param line snacks.picker.Highlight[]
-function M.offset(line)
+---@param opts? {char_idx?:boolean}
+function M.offset(line, opts)
+  opts = opts or {}
   local offset = 0
   for _, t in ipairs(line) do
     if type(t[1]) == "string" then
       if t.virtual then
+        offset = offset + vim.api.nvim_strwidth(t[1])
+      elseif opts.char_idx then
         offset = offset + vim.api.nvim_strwidth(t[1])
       else
         offset = offset + #t[1]
@@ -111,8 +131,15 @@ end
 function M.format(item, text, line, opts)
   opts = opts or {}
   local offset = M.offset(line)
-  local highlights = M.get_highlights({ code = text, ft = item.ft, lang = opts.lang or item.lang, file = item.file })[1]
-    or {}
+  item._ = item._ or {}
+  item._.ts = item._.ts or {}
+  local highlights = item._.ts[text] ---@type table<number, snacks.picker.Extmark[]>?
+  if not highlights then
+    highlights = M.get_highlights({ code = text, ft = item.ft, lang = opts.lang or item.lang, file = item.file })[1]
+      or {}
+    item._.ts[text] = highlights
+  end
+  highlights = vim.deepcopy(highlights)
   for _, extmark in ipairs(highlights) do
     extmark.col = extmark.col + offset
     extmark.end_col = extmark.end_col + offset
@@ -155,7 +182,13 @@ end
 ---@param line snacks.picker.Highlight[]
 function M.markdown(line)
   M.highlight(line, {
+    ["^# .*"] = "@markup.heading.1.markdown",
+    ["^## .*"] = "@markup.heading.2.markdown",
+    ["^### .*"] = "@markup.heading.3.markdown",
+    ["^#### .*"] = "@markup.heading.4.markdown",
+    ["^##### .*"] = "@markup.heading.5.markdown",
     ["`.-`"] = "SnacksPickerCode",
+    ["^%s*[%-%*]"] = "@markup.list.markdown",
     ["%*.-%*"] = "SnacksPickerItalic",
     ["%*%*.-%*%*"] = "SnacksPickerBold",
   })
@@ -190,6 +223,9 @@ function M.to_text(line, opts)
   local col = offset
   local parts = {} ---@type string[]
   for _, text in ipairs(line) do
+    if (type(text[2]) == "string" and text[1] == nil) or vim.tbl_isempty(text) then
+      text[1] = ""
+    end
     if type(text[1]) == "string" then
       ---@cast text snacks.picker.Text
       if text.virtual then
@@ -222,6 +258,46 @@ function M.to_text(line, opts)
     end
   end
   return table.concat(parts), ret
+end
+
+---@param hl snacks.picker.Highlight[]
+function M.fix_offset(hl, offset)
+  for _, t in ipairs(hl) do
+    if t.col then
+      t.col = t.col + offset
+    end
+    if t.end_col then
+      t.end_col = t.end_col + offset
+    end
+  end
+end
+
+---@param buf number
+---@param ns number
+---@param row number
+---@param hl snacks.picker.Highlight[]
+function M.set(buf, ns, row, hl)
+  while #hl > 0 and type(hl[#hl][1]) == "string" and hl[#hl][1]:find("^%s*$") do
+    table.remove(hl)
+  end
+  local line_text, extmarks = Snacks.picker.highlight.to_text(hl)
+  vim.api.nvim_buf_set_lines(buf, row - 1, row, false, { line_text })
+  for _, extmark in ipairs(extmarks) do
+    local col = extmark.col
+    extmark.col = nil
+    extmark.row = nil
+    extmark.field = nil
+    local ok, err = pcall(vim.api.nvim_buf_set_extmark, buf, ns, row - 1, col, extmark)
+    if not ok then
+      Snacks.notify.error(
+        "Failed to set extmark. This should not happen. Please report.\n"
+          .. err
+          .. "\n```lua\n"
+          .. vim.inspect(extmark)
+          .. "\n```"
+      )
+    end
+  end
 end
 
 return M

@@ -2,11 +2,26 @@
 ---@field [string] snacks.picker.Action.spec
 local M = {}
 
-local SCROLL_WHEEL_DOWN = Snacks.util.keycode("<ScrollWheelDown>")
-local SCROLL_WHEEL_UP = Snacks.util.keycode("<ScrollWheelUp>")
-
 ---@class snacks.picker.jump.Action: snacks.picker.Action
----@field cmd? string
+---@field cmd? snacks.picker.EditCmd
+
+---@class snacks.picker.layout.Action: snacks.picker.Action
+---@field layout? snacks.picker.layout.Config|string
+
+---@class snacks.picker.yank.Action: snacks.picker.Action
+---@field reg? string
+---@field field? string
+---@field notify? boolean
+
+---@enum (key) snacks.picker.EditCmd
+local edit_cmd = {
+  edit = "buffer",
+  split = "sbuffer",
+  vsplit = "vert sbuffer",
+  tab = "tab sbuffer",
+  drop = "drop",
+  tabdrop = "tab drop",
+}
 
 function M.jump(picker, _, action)
   ---@cast action snacks.picker.jump.Action
@@ -20,10 +35,16 @@ function M.jump(picker, _, action)
     return
   end
 
-  picker:close()
+  local items = picker:selected({ fallback = true })
 
-  if action.cmd then
-    vim.cmd(action.cmd)
+  if picker.opts.jump.close then
+    picker:close()
+  else
+    vim.api.nvim_set_current_win(picker.main)
+  end
+
+  if #items == 0 then
+    return
   end
 
   local win = vim.api.nvim_get_current_win()
@@ -52,40 +73,62 @@ function M.jump(picker, _, action)
     end
   end
 
-  local items = picker:selected({ fallback = true })
+  local cmd = edit_cmd[action.cmd] or "buffer"
 
-  for _, item in ipairs(items) do
-    -- load the buffer
-    local buf = item.buf ---@type number
-    if not buf then
-      local path = assert(Snacks.picker.util.path(item), "Either item.buf or item.file is required")
-      buf = vim.fn.bufadd(path)
+  if cmd:find("drop") then
+    local drop = {} ---@type string[]
+    for _, item in ipairs(items) do
+      local path = item.buf and vim.api.nvim_buf_get_name(item.buf) or Snacks.picker.util.path(item)
+      if not path then
+        Snacks.notify.error("Either item.buf or item.file is required", { title = "Snacks Picker" })
+        return
+      end
+      drop[#drop + 1] = vim.fn.fnameescape(path)
     end
-
-    -- use an existing window if possible
-    if #items == 1 and picker.opts.jump.reuse_win and buf ~= current_buf then
-      win = vim.fn.win_findbuf(buf)[1] or win
-      vim.api.nvim_set_current_win(win)
-    end
-
-    if not vim.api.nvim_buf_is_loaded(buf) then
-      vim.cmd("buffer " .. buf)
+    vim.cmd(cmd .. " " .. table.concat(drop, " "))
+  else
+    for i, item in ipairs(items) do
+      -- load the buffer
+      local buf = item.buf ---@type number
+      if not buf then
+        local path = assert(Snacks.picker.util.path(item), "Either item.buf or item.file is required")
+        buf = vim.fn.bufadd(path)
+      end
       vim.bo[buf].buflisted = true
-    end
 
-    -- set the buffer
-    vim.api.nvim_win_set_buf(win, buf)
+      -- use an existing window if possible
+      if cmd == "buffer" and #items == 1 and picker.opts.jump.reuse_win and buf ~= current_buf then
+        for _, w in ipairs(vim.fn.win_findbuf(buf)) do
+          if vim.api.nvim_win_get_config(w).relative == "" then
+            win = w
+            vim.api.nvim_set_current_win(win)
+            break
+          end
+        end
+      end
 
-    -- set the cursor
-    if item.pos then
-      vim.api.nvim_win_set_cursor(win, { item.pos[1], item.pos[2] })
-    elseif item.search then
-      vim.cmd(item.search)
-      vim.cmd("noh")
+      -- open the first buffer
+      if i == 1 then
+        vim.cmd(("%s %d"):format(cmd, buf))
+        win = vim.api.nvim_get_current_win()
+      end
     end
-    -- center
-    vim.cmd("norm! zzzv")
   end
+
+  -- set the cursor
+  local item = items[1]
+  local pos = item.pos
+  if picker.opts.jump.match then
+    pos = picker.matcher:bufpos(vim.api.nvim_get_current_buf(), item) or pos
+  end
+  if pos and pos[1] > 0 then
+    vim.api.nvim_win_set_cursor(win, { pos[1], pos[2] })
+    vim.cmd("norm! zzzv")
+  elseif item.search then
+    vim.cmd(item.search)
+    vim.cmd("noh")
+  end
+
   -- HACK: this should fix folds
   if vim.wo.foldmethod == "expr" then
     vim.schedule(function()
@@ -94,54 +137,257 @@ function M.jump(picker, _, action)
   end
 
   if current_empty and vim.api.nvim_buf_is_valid(current_buf) then
-    local w = vim.fn.bufwinid(current_buf)
-    if w == -1 then
+    local w = vim.fn.win_findbuf(current_buf)
+    if #w == 0 then
       vim.api.nvim_buf_delete(current_buf, { force = true })
     end
   end
 end
 
-M.cancel = "close"
+function M.close(picker)
+  picker:norm(function()
+    picker:close()
+  end)
+end
+
+function M.cancel(picker)
+  picker:norm(function()
+    local main = require("snacks.picker.core.main").new({ float = false, file = false })
+    vim.api.nvim_set_current_win(main:get())
+    picker:close()
+  end)
+end
+
+M.confirm = M.jump -- default confirm action
+
+M.split = { action = "confirm", cmd = "split" }
+M.vsplit = { action = "confirm", cmd = "vsplit" }
+M.tab = { action = "confirm", cmd = "tab" }
+M.drop = { action = "confirm", cmd = "drop" }
+M.tabdrop = { action = "confirm", cmd = "tabdrop" }
+
+-- aliases
 M.edit = M.jump
-M.confirm = M.jump
-M.edit_split = { action = "jump", cmd = "split" }
-M.edit_vsplit = { action = "jump", cmd = "vsplit" }
-M.edit_tab = { action = "jump", cmd = "tabnew" }
+M.edit_split = M.split
+M.edit_vsplit = M.vsplit
+M.edit_tab = M.tab
+
+function M.layout(picker, _, action)
+  ---@cast action snacks.picker.layout.Action
+  assert(action.layout, "Layout action requires a layout")
+  local opts = type(action.layout) == "table" and { layout = action.layout } or action.layout
+  ---@cast opts snacks.picker.Config
+  local layout = Snacks.picker.config.layout(opts)
+  picker:set_layout(layout)
+  -- Adjust some options for split layouts
+  if (layout.layout.position or "float") ~= "float" then
+    picker.opts.auto_close = false
+    picker.opts.jump.close = false
+    picker:toggle("preview", { enable = false })
+    picker.list.win:focus()
+  end
+end
+
+M.layout_top = { action = "layout", layout = "top" }
+M.layout_bottom = { action = "layout", layout = "bottom" }
+M.layout_left = { action = "layout", layout = "left" }
+M.layout_right = { action = "layout", layout = "right" }
 
 function M.toggle_maximize(picker)
   picker.layout:maximize()
 end
 
 function M.toggle_preview(picker)
-  picker.layout:toggle("preview")
-  picker:show_preview()
+  picker:toggle("preview")
 end
 
-function M.bufdelete(picker)
-  for _, item in ipairs(picker:selected({ fallback = true })) do
-    Snacks.bufdelete.delete(item.buf)
+function M.toggle_input(picker)
+  picker:toggle("input", { focus = true })
+end
+
+function M.picker_grep(_, item)
+  if item then
+    Snacks.picker.grep({ cwd = Snacks.picker.util.dir(item) })
   end
-  local cursor = picker.list.cursor
-  picker:find({
-    on_done = function()
-      picker.list:view(cursor)
+end
+
+function M.terminal(_, item)
+  if item then
+    Snacks.terminal(nil, { cwd = Snacks.picker.util.dir(item) })
+  end
+end
+
+function M.cd(_, item)
+  if item then
+    vim.fn.chdir(Snacks.picker.util.dir(item))
+  end
+end
+
+function M.tcd(_, item)
+  if item then
+    vim.cmd.tcd(Snacks.picker.util.dir(item))
+  end
+end
+
+function M.lcd(_, item)
+  if item then
+    vim.cmd.lcd(Snacks.picker.util.dir(item))
+  end
+end
+
+function M.picker(picker, item, action)
+  if not item then
+    return
+  end
+  local source = action.source or "files"
+  for _, p in ipairs(Snacks.picker.get({ source = source })) do
+    p:close()
+  end
+  Snacks.picker(source, {
+    cwd = Snacks.picker.util.dir(item),
+    on_show = function()
+      picker:close()
     end,
   })
 end
 
+M.picker_files = { action = "picker", source = "files" }
+M.picker_explorer = { action = "picker", source = "explorer" }
+M.picker_recent = { action = "picker", source = "recent" }
+
+function M.pick_win(picker, item, action)
+  if not picker.layout.split then
+    picker.layout:hide()
+  end
+  local win = Snacks.picker.util.pick_win({ main = picker.main })
+  if not win then
+    if not picker.layout.split then
+      picker.layout:unhide()
+    end
+    return true
+  end
+  picker.main = win
+  if not picker.layout.split then
+    vim.defer_fn(function()
+      if not picker.closed then
+        picker.layout:unhide()
+      end
+    end, 100)
+  end
+end
+
+function M.bufdelete(picker)
+  picker.preview:reset()
+  local non_buf_delete_requested = false
+  for _, item in ipairs(picker:selected({ fallback = true })) do
+    if item.buf then
+      Snacks.bufdelete.delete(item.buf)
+    else
+      non_buf_delete_requested = true
+    end
+  end
+  if non_buf_delete_requested then
+    Snacks.notify.warn("Only open buffers can be deleted", { title = "Snacks Picker" })
+  end
+  picker.list:set_selected()
+  picker.list:set_target()
+  picker:find()
+end
+
 function M.git_stage(picker)
   local items = picker:selected({ fallback = true })
-  local cursor = picker.list.cursor
+  local done = 0
   for _, item in ipairs(items) do
     local cmd = item.status:sub(2) == " " and { "git", "restore", "--staged", item.file } or { "git", "add", item.file }
     Snacks.picker.util.cmd(cmd, function(data, code)
-      picker:find({
-        on_done = function()
-          picker.list:view(cursor + 1)
-        end,
-      })
+      done = done + 1
+      if done == #items then
+        picker.list:set_selected()
+        picker.list:set_target()
+        picker:find()
+      end
     end, { cwd = item.cwd })
   end
+end
+
+function M.git_stash_apply(_, item)
+  if not item then
+    return
+  end
+  local cmd = { "git", "stash", "apply", item.stash }
+  Snacks.picker.util.cmd(cmd, function()
+    Snacks.notify("Stash applied: `" .. item.stash .. "`", { title = "Snacks Picker" })
+  end, { cwd = item.cwd })
+end
+
+function M.git_checkout(picker, item)
+  picker:close()
+  if item then
+    local what = item.branch or item.commit
+    if not what then
+      Snacks.notify.warn("No branch or commit found", { title = "Snacks Picker" })
+      return
+    end
+    local cmd = { "git", "checkout", what }
+    if item.file then
+      vim.list_extend(cmd, { "--", item.file })
+    end
+    Snacks.picker.util.cmd(cmd, function()
+      Snacks.notify("Checkout " .. what, { title = "Snacks Picker" })
+      vim.cmd.checktime()
+    end, { cwd = item.cwd })
+  end
+end
+
+function M.git_branch_add(picker)
+  Snacks.input.input({
+    prompt = "New Branch Name",
+    default = picker.input:get(),
+  }, function(name)
+    if (name or ""):match("^%s*$") then
+      return
+    end
+    Snacks.picker.util.cmd({ "git", "branch", "--list", name }, function(data)
+      if data[1] ~= "" then
+        return Snacks.notify.error("Branch '" .. name .. "' already exists.", { title = "Snacks Picker" })
+      end
+      Snacks.picker.util.cmd({ "git", "checkout", "-b", name }, function()
+        Snacks.notify("Created Branch `" .. name .. "`", { title = "Snacks Picker" })
+        vim.cmd.checktime()
+        picker.list:set_target()
+        picker.input:set("", "")
+        picker:find()
+      end, { cwd = picker:cwd() })
+    end, { cwd = picker:cwd() })
+  end)
+end
+
+function M.git_branch_del(picker, item)
+  if not (item and item.branch) then
+    Snacks.notify.warn("No branch or commit found", { title = "Snacks Picker" })
+  end
+
+  local branch = item.branch
+  Snacks.picker.util.cmd({ "git", "rev-parse", "--abbrev-ref", "HEAD" }, function(data)
+    -- Check if we are on the same branch
+    if data[1]:match(branch) ~= nil then
+      Snacks.notify.error("Cannot delete the current branch.", { title = "Snacks Picker" })
+      return
+    end
+
+    Snacks.picker.select({ "Yes", "No" }, { prompt = ("Delete branch %q?"):format(branch) }, function(_, idx)
+      if idx == 1 then
+        -- Proceed with deletion
+        Snacks.picker.util.cmd({ "git", "branch", "-d", branch }, function()
+          Snacks.notify("Deleted Branch `" .. branch .. "`", { title = "Snacks Picker" })
+          vim.cmd.checktime()
+          picker.list:set_selected()
+          picker.list:set_target()
+          picker:find()
+        end, { cwd = picker:cwd() })
+      end
+    end)
+  end, { cwd = picker:cwd() })
 end
 
 ---@param items snacks.picker.Item[]
@@ -153,9 +399,9 @@ local function setqflist(items, opts)
       filename = Snacks.picker.util.path(item),
       bufnr = item.buf,
       lnum = item.pos and item.pos[1] or 1,
-      col = item.pos and item.pos[2] or 1,
+      col = item.pos and item.pos[2] + 1 or 1,
       end_lnum = item.end_pos and item.end_pos[1] or nil,
-      end_col = item.end_pos and item.end_pos[2] or nil,
+      end_col = item.end_pos and item.end_pos[2] + 1 or nil,
       text = item.line or item.comment or item.label or item.name or item.detail or item.text,
       pattern = item.search,
       valid = true,
@@ -163,10 +409,10 @@ local function setqflist(items, opts)
   end
   if opts and opts.win then
     vim.fn.setloclist(opts.win, qf)
-    vim.cmd("lopen")
+    vim.cmd("botright lopen")
   else
     vim.fn.setqflist(qf)
-    vim.cmd("copen")
+    vim.cmd("botright copen")
   end
 end
 
@@ -192,9 +438,27 @@ function M.loclist(picker)
   setqflist(items, { win = picker.main })
 end
 
-function M.copy(_, item)
+function M.yank(picker, item, action)
+  ---@cast action snacks.picker.yank.Action
   if item then
-    vim.fn.setreg("+", item.data or item.text)
+    local reg = action.reg or vim.v.register
+    local value = item[action.field] or item.data or item.text
+    vim.fn.setreg(reg, value)
+    if action.notify ~= false then
+      local buf = item.buf or vim.api.nvim_win_get_buf(picker.main)
+      local ft = vim.bo[buf].filetype
+      Snacks.notify(("Yanked to register `%s`:\n```%s\n%s\n```"):format(reg, ft, value), { title = "Snacks Picker" })
+    end
+  end
+end
+M.copy = M.yank
+
+function M.put(picker, item, action)
+  ---@cast action snacks.picker.yank.Action
+  picker:close()
+  if item then
+    local value = item[action.field] or item.data or item.text
+    vim.api.nvim_put({ value }, "", true, true)
   end
 end
 
@@ -210,14 +474,14 @@ end
 --- and moves the cursor to the next item.
 function M.select_and_next(picker)
   picker.list:select()
-  M.list_down(picker)
+  picker.list:_move(vim.v.count1)
 end
 
 --- Toggles the selection of the current item,
 --- and moves the cursor to the prev item.
 function M.select_and_prev(picker)
   picker.list:select()
-  M.list_up(picker)
+  picker.list:_move(-vim.v.count1)
 end
 
 --- Selects all items in the list.
@@ -230,7 +494,10 @@ function M.cmd(picker, item)
   picker:close()
   if item and item.cmd then
     vim.schedule(function()
-      vim.cmd(item.cmd)
+      vim.api.nvim_input(":")
+      vim.schedule(function()
+        vim.fn.setcmdline(item.cmd)
+      end)
     end)
   end
 end
@@ -238,14 +505,16 @@ end
 function M.search(picker, item)
   picker:close()
   if item then
-    vim.api.nvim_input("/" .. item.text)
+    vim.api.nvim_input("/")
+    vim.schedule(function()
+      vim.fn.setcmdline(item.text)
+    end)
   end
 end
 
 --- Tries to load the session, if it fails, it will open the picker.
-function M.load_session(picker)
+function M.load_session(picker, item)
   picker:close()
-  local item = picker:current()
   if not item then
     return
   end
@@ -269,20 +538,58 @@ function M.load_session(picker)
   end
 end
 
-function M.help(picker)
-  local item = picker:current()
+function M.help(picker, item, action)
+  ---@cast action snacks.picker.jump.Action
   if item then
     picker:close()
-    vim.cmd("help " .. item.text)
+    local file = Snacks.picker.util.path(item) or ""
+    if package.loaded.lazy then
+      local plugin = file:match("/([^/]+)/doc/")
+      if plugin and require("lazy.core.config").plugins[plugin] then
+        require("lazy").load({ plugins = { plugin } })
+      end
+    end
+
+    local cmd = "help " .. item.text
+    if action.cmd == "vsplit" then
+      cmd = "vert " .. cmd
+    elseif action.cmd == "tab" then
+      cmd = "tab " .. cmd
+    end
+    vim.cmd(cmd)
   end
 end
 
+function M.toggle_help_input(picker)
+  picker.input.win:toggle_help()
+end
+
+function M.toggle_help_list(picker)
+  picker.list.win:toggle_help()
+end
+
 function M.preview_scroll_down(picker)
-  picker.preview.win:scroll()
+  if picker.preview.win:valid() then
+    picker.preview.win:scroll()
+  end
 end
 
 function M.preview_scroll_up(picker)
-  picker.preview.win:scroll(true)
+  if picker.preview.win:valid() then
+    picker.preview.win:scroll(true)
+  end
+end
+
+function M.preview_scroll_left(picker)
+  if picker.preview.win:valid() then
+    picker.preview.win:hscroll(true)
+  end
+end
+
+function M.preview_scroll_right(picker)
+  if picker.preview.win:valid() then
+    picker.preview.win:hscroll()
+  end
 end
 
 function M.inspect(picker, item)
@@ -301,9 +608,9 @@ end
 
 function M.toggle_focus(picker)
   if vim.api.nvim_get_current_win() == picker.input.win.win then
-    picker.list.win:focus()
+    picker:focus("list", { show = true })
   else
-    picker.input.win:focus()
+    picker:focus("input", { show = true })
   end
 end
 
@@ -322,28 +629,18 @@ function M.cycle_win(picker)
   end
   win = wins[idx % #wins + 1] or 1 -- cycle
   vim.api.nvim_set_current_win(win)
-  if win == picker.input.win.win then
-    vim.cmd("startinsert")
-  end
 end
 
 function M.focus_input(picker)
-  picker.input.win:focus()
-  vim.cmd("startinsert")
+  picker:focus("input", { show = true })
 end
 
 function M.focus_list(picker)
-  picker.list.win:focus()
+  picker:focus("list", { show = true })
 end
 
 function M.focus_preview(picker)
-  picker.preview.win:focus()
-end
-
-function M.toggle_ignored(picker)
-  local opts = picker.opts --[[@as snacks.picker.files.Config]]
-  opts.ignored = not opts.ignored
-  picker:find()
+  picker:focus("preview", { show = true })
 end
 
 function M.item_action(picker, item, action)
@@ -355,18 +652,6 @@ function M.item_action(picker, item, action)
   end
 end
 
-function M.toggle_hidden(picker)
-  local opts = picker.opts --[[@as snacks.picker.files.Config]]
-  opts.hidden = not opts.hidden
-  picker:find()
-end
-
-function M.toggle_follow(picker)
-  local opts = picker.opts --[[@as snacks.picker.files.Config]]
-  opts.follow = not opts.follow
-  picker:find()
-end
-
 function M.list_top(picker)
   picker.list:move(1, true)
 end
@@ -376,11 +661,11 @@ function M.list_bottom(picker)
 end
 
 function M.list_down(picker)
-  picker.list:move(1)
+  picker.list:move(vim.v.count1)
 end
 
 function M.list_up(picker)
-  picker.list:move(-1)
+  picker.list:move(-vim.v.count1)
 end
 
 function M.list_scroll_top(picker)
@@ -404,24 +689,6 @@ end
 
 function M.list_scroll_up(picker)
   picker.list:scroll(-picker.list.state.scroll)
-end
-
-function M.list_scroll_wheel_down(picker)
-  local mouse_win = vim.fn.getmousepos().winid
-  if mouse_win == picker.list.win.win then
-    picker.list:scroll(picker.list.state.mousescroll)
-  else
-    vim.api.nvim_feedkeys(SCROLL_WHEEL_DOWN, "n", true)
-  end
-end
-
-function M.list_scroll_wheel_up(picker)
-  local mouse_win = vim.fn.getmousepos().winid
-  if mouse_win == picker.list.win.win then
-    picker.list:scroll(-picker.list.state.mousescroll)
-  else
-    vim.api.nvim_feedkeys(SCROLL_WHEEL_UP, "n", true)
-  end
 end
 
 return M

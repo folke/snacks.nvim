@@ -14,6 +14,9 @@
 ---@field selected snacks.picker.Item[]
 ---@field selected_map table<string, snacks.picker.Item>
 ---@field matcher snacks.picker.Matcher matcher for formatting list items
+---@field matcher_regex snacks.picker.Matcher matcher for formatting list items
+---@field target? {cursor: number, top?: number}
+---@field visible snacks.picker.Item[]
 local M = {}
 M.__index = M
 
@@ -29,6 +32,33 @@ local function minmax(value, min, max)
   return math.max(min, math.min(value, max))
 end
 
+local SCROLL_WHEEL_UP = Snacks.util.keycode("<ScrollWheelUp>")
+local SCROLL_WHEEL_DOWN = Snacks.util.keycode("<ScrollWheelDown>")
+
+---@type table<number, snacks.picker.list>
+local lists = setmetatable({}, { __mode = "v" })
+
+local stats = { render = 0, render_full = 0 }
+
+-- track mouse scrolling
+vim.on_key(function(key, typed)
+  key = typed or key
+  if key ~= SCROLL_WHEEL_UP and key ~= SCROLL_WHEEL_DOWN then
+    return
+  end
+  local up = key == SCROLL_WHEEL_UP
+  local mouse_win = vim.fn.getmousepos().winid
+  local list = lists[mouse_win]
+  if list and list.win:valid() then
+    vim.schedule(function()
+      if list and list.win:valid() then
+        list:scroll((up and -1 or 1) * list.state.mousescroll)
+      end
+    end)
+    return "" -- on Neovim 0.11, this will prevent the default scroll
+  end
+end)
+
 ---@param picker snacks.Picker
 function M.new(picker)
   local self = setmetatable({}, M)
@@ -37,20 +67,28 @@ function M.new(picker)
   self.selected = {}
   self.selected_map = {}
   self.matcher = require("snacks.picker.core.matcher").new(picker.opts.matcher)
+  self.matcher_regex = require("snacks.picker.core.matcher").new({ regex = true })
   local win_opts = Snacks.win.resolve(picker.opts.win.list, {
     show = false,
     enter = false,
     on_win = function()
       self:on_show()
+      lists[
+        self.win.win --[[@as number]]
+      ] = self
     end,
     minimal = true,
     bo = { modifiable = false, filetype = "snacks_picker_list" },
     wo = {
       foldenable = false,
+      foldmethod = "manual",
       cursorline = false,
       winhighlight = Snacks.picker.highlight.winhl("SnacksPickerList", { CursorLine = "Visual" }),
+      linebreak = true,
+      breakindent = true,
     },
   })
+  self.visible = {}
   self.win = Snacks.win(win_opts)
   self.top, self.cursor = 1, 1
   self.items = {}
@@ -60,13 +98,16 @@ function M.new(picker)
     capacity = 1000,
     cmp = self.picker.sort,
   })
+
   self.win:on("CursorMoved", function()
     if not self.win:valid() then
       return
     end
     local cursor = vim.api.nvim_win_get_cursor(self.win.win)
+    local view = vim.api.nvim_win_call(self.win.win, vim.fn.winsaveview)
+    local row = cursor[1] - view.topline + 1
     if cursor[1] ~= self:idx2row(self.cursor) then
-      local idx = self:row2idx(cursor[1])
+      local idx = self:row2idx(row)
       self:_move(idx, true, true)
     end
   end, { buf = true })
@@ -76,6 +117,7 @@ function M.new(picker)
     self.dirty = true
     self:update()
   end)
+
   self.win:on("WinResized", function()
     if vim.tbl_contains(vim.v.event.windows, self.win.win) then
       self.state.height = vim.api.nvim_win_get_height(self.win.win)
@@ -83,20 +125,59 @@ function M.new(picker)
       self:update()
     end
   end)
+
+  -- reset topline. Only needed for Neovim < 0.11,
+  -- but won't hurt on newer versions
+  self.win:on("WinScrolled", function()
+    for win in pairs(vim.v.event) do
+      if (tonumber(win) or -1) == self.win.win then
+        vim.api.nvim_win_call(self.win.win, function()
+          vim.fn.winrestview({ topline = 1 })
+        end)
+      end
+    end
+  end)
+
+  local focused = false
   self.win:on({ "WinEnter", "WinLeave" }, function()
-    self:update_cursorline()
+    local f = vim.api.nvim_get_current_win() == self.win.win
+    if focused ~= f then
+      focused = f
+      self:update_cursorline()
+    end
   end)
 
   return self
 end
 
+--- View the list at the given cursor and top.
+--- These are the normalized values, so are unaffected by reverse.
 ---@param cursor number
----@param topline? number
-function M:view(cursor, topline)
-  if topline then
-    self:scroll(topline, true, false)
+---@param top? number
+---@param render? boolean
+function M:view(cursor, top, render)
+  if top then
+    self:_scroll(top, true, false)
   end
-  self:move(cursor, true)
+  self:_move(cursor, true, render)
+  if self.cursor < cursor then
+    self.target = { cursor = cursor, top = top }
+  else
+    self.target = nil
+  end
+end
+
+--- Sets the target cursor/top for the next render.
+--- Useful to keep the cursor/top, right before triggering a `find`.
+--- If an existing target is set, it will be kept, unless `opts.force` is set.
+---@param cursor? number
+---@param top? number
+---@param opts? {force?: boolean}
+function M:set_target(cursor, top, opts)
+  if self.target and not (opts and opts.force) then
+    return
+  end
+  self.target = { cursor = cursor or self.cursor, top = top or self.top }
 end
 
 ---@param idx number
@@ -122,8 +203,10 @@ function M:on_show()
   self.state.scroll = vim.wo[self.win.win].scroll
   self.state.height = vim.api.nvim_win_get_height(self.win.win)
   self.state.mousescroll = tonumber(vim.o.mousescroll:match("ver:(%d+)")) or 1
-  vim.wo[self.win.win].scrolloff = 0
+  Snacks.util.wo(self.win.win, { scrolloff = 0 })
   self.dirty = true
+  self:update_cursorline()
+  self:update({ force = true })
 end
 
 function M:count()
@@ -131,13 +214,19 @@ function M:count()
 end
 
 function M:close()
-  self.win:close()
-  self.items = {}
-  self.topk:clear()
+  self.win:destroy()
+  self.picker = nil
+  for w, l in pairs(lists) do
+    if l == self then
+      lists[w] = nil
+    end
+  end
+  -- Keep all items so actions can be performed on them,
+  -- even when the picker closed
 end
 
 function M:scrolloff()
-  local scrolloff = math.min(self.state.scrolloff, math.floor(self:height() / 2))
+  local scrolloff = math.min(self.state.scrolloff, math.floor((self:height() - 1) / 2))
   local offset = math.min(self.cursor, self:count() - self.cursor)
   return offset > scrolloff and scrolloff or 0
 end
@@ -148,8 +237,11 @@ end
 function M:_scroll(to, absolute, render)
   local old_top = self.top
   self.top = absolute and to or self.top + to
-  self.top = minmax(self.top, 1, self:count() - self:height() + 1)
-  self.cursor = absolute and to or self.cursor + to
+  local maxtop = self:count() - self:height() + 1
+  self.top = minmax(self.top, 1, maxtop)
+  if self.top == maxtop or self.top == 1 then
+    self.cursor = absolute and to or self.cursor + to
+  end
   local scrolloff = self:scrolloff()
   self.cursor = minmax(self.cursor, self.top + scrolloff, self.top + self:height() - 1 - scrolloff)
   self.dirty = self.dirty or self.top ~= old_top
@@ -224,15 +316,22 @@ end
 function M:add(item, sort)
   local idx = #self.items + 1
   self.items[idx] = item
+  -- if the visible items are less than the height, then we need to render
+  self.dirty = self.dirty or #self.visible < (self.state.height or 50)
   if sort ~= false then
-    local _added, prev = self.topk:add(item)
-    if prev then
-      -- replace with previous item, since new item is now in topk
-      self.items[idx] = prev
+    local added, prev = self.topk:add(item)
+    if added then
+      -- check if item is before the last visible item
+      if not self.dirty and #self.visible > 0 then
+        self.dirty = self.topk.cmp(item, self.visible[#self.visible])
+      end
+      item.match_topk = item.match_tick
+      if prev then
+        -- replace with previous item, since new item is now in topk
+        self.items[idx] = prev
+        prev.match_topk = nil
+      end
     end
-  end
-  if not self.dirty then
-    self.dirty = idx >= self.top and idx <= self.top + (self.state.height or 50)
   end
 end
 
@@ -247,14 +346,18 @@ end
 ---@param idx number
 ---@return snacks.picker.Item?
 function M:get(idx)
-  return self.topk:get(idx) or self.items[idx] or self.picker.finder.items[idx]
+  return self.topk:get(idx) or self.items[idx]
 end
 
 function M:height()
   return math.min(self.state.height, self:count())
 end
 
-function M:update()
+---@param opts? {force?: boolean}
+function M:update(opts)
+  if opts and opts.force then
+    self.dirty = true
+  end
   if vim.in_fast_event() then
     return vim.schedule(function()
       self:update()
@@ -263,31 +366,58 @@ function M:update()
   if self.paused and #self.items < self.state.height then
     return
   end
-  if not self.win:valid() then
-    return
-  end
   self:render()
 end
 
 -- Toggle selection of current item
-function M:select()
-  local item = self:current()
+---@param item? snacks.picker.Item
+function M:select(item)
+  if item == nil and vim.fn.mode():find("^[vV]") and vim.api.nvim_get_current_buf() == self.win.buf then
+    -- stop visual mode
+    vim.cmd("normal! " .. vim.fn.mode():sub(1, 1))
+    local from = vim.api.nvim_buf_get_mark(0, "<")
+    local to = vim.api.nvim_buf_get_mark(0, ">")
+    for i = math.min(from[1], to[1]), math.max(from[1], to[1]) do
+      local it = self:get(self:row2idx(i))
+      if it then
+        self:select(it)
+      end
+    end
+    return
+  end
+  item = item or self:current()
+  if not item then
+    return
+  end
+  if self:unselect(item) then
+    return
+  end
+  local key = self:select_key(item)
+  self.selected_map[key] = item
+  table.insert(self.selected, item)
+  self.picker.input:update()
+  self.dirty = true
+  self:render()
+end
+
+---@param item? snacks.picker.Item
+function M:unselect(item)
+  item = item or self:current()
   if not item then
     return
   end
   local key = self:select_key(item)
-  if self.selected_map[key] then
-    self.selected_map[key] = nil
-    self.selected = vim.tbl_filter(function(v)
-      return self:select_key(v) ~= key
-    end, self.selected)
-  else
-    self.selected_map[key] = item
-    table.insert(self.selected, item)
+  if not self.selected_map[key] then
+    return
   end
+  self.selected_map[key] = nil
+  self.selected = vim.tbl_filter(function(v)
+    return self:select_key(v) ~= key
+  end, self.selected)
   self.picker.input:update()
   self.dirty = true
   self:render()
+  return true
 end
 
 function M:select_all()
@@ -302,8 +432,9 @@ function M:select_key(item)
   return item._select_key
 end
 
----@param items snacks.picker.Item[]
+---@param items? snacks.picker.Item[]
 function M:set_selected(items)
+  items = items or {}
   self.selected = items
   self.selected_map = {}
   for _, item in ipairs(items) do
@@ -329,6 +460,7 @@ end
 
 ---@param item snacks.picker.Item
 function M:format(item)
+  Snacks.picker.util.resolve(item)
   -- Add selected and debug info
   local prefix = {} ---@type snacks.picker.Highlight[]
   if #self.selected > 0 or self.picker.opts.formatters.selected.show_always then
@@ -375,8 +507,10 @@ function M:format(item)
   end
 
   -- Highlight match positions for text
-  local positions = self.matcher:positions({ text = text:gsub("%s*$", ""), idx = 1, score = 0, file = item.file })
-  for _, pos in ipairs(positions.text or {}) do
+  local it = { text = text:gsub("%s*$", ""), idx = 1, score = 0, file = item.file }
+  local positions = self.matcher:positions(it).text or {}
+  vim.list_extend(positions, self.matcher_regex:positions(it).text or {})
+  for _, pos in ipairs(positions) do
     table.insert(extmarks, {
       col = pos - 1,
       end_col = pos,
@@ -398,29 +532,41 @@ function M:_render(item, row)
     extmark.row = nil
     extmark.field = nil
     local ok, err = pcall(vim.api.nvim_buf_set_extmark, self.win.buf, ns, row - 1, col, extmark)
-    if not ok then
-      Snacks.notify.error(
-        "Failed to set extmark. This should not happen. Please report.\n"
-          .. err
-          .. "\n```lua\n"
-          .. vim.inspect(extmark)
-          .. "\n```"
-      )
+    if not ok and self.picker.opts.debug.extmarks then
+      Snacks.notify.error("Failed to set extmark.\n" .. err .. "\n```lua\n" .. vim.inspect(extmark) .. "\n```")
     end
   end
 end
 
 function M:update_cursorline()
   if self.win:win_valid() then
-    Snacks.util.wo(self.win.win, { cursorline = self:count() > 0 })
+    Snacks.util.wo(self.win.win, {
+      cursorline = self:count() > 0,
+      winhighlight = Snacks.util.winhl(vim.wo[self.win.win].winhighlight, {
+        CursorLine = self.picker:is_focused() and "SnacksPickerListCursorLine" or "CursorLine",
+      }),
+    })
   end
 end
 
 function M:render()
-  self:move(0, false, false)
+  if not self.win:valid() then
+    return
+  end
+  stats.render = stats.render + 1
+  if self.target then
+    self:view(self.target.cursor, self.target.top, false)
+    if not self.picker:is_active() then
+      self.target = nil
+    end
+  else
+    self:move(0, false, false)
+    self:scroll(0, false, false)
+  end
 
   local redraw = false
   if self.dirty then
+    stats.render_full = stats.render_full + 1
     local height = self:height()
     self.dirty = false
     vim.api.nvim_win_call(self.win.win, function()
@@ -434,14 +580,20 @@ function M:render()
     vim.api.nvim_buf_set_lines(self.win.buf, 0, -1, false, lines)
 
     -- matcher for highlighting should include the search filter
-    local pattern = vim.trim(self.picker.input.filter.pattern .. " " .. self.picker.input.filter.search)
+    local pattern = vim.trim(self.picker.input.filter.pattern)
     if self.matcher.pattern ~= pattern then
-      self.matcher:init({ pattern = pattern })
+      self.matcher:init(pattern)
+    end
+    local search = Snacks.picker.util.parse(vim.trim(self.picker.input.filter.search))
+    if self.matcher_regex.pattern ~= search then
+      self.matcher_regex:init(search)
     end
 
+    self.visible = {}
     -- render items
     for i = self.top, math.min(self:count(), self.top + height - 1) do
       local item = assert(self:get(i), "item not found")
+      self.visible[i - self.top + 1] = item
       local row = self:idx2row(i)
       self:_render(item, row)
     end
@@ -462,6 +614,10 @@ function M:render()
     self.win:redraw()
   end
 
+  if self.target then
+    return
+  end
+
   -- check if current item changed
   local current = self:current()
   if self._current ~= current then
@@ -472,10 +628,20 @@ function M:render()
       self.picker:show_preview()
     else
       vim.schedule(function()
-        self.picker:show_preview()
+        if self.picker then
+          self.picker:show_preview()
+        end
       end)
     end
   end
 end
+
+-- vim.uv.new_timer():start(
+--   500,
+--   500,
+--   vim.schedule_wrap(function()
+--     Snacks.notify(vim.inspect(stats), { ft = "lua", id = "list_stats" })
+--   end)
+-- )
 
 return M

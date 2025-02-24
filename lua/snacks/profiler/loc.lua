@@ -35,8 +35,8 @@ function M.realpath(path)
   if path_cache[path] then
     return path_cache[path]
   end
-  path = vim.fs.normalize(path, { expand_env = false })
-  path_cache[path] = vim.fs.normalize(vim.uv.fs_realpath(path) or path, { expand_env = false, _fast = true })
+  path = svim.fs.normalize(path, { expand_env = false })
+  path_cache[path] = svim.fs.normalize(vim.uv.fs_realpath(path) or path, { expand_env = false, _fast = true })
   return path_cache[path]
 end
 

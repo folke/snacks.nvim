@@ -38,5 +38,6 @@ Defaults to the current buffer.
 
 ```lua
 ---@param path? number|string buffer or path
+---@return string?
 Snacks.git.get_root(path)
 ```

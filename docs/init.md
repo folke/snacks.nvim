@@ -10,7 +10,9 @@
 ---@field bigfile? snacks.bigfile.Config
 ---@field dashboard? snacks.dashboard.Config
 ---@field dim? snacks.dim.Config
+---@field explorer? snacks.explorer.Config
 ---@field gitbrowse? snacks.gitbrowse.Config
+---@field image? snacks.image.Config
 ---@field indent? snacks.indent.Config
 ---@field input? snacks.input.Config
 ---@field layout? snacks.layout.Config
@@ -29,7 +31,29 @@
 ---@field words? snacks.words.Config
 ---@field zen? snacks.zen.Config
 ---@field styles? table<string, snacks.win.Config>
-{}
+---@field image? snacks.image.Config|{}
+{
+  image = {
+    -- define these here, so that we don't need to load the image module
+    formats = {
+      "png",
+      "jpg",
+      "jpeg",
+      "gif",
+      "bmp",
+      "webp",
+      "tiff",
+      "heic",
+      "avif",
+      "mp4",
+      "mov",
+      "avi",
+      "mkv",
+      "webm",
+      "pdf",
+    },
+  },
+}
 ```
 
 ## 📚 Types
@@ -50,9 +74,11 @@
 ---@field dashboard snacks.dashboard
 ---@field debug snacks.debug
 ---@field dim snacks.dim
+---@field explorer snacks.explorer
 ---@field git snacks.git
 ---@field gitbrowse snacks.gitbrowse
 ---@field health snacks.health
+---@field image snacks.image
 ---@field indent snacks.indent
 ---@field input snacks.input
 ---@field layout snacks.layout

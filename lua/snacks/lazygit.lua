@@ -40,7 +40,7 @@ local defaults = {
       nerdFontsVersion = "3",
     },
   },
-  theme_path = vim.fs.normalize(vim.fn.stdpath("cache") .. "/lazygit-theme.yml"),
+  theme_path = svim.fs.normalize(vim.fn.stdpath("cache") .. "/lazygit-theme.yml"),
   -- Theme for lazygit
   -- stylua: ignore
   theme = {
@@ -89,7 +89,7 @@ local function env(opts)
 
       -- add the default config file if it's not already there
       if #config_files == 0 then
-        config_files[1] = vim.fs.normalize(config_dir .. "/config.yml")
+        config_files[1] = svim.fs.normalize(config_dir .. "/config.yml")
       end
 
       -- add the theme file if it's not already there

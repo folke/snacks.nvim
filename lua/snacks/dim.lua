@@ -110,7 +110,7 @@ function M.enable(opts)
         end
 
         Snacks.animate(scopes_anim[win].from, scope.from, function(v)
-          if not scopes_anim[win] then
+          if not scopes_anim[win] or not vim.api.nvim_win_is_valid(win) then
             return
           end
           scopes_anim[win].from = v
@@ -118,7 +118,7 @@ function M.enable(opts)
         end, vim.tbl_extend("keep", { int = true, id = "snacks_dim_from_" .. win, buf = buf }, opts.animate))
 
         Snacks.animate(scopes_anim[win].to, scope.to, function(v)
-          if not scopes_anim[win] then
+          if not scopes_anim[win] or not vim.api.nvim_win_is_valid(win) then
             return
           end
           scopes_anim[win].to = v

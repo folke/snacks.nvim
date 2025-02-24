@@ -118,7 +118,7 @@ M.examples.github = {
           icon = " ",
           title = "Open PRs",
           cmd = "gh pr list -L 3",
-          key = "p",
+          key = "P",
           action = function()
             vim.fn.jobstart("gh pr list --web", { detach = true })
           end,

@@ -59,6 +59,9 @@ Snacks.config.style("zen", {
   wo = {
     winhighlight = "NormalFloat:Normal",
   },
+  w = {
+    snacks_main = true,
+  },
 })
 
 -- fullscreen indicator
@@ -81,7 +84,7 @@ Snacks.util.set_hl({
 ---@param opts? {statusline: boolean, tabline: boolean}
 local function get_main(opts)
   opts = opts or {}
-  local bottom = opts.statusline and (vim.o.cmdheight + (vim.o.laststatus == 3 and 1 or 0)) or 0
+  local bottom = vim.o.cmdheight + (opts.statusline and vim.o.laststatus == 3 and 1 or 0)
   local top = opts.tabline
       and ((vim.o.showtabline == 2 or (vim.o.showtabline == 1 and #vim.api.nvim_list_tabpages() > 1)) and 1 or 0)
     or 0
@@ -124,7 +127,7 @@ function M.zen(opts)
   local show_indicator = false
 
   -- calculate window size
-  if win_opts.height == 0 and (opts.show.statusline or opts.show.tabline) then
+  if win_opts.height == 0 and (opts.show.statusline or opts.show.tabline or vim.o.cmdheight > 0) then
     local main = get_main(opts.show)
     win_opts.row = main.row
     win_opts.height = function()
@@ -170,50 +173,54 @@ function M.zen(opts)
   end
   opts.on_open(win)
 
-  -- restore toggle states when window is closed
-  vim.api.nvim_create_autocmd("WinClosed", {
+  -- sync cursor with the parent window
+  vim.api.nvim_create_autocmd("CursorMoved", {
     group = win.augroup,
-    pattern = tostring(win.win),
-    callback = vim.schedule_wrap(function()
-      if zoom_indicator then
-        zoom_indicator:close()
+    callback = function()
+      if win:win_valid() and vim.api.nvim_win_is_valid(parent_win) then
+        vim.api.nvim_win_set_cursor(parent_win, vim.api.nvim_win_get_cursor(win.win))
       end
-      for _, state in ipairs(states) do
-        state.toggle:set(state.state)
-      end
-      opts.on_close(win)
-    end),
+    end,
   })
+
+  -- restore toggle states when window is closed
+  win:on("WinClosed", function()
+    if zoom_indicator then
+      zoom_indicator:close()
+    end
+    for _, state in ipairs(states) do
+      state.toggle:set(state.state)
+    end
+    opts.on_close(win)
+  end, { win = true })
 
   -- update the buffer of the parent window
   -- when the zen buffer changes
-  vim.api.nvim_create_autocmd("BufWinEnter", {
-    group = win.augroup,
-    callback = function()
-      vim.api.nvim_win_set_buf(parent_win, win.buf)
-    end,
-  })
+  win:on("BufWinEnter", function()
+    vim.api.nvim_win_set_buf(parent_win, win.buf)
+  end)
 
   -- close when entering another window
-  vim.api.nvim_create_autocmd("WinEnter", {
-    group = win.augroup,
-    callback = function()
-      local w = vim.api.nvim_get_current_win()
-      if w == win.win then
-        return
-      end
-      -- exit if other window is not a floating window
-      if vim.api.nvim_win_get_config(w).relative == "" then
+  win:on("WinEnter", function()
+    local w = vim.api.nvim_get_current_win()
+    if w == win.win then
+      return
+    end
+    -- exit if other window is not a floating window
+    if vim.api.nvim_win_get_config(w).relative == "" then
+      -- schedule so that WinClosed is properly triggered
+      vim.schedule(function()
         win:close()
-      end
-    end,
-  })
+      end)
+    end
+  end)
   return win
 end
 
 ---@param opts? snacks.zen.Config
 function M.zoom(opts)
-  return M.zen(Snacks.config.get("zen", defaults.zoom, opts))
+  opts = Snacks.config.get("zen", defaults, opts)
+  return M.zen(opts and opts.zoom or nil)
 end
 
 return M

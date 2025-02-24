@@ -13,6 +13,7 @@ M.meta = {
 ---@class snacks.toggle.Config
 ---@field icon? string|{ enabled: string, disabled: string }
 ---@field color? string|{ enabled: string, disabled: string }
+---@field wk_desc? string|{ enabled: string, disabled: string }
 ---@field map? fun(mode: string|string[], lhs: string, rhs: string|fun(), opts?: vim.keymap.set.Opts)
 ---@field which_key? boolean
 ---@field notify? boolean
@@ -29,6 +30,10 @@ local defaults = {
   color = {
     enabled = "green",
     disabled = "yellow",
+  },
+  wk_desc = {
+    enabled = "Disable ",
+    disabled = "Enable ",
   },
 }
 
@@ -123,6 +128,7 @@ function Toggle:_wk(keys, mode)
     {
       keys,
       mode = mode,
+      real = true,
       icon = function()
         local key = self:get() and "enabled" or "disabled"
         return {
@@ -131,7 +137,8 @@ function Toggle:_wk(keys, mode)
         }
       end,
       desc = function()
-        return (self:get() and "Disable " or "Enable ") .. self.opts.name
+        local key = self:get() and "enabled" or "disabled"
+        return (type(self.opts.wk_desc) == "string" and self.opts.wk_desc or self.opts.wk_desc[key]) .. self.opts.name
       end,
     },
   })

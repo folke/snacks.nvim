@@ -24,30 +24,39 @@ function M.select(items, opts, on_choice)
 
   local title = opts.prompt or "Select"
   title = title:gsub("^%s*", ""):gsub("[%s:]*$", "")
+  local completed = false
 
   ---@type snacks.picker.finder.Item[]
   return Snacks.picker.pick({
     source = "select",
     items = finder_items,
-    main = { current = true },
     format = Snacks.picker.format.ui_select(opts.kind, #items),
+    title = title,
     layout = {
-      preset = "select",
       preview = false,
       layout = {
-        height = math.floor(math.min(vim.o.lines * 0.8 - 10, #items + 2) + 0.5) + 10,
-        title = " " .. title .. " ",
-        title_pos = "center",
+        height = math.floor(math.min(vim.o.lines * 0.8 - 10, #items + 2) + 0.5),
       },
     },
     actions = {
       confirm = function(picker, item)
+        if completed then
+          return
+        end
+        completed = true
         picker:close()
         vim.schedule(function()
           on_choice(item and item.item, item and item.idx)
         end)
       end,
     },
+    on_close = function()
+      if completed then
+        return
+      end
+      completed = true
+      vim.schedule(on_choice)
+    end,
   })
 end
 

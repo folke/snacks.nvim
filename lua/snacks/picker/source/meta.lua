@@ -1,8 +1,5 @@
 local M = {}
 
----@class snacks.picker
----@field pickers fun(opts?: snacks.picker.Config): snacks.Picker
-
 ---@param file string
 ---@param t table<string,unknown>
 function M.table(file, t)

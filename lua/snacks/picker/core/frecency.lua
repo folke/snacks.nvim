@@ -1,8 +1,8 @@
 -- Frecency based on exponential decay. Roughly based on:
 -- https://wiki.mozilla.org/User:Jesse/NewFrecency?title=User:Jesse/NewFrecency
 ---@class snacks.picker.Frecency
----@field store table<string, number>
 ---@field now number
+---@field cache table<string, number>
 local M = {}
 M.__index = M
 
@@ -19,6 +19,7 @@ local MAX_STORE_SIZE = 10000
 ---@field set fun(self:snacks.picker.frecency.Store, key:string, value:number)
 ---@field get fun(self:snacks.picker.frecency.Store, key:string):number
 ---@field close fun(self:snacks.picker.frecency.Store)
+---@field get_all fun(self:snacks.picker.frecency.Store):table<string, number>
 
 -- Global store of frecency deadlinesl
 ---@type snacks.picker.frecency.Store?
@@ -28,7 +29,7 @@ function M.setup()
   if
     not pcall(function()
       local db = require("snacks.picker.util.db").new(store_file .. ".sqlite3", "number")
-      M.store = db
+      M.store = db --[[@as snacks.picker.frecency.Store]]
       -- Cleanup old entries
       local cutoff = db:prepare("SELECT value FROM data ORDER BY value DESC LIMIT 1 OFFSET ?;")
       if cutoff:exec({ MAX_STORE_SIZE - 1 }) == 100 then -- 100 == SQLITE_ROW
@@ -36,7 +37,7 @@ function M.setup()
       end
     end)
   then
-    M.store = require("snacks.picker.util.kv").new(store_file .. ".dat", { max_size = MAX_STORE_SIZE })
+    M.store = require("snacks.picker.util.kv").new(store_file .. ".dat", { max_size = MAX_STORE_SIZE }) --[[@as snacks.picker.frecency.Store]]
   end
 
   local group = vim.api.nvim_create_augroup("snacks_picker_frecency", {})
@@ -49,9 +50,13 @@ function M.setup()
       end
     end,
   })
-  vim.api.nvim_create_autocmd("BufReadPost", {
+  vim.api.nvim_create_autocmd({ "BufWinEnter" }, {
     group = group,
     callback = function(ev)
+      local current_win = vim.api.nvim_get_current_win()
+      if vim.api.nvim_win_get_config(current_win).relative ~= "" then
+        return
+      end
       M.visit_buf(ev.buf)
     end,
   })
@@ -67,6 +72,7 @@ function M.new()
   if not M.store then
     M.setup()
   end
+  self.cache = M.store:get_all()
   return self
 end
 
@@ -94,7 +100,18 @@ function M:get(item, opts)
   if not path then
     return 0
   end
-  local deadline = self.store:get(path)
+  if item.dir then
+    -- frecency of a directory is the sum of frecencies of all files in it
+    local score = 0
+    local prefix = path .. "/"
+    for k, v in pairs(self.cache) do
+      if k:find(prefix, 1, true) == 1 then
+        score = score + self:to_score(v)
+      end
+    end
+    return score
+  end
+  local deadline = self.cache[path]
   if not deadline then
     return opts.seed ~= false and self:seed(item) or 0
   end

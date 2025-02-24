@@ -67,6 +67,8 @@ Snacks.config.style("input", {
     i_cr = { "<cr>", { "cmp_accept", "confirm" }, mode = "i", expr = true },
     i_tab = { "<tab>", { "cmp_select_next", "cmp" }, mode = "i", expr = true },
     i_ctrl_w = { "<c-w>", "<c-s-w>", mode = "i", expr = true },
+    i_up = { "<up>", { "hist_up" }, mode = { "i", "n" } },
+    i_down = { "<down>", { "hist_down" }, mode = { "i", "n" } },
     q = "cancel",
   },
 })
@@ -89,10 +91,32 @@ local ctx = {}
 function M.input(opts, on_confirm)
   assert(type(on_confirm) == "function", "`on_confirm` must be a function")
 
+  local history = require("snacks.picker.util.history").new("input", {
+    filter = function(value)
+      return value ~= ""
+    end,
+  })
+
   local parent_win = vim.api.nvim_get_current_win()
   local mode = vim.fn.mode()
 
+  ---@param force? boolean
+  local function record(force)
+    if not ctx.win then
+      return
+    end
+    if not force and not history:is_current() then
+      return
+    end
+    local text = vim.trim(ctx.win:text())
+    if text == "" then
+      return
+    end
+    history:record(text)
+  end
+
   local function confirm(value)
+    record()
     ctx.win = nil
     ctx.opts = nil
     vim.cmd.stopinsert()
@@ -127,7 +151,14 @@ function M.input(opts, on_confirm)
   add(opts.prompt, "SnacksInputTitle", opts.prompt_pos)
 
   if next(title) then
-    table.insert(title, { " " })
+    table.insert(title, { " ", "SnacksInputTitle" })
+  end
+
+  ---@param text? string
+  local function set(text)
+    text = text or ""
+    vim.api.nvim_buf_set_lines(ctx.win.buf, 0, -1, false, { text })
+    vim.api.nvim_win_set_cursor(ctx.win.win, { 1, #text })
   end
 
   opts.win = Snacks.win.resolve("input", opts.win, {
@@ -152,6 +183,14 @@ function M.input(opts, on_confirm)
       confirm = function(self)
         confirm(self:text())
         self:close()
+      end,
+      hist_up = function(self)
+        record()
+        set(history:prev())
+      end,
+      hist_down = function(self)
+        record()
+        set(history:next())
       end,
       cmp = function()
         return vim.fn.pumvisible() == 0 and "<c-x><c-u>"
@@ -189,7 +228,7 @@ function M.input(opts, on_confirm)
   vim.cmd.startinsert()
   if opts.default then
     vim.api.nvim_buf_set_lines(win.buf, 0, -1, false, { opts.default })
-    vim.api.nvim_win_set_cursor(win.win, { 1, #opts.default + 1 })
+    vim.api.nvim_win_set_cursor(win.win, { 1, #opts.default })
   end
   vim.fn.prompt_setcallback(win.buf, function(text)
     confirm(text)

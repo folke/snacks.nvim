@@ -9,7 +9,7 @@ M.__index = M
 
 function M.new()
   local self = setmetatable({}, M)
-  self.first, self.last, self.queue = 0, -1, {}
+  self:clear()
   return self
 end
 
@@ -24,6 +24,10 @@ end
 
 function M:empty()
   return self:size() == 0
+end
+
+function M:clear()
+  self.first, self.last, self.queue = 0, -1, {}
 end
 
 function M:pop()

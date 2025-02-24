@@ -19,7 +19,47 @@ ffi.cdef([[
   long long sqlite3_column_int64(sqlite3_stmt*, int);
 ]])
 
-local sqlite = ffi.load("sqlite3")
+local function sqlite3_lib()
+  local opts = Snacks.picker.config.get()
+  if opts.db.sqlite3_path then
+    return opts.db.sqlite3_path
+  end
+  if jit.os ~= "Windows" then
+    return "sqlite3"
+  end
+  local sqlite_path = vim.fn.stdpath("cache") .. "\\sqlite3.dll"
+  if vim.fn.filereadable(sqlite_path) == 0 then
+    Snacks.notify("Downloading `sqlite3.dll`")
+    local url = ("https://www.sqlite.org/2025/sqlite-dll-win-%s-3480000.zip"):format(jit.arch)
+    local out = vim.fn.system({
+      "powershell",
+      "-Command",
+      [[
+        $url = "]] .. url .. [[";
+        $zipPath = "$env:TEMP\sqlite.zip";
+        $extractPath = "$env:TEMP\sqlite";
+        Invoke-WebRequest -Uri $url -OutFile $zipPath;
+        Add-Type -AssemblyName System.IO.Compression.FileSystem;
+        [System.IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $extractPath);
+
+        $dllPath = "$extractPath\sqlite3.dll";
+        if (Test-Path $dllPath) {
+            Move-Item -Path $dllPath -Destination "]] .. sqlite_path .. [[" -Force;
+        } else {
+            Write-Host "sqlite3.dll not found at $dllPath";
+        }
+      ]],
+    })
+    if vim.v.shell_error ~= 0 then
+      Snacks.notify.error("Failed to download `sqlite3.dll`:\n" .. out)
+    else
+      Snacks.notify("Downloaded `sqlite3.dll`")
+    end
+  end
+  return sqlite_path
+end
+
+local sqlite = ffi.load(sqlite3_lib())
 
 ---@alias sqlite3* ffi.cdata*
 ---@alias sqlite3_stmt* ffi.cdata*
@@ -86,6 +126,7 @@ function Query:exec(binds)
   return self:step()
 end
 
+---@return number
 function Query:step()
   return sqlite.sqlite3_step(self.stmt)
 end
@@ -202,6 +243,20 @@ function M:count()
   if query:exec() == 100 then
     return query:col("number")
   end
+end
+
+function M:get_all()
+  local query = self:prepare("SELECT key, value FROM data;")
+  local ret = {} ---@type table<string, any>
+  local code = query:exec()
+  while code == 100 do -- 100 == SQLITE_ROW
+    local k = query:col("string", 0) -- key is always a string
+    local v = query:col(self.type, 1) -- value type is whatever you set
+    ret[k] = v
+    code = query:step()
+  end
+  query:close()
+  return ret
 end
 
 return M

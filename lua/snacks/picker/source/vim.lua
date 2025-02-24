@@ -1,17 +1,5 @@
 local M = {}
 
----@class snacks.picker
----@field commands fun(opts?: snacks.picker.Config): snacks.Picker
----@field marks fun(opts?: snacks.picker.marks.Config): snacks.Picker
----@field jumps fun(opts?: snacks.picker.Config): snacks.Picker
----@field autocmds fun(opts?: snacks.picker.Config): snacks.Picker
----@field highlights fun(opts?: snacks.picker.Config): snacks.Picker
----@field colorschemes fun(opts?: snacks.picker.Config): snacks.Picker
----@field keymaps fun(opts?: snacks.picker.Config): snacks.Picker
----@field registers fun(opts?: snacks.picker.Config): snacks.Picker
----@field command_history fun(opts?: snacks.picker.history.Config): snacks.Picker
----@field search_history fun(opts?: snacks.picker.history.Config): snacks.Picker
-
 ---@class snacks.picker.history.Config: snacks.picker.Config
 ---@field name string
 
@@ -208,7 +196,7 @@ function M.colorschemes()
   if package.loaded.lazy then
     rtp = rtp .. "," .. table.concat(require("lazy.core.util").get_unloaded_rtp(""), ",")
   end
-  local files = vim.fn.globpath(rtp, "colors/*", true, true) ---@type string[]
+  local files = vim.fn.globpath(rtp, "colors/*", false, true) ---@type string[]
   for _, file in ipairs(files) do
     local name = vim.fn.fnamemodify(file, ":t:r")
     local ext = vim.fn.fnamemodify(file, ":e")
@@ -237,11 +225,16 @@ function M.keymaps(opts)
   local done = {} ---@type table<string, boolean>
   for _, km in ipairs(maps) do
     local key = Snacks.picker.util.text(km, { "mode", "lhs", "buffer" })
-    if not done[key] then
+    local keep = true
+    if opts.plugs == false and km.lhs:match("^<Plug>") then
+      keep = false
+    end
+    if keep and not done[key] then
       done[key] = true
       local item = {
         mode = km.mode,
         item = km,
+        key = km.lhs,
         preview = {
           text = vim.inspect(km),
           ft = "lua",
@@ -255,7 +248,10 @@ function M.keymaps(opts)
           item.preview = "file"
         end
       end
-      item.text = Snacks.picker.util.text(km, { "mode", "lhs", "rhs", "desc" }) .. (item.file or "")
+      item.text = Snacks.util.normkey(km.lhs)
+        .. " "
+        .. Snacks.picker.util.text(km, { "mode", "lhs", "rhs", "desc" })
+        .. (item.file or "")
       items[#items + 1] = item
     end
   end
@@ -321,6 +317,132 @@ function M.spelling()
     })
   end
   return items
+end
+
+---@param opts snacks.picker.undo.Config
+---@type snacks.picker.finder
+function M.undo(opts, ctx)
+  local tree = vim.fn.undotree()
+  local buf = vim.api.nvim_get_current_buf()
+  local file = vim.api.nvim_buf_get_name(buf)
+  local items = {} ---@type snacks.picker.finder.Item[]
+
+  -- Copy the current buffer to a temporary file and load the undo history.
+  -- This is done to prevent the current buffer from being modified,
+  -- and is way better for performance, since LSP change tracking won't be triggered
+  local tmp_file = vim.fn.stdpath("cache") .. "/snacks-undo"
+  local tmp_undo = tmp_file .. ".undo"
+  local tmpbuf = vim.fn.bufadd(tmp_file)
+  vim.bo[tmpbuf].swapfile = false
+  vim.fn.writefile(vim.api.nvim_buf_get_lines(buf, 0, -1, false), tmp_file)
+  vim.fn.bufload(tmpbuf)
+  vim.api.nvim_buf_call(buf, function()
+    vim.cmd("silent wundo! " .. tmp_undo)
+  end)
+  vim.api.nvim_buf_call(tmpbuf, function()
+    pcall(vim.cmd, "silent rundo " .. tmp_undo)
+  end)
+
+  ---@param item snacks.picker.finder.Item
+  local function resolve(item)
+    local entry = item.item ---@type vim.fn.undotree.entry
+    ---@type string[], string[]
+    local before, after = {}, {}
+
+    local ei = vim.o.eventignore
+    vim.o.eventignore = "all"
+    vim.api.nvim_buf_call(tmpbuf, function()
+      -- state after the undo
+      vim.cmd("noautocmd silent undo " .. entry.seq)
+      after = vim.api.nvim_buf_get_lines(tmpbuf, 0, -1, false)
+      -- state before the undo
+      vim.cmd("noautocmd silent undo")
+      before = vim.api.nvim_buf_get_lines(tmpbuf, 0, -1, false)
+    end)
+    vim.o.eventignore = ei
+
+    local diff = vim.diff(table.concat(before, "\n") .. "\n", table.concat(after, "\n") .. "\n", opts.diff) --[[@as string]]
+    local changes = {} ---@type string[]
+    local added_lines = {} ---@type string[]
+    local removed_lines = {} ---@type string[]
+
+    for _, line in ipairs(vim.split(diff, "\n")) do
+      if line:sub(1, 1) == "+" then
+        changes[#changes + 1] = line:sub(2)
+        added_lines[#added_lines + 1] = line:sub(2)
+      elseif line:sub(1, 1) == "-" then
+        changes[#changes + 1] = line:sub(2)
+        removed_lines[#removed_lines + 1] = line:sub(2)
+      end
+    end
+    diff = Snacks.picker.util.tpl(
+      "diff --git a/{file} b/{file}\n--- {file}\n+++ {file}\n{diff}",
+      { file = vim.fn.fnamemodify(file, ":."), diff = diff }
+    )
+    item.text = table.concat(changes, " ")
+    item.data = table.concat(added_lines, "\n")
+    item.added_lines = table.concat(added_lines, "\n")
+    item.removed_lines = table.concat(removed_lines, "\n")
+    item.added = #added_lines
+    item.removed = #removed_lines
+    item.diff = diff
+  end
+
+  ---@param entries? vim.fn.undotree.entry[]
+  ---@param parent? snacks.picker.finder.Item
+  local function add(entries, parent)
+    entries = entries or {}
+    table.sort(entries, function(a, b)
+      return a.seq < b.seq
+    end)
+    local last ---@type snacks.picker.finder.Item?
+    for e, entry in ipairs(entries) do
+      add(entry.alt, last or parent)
+      local item = {
+        seq = entry.seq,
+        buf = buf,
+        resolve = resolve,
+        file = file,
+        item = entry,
+        current = entry.seq == tree.seq_cur,
+        parent = parent,
+        last = e == #entries,
+        action = function()
+          vim.api.nvim_buf_call(buf, function()
+            vim.cmd("undo " .. entry.seq)
+          end)
+        end,
+      }
+      items[#items + 1] = item
+      last = item
+    end
+  end
+  add(tree.entries)
+
+  -- Resolve the items in batches to prevent blocking the UI
+  ---@param cb async fun(item: snacks.picker.finder.Item)
+  ---@async
+  return function(cb)
+    for i = #items, 1, -1 do
+      cb(items[i])
+    end
+
+    while #items > 0 do
+      vim.schedule(function()
+        local count = 0
+        while #items > 0 and count < 5 do
+          count = count + 1
+          local item = table.remove(items, 1)
+          Snacks.picker.util.resolve(item)
+        end
+        ctx.async:resume()
+      end)
+      ctx.async:suspend()
+    end
+    vim.schedule(function()
+      vim.api.nvim_buf_delete(tmpbuf, { force = true })
+    end)
+  end
 end
 
 return M

@@ -1,4 +1,4 @@
-*snacks-animate.txt*                                               snacks.nvim
+*snacks-animate*                                            snacks_animate
 
 ==============================================================================
 Table of Contents                           *snacks-animate-table-of-contents*

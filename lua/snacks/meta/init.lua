@@ -26,7 +26,7 @@ M.meta = {
 M.root = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":h:h")
 
 function M.file(name)
-  return vim.fs.normalize(("%s/%s"):format(M.root, name))
+  return svim.fs.normalize(("%s/%s"):format(M.root, name))
 end
 
 --- Get the metadata for all snacks plugins
@@ -34,30 +34,32 @@ end
 function M.get()
   local ret = {} ---@type snacks.meta.Plugin[]
   for file, t in vim.fs.dir(M.root, { depth = 1 }) do
-    local name = vim.fn.fnamemodify(file, ":t:r")
-    file = t == "directory" and ("%s/init.lua"):format(file) or file
-    file = M.root .. "/" .. file
-    local mod = name == "init" and setmetatable({ meta = { desc = "Snacks", hide = true } }, { __index = Snacks })
-      or Snacks[name] --[[@as snacks.meta.Plugin]]
-    assert(type(mod) == "table", ("`Snacks.%s` not found"):format(name))
-    assert(type(mod.meta) == "table", ("`Snacks.%s.meta` not found"):format(name))
-    assert(type(mod.meta.desc) == "string", ("`Snacks.%s.meta.desc` not found"):format(name))
+    if file:sub(1, 1) ~= "." then
+      local name = vim.fn.fnamemodify(file, ":t:r")
+      file = t == "directory" and ("%s/init.lua"):format(file) or file
+      file = M.root .. "/" .. file
+      local mod = name == "init" and setmetatable({ meta = { desc = "Snacks", hide = true } }, { __index = Snacks })
+        or Snacks[name] --[[@as snacks.meta.Plugin]]
+      assert(type(mod) == "table", ("`Snacks.%s` not found"):format(name))
+      assert(type(mod.meta) == "table", ("`Snacks.%s.meta` not found"):format(name))
+      assert(type(mod.meta.desc) == "string", ("`Snacks.%s.meta.desc` not found"):format(name))
 
-    for _, prop in ipairs({ "readme", "docs", "health", "types" }) do
-      if mod.meta[prop] == nil then
-        mod.meta[prop] = not mod.meta.hide
+      for _, prop in ipairs({ "readme", "docs", "health", "types" }) do
+        if mod.meta[prop] == nil then
+          mod.meta[prop] = not mod.meta.hide
+        end
       end
-    end
 
-    ret[#ret + 1] = setmetatable({
-      name = name,
-      file = file,
-    }, {
-      __index = mod,
-      __tostring = function(self)
-        return "snacks." .. self.name
-      end,
-    })
+      ret[#ret + 1] = setmetatable({
+        name = name,
+        file = file,
+      }, {
+        __index = mod,
+        __tostring = function(self)
+          return "snacks." .. self.name
+        end,
+      })
+    end
   end
   table.sort(ret, function(a, b)
     return a.name < b.name

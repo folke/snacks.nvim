@@ -44,7 +44,7 @@ and integrate edit with the current neovim instance.
       nerdFontsVersion = "3",
     },
   },
-  theme_path = vim.fs.normalize(vim.fn.stdpath("cache") .. "/lazygit-theme.yml"),
+  theme_path = svim.fs.normalize(vim.fn.stdpath("cache") .. "/lazygit-theme.yml"),
   -- Theme for lazygit
   theme = {
     [241]                      = { fg = "Special" },

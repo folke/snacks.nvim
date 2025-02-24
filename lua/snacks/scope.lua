@@ -43,6 +43,7 @@ local defaults = {
     -- detect scope based on treesitter.
     -- falls back to indent based detection if not available
     enabled = true,
+    injections = true, -- include language injections when detecting scope (useful for languages like `vue`)
     ---@type string[]|{enabled?:boolean}
     blocks = {
       enabled = false, -- enable to use the following blocks
@@ -104,6 +105,9 @@ local defaults = {
     },
   },
 }
+
+---@diagnostic disable-next-line: invisible
+M.TS_ASYNC = (vim.treesitter.languagetree or {})._async_parse ~= nil
 
 local id = 0
 
@@ -394,14 +398,30 @@ function TSScope:with(opts)
 end
 
 ---@param opts snacks.scope.Opts
-function TSScope:find(opts)
+function TSScope:parser(opts)
   local lang = vim.bo[opts.buf].filetype
   local has_parser, parser = pcall(vim.treesitter.get_parser, opts.buf, lang, { error = false })
-  if not has_parser or parser == nil then
+  return has_parser and parser or nil
+end
+
+---@param cb fun()
+---@param opts snacks.scope.Opts
+function TSScope:init(cb, opts)
+  local parser = self:parser(opts)
+  if not parser then
     return
   end
-  parser:parse()
+  if M.TS_ASYNC then
+    parser:parse(opts.treesitter.injections, cb)
+  else
+    parser:parse(opts.treesitter.injections)
+    cb()
+  end
+end
 
+---@param opts snacks.scope.Opts
+function TSScope:find(opts)
+  local lang = vim.treesitter.language.get_lang(vim.bo[opts.buf].filetype)
   local line = vim.fn.nextnonblank(opts.pos[1])
   line = line == 0 and vim.fn.prevnonblank(opts.pos[1]) or line
   -- FIXME:
@@ -410,7 +430,12 @@ function TSScope:find(opts)
     (vim.fn.getline(line):find("%S") or 1) - 1, -- find first non-space character
   }
 
-  local node = vim.treesitter.get_node({ pos = pos, bufnr = opts.buf, lang = lang })
+  local node = vim.treesitter.get_node({
+    pos = pos,
+    bufnr = opts.buf,
+    lang = lang,
+    ignore_injections = not opts.treesitter.injections,
+  })
   if not node then
     return
   end
@@ -469,9 +494,9 @@ function Scope:__tostring()
   )
 end
 
----@param opts? snacks.scope.Opts
----@return snacks.scope.Scope?
-function M.get(opts)
+---@param cb fun(scope?: snacks.scope.Scope)
+---@param opts? snacks.scope.Opts|{parse?:boolean}
+function M.get(cb, opts)
   opts = Snacks.config.get("scope", defaults, opts or {}) --[[ @as snacks.scope.Opts ]]
   opts.buf = (opts.buf == nil or opts.buf == 0) and vim.api.nvim_get_current_buf() or opts.buf
   if not opts.pos then
@@ -481,32 +506,38 @@ function M.get(opts)
 
   -- run in the context of the buffer if not current
   if vim.api.nvim_get_current_buf() ~= opts.buf then
-    local ret ---@type snacks.scope.Scope?
     vim.api.nvim_buf_call(opts.buf, function()
-      ret = M.get(opts)
+      M.get(cb, opts)
     end)
-    return ret
+    return
   end
 
   ---@type snacks.scope.Scope
   local Class = opts.treesitter.enabled and TSScope.has_ts(opts.buf) and TSScope or IndentScope
-  local ret = Class:find(opts) --[[ @as snacks.scope.Scope? ]]
+  if Class == TSScope and opts.parse ~= false then
+    TSScope:init(function()
+      opts.parse = false
+      M.get(cb, opts)
+    end, opts)
+    return
+  end
+  local scope = Class:find(opts) --[[ @as snacks.scope.Scope? ]]
 
   -- fallback to indent based detection
-  if not ret and Class == TSScope then
+  if not scope and Class == TSScope then
     Class = IndentScope
-    ret = Class:find(opts)
+    scope = Class:find(opts)
   end
 
   -- when end_pos is provided, get its scope and expand the current scope
   -- to include it.
-  if ret and opts.end_pos and not vim.deep_equal(opts.pos, opts.end_pos) then
+  if scope and opts.end_pos and not vim.deep_equal(opts.pos, opts.end_pos) then
     local end_scope = Class:find(vim.tbl_extend("keep", { pos = opts.end_pos }, opts)) --[[ @as snacks.scope.Scope? ]]
-    if end_scope and end_scope.from < ret.from then
-      ret = ret:expand(end_scope.from) or ret
+    if end_scope and end_scope.from < scope.from then
+      scope = scope:expand(end_scope.from) or scope
     end
-    if end_scope and end_scope.to > ret.to then
-      ret = ret:expand(end_scope.to) or ret
+    if end_scope and end_scope.to > scope.to then
+      scope = scope:expand(end_scope.to) or scope
     end
   end
 
@@ -515,41 +546,40 @@ function M.get(opts)
 
   -- expand block with ancestors until min_size is reached
   -- or max_size is reached
-  if ret then
-    local s = ret --- @type snacks.scope.Scope?
+  if scope then
+    local s = scope --- @type snacks.scope.Scope?
     while s do
-      if opts.edge and ret:size_with_edge() >= min_size and s:size_with_edge() > max_size then
+      if opts.edge and scope:size_with_edge() >= min_size and s:size_with_edge() > max_size then
         break
-      elseif not opts.edge and ret:size() >= min_size and s:size() > max_size then
+      elseif not opts.edge and scope:size() >= min_size and s:size() > max_size then
         break
       end
-      ret, s = s, s:parent()
+      scope, s = s, s:parent()
     end
     -- expand with edge
     if opts.edge then
-      ret = ret:with_edge() --[[@as snacks.scope.Scope]]
+      scope = scope:with_edge() --[[@as snacks.scope.Scope]]
     end
   end
 
   -- expand single line blocks with single line siblings
-  if opts.siblings and ret and ret:size() == 1 then
-    while ret and ret:size() < min_size do
-      local prev, next = vim.fn.prevnonblank(ret.from - 1), vim.fn.nextnonblank(ret.to + 1) ---@type number, number
+  if opts.siblings and scope and scope:size() == 1 then
+    while scope and scope:size() < min_size do
+      local prev, next = vim.fn.prevnonblank(scope.from - 1), vim.fn.nextnonblank(scope.to + 1) ---@type number, number
       local prev_dist, next_dist = math.abs(opts.pos[1] - prev), math.abs(opts.pos[1] - next)
       local prev_s = prev > 0 and Class:find(vim.tbl_extend("keep", { pos = { prev, 0 } }, opts))
       local next_s = next > 0 and Class:find(vim.tbl_extend("keep", { pos = { next, 0 } }, opts))
       prev_s = prev_s and prev_s:size() == 1 and prev_s
       next_s = next_s and next_s:size() == 1 and next_s
       local s = prev_dist < next_dist and prev_s or next_s or prev_s
-      if s and (s.from < ret.from or s.to > ret.to) then
-        ret = Scope.with(ret, { from = math.min(ret.from, s.from), to = math.max(ret.to, s.to) })
+      if s and (s.from < scope.from or s.to > scope.to) then
+        scope = Scope.with(scope, { from = math.min(scope.from, s.from), to = math.max(scope.to, s.to) })
       else
         break
       end
     end
   end
-
-  return ret
+  cb(scope)
 end
 
 ---@class snacks.scope.Listener
@@ -585,16 +615,20 @@ function Listener:check(win)
     return
   end
 
-  local scope = M.get(vim.tbl_extend("keep", {
-    buf = buf,
-    pos = vim.api.nvim_win_get_cursor(win),
-  }, self.opts))
-  local prev = self.active[win]
-  if prev == scope then
-    return -- no change
-  end
-  self.active[win] = scope
-  self.cb(win, buf, scope, prev)
+  M.get(
+    function(scope)
+      local prev = self.active[win]
+      if prev == scope then
+        return -- no change
+      end
+      self.active[win] = scope
+      self.cb(win, buf, scope, prev)
+    end,
+    vim.tbl_extend("keep", {
+      buf = buf,
+      pos = vim.api.nvim_win_get_cursor(win),
+    }, self.opts)
+  )
 end
 
 --- Get the active scope for a window
@@ -713,21 +747,22 @@ function M.textobject(opts)
   local inner = not opts.edge
   opts.edge = true -- always include the edge of the scope to make inner work
 
-  local scope = M.get(opts)
-  if not scope then
-    return opts.notify ~= false and Snacks.notify.warn("No scope in range")
-  end
+  M.get(function(scope)
+    if not scope then
+      return opts.notify ~= false and Snacks.notify.warn("No scope in range")
+    end
 
-  scope = inner and scope:inner() or scope
-  -- determine scope range
-  local from, to =
-    { scope.from, opts.linewise and 0 or vim.fn.indent(scope.from) },
-    { scope.to, opts.linewise and 0 or vim.fn.col({ scope.to, "$" }) - 2 }
+    scope = inner and scope:inner() or scope
+    -- determine scope range
+    local from, to =
+      { scope.from, opts.linewise and 0 or vim.fn.indent(scope.from) },
+      { scope.to, opts.linewise and 0 or vim.fn.col({ scope.to, "$" }) - 2 }
 
-  -- select the range
-  vim.api.nvim_win_set_cursor(0, from)
-  vim.cmd("normal! " .. (opts.linewise and "V" or "v"))
-  vim.api.nvim_win_set_cursor(0, to)
+    -- select the range
+    vim.api.nvim_win_set_cursor(0, from)
+    vim.cmd("normal! " .. (opts.linewise and "V" or "v"))
+    vim.api.nvim_win_set_cursor(0, to)
+  end, opts)
 end
 
 --- Jump to the top or bottom of the scope
@@ -735,18 +770,19 @@ end
 ---@param opts? snacks.scope.Jump
 function M.jump(opts)
   opts = Snacks.config.get("scope", defaults, opts or {}) --[[ @as snacks.scope.Jump ]]
-  local scope = M.get(opts)
-  if not scope then
-    return opts.notify ~= false and Snacks.notify.warn("No scope in range")
-  end
-  while scope do
-    local line = opts.bottom and scope.to or scope.from
-    local pos = { line, vim.fn.indent(line) }
-    if not vim.deep_equal(vim.api.nvim_win_get_cursor(0), pos) then
-      return vim.api.nvim_win_set_cursor(0, { line, vim.fn.indent(line) })
+  M.get(function(scope)
+    if not scope then
+      return opts.notify ~= false and Snacks.notify.warn("No scope in range")
     end
-    scope = scope:parent()
-  end
+    while scope do
+      local line = opts.bottom and scope.to or scope.from
+      local pos = { line, vim.fn.indent(line) }
+      if not vim.deep_equal(vim.api.nvim_win_get_cursor(0), pos) then
+        return vim.api.nvim_win_set_cursor(0, { line, vim.fn.indent(line) })
+      end
+      scope = scope:parent()
+    end
+  end, opts)
 end
 
 ---@private

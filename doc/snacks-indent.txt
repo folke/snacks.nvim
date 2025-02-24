@@ -1,4 +1,4 @@
-*snacks-indent.txt*                                                snacks.nvim
+*snacks-indent*                                              snacks_indent
 
 ==============================================================================
 Table of Contents                            *snacks-indent-table-of-contents*
@@ -107,11 +107,6 @@ Similar plugins:
           vertical = "│",
           arrow = ">",
         },
-      },
-      blank = {
-        char = " ",
-        -- char = "·",
-        hl = "SnacksIndentBlank", ---@type string|string[] hl group for blank spaces
       },
       -- filter for buffers to enable indent guides
       filter = function(buf)

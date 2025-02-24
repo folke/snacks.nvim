@@ -12,6 +12,7 @@ M.meta = {
 
 ---@class snacks.bufdelete.Opts
 ---@field buf? number Buffer to delete. Defaults to the current buffer
+---@field file? string Delete buffer by file name. If provided, `buf` is ignored
 ---@field force? boolean Delete the buffer even if it is modified
 ---@field filter? fun(buf: number): boolean Filter buffers to delete
 ---@field wipe? boolean Wipe the buffer instead of deleting it (see `:h :bwipeout`)
@@ -37,12 +38,18 @@ function M.delete(opts)
   end
 
   local buf = opts.buf or 0
+  if opts.file then
+    buf = vim.fn.bufnr(opts.file)
+    if buf == -1 then
+      return
+    end
+  end
   buf = buf == 0 and vim.api.nvim_get_current_buf() or buf
 
   vim.api.nvim_buf_call(buf, function()
     if vim.bo.modified and not opts.force then
-      local choice = vim.fn.confirm(("Save changes to %q?"):format(vim.fn.bufname()), "&Yes\n&No\n&Cancel")
-      if choice == 0 or choice == 3 then -- 0 for <Esc>/<C-c> and 3 for Cancel
+      local ok, choice = pcall(vim.fn.confirm, ("Save changes to %q?"):format(vim.fn.bufname()), "&Yes\n&No\n&Cancel")
+      if not ok or choice == 0 or choice == 3 then -- 0 for <Esc>/<C-c> and 3 for Cancel
         return
       end
       if choice == 1 then -- Yes

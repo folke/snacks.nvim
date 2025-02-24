@@ -13,9 +13,11 @@ fi
 PANVIMDOC=~/projects/panvimdoc
 
 for f in docs/*.md; do
+  plugin=$(basename "$f" .md)
+  desc="snacks_$plugin"
   $PANVIMDOC/panvimdoc.sh \
-    --project-name "snacks-$(basename "$f" .md)" \
-    --description "snacks.nvim" \
+    --project-name "snacks-$plugin" \
+    --description "$desc" \
     --input-file "$f" \
     --vim-version "Neovim" \
     --demojify "true" \

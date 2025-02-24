@@ -70,7 +70,7 @@ describe("fuzzy matching", function()
 
   for t, test in ipairs(tests) do
     it("should find optimal match for " .. t, function()
-      matcher:init({ pattern = test[2] })
+      matcher:init(test[2])
       local item = { text = test[1], idx = 1, score = 0 }
       local score = matcher:match(item)
       assert(score and score > 0, "no match found")

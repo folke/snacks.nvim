@@ -5,10 +5,13 @@
 ---@field consecutive number
 ---@field prev? number
 ---@field prev_class number
----@field in_gap boolean
 ---@field is_file boolean
+---@field first_bonus number
 ---@field str string
 ---@field opts snacks.picker.matcher.Config
+---@field bonus_matrix number[][]
+---@field bonus_boundary_white number
+---@field bonus_boundary_delimiter number
 local M = {}
 M.__index = M
 
@@ -54,48 +57,6 @@ for b = 0, 255 do
   CHAR_CLASS[b] = c
 end
 
--- A bonus matrix that returns extra points for transitions from prevClass->currClass
-local BONUS_MATRIX = {} ---@type number[][]
-for i = 0, 6 do
-  BONUS_MATRIX[i] = {}
-  for j = 0, 6 do
-    BONUS_MATRIX[i][j] = 0
-  end
-end
-
--- Helper to compute boundary/camelCase bonuses (mimics fzf approach)
-local function computeBonus(prevC, currC)
-  -- If transitioning from whitespace/delimiter/nonword to letter => boundary bonus
-  if currC > CHAR_NONWORD then
-    if prevC == CHAR_WHITE then
-      return BONUS_BOUNDARY + 2 -- e.g. bonusBoundaryWhite
-    elseif prevC == CHAR_DELIMITER then
-      return BONUS_BOUNDARY + 1 -- e.g. bonusBoundaryDelimiter
-    elseif prevC == CHAR_NONWORD then
-      return BONUS_BOUNDARY
-    end
-  end
-
-  -- camelCase transitions or letter->number transitions
-  if (prevC == CHAR_LOWER and currC == CHAR_UPPER) or (prevC ~= CHAR_NUMBER and currC == CHAR_NUMBER) then
-    return BONUS_CAMEL_123
-  end
-
-  if currC == CHAR_NONWORD or currC == CHAR_DELIMITER then
-    return BONUS_NONWORD
-  elseif currC == CHAR_WHITE then
-    return BONUS_BOUNDARY + 2
-  end
-  return 0
-end
-
--- Fill in the matrix
-for prev = 0, 6 do
-  for curr = 0, 6 do
-    BONUS_MATRIX[prev][curr] = computeBonus(prev, curr)
-  end
-end
-
 ---@param opts? snacks.picker.matcher.Config
 function M.new(opts)
   local self = setmetatable({}, M)
@@ -104,9 +65,52 @@ function M.new(opts)
   self.is_file = true
   self.consecutive = 0
   self.prev_class = CHAR_WHITE
-  self.in_gap = false
   self.str = ""
+  self.first_bonus = 0
+  self.bonus_matrix = {}
+  self.bonus_boundary_white = BONUS_BOUNDARY + 2
+  self.bonus_boundary_delimiter = BONUS_BOUNDARY + 1
+  if self.opts.history_bonus then
+    self.bonus_boundary_white = BONUS_BOUNDARY
+    self.bonus_boundary_delimiter = BONUS_BOUNDARY
+  end
+  self:compute_bonus_matrix()
   return self
+end
+
+function M:compute_bonus_matrix()
+  for prev = 0, 6 do
+    self.bonus_matrix[prev] = {}
+    for curr = 0, 6 do
+      self.bonus_matrix[prev][curr] = self:compute_bonus(prev, curr)
+    end
+  end
+end
+
+-- Helper to compute boundary/camelCase bonuses (mimics fzf approach)
+function M:compute_bonus(prev, curr)
+  -- If transitioning from whitespace/delimiter/nonword to letter => boundary bonus
+  if curr > CHAR_NONWORD then
+    if prev == CHAR_WHITE then
+      return self.bonus_boundary_white
+    elseif prev == CHAR_DELIMITER then
+      return self.bonus_boundary_delimiter
+    elseif prev == CHAR_NONWORD then
+      return BONUS_BOUNDARY
+    end
+  end
+
+  -- camelCase transitions or letter->number transitions
+  if (prev == CHAR_LOWER and curr == CHAR_UPPER) or (prev ~= CHAR_NUMBER and curr == CHAR_NUMBER) then
+    return BONUS_CAMEL_123
+  end
+
+  if curr == CHAR_NONWORD or curr == CHAR_DELIMITER then
+    return BONUS_NONWORD
+  elseif curr == CHAR_WHITE then
+    return BONUS_BOUNDARY + 2
+  end
+  return 0
 end
 
 ---@param str string
@@ -129,6 +133,7 @@ function M:init(str, first)
   self.consecutive = 0
   self.prev_class = CHAR_WHITE
   self.prev = nil
+  self.first_bonus = 0
   if first > 1 then
     self.prev_class = CHAR_CLASS[str:byte(first - 1)] or CHAR_NONWORD
   end
@@ -140,7 +145,6 @@ function M:init(str, first)
   then
     self.score = self.score + BONUS_NO_PATH_SEP
   end
-  self.in_gap = false
   self:update(first)
 end
 
@@ -148,32 +152,36 @@ end
 function M:update(pos)
   local b = self.str:byte(pos)
   local class = CHAR_CLASS[b] or CHAR_NONWORD
+  local bonus = 0
+  local gap = self.prev and pos - self.prev - 1 or 0
 
-  -- Calculate boundary bonus for transitioning from prevClass->currClass
-  local bonus = BONUS_MATRIX[self.prev_class][class] or 0
-
-  -- Handle gap vs consecutive logic
-  if self.prev then
-    local gap = pos - self.prev - 1
-    if gap > 0 then
-      -- We have a gap. If we were already in a gap, only extension penalty
-      -- otherwise we do a gap start penalty
-      self.score = self.score
-        + (self.in_gap and (gap * SCORE_GAP_EXTENSION) or (SCORE_GAP_START + (gap - 1) * SCORE_GAP_EXTENSION))
-
-      self.consecutive = 0
-      self.in_gap = true
-    else
-      -- consecutive match => reward
-      self.consecutive = self.consecutive + 1
-      self.score = self.score + (BONUS_CONSECUTIVE * self.consecutive)
-      self.in_gap = false
-    end
+  if gap > 0 then
+    self.prev_class = CHAR_CLASS[self.str:byte(pos - 1)] or CHAR_NONWORD
+    bonus = self.bonus_matrix[self.prev_class][class] or 0
+    self.score = self.score + SCORE_GAP_START + (gap - 1) * SCORE_GAP_EXTENSION
+    self.consecutive = 0
+    self.first_bonus = 0
   else
-    bonus = bonus * BONUS_FIRST_CHAR_MULTIPLIER
+    bonus = self.bonus_matrix[self.prev_class][class] or 0
+    -- No gap => consecutive chunk
+    if self.consecutive == 0 then
+      -- New chunk => store the boundary/camel bonus
+      self.first_bonus = bonus
+    else
+      -- If we see a bigger boundary/camel bonus than what started the chunk, update
+      if bonus >= BONUS_BOUNDARY and bonus > self.first_bonus then
+        self.first_bonus = bonus
+      end
+      -- Take the max of the current bonus, the chunk's firstBonus, or BONUS_CONSECUTIVE
+      bonus = math.max(bonus, self.first_bonus, BONUS_CONSECUTIVE)
+    end
+    self.consecutive = self.consecutive + 1
   end
 
-  -- Add base match + boundary/camel bonus
+  if not self.prev then
+    bonus = (bonus * BONUS_FIRST_CHAR_MULTIPLIER)
+  end
+
   self.score = self.score + SCORE_MATCH + bonus
 
   -- Update for next iteration

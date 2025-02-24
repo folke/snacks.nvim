@@ -1,8 +1,5 @@
 local M = {}
 
----@class snacks.picker
----@field help fun(opts?: snacks.picker.help.Config): snacks.Picker
-
 ---@param opts snacks.picker.help.Config
 ---@type snacks.picker.finder
 function M.help(opts)
@@ -42,15 +39,27 @@ function M.help(opts)
       for _, file in ipairs(tag_files[lang] or {}) do
         for line in io.lines(file) do
           local fields = vim.split(line, string.char(9), { plain = true })
-          if not line:match("^!_TAG_") and #fields == 3 and not done[fields[1]] then
-            done[fields[1]] = true
+          local tag = fields[1]
+          if not line:match("^!_TAG_") and #fields == 3 and not done[tag] then
+            done[tag] = true
             ---@type snacks.picker.finder.Item
             local item = {
-              text = fields[1],
-              tag = fields[1],
+              text = tag,
+              tag = tag,
               file = help_files[fields[2]],
               search = "/\\V" .. fields[3]:sub(2),
             }
+            if tag:find("^[vbg]?:") or tag:find("^/") then
+              item.ft = "vim"
+            elseif tag:find("%(%)$") then
+              item.ft = "lua"
+            elseif tag:find("^'.*'$") then
+              item.text_hl = "String"
+            elseif tag:find("^E%d+$") then
+              item.text_hl = "Error"
+            elseif tag:find("^hl%-") then
+              item.text_hl = tag:sub(4)
+            end
             if item.file then
               cb(item)
             end
