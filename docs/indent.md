@@ -52,7 +52,6 @@ Similar plugins:
     --     "SnacksIndent7",
     --     "SnacksIndent8",
     -- },
-  },
   -- animate scopes. Enabled by default for Neovim >= 0.10
   -- Works on older versions but has to trigger redraws during animation.
   ---@class snacks.indent.animate: snacks.animate.Config
@@ -102,6 +101,7 @@ Similar plugins:
   filter = function(buf)
     return vim.g.snacks_indent ~= false and vim.b[buf].snacks_indent ~= false and vim.bo[buf].buftype == ""
   end,
+  },
 }
 ```
 
