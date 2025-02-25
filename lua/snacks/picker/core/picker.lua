@@ -270,11 +270,6 @@ function M:init_layout(layout)
   }))
   self:attach()
 
-  -- apply box highlight groups
-  local boxwhl = Snacks.picker.highlight.winhl("SnacksPickerBox")
-  for _, win in pairs(self.layout.box_wins) do
-    win.opts.wo.winhighlight = boxwhl
-  end
   return layout
 end
 
