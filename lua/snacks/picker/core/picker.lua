@@ -73,7 +73,7 @@ function M.get(opts)
   local ret = {} ---@type snacks.Picker[]
   for picker in pairs(M._active) do
     local want = (not opts.source or picker.opts.source == opts.source)
-      and (opts.tab == false or picker:on_current_tab())
+        and (opts.tab == false or picker:on_current_tab())
     if want then
       ret[#ret + 1] = picker
     end
@@ -270,11 +270,6 @@ function M:init_layout(layout)
   }))
   self:attach()
 
-  -- apply box highlight groups
-  local boxwhl = Snacks.picker.highlight.winhl("SnacksPickerBox")
-  for _, win in pairs(self.layout.box_wins) do
-    win.opts.wo.winhighlight = boxwhl
-  end
   return layout
 end
 

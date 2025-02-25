@@ -104,6 +104,9 @@ function M.new(opts)
           w = { snacks_layout = true },
           border = box.border,
         }))
+        if not (box.wo and box.wo.winhighlight) then
+          self.box_wins[box.id].opts.wo.winhighlight = Snacks.picker.highlight.winhl("SnacksPickerBox")
+        end
       end
     end
   end)
