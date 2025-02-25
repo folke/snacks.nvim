@@ -259,7 +259,7 @@ function M.find(buf, from, to)
 end
 
 ---@param ctx snacks.image.ctx
----@param matches snacks.image.match
+---@param matches snacks.image.match[]
 function M._img(ctx, matches)
   ctx.pos = ctx.pos or ctx.src or ctx.content or ctx.ref
   assert(ctx.pos, "no image node")
