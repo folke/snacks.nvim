@@ -1,5 +1,44 @@
 # Changelog
 
+## [2.22.0](https://github.com/folke/snacks.nvim/compare/v2.21.0...v2.22.0) (2025-02-25)
+
+
+### Features
+
+* **image:** allow disabling math rendering. Closes [#1247](https://github.com/folke/snacks.nvim/issues/1247) ([1543a06](https://github.com/folke/snacks.nvim/commit/1543a063fbd3a462879d696b2885f4aa90c55896))
+* **image:** configurable templates for math expressions. Closes [#1338](https://github.com/folke/snacks.nvim/issues/1338) ([e039139](https://github.com/folke/snacks.nvim/commit/e039139291f85eebf3eeb41cc5ad9dc4265cafa4))
+* **image:** removed `org` integration, since that is now handled by the org mode plugin directly. ([956fe69](https://github.com/folke/snacks.nvim/commit/956fe69df328d2da924a04061802fb7d2ec5fef6))
+* **picker.input:** added some ctrl+r keymaps similar to cmdline. Closes [#1420](https://github.com/folke/snacks.nvim/issues/1420) ([c864a7d](https://github.com/folke/snacks.nvim/commit/c864a7d378da2a11afb09302b3220264e2aa3409))
+* **util:** util method to check if ts lang is available on any Neovim version. See [#1422](https://github.com/folke/snacks.nvim/issues/1422) ([e2cb9df](https://github.com/folke/snacks.nvim/commit/e2cb9df7d0695911f60a4510191aaf4a3d0d81ad))
+
+
+### Bug Fixes
+
+* **compat:** fixup ([ceabfc1](https://github.com/folke/snacks.nvim/commit/ceabfc1b89fe8e46b5138ae2417890121f5dfa02))
+* **compat:** properly detect async treesitter parsing ([842605f](https://github.com/folke/snacks.nvim/commit/842605f072e5d124a47eeb212bc2f78345bec4c4))
+* **compat:** vim.fs.normalize. Closes [#1321](https://github.com/folke/snacks.nvim/issues/1321) ([2295cfc](https://github.com/folke/snacks.nvim/commit/2295cfcca5bc749f169fb83ca4bdea9a85ad79a3))
+* **dim:** check that win is valid when animating dim. Closes [#1342](https://github.com/folke/snacks.nvim/issues/1342) ([47e1440](https://github.com/folke/snacks.nvim/commit/47e1440d547233772a3958580d429b38b5959edd))
+* **image.placement:** max width/height in cells is 297. Closes [#1345](https://github.com/folke/snacks.nvim/issues/1345) ([5fa93cb](https://github.com/folke/snacks.nvim/commit/5fa93cb6846b5998bc0b4b4ac9de47108fe39ce6))
+* **image.terminal:** reset queue when timer runs ([2b34c4d](https://github.com/folke/snacks.nvim/commit/2b34c4dc05aa4cbccc6171fa530e95c218e9bc9c))
+* **image.terminal:** write queued terminal output on main ([1b63b18](https://github.com/folke/snacks.nvim/commit/1b63b1811c58f661ad22f390a52aa6723703dc3d))
+* **picker.buffers:** add `a` flag when buffer is visible in a window. See [#1417](https://github.com/folke/snacks.nvim/issues/1417) ([91c3da0](https://github.com/folke/snacks.nvim/commit/91c3da0b4b286967d6d0166c0fc5769795a78918))
+* **picker.recent:** expand to full path before normalizing. Closes [#1406](https://github.com/folke/snacks.nvim/issues/1406) ([cf47fa7](https://github.com/folke/snacks.nvim/commit/cf47fa7cee80b0952706aacd4068310fe041761e))
+* **picker:** allow overriding winhl of layout box wins. Closes [#1424](https://github.com/folke/snacks.nvim/issues/1424) ([b0f983e](https://github.com/folke/snacks.nvim/commit/b0f983ef9aa9b9855ff0b72350cd3dc80de70675))
+* **picker:** disable regex for grep_word ([#1363](https://github.com/folke/snacks.nvim/issues/1363)) ([54298eb](https://github.com/folke/snacks.nvim/commit/54298eb624bd89f10f288b92560861277a34116d))
+* **picker:** remove unused keymaps for mouse scrolling ([33df54d](https://github.com/folke/snacks.nvim/commit/33df54dae71df7f7ec17551c23ad0ffc677e6ad1))
+* **picker:** update titles before showing. Closes [#1337](https://github.com/folke/snacks.nvim/issues/1337) ([3ae9863](https://github.com/folke/snacks.nvim/commit/3ae98636aaaf8f1b2f55b264f5745ae268de532f))
+* **scope:** use `rawequal` to check if scope impl is treesitter. Closes [#1413](https://github.com/folke/snacks.nvim/issues/1413) ([4ce197b](https://github.com/folke/snacks.nvim/commit/4ce197bff9cb9b78a0bdcebb6f7ebbf22cd48c6a))
+* **scroll:** compat with Neovim 0.9.4 ([4c52b7f](https://github.com/folke/snacks.nvim/commit/4c52b7f25da0ce6b2b830ce060dbd162706acf33))
+* **statuscolumn:** right-align the current line number when relativenumber=true. Closes [#1376](https://github.com/folke/snacks.nvim/issues/1376) ([dd15e3a](https://github.com/folke/snacks.nvim/commit/dd15e3a05a2111231c53726f18e39a147162c20f))
+* **win:** don't update title is relative win is invalid. Closes [#1348](https://github.com/folke/snacks.nvim/issues/1348) ([a00c323](https://github.com/folke/snacks.nvim/commit/a00c323d4b244f781df6df8b11bbfa47f63202d4))
+* **win:** use correct keys for displaying help. Closes [#1364](https://github.com/folke/snacks.nvim/issues/1364) ([b100c93](https://github.com/folke/snacks.nvim/commit/b100c937177536cf2aa634ddd2aa5b8a1dd23ace))
+* **zen:** always count cmdheight towards Zen bottom offset ([#1402](https://github.com/folke/snacks.nvim/issues/1402)) ([041bf1d](https://github.com/folke/snacks.nvim/commit/041bf1da9ed12498cbe3273dd90ef83e0a4913fa))
+
+
+### Performance Improvements
+
+* **scope:** use async treesitter parsing when available ([e0f882e](https://github.com/folke/snacks.nvim/commit/e0f882e6d6464666319502151cc244a090d4377f))
+
 ## 2.21.0 (2025-02-20)
 
 
