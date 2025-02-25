@@ -1,6 +1,7 @@
 ---@class snacks.image.doc
 local M = {}
 
+---@alias LinkDefinition {label:string, dest:string}
 ---@alias TSMatch {node:TSNode, meta:vim.treesitter.query.TSMetadata}
 ---@alias snacks.image.transform fun(match: snacks.image.match, ctx: snacks.image.ctx)
 
@@ -14,8 +15,10 @@ local M = {}
 ---@field lang string
 ---@field meta vim.treesitter.query.TSMetadata
 ---@field pos? TSMatch
+---@field ref? TSMatch
 ---@field src? TSMatch
 ---@field content? TSMatch
+---@field definition? LinkDefinition
 
 ---@class snacks.image.match
 ---@field id string
@@ -26,6 +29,7 @@ local M = {}
 ---@field range? Range4
 
 local META_EXT = "image.ext"
+local META_REF = "image.ref"
 local META_SRC = "image.src"
 local META_IGNORE = "image.ignore"
 local META_LANG = "image.lang"
@@ -151,10 +155,55 @@ function M.resolve(buf, src)
   return src
 end
 
+---@param bufnr integer
+---@return table<string, LinkDefinition>
+function M.get_link_definitions(bufnr)
+  local ok, parser = pcall(vim.treesitter.get_parser, bufnr)
+  if not ok or not parser then
+    return {}
+  end
+  parser:parse()
+  local defitions = {}
+  parser:for_each_tree(function(tstree, tree)
+    if not tstree then
+      return
+    end
+    local query = vim.treesitter.query.get(tree:lang(), "link_definition")
+    if not query then
+      return
+    end
+    for _, match in query:iter_matches(tstree:root(), bufnr) do
+      for id in pairs(match) do
+        local name = query.captures[id]
+        if name == "linkDefinition" then
+          local label_node = nil
+          local dest_node = nil
+          for inner_id, inner_nodes in pairs(match) do
+            local inner_name = query.captures[inner_id]
+            if inner_name == "linkDefinition.label" then
+              label_node = inner_nodes
+            elseif inner_name == "linkDefinition.dest" then
+              dest_node = inner_nodes
+            end
+          end
+          if label_node and dest_node then
+            local label = vim.treesitter.get_node_text(label_node, bufnr):gsub("^%[(.-)%]$", "%1") ---@type string
+            local dest = vim.treesitter.get_node_text(dest_node, bufnr) ---@type string
+            local defintion = { label = label, dest = dest } ---@type LinkDefinition
+            defitions[label] = defintion
+          end
+        end
+      end
+    end
+  end)
+  return defitions
+end
+
 ---@param buf number
 ---@param from? number
 ---@param to? number
 function M.find(buf, from, to)
+  local definitions = M.get_link_definitions(buf) ---@type table<string, LinkDefinition>
   local ok, parser = pcall(vim.treesitter.get_parser, buf)
   if not ok or not parser then
     return {}
@@ -177,16 +226,32 @@ function M.find(buf, from, to)
           lang = tostring(meta[META_LANG] or meta["injection.language"] or tree:lang()),
           meta = meta,
         }
+
+        local ignored = false ---@type boolean
         for id, nodes in pairs(match) do
           nodes = type(nodes) == "userdata" and { nodes } or nodes
           local name = query.captures[id]
-          local field = name == "image" and "pos" or name:match("^image%.(.*)$")
-          if field then
-            ---@diagnostic disable-next-line: assign-type-mismatch
-            ctx[field] = { node = nodes[1], meta = meta[id] or {} }
+          if name == META_REF then
+            local ref = vim.treesitter.get_node_text(nodes[1], buf, { metadata = meta[id] or {} })
+            if ref ~= nil and definitions[ref] then
+              ctx.ref = { node = nodes[1], meta = meta[id] or {} }
+              ctx.definition = definitions[ref]
+            else
+              ignored = true
+              break
+            end
+          else
+            local field = name == "image" and "pos" or name:match("^image%.(.*)$")
+            if field then
+              ---@diagnostic disable-next-line: assign-type-mismatch
+              ctx[field] = { node = nodes[1], meta = meta[id] or {} }
+            end
           end
         end
-        ret[#ret + 1] = M._img(ctx)
+        if not ignored then
+          local img_match = M._img(ctx, ret)
+          ret[#ret + 1] = img_match
+        end
       end
     end
   end)
@@ -194,8 +259,9 @@ function M.find(buf, from, to)
 end
 
 ---@param ctx snacks.image.ctx
-function M._img(ctx)
-  ctx.pos = ctx.pos or ctx.src or ctx.content
+---@param matches snacks.image.match
+function M._img(ctx, matches)
+  ctx.pos = ctx.pos or ctx.src or ctx.content or ctx.ref
   assert(ctx.pos, "no image node")
 
   local range = vim.treesitter.get_range(ctx.pos.node, ctx.buf, ctx.pos.meta)
@@ -203,10 +269,11 @@ function M._img(ctx)
   while #lines > 0 and vim.trim(lines[#lines]) == "" do
     table.remove(lines)
   end
+
   ---@type snacks.image.match
   local img = {
     ext = ctx.meta[META_EXT],
-    src = ctx.meta[META_SRC],
+    src = ctx.definition and ctx.definition.dest or ctx.meta[META_SRC],
     id = ctx.pos.node:id(),
     range = { range[1] + 1, range[2], range[4] + 1, range[5] },
     pos = {
@@ -214,6 +281,17 @@ function M._img(ctx)
       math.min(range[2], range[5]),
     },
   }
+  --- The `![A](./A.png)` could be resolved twice if the `A` is a valid definition label,
+  --- so we need to deduplicate the items here.
+  if #matches > 0 then
+    local r1 = matches[#matches].range ---@type Range4
+    local r2 = img.range ---@type Range4
+    if r1[1] == r2[1] and r1[2] >= r2[2] and r1[3] == r2[3] and r1[4] <= r2[4] then
+      matches[#matches] = nil
+      img.pos[2] = img.pos[2] + 2 --- Make an indent for the image viewer.
+    end
+  end
+
   img.pos[1] = math.min(img.pos[1], vim.api.nvim_buf_line_count(ctx.buf))
   if ctx.src then
     img.src = vim.treesitter.get_node_text(ctx.src.node, ctx.buf, { metadata = ctx.src.meta })
