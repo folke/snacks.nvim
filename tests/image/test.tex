@@ -1,5 +1,5 @@
 \documentclass{article}
-\usepackage{graphicx, amsmath, amssymb, multirow}
+\usepackage{graphics, amsmath, amssymb, multirow}
 \usepackage{geometry} 
 \geometry{
   a4paper,
@@ -55,7 +55,7 @@ Gamma function:
 
 Pythagora's theorem:
 
-$$a^2+b^2=c^2+d^2$$
+$$a^2+b^2=c^2$$
 
 Logarithms: 
 
@@ -172,7 +172,7 @@ Quadratic equation:
   ax^2+bx+c=0 \implies x_{1,2}=\frac{-b\pm\sqrt{b^2-4ac}}{2a}  
 \]
 
-Two more ways to calculate pi:
+Four more ways to calculate pi:
 
 \begin{equation*}
   \pi=\sum_{k=0}^\infty\left[\frac{1}{16^k}\left(\frac{4}{8k+1}-\frac{2}{8k+4}-\frac{1}{8k+5}-\frac{1}{8k+6} \right) \right]
@@ -182,8 +182,25 @@ Two more ways to calculate pi:
   \frac{2}{\pi}=\frac{\sqrt{2}}{2}\cdot\frac{\sqrt{2+\sqrt{2}}}{2}\cdot\frac{\sqrt{2+\sqrt{2+\sqrt{2}}}}{2}\cdot\ldots
 \end{equation*}
 
+\begin{equation*}
+\pi = 3+\textstyle \cfrac{1}{7+\textstyle \cfrac{1}{15+\textstyle \cfrac{1}{1+\textstyle \cfrac{1}{292+\textstyle \cfrac{1}{1+\textstyle \cfrac{1}{1+\textstyle \cfrac{1}{1+\ddots}}}}}}}
+\end{equation*}
+
+Chudnovsky Formula:
+
+\[
+\frac{1}{\pi} = \frac{\sqrt{10005}}{4270934400} \sum_{k=0}^\infty \frac{(6k)! (13591409 + 545140134k)}{(3k)!\,k!^3 (-640320)^{3k}}
+\]
+
 Cauchy's integral formula:
 
 $$f(a)=\frac{1}{2\pi i}\int_{C} \frac{f(z)}{z-a} dz $$
+
+Stirling's factorial approximation:
+$$n! = \sqrt{2 \pi n} \left( \frac{n}{e} \right)^n \left( 1 + O \left( \frac{1}{n} \right) \right)$$
+
 \end{document}
+
+
+
 
