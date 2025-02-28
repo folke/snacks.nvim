@@ -233,6 +233,12 @@ function M.input(opts, on_confirm)
   vim.fn.prompt_setcallback(win.buf, function(text)
     confirm(text)
     win:close()
+    vim.schedule(function()
+      if mode ~= "i" then
+        vim.cmd("stopinsert")
+        vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Right>", true, true, true), "n", false)
+      end
+    end)
   end)
   vim.fn.prompt_setinterrupt(win.buf, function()
     confirm()
