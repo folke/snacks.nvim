@@ -47,6 +47,15 @@ local uv = vim.uv or vim.loop
 
 ---@type table<string, snacks.image.cmd>
 local commands = {
+  icns = {
+    ft = "png",
+    cmd = {
+      {
+        cmd = "sips",
+        args = { "-s", "format", "png", "{src}", "--out", "{file}" },
+      },
+    },
+  },
   url = {
     cmd = {
       {

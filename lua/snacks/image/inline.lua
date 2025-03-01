@@ -35,15 +35,18 @@ function M.new(buf)
 end
 
 function M:conceal()
-  local mode = vim.fn.mode()
-  local cursor = vim.api.nvim_win_get_cursor(0)
-  local by_mode = not mode:find("[nc]")
-  local hide = by_mode and self:visible() or self:get(cursor[1], cursor[1])
+  local mode = vim.fn.mode():sub(1, 1):lower() ---@type string
   for _, img in pairs(self.imgs) do
     img:show()
   end
+  if vim.wo.concealcursor:find(mode) then
+    return
+  end
+  local from, to = vim.fn.line("v"), vim.fn.line(".")
+  from, to = math.min(from, to), math.max(from, to)
+  local hide = self:get(from, to)
   for _, img in pairs(hide) do
-    if by_mode or img.opts.conceal then
+    if img.opts.conceal then
       img:hide()
     end
   end
