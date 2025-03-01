@@ -53,6 +53,7 @@ function M.setup()
           local lines = vim.api.nvim_buf_line_count(buf)
           return (size - lines) / lines > opts.line_length and "bigfile" or nil
         end,
+        { priority = -math.huge },
       },
     },
   })
