@@ -353,6 +353,12 @@ end
 
 ---@param opts? {col_width?: number, key_width?: number, win?: snacks.win.Config}
 function M:toggle_help(opts)
+  --- if which-key is available, use it
+  if package.loaded["which-key"] then
+    require("which-key").show({ global = false, delay = 0, defer = false })
+    return
+  end
+
   opts = opts or {}
   local col_width, key_width = opts.col_width or 30, opts.key_width or 10
   for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
@@ -362,6 +368,7 @@ function M:toggle_help(opts)
       return
     end
   end
+
   local ns = vim.api.nvim_create_namespace("snacks.win.help")
   local win = M.new(M.resolve({ style = "help" }, opts.win or {}, {
     show = false,
