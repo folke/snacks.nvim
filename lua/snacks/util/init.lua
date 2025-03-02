@@ -9,6 +9,7 @@ M.is_win = jit.os:find("Windows")
 
 local uv = vim.uv or vim.loop
 local key_cache = {} ---@type table<string, string>
+local langs = {} ---@type table<string, boolean>
 
 ---@alias snacks.util.hl table<string, string|vim.api.keyset.highlight>
 
@@ -21,6 +22,20 @@ vim.api.nvim_create_autocmd("ColorScheme", {
     end
   end,
 })
+
+---@param lang string|number|nil
+---@overload fun(buf:number):string?
+---@overload fun(ft:string):string?
+---@return string?
+function M.get_lang(lang)
+  lang = type(lang) == "number" and vim.bo[lang].filetype or lang --[[@as string?]]
+  lang = lang and vim.treesitter.language.get_lang(lang) or lang
+  if lang and lang ~= "" and langs[lang] == nil then
+    local ok, ret = pcall(vim.treesitter.language.add, lang)
+    langs[lang] = (ok and ret) or (ok and vim.fn.has("nvim-0.11") == 0)
+  end
+  return langs[lang] and lang or nil
+end
 
 --- Ensures the hl groups are always set, even after a colorscheme change.
 ---@param groups snacks.util.hl
@@ -300,7 +315,8 @@ end
 ---@param opts? {ms?:number}
 ---@return T
 function M.throttle(fn, opts)
-  local timer, trailing, ms = assert(uv.new_timer()), false, opts and opts.ms or 20
+  local timer = assert(uv.new_timer())
+  local trailing, ms = false, opts and opts.ms or 20
   local running = false
   local function run()
     running = true
@@ -328,7 +344,8 @@ end
 ---@param opts? {ms?:number}
 ---@return T
 function M.debounce(fn, opts)
-  local timer, ms = assert(uv.new_timer()), opts and opts.ms or 20
+  local timer = assert(uv.new_timer())
+  local ms = opts and opts.ms or 20
   return function()
     timer:start(ms, 0, vim.schedule_wrap(fn))
   end
@@ -425,5 +442,20 @@ M.base64 = vim.base64 and vim.base64.encode
     b64 = b64:sub(1, -1 - padding) .. ("="):rep(padding)
     return b64
   end
+
+--- Parse async when available.
+---@param parser vim.treesitter.LanguageTree
+---@param range boolean|Range|nil: Parse this range in the parser's source.
+---@param on_parse fun(err?: string, trees?: table<integer, TSTree>) Function invoked when parsing completes.
+function M.parse(parser, range, on_parse)
+  ---@diagnostic disable-next-line: invisible
+  local have_async = (vim.treesitter.languagetree or {})._async_parse ~= nil
+  if have_async then
+    parser:parse(range, on_parse)
+  else
+    parser:parse(range)
+    on_parse(nil, parser:trees())
+  end
+end
 
 return M

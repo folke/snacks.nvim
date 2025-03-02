@@ -376,15 +376,29 @@ function M:toggle_help(opts)
     win:close()
   end, { buf = true })
   local dim = win:dim()
-  local cols = math.floor((dim.width - 1) / col_width)
-  local rows = math.ceil(#self.keys / cols)
-  win.opts.height = rows
+
+  -- NOTE: we use the actual buffer keymaps instead of self.keys,
+  -- since we want to show all keymaps, not just the ones we've defined on the window
   local keys = {} ---@type vim.api.keyset.get_keymap[]
   vim.list_extend(keys, vim.api.nvim_buf_get_keymap(self.buf, "n"))
   vim.list_extend(keys, vim.api.nvim_buf_get_keymap(self.buf, "i"))
   table.sort(keys, function(a, b)
     return (a.desc or a.lhs or "") < (b.desc or b.lhs or "")
   end)
+
+  local done = {} ---@type table<string, boolean>
+  keys = vim.tbl_filter(function(keymap)
+    local key = Snacks.util.normkey(keymap.lhs or "")
+    if done[key] or (keymap.desc and keymap.desc:find("which%-key")) then
+      return false
+    end
+    done[key] = true
+    return true
+  end, keys)
+
+  local cols = math.floor((dim.width - 1) / col_width)
+  local rows = math.ceil(#keys / cols)
+  win.opts.height = rows
   local help = {} ---@type {[1]:string, [2]:string}[][]
   local row, col = 0, 1
 
@@ -399,24 +413,20 @@ function M:toggle_help(opts)
     return align == "right" and (string.rep(" ", len - w) .. str) or (str .. string.rep(" ", len - w))
   end
 
-  local done = {} ---@type table<string, boolean>
   for _, keymap in ipairs(keys) do
     local key = Snacks.util.normkey(keymap.lhs or "")
-    if not done[key] and not (keymap.desc and keymap.desc:find("which%-key")) then
-      done[key] = true
-      row = row + 1
-      if row > rows then
-        row, col = 1, col + 1
-      end
-      help[row] = help[row] or {}
-      vim.list_extend(help[row], {
-        { trunc(key, key_width, "right"), "SnacksWinKey" },
-        { " " },
-        { "➜", "SnacksWinKeySep" },
-        { " " },
-        { trunc(keymap.desc or "", col_width - key_width - 3), "SnacksWinKeyDesc" },
-      })
+    row = row + 1
+    if row > rows then
+      row, col = 1, col + 1
     end
+    help[row] = help[row] or {}
+    vim.list_extend(help[row], {
+      { trunc(key, key_width, "right"), "SnacksWinKey" },
+      { " " },
+      { "➜", "SnacksWinKeySep" },
+      { " " },
+      { trunc(keymap.desc or "", col_width - key_width - 3), "SnacksWinKeyDesc" },
+    })
   end
   win:show()
   for l, line in ipairs(help) do

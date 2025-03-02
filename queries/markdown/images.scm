@@ -5,7 +5,7 @@
   (#eq? @lang "math")
   (code_fence_content) @image.content
   (#set! injection.language "latex")
-  (#set! image.ext "tex")
+  (#set! image.ext "math.tex")
 ) @image
 
 (fenced_code_block
@@ -13,5 +13,5 @@
   (#eq? @lang "mermaid")
   (code_fence_content) @image.content
   (#set! injection.language "mermaid")
-  (#set! image.ext "mmd")
+  (#set! image.ext "chart.mmd")
 ) @image

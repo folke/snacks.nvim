@@ -23,8 +23,8 @@ if vim.fn.has("nvim-0.11") == 0 then
   ---@param path (string) Path to normalize
   ---@param opts? vim.fs.normalize.Opts
   ---@return (string) : Normalized path
-  function M.normalize(path, opts)
-    local ret = svim.fs.normalize(path, opts)
+  function M.fs.normalize(path, opts)
+    local ret = vim.fs.normalize(path, opts)
     return is_win and ret:gsub("^%a:", string.upper) or ret
   end
 end

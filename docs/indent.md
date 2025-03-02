@@ -116,6 +116,12 @@ Similar plugins:
 
 ## 📦 Module
 
+### `Snacks.indent.debug_win()`
+
+```lua
+Snacks.indent.debug_win()
+```
+
 ### `Snacks.indent.disable()`
 
 Disable indent guides

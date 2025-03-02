@@ -54,12 +54,15 @@ vim.api.nvim_create_autocmd("VimResized", {
 -- HACK: ghostty doesn't like it when sending images too fast,
 -- after Neovim startup, so we delay the first image
 local queue = {} ---@type string[]?
-vim.defer_fn(function()
-  if queue and #queue > 0 then
-    io.stdout:write(table.concat(queue, ""))
+vim.defer_fn(
+  vim.schedule_wrap(function()
+    for _, data in ipairs(queue or {}) do
+      io.stdout:write(data)
+    end
     queue = nil
-  end
-end, 100)
+  end),
+  100
+)
 
 function M.size()
   if size then

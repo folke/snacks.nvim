@@ -277,7 +277,7 @@ function M:highlight(opts)
     })
   end
   self:check_big()
-  local lang = Snacks.picker.highlight.get_lang({ lang = opts.lang, ft = ft })
+  local lang = Snacks.util.get_lang(opts.lang or ft)
   if not (lang and pcall(vim.treesitter.start, self.win.buf, lang)) and ft then
     vim.bo[self.win.buf].syntax = ft
   end

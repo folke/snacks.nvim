@@ -41,7 +41,7 @@ in [mini.indentscope](https://github.com/echasnovski/mini.indentscope).
   siblings = false, -- expand single line scopes with single line siblings
   -- what buffers to attach to
   filter = function(buf)
-    return vim.bo[buf].buftype == ""
+    return vim.bo[buf].buftype == "" and vim.b[buf].snacks_scope ~= false and vim.g.snacks_scope ~= false
   end,
   -- debounce scope detection in ms
   debounce = 30,
@@ -158,9 +158,9 @@ Snacks.scope.attach(cb, opts)
 ### `Snacks.scope.get()`
 
 ```lua
----@param opts? snacks.scope.Opts
----@return snacks.scope.Scope?
-Snacks.scope.get(opts)
+---@param cb fun(scope?: snacks.scope.Scope)
+---@param opts? snacks.scope.Opts|{parse?:boolean}
+Snacks.scope.get(cb, opts)
 ```
 
 ### `Snacks.scope.jump()`

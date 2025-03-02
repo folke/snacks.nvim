@@ -13,6 +13,9 @@ local M = {}
 ---@field field? string
 ---@field notify? boolean
 
+---@class snacks.picker.insert.Action: snacks.picker.Action
+---@field expr string
+
 ---@enum (key) snacks.picker.EditCmd
 local edit_cmd = {
   edit = "buffer",
@@ -197,6 +200,26 @@ function M.toggle_maximize(picker)
   picker.layout:maximize()
 end
 
+function M.insert(picker, _, action)
+  ---@cast action snacks.picker.insert.Action
+  if action.expr then
+    local value = ""
+    vim.api.nvim_buf_call(picker.input.filter.current_buf, function()
+      value = action.expr == "line" and vim.api.nvim_get_current_line() or vim.fn.expand(action.expr)
+    end)
+    vim.api.nvim_win_call(picker.input.win.win, function()
+      vim.api.nvim_put({ value }, "c", true, true)
+    end)
+  end
+end
+M.insert_cword = { action = "insert", expr = "<cword>" }
+M.insert_cWORD = { action = "insert", expr = "<cWORD>" }
+M.insert_filename = { action = "insert", expr = "%" }
+M.insert_file = { action = "insert", expr = "<cfile>" }
+M.insert_line = { action = "insert", expr = "line" }
+M.insert_file_full = { action = "insert", expr = "<cfile>:p" }
+M.insert_alt = { action = "insert", expr = "#" }
+
 function M.toggle_preview(picker)
   picker:toggle("preview")
 end
@@ -323,12 +346,16 @@ end
 function M.git_checkout(picker, item)
   picker:close()
   if item then
-    local what = item.branch or item.commit
+    local what = item.branch or item.commit --[[@as string?]]
     if not what then
       Snacks.notify.warn("No branch or commit found", { title = "Snacks Picker" })
       return
     end
     local cmd = { "git", "checkout", what }
+    local remote_branch = what:match("^remotes/[^/]+/(.+)$")
+    if remote_branch then
+      cmd = { "git", "checkout", "-b", remote_branch, what }
+    end
     if item.file then
       vim.list_extend(cmd, { "--", item.file })
     end

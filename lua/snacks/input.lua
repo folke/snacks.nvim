@@ -64,7 +64,7 @@ Snacks.config.style("input", {
   keys = {
     n_esc = { "<esc>", { "cmp_close", "cancel" }, mode = "n", expr = true },
     i_esc = { "<esc>", { "cmp_close", "stopinsert" }, mode = "i", expr = true },
-    i_cr = { "<cr>", { "cmp_accept", "confirm" }, mode = "i", expr = true },
+    i_cr = { "<cr>", { "cmp_accept", "confirm" }, mode = { "i", "n" }, expr = true },
     i_tab = { "<tab>", { "cmp_select_next", "cmp" }, mode = "i", expr = true },
     i_ctrl_w = { "<c-w>", "<c-s-w>", mode = "i", expr = true },
     i_up = { "<up>", { "hist_up" }, mode = { "i", "n" } },
@@ -225,11 +225,14 @@ function M.input(opts, on_confirm)
   local win = Snacks.win(opts.win)
   ctx = { opts = opts, win = win }
   vim.fn.prompt_setprompt(win.buf, "")
-  vim.cmd.startinsert()
   if opts.default then
     vim.api.nvim_buf_set_lines(win.buf, 0, -1, false, { opts.default })
-    vim.api.nvim_win_set_cursor(win.win, { 1, #opts.default })
   end
+
+  vim.api.nvim_win_call(win.win, function()
+    vim.cmd("startinsert!")
+  end)
+
   vim.fn.prompt_setcallback(win.buf, function(text)
     confirm(text)
     win:close()

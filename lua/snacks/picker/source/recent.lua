@@ -14,6 +14,7 @@ local function oldfiles(filter, extra)
     for f = i + 1, #files do
       i = f
       local file = files[f]
+      file = vim.fn.fnamemodify(file, ":p")
       file = svim.fs.normalize(file, { _fast = true, expand_env = false })
       local want = not done[file] and filter:match({ file = file, text = "" })
       done[file] = true

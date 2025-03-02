@@ -227,6 +227,9 @@ local function scroll_lines(win, from, to)
   if to.topfill > 0 then
     offset = offset - to.topfill
   end
+  if not vim.api.nvim_win_text_height then
+    return end_row - start_row + offset
+  end
   return vim.api.nvim_win_text_height(win, { start_row = start_row, end_row = end_row }).all + offset - 1
 end
 

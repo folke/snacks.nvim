@@ -84,7 +84,7 @@ Snacks.util.set_hl({
 ---@param opts? {statusline: boolean, tabline: boolean}
 local function get_main(opts)
   opts = opts or {}
-  local bottom = opts.statusline and (vim.o.cmdheight + (vim.o.laststatus == 3 and 1 or 0)) or 0
+  local bottom = vim.o.cmdheight + (opts.statusline and vim.o.laststatus == 3 and 1 or 0)
   local top = opts.tabline
       and ((vim.o.showtabline == 2 or (vim.o.showtabline == 1 and #vim.api.nvim_list_tabpages() > 1)) and 1 or 0)
     or 0
@@ -127,7 +127,7 @@ function M.zen(opts)
   local show_indicator = false
 
   -- calculate window size
-  if win_opts.height == 0 and (opts.show.statusline or opts.show.tabline) then
+  if win_opts.height == 0 and (opts.show.statusline or opts.show.tabline or vim.o.cmdheight > 0) then
     local main = get_main(opts.show)
     win_opts.row = main.row
     win_opts.height = function()

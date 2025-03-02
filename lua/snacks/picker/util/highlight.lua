@@ -3,19 +3,6 @@ local M = {}
 
 M.langs = {} ---@type table<string, boolean>
 
----@param opts? {lang?:string, ft?:string}
-function M.get_lang(opts)
-  opts = opts or {}
-  local lang = opts.lang or (opts.ft and vim.treesitter.language.get_lang(opts.ft)) or nil
-  if not lang then
-    return
-  end
-  if M.langs[lang] == nil then
-    M.langs[lang] = pcall(vim.treesitter.language.add, lang)
-  end
-  return M.langs[lang] and lang or nil
-end
-
 ---@param opts? {buf?:number, code?:string, ft?:string, lang?:string, file?:string, extmarks?:boolean}
 function M.get_highlights(opts)
   opts = opts or {}
@@ -28,7 +15,7 @@ function M.get_highlights(opts)
     or (opts.buf and vim.bo[opts.buf].filetype)
     or (opts.file and vim.filetype.match({ filename = opts.file, buf = 0 }))
     or vim.bo.filetype
-  local lang = M.get_lang({ lang = opts.lang, ft = ft })
+  local lang = Snacks.util.get_lang(opts.lang or ft)
   local parser ---@type vim.treesitter.LanguageTree?
   if lang then
     lang = lang:lower()
