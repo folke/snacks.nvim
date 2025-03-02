@@ -536,6 +536,16 @@ M.lsp_implementations = {
   jump = { tagstack = true, reuse_win = true },
 }
 
+-- LSP implementations
+---@type snacks.picker.lsp.Config
+M.lsp_incoming_calls = {
+  finder = "lsp_incoming_calls",
+  format = "file",
+  include_current = false,
+  auto_confirm = true,
+  jump = { tagstack = true, reuse_win = true },
+}
+
 -- LSP references
 ---@class snacks.picker.lsp.references.Config: snacks.picker.lsp.Config
 ---@field include_declaration? boolean default true
