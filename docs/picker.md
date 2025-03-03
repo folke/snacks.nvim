@@ -34,6 +34,7 @@ Some acknowledgements:
 
 The best way to get started is to copy some of the [example configs](https://github.com/folke/snacks.nvim/blob/main/docs/picker.md#-examples) below.
 
+
 ```lua
 -- Show all pickers
 Snacks.picker()
@@ -42,6 +43,19 @@ Snacks.picker()
 Snacks.picker.files(opts)
 Snacks.picker.pick("files", opts)
 Snacks.picker.pick({source = "files", ...})
+```
+
+### Usage with Oil.nvim
+
+When using Snacks Picker with Oil.nvim - the picker will not choose the open buffer if it is a Oil.nvim buffer.
+This is because Oil.nvim uses the 'acwrite' buffer type by default. In order to allow Picker to work with Oil.nvim buffers you have to modify your Oil.nvim configuration and add:
+
+```lua
+opts = {
+  buf_options = {
+    buftype = ''
+  }
+}
 ```
 
 <!-- docgen -->
