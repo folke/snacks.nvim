@@ -161,7 +161,8 @@ In the example below, both sections are equivalent.
   formats = {
     icon = function(item)
       if item.file and item.icon == "file" or item.icon == "directory" then
-        return M.icon(item.file, item.icon)
+        local icon, hl = require('snacks').util.icon(item.file, item.icon)
+        return { icon, width = 2, hl = hl }
       end
       return { item.icon, width = 2, hl = "icon" }
     end,
