@@ -147,19 +147,26 @@ local defaults = {
         ${content}]],
     },
     latex = {
-      font_size = "Large", -- see https://www.sascha-frank.com/latex-font-size.html
+      font_size = "large", -- see https://www.sascha-frank.com/latex-font-size.html
       -- for latex documents, the doc packages are included automatically,
       -- but you can add more packages here. Useful for markdown documents.
       packages = { "amsmath", "amssymb", "amsfonts", "amscd", "mathtools" },
       tpl = [[
-        \documentclass[preview,border=0pt,varwidth,12pt]{standalone}
+        \documentclass[a3paper,12pt]{article}
         \usepackage{${packages}}
+        \usepackage{geometry}
+        \geometry{a3paper, margin=1cm}
         \begin{document}
+        \pagestyle{empty}
         ${header}
-        { \${font_size} \selectfont
+        { 
+          \${font_size} 
+          \selectfont
           \color[HTML]{${color}}
-        ${content}}
-        \end{document}]],
+          ${content}
+        }
+        \end{document}
+      ]],
     },
   },
 }

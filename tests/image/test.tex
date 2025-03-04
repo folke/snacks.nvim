@@ -81,17 +81,17 @@ Maxwell's equations:
 \nabla \times \textbf{E}=\frac{\rho}{\epsilon_0}
 \end{equation}
 
-\begin{equation}
+\begin{equation*}
 \nabla \cdot \textbf{H}=0
-\end{equation}
+\end{equation*}
 
-\begin{equation}
+\begin{equation*}
 \nabla \times \textbf{E}=-\frac 1c\frac{\partial \textbf{H}}{\partial t}
-\end{equation}
+\end{equation*}
 
-\begin{equation}
+\begin{equation*}
 \nabla \times \textbf{H}=\frac 1c\frac{\partial \textbf{E}}{\partial t}
-\end{equation}
+\end{equation*}
 
 Schroedinger equation:
 
@@ -126,10 +126,10 @@ Basel problem:
   \frac{\pi^2}{6}=\sum_{n=1}^\infty \frac{1}{n^2}
 \]
 
-Euler-Masceroni constant:
+Euler-Mascheroni constant:
 
 \[
-\gamma = \lim_{n\to\infty}(\sum_{n=1}^\infty \frac{1}{n}-\log n)\approx 0.5772156649\ldots
+\gamma = \lim_{n\to\infty}(\sum_{n=1}^\infty \frac{1}{n}-\log n)=\int_1^\infty\left(-\frac1x+\frac1{\lfloor x\rfloor}\right)\,\mathrm dx\approx 0.5772156649015328606065120\ldots
 \]
 
 Binomial expansion:
@@ -199,8 +199,46 @@ $$f(a)=\frac{1}{2\pi i}\int_{C} \frac{f(z)}{z-a} dz $$
 Stirling's factorial approximation:
 $$n! = \sqrt{2 \pi n} \left( \frac{n}{e} \right)^n \left( 1 + O \left( \frac{1}{n} \right) \right)$$
 
+Taylor's series:
+
+$$f(x)=\sum_{n=0}^\infty \frac{f^{(n)}(a)}{n!} (x-a)^n$$
+
+Graham's number, the biggest number ever used in a scientific paper:
+
+\[
+\left.
+ \begin{matrix}
+  G &=&3\underbrace{\uparrow \uparrow \cdots \cdots \cdots \cdots \cdots \uparrow}3 \\
+    & &3\underbrace{\uparrow \uparrow \cdots \cdots \cdots \cdots \uparrow}3 \\
+    & & \underbrace{\qquad \quad \vdots \qquad \quad} \\
+    & &3\underbrace{\uparrow \uparrow \cdots \cdots \uparrow}3 \\
+    & &3\uparrow \uparrow \uparrow \uparrow3
+ \end{matrix}
+\right \} \text{64 layers}
+\]
+
+Prime number approximation:
+
+$$ n \left( \log n + \log \log n - 1 + \frac{\log \log n - 2.1}{\log n} \right) \le p_n \le n \left( \log n + \log \log n - 1 + \frac{\log \log n - 2}{\log n} \right)$$
+
+Prime counting function approximation:
+
+\[
+\frac{x}{\log x} \left( 1 + \frac{1}{\log x} + \frac{2}{\log^2 x} \right) \le \pi(x) \le \frac{x}{\log x} \left( 1 + \frac{1}{\log x} + \frac{2}{\log^2 x} + \frac{7.59}{\log^3 x} \right)
+\]
+
+Riemann's zeta function (automatically scaled to fit the allowed width):
+
+\[
+\zeta(s) = \sum_{n=1}^\infty \frac{1}{n^s} = \frac{1}{\Gamma(s)} \int_0^\infty \frac{x ^ {s-1}}{e ^ x - 1} \, \mathrm{d}x = \prod_{p \text{ prime}} \frac{1}{1-p^{-s}} = \frac{1}{1-2^{-s}}\cdot\frac{1}{1-3^{-s}}\cdot\frac{1}{1-5^{-s}}\cdot\frac{1}{1-7^{-s}}\cdot\frac{1}{1-11^{-s}} \cdots \frac{1}{1-p^{-s}} \cdots
+\]
+
+The most famous unsolved mathematical problem (Riemann's hypothesis):
+
+\[
+  \zeta(s) = \sum_{n=1}^\infty \frac{1}{n^s} = 0\ \land \ \mathrm{Re}(s) > 0 \implies \mathrm{Re}(s)=\frac12
+\]
+
 \end{document}
-
-
 
 
