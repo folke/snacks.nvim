@@ -116,6 +116,22 @@ function M.actions.explorer_close(picker, item)
   M.update(picker, { target = dir, refresh = true })
 end
 
+function M.actions.explorer_expand(picker, item)
+  if not item then
+    return
+  end
+  Tree:open(item.file)
+  M.update(picker, { refresh = true })
+end
+
+function M.actions.explorer_collapse(picker, item)
+  if not item then
+    return
+  end
+  Tree:close(item.file)
+  M.update(picker, { refresh = true })
+end
+
 function M.actions.explorer_update(picker)
   Tree:refresh(picker:cwd())
   M.update(picker)
