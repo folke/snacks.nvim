@@ -12,7 +12,7 @@ function M.directory(ctx)
   local name = path and vim.fn.fnamemodify(path, ":t")
   ctx.preview:set_title(ctx.item.title or name)
   local ls = {} ---@type {file:string, type:"file"|"directory"}[]
-  for file, t in vim.fs.dir(ctx.item.file) do
+  for file, t in vim.fs.dir(path) do
     ls[#ls + 1] = { file = file, type = t }
   end
   ctx.preview:set_lines(vim.split(string.rep("\n", #ls), "\n"))
