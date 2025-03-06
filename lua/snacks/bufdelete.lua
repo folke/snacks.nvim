@@ -31,7 +31,10 @@ function M.delete(opts)
   if type(opts.filter) == "function" then
     for _, b in ipairs(vim.tbl_filter(opts.filter, vim.api.nvim_list_bufs())) do
       if vim.bo[b].buflisted then
-        M.delete(vim.tbl_extend("force", {}, opts, { buf = b, filter = false }))
+        local res = M.delete(vim.tbl_extend("force", {}, opts, { buf = b, filter = false }))
+        if res == -1 then
+          return
+        end
       end
     end
     return
@@ -46,11 +49,11 @@ function M.delete(opts)
   end
   buf = buf == 0 and vim.api.nvim_get_current_buf() or buf
 
-  vim.api.nvim_buf_call(buf, function()
+  return vim.api.nvim_buf_call(buf, function()
     if vim.bo.modified and not opts.force then
       local ok, choice = pcall(vim.fn.confirm, ("Save changes to %q?"):format(vim.fn.bufname()), "&Yes\n&No\n&Cancel")
       if not ok or choice == 0 or choice == 3 then -- 0 for <Esc>/<C-c> and 3 for Cancel
-        return
+        return -1
       end
       if choice == 1 then -- Yes
         vim.cmd.write()
