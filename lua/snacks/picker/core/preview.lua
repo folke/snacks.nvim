@@ -39,7 +39,7 @@ vim.api.nvim_create_autocmd("BufWinEnter", {
     local reset = { "winhighlight", "cursorline", "number", "relativenumber", "signcolumn" }
     local wo = {} ---@type table<string, any>
     for _, k in ipairs(reset) do
-      wo[k] = vim.api.nvim_get_option_value(k, { scope = "global" })
+      wo[k] = vim.api.nvim_get_option_value(k, { scope = "local" })
     end
     for _, win in ipairs(vim.fn.win_findbuf(ev.buf)) do
       if not Snacks.util.is_float(win) then -- only reset non-floating windows
