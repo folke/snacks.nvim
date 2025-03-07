@@ -267,6 +267,7 @@ function M.open(opts)
       callback = function(ev)
         vim.api.nvim_buf_call(ev.buf, function()
           vim.cmd("silent! write")
+          vim.bo[ev.buf].buflisted = false
         end)
       end,
     })
