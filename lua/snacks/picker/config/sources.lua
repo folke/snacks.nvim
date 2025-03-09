@@ -270,6 +270,7 @@ M.git_grep = {
 ---@field current_file? boolean show current file log
 ---@field current_line? boolean show current line log
 ---@field author? string filter commits by author
+---@field pickaxe? string filter by changes
 M.git_log = {
   finder = "git_log",
   format = "git_log",

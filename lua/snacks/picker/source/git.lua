@@ -120,6 +120,11 @@ function M.log(opts, ctx)
     args[#args + 1] = file
   end
 
+  if opts.pickaxe then
+    args[#args + 1] = "-S"
+    args[#args + 1] = opts.pickaxe
+  end
+
   local Proc = require("snacks.picker.source.proc")
   file = file and svim.fs.normalize(file) or nil
 
