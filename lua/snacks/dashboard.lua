@@ -1072,7 +1072,7 @@ function M.sections.image(opts)
   local source = opts.src
   if (source:match("^https?://") or source:match("^ftp://")) and opts.randomize_src then
     if not randomized_urls[source] then
-      local query_param = "rand" .. math.random(100000, 999999) .. "=" ..  math.random(100000, 999999)
+      local query_param = "rand" .. math.random(100000, 999999) .. "=" .. math.random(100000, 999999)
       local separator = source:find("?", 1, true) and "&" or "?"
       local randomized_source = source .. separator .. query_param
       randomized_urls[source] = randomized_source
