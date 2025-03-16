@@ -149,11 +149,13 @@ function M:progress()
   vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, {})
   vim.bo[self.buf].modifiable = false
   local timer = assert(uv.new_timer())
+  local extmark_id = nil
   timer:start(
     0,
     80,
     vim.schedule_wrap(function()
       if self:ready() or self.img:failed() or not vim.api.nvim_buf_is_valid(self.buf) then
+        vim.api.nvim_buf_del_extmark(self.buf, ns, extmark_id)
         timer:stop()
         if not timer:is_closing() then
           timer:close()
@@ -161,7 +163,7 @@ function M:progress()
         return
       end
       vim.api.nvim_buf_clear_namespace(self.buf, ns, 0, -1)
-      vim.api.nvim_buf_set_extmark(self.buf, ns, 0, 0, {
+      extmark_id = vim.api.nvim_buf_set_extmark(self.buf, ns, 0, 0, {
         virt_text = {
           { Snacks.util.spinner(), "SnacksImageSpinner" },
           { " " },

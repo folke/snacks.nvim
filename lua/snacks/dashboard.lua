@@ -1062,6 +1062,65 @@ function M.sections.terminal(opts)
   end
 end
 
+-- hash to prevent randomizing the same image url twice
+local randomized_urls = {}
+
+---@param opts {src:string, height?:number, width?:number, random_src_param?:boolean}|snacks.dashboard.Item
+---@return snacks.dashboard.Gen
+function M.sections.image(opts)
+  -- Ensure the URL starts with http, https, or ftp
+  local source = opts.src
+  if (source:match("^https?://") or source:match("^ftp://")) and opts.randomize_src then
+    if not randomized_urls[source] then
+      local query_param = "rand" .. math.random(100000, 999999) .. "=" ..  math.random(100000, 999999)
+      local separator = source:find("?", 1, true) and "&" or "?"
+      local randomized_source = source .. separator .. query_param
+      randomized_urls[source] = randomized_source
+    end
+    source = randomized_urls[source]
+  end
+  return function(self)
+    local height = opts.height or 10
+    local width = opts.width
+    if not width then
+      width = self.opts.width - (opts.indent or 0)
+    end
+    local buf = vim.api.nvim_create_buf(false, true)
+    return {
+      action = nil,
+      key = nil,
+      label = nil,
+      render = function(_, pos)
+        local win = vim.api.nvim_open_win(buf, false, {
+          bufpos = { pos[1] - 1, pos[2] + 1 },
+          col = opts.indent or 0,
+          focusable = false,
+          height = height,
+          noautocmd = true,
+          relative = "win",
+          row = 0,
+          zindex = Snacks.config.styles.dashboard.zindex + 1,
+          style = "minimal",
+          width = width,
+          win = self.win,
+        })
+        local hl = opts.hl and hl_groups[opts.hl] or opts.hl or "SnacksDashboardTerminal"
+        Snacks.util.wo(win, { winhighlight = "TermCursorNC:" .. hl .. ",NormalFloat:" .. hl })
+        Snacks.util.bo(buf, { filetype = Snacks.config.styles.dashboard.bo.filetype })
+        Snacks.image.placement.new(buf, source, {})
+        local close = vim.schedule_wrap(function()
+          pcall(vim.api.nvim_win_close, win, true)
+          pcall(vim.api.nvim_buf_delete, buf, { force = true })
+          return true
+        end)
+        self.on("UpdatePre", close, self.augroup)
+        self.on("Closed", close, self.augroup)
+      end,
+      text = ("\n"):rep(height - 1),
+    }
+  end
+end
+
 --- Add the startup section
 ---@param opts? {icon?:string}
 ---@return snacks.dashboard.Section?
