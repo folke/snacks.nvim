@@ -1065,7 +1065,7 @@ end
 -- hash to prevent randomizing the same image url twice
 local randomized_urls = {}
 
----@param opts {src:string, height?:number, width?:number, random_src_param?:boolean}|snacks.dashboard.Item
+---@param opts {src:string, height?:number, width?:number, randomize_src?:boolean}|snacks.dashboard.Item
 ---@return snacks.dashboard.Gen
 function M.sections.image(opts)
   -- Ensure the URL starts with http, https, or ftp
