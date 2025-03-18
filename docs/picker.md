@@ -341,7 +341,6 @@ Snacks.picker.pick({source = "files", ...})
       saved   = " ",
     },
     ui = {
-      live        = "󰐰 ",
       hidden      = "h",
       ignored     = "i",
       follow      = "f",
