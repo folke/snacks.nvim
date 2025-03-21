@@ -22,6 +22,7 @@ local defaults = {
 
 ---@class snacks.terminal.Opts: snacks.terminal.Config
 ---@field cwd? string
+---@field position? "float"|"bottom"|"top"|"left"|"right"
 ---@field env? table<string, string>
 ---@field start_insert? boolean start insert mode when starting the terminal
 ---@field auto_insert? boolean start insert mode when entering the terminal buffer
@@ -83,9 +84,13 @@ end
 ---@param opts? snacks.terminal.Opts
 function M.open(cmd, opts)
   local id = vim.v.count1
+  local position = cmd and "float" or "bottom"
+  if opts and opts.position then
+    position = opts.position
+  end
   opts = Snacks.config.get("terminal", defaults --[[@as snacks.terminal.Opts]], opts)
   opts.win = Snacks.win.resolve("terminal", {
-    position = cmd and "float" or "bottom",
+    position = position,
   }, opts.win, { show = false })
   opts = vim.deepcopy(opts)
   opts.win.wo.winbar = opts.win.wo.winbar
