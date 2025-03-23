@@ -145,6 +145,10 @@ function M.file(item, picker)
     vim.list_extend(ret, M.file_git_status(item, picker))
   end
 
+  if item.file then
+    vim.list_extend(ret, M.file_modified_status(item, picker))
+  end
+
   if item.severity then
     vim.list_extend(ret, M.severity(item, picker))
   end
@@ -677,6 +681,43 @@ function M.notification(item, picker)
   ret[#ret + 1] = { notif.msg, "SnacksPickerNotificationMessage" }
   Snacks.picker.highlight.markdown(ret)
   -- ret[#ret + 1] = { " " }
+  return ret
+end
+
+function M.file_modified_status(item, picker)
+  local ret = {} ---@type snacks.picker.Highlight[]
+
+  -- Iterate through all buffers to find if this file is loaded and modified
+  local is_modified = false
+  local file_path = item.file
+  if file_path then
+    for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+      if vim.api.nvim_buf_is_loaded(bufnr) then
+        local buf_name = vim.api.nvim_buf_get_name(bufnr)
+        if buf_name == file_path and vim.api.nvim_get_option_value("modified", { buf = bufnr }) then
+          is_modified = true
+          break
+        end
+      end
+    end
+  end
+
+  if is_modified then
+    local hl = "SnacksPickerModifiedBuffer"
+    local icon = ""
+
+    if picker.opts.icons and picker.opts.icons.files and picker.opts.icons.files.modified then
+      icon = picker.opts.icons.files.modified
+    end
+
+    ret[#ret + 1] = {
+      col = 0,
+      virt_text = { { icon, hl }, { " " } },
+      virt_text_pos = "right_align",
+      hl_mode = "combine",
+    }
+  end
+
   return ret
 end
 
