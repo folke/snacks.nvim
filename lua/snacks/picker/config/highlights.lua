@@ -69,6 +69,7 @@ Snacks.util.set_hl({
   GitStatusIgnored = "NonText",
   GitStatusUnmerged = "DiagnosticError",
   GitStatusStaged = "DiagnosticHint",
+  ModifiedBuffer = "DiagnosticWarn",
   ManSection = "Number",
   PickWin = "Search",
   PickWinCurrent = "CurSearch",
