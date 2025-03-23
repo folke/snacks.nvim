@@ -1062,23 +1062,11 @@ function M.sections.terminal(opts)
   end
 end
 
--- hash to prevent randomizing the same image url twice
-local randomized_urls = {}
-
----@param opts {src:string, height?:number, width?:number, randomize_src?:boolean}|snacks.dashboard.Item
+---@param opts {source:(string|fun(): string), height?:number, width?:number}|snacks.dashboard.Item
 ---@return snacks.dashboard.Gen
 function M.sections.image(opts)
   -- Ensure the URL starts with http, https, or ftp
-  local source = opts.src
-  if (source:match("^https?://") or source:match("^ftp://")) and opts.randomize_src then
-    if not randomized_urls[source] then
-      local query_param = "rand" .. math.random(100000, 999999) .. "=" .. math.random(100000, 999999)
-      local separator = source:find("?", 1, true) and "&" or "?"
-      local randomized_source = source .. separator .. query_param
-      randomized_urls[source] = randomized_source
-    end
-    source = randomized_urls[source]
-  end
+  local source = type(opts.source) == "function" and opts.source() or opts.source
   return function(self)
     local height = opts.height or 10
     local width = opts.width
