@@ -54,6 +54,9 @@ function M.grep(opts, ctx)
   elseif opts.submodules then
     table.insert(args, "--recurse-submodules")
   end
+  if opts.ignorecase then
+    table.insert(args, "-i")
+  end
   table.insert(args, ctx.filter.search)
   if not opts.cwd then
     opts.cwd = Snacks.git.get_root() or uv.cwd() or "."
