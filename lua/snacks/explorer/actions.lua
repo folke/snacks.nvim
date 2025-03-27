@@ -26,8 +26,8 @@ end
 ---@param prompt string
 ---@param fn fun()
 function M.confirm(prompt, fn)
-  Snacks.picker.select({ "Yes", "No" }, { prompt = prompt }, function(_, idx)
-    if idx == 1 then
+  Snacks.picker.select({ "No", "Yes" }, { prompt = prompt }, function(_, idx)
+    if idx == 2 then
       fn()
     end
   end)

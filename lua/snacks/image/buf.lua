@@ -4,7 +4,8 @@ local M = {}
 ---@param buf number
 ---@param opts? snacks.image.Opts|{src?: string}
 function M.attach(buf, opts)
-  local file = opts and opts.src or vim.api.nvim_buf_get_name(buf)
+  opts = opts or {}
+  local file = opts.src or vim.api.nvim_buf_get_name(buf)
   if not Snacks.image.supports(file) then
     local lines = {} ---@type string[]
     lines[#lines + 1] = "# Image viewer"
@@ -28,6 +29,8 @@ function M.attach(buf, opts)
       modified = false,
       swapfile = false,
     })
+    opts.conceal = true
+    opts.auto_resize = true
     return Snacks.image.placement.new(buf, file, opts)
   end
 end

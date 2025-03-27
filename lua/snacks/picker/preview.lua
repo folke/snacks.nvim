@@ -313,9 +313,9 @@ end
 
 ---@param ctx snacks.picker.preview.ctx
 function M.git_log(ctx)
-  local builtin = ctx.picker.opts.previewers.git.builtin
   local cmd = git(
     ctx,
+    "--no-pager",
     "log",
     "--pretty=format:%h %s (%ch)",
     "--abbrev-commit",
@@ -326,14 +326,11 @@ function M.git_log(ctx)
     "--no-patch",
     ctx.item.commit
   )
-  if builtin then
-    table.insert(cmd, 2, "--no-pager")
-  end
   local row = 0
   M.cmd(cmd, ctx, {
-    ft = builtin and "git" or nil,
+    ft = "git",
     ---@param text string
-    add = builtin and function(text)
+    add = function(text)
       local commit, msg, date = text:match("^(%S+) (.*) %((.*)%)$")
       if commit then
         row = row + 1
@@ -347,7 +344,7 @@ function M.git_log(ctx)
         }, ctx.picker)
         Snacks.picker.highlight.set(ctx.buf, ns, row, hl)
       end
-    end or nil,
+    end,
   })
 end
 

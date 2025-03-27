@@ -237,6 +237,13 @@ Snacks.picker.pick({source = "files", ...})
         ["<c-t>"] = { "tab", mode = { "n", "i" } },
         ["<c-u>"] = { "list_scroll_up", mode = { "i", "n" } },
         ["<c-v>"] = { "edit_vsplit", mode = { "i", "n" } },
+        ["<c-r>#"] = { "insert_alt", mode = "i" },
+        ["<c-r>%"] = { "insert_filename", mode = "i" },
+        ["<c-r><c-a>"] = { "insert_cWORD", mode = "i" },
+        ["<c-r><c-f>"] = { "insert_file", mode = "i" },
+        ["<c-r><c-l>"] = { "insert_line", mode = "i" },
+        ["<c-r><c-p>"] = { "insert_file_full", mode = "i" },
+        ["<c-r><c-w>"] = { "insert_cword", mode = "i" },
         ["<c-w>H"] = "layout_left",
         ["<c-w>J"] = "layout_bottom",
         ["<c-w>K"] = "layout_top",
@@ -310,8 +317,6 @@ Snacks.picker.pick({source = "files", ...})
         ["<Esc>"] = "cancel",
         ["q"] = "close",
         ["i"] = "focus_input",
-        ["<ScrollWheelDown>"] = "list_scroll_wheel_down",
-        ["<ScrollWheelUp>"] = "list_scroll_wheel_up",
         ["<a-w>"] = "cycle_win",
       },
     },
@@ -607,6 +612,11 @@ Snacks.picker.pick({source = "files", ...})
 ---@field reg? string
 ---@field field? string
 ---@field notify? boolean
+```
+
+```lua
+---@class snacks.picker.insert.Action: snacks.picker.Action
+---@field expr string
 ```
 
 ```lua
@@ -1056,8 +1066,10 @@ Neovim commands
 ```
 
 ```lua
----@type snacks.picker.git.Config
+---@class snacks.picker.git.branches.Config: snacks.picker.git.Config
+---@field all? boolean show all branches, including remote
 {
+  all = false,
   finder = "git_branches",
   format = "git_branch",
   preview = "git_log",
@@ -2454,6 +2466,12 @@ Snacks.picker.actions.history_back(picker)
 
 ```lua
 Snacks.picker.actions.history_forward(picker)
+```
+
+### `Snacks.picker.actions.insert()`
+
+```lua
+Snacks.picker.actions.insert(picker, _, action)
 ```
 
 ### `Snacks.picker.actions.inspect()`

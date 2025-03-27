@@ -128,7 +128,7 @@ function M.has_lang(langs)
   local ret = {} ---@type table<string, boolean>
   local available, missing = {}, {} ---@type string[], string[]
   for _, lang in ipairs(langs) do
-    local has_lang = pcall(vim.treesitter.get_string_parser, "", lang)
+    local has_lang = Snacks.util.get_lang(lang) ~= nil
     ret[lang] = has_lang
     lang = ("`%s`"):format(lang)
     if has_lang then

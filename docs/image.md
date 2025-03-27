@@ -106,7 +106,13 @@ In case of issues, make sure to run `:checkhealth snacks`.
     max_width = 80,
     max_height = 40,
     -- Set to `true`, to conceal the image text when rendering inline.
-    conceal = false, -- (experimental)
+    -- (experimental)
+    ---@param lang string tree-sitter language
+    ---@param type snacks.image.Type image type
+    conceal = function(lang, type)
+      -- only conceal math expressions
+      return type == "math"
+    end,
   },
   img_dirs = { "img", "images", "assets", "static", "public", "media", "attachments" },
   -- window options applied to windows displaying image buffers
@@ -129,6 +135,13 @@ In case of issues, make sure to run `:checkhealth snacks`.
     placement = false,
   },
   env = {},
+  -- icons used to show where an inline image is located that is
+  -- rendered below the text.
+  icons = {
+    math = "󰪚 ",
+    chart = "󰄧 ",
+    image = " ",
+  },
   ---@class snacks.image.convert.Config
   convert = {
     notify = true, -- show a notification on error
@@ -165,7 +178,7 @@ In case of issues, make sure to run `:checkhealth snacks`.
       -- but you can add more packages here. Useful for markdown documents.
       packages = { "amsmath", "amssymb", "amsfonts", "amscd", "mathtools" },
       tpl = [[
-        \documentclass[preview,border=2pt,varwidth,12pt]{standalone}
+        \documentclass[preview,border=0pt,varwidth,12pt]{standalone}
         \usepackage{${packages}}
         \begin{document}
         ${header}
@@ -203,6 +216,7 @@ docs for more information on how to customize these styles
 ---@alias snacks.image.Size {width: number, height: number}
 ---@alias snacks.image.Pos {[1]: number, [2]: number}
 ---@alias snacks.image.Loc snacks.image.Pos|snacks.image.Size|{zindex?: number}
+---@alias snacks.image.Type "image"|"math"|"chart"
 ```
 
 ```lua
@@ -221,6 +235,7 @@ docs for more information on how to customize these styles
 ---@class snacks.image.Opts
 ---@field pos? snacks.image.Pos (row, col) (1,0)-indexed. defaults to the top-left corner
 ---@field range? Range4
+---@field conceal? boolean
 ---@field inline? boolean render the image inline in the buffer
 ---@field width? number
 ---@field min_width? number
@@ -230,6 +245,8 @@ docs for more information on how to customize these styles
 ---@field max_height? number
 ---@field on_update? fun(placement: snacks.image.Placement)
 ---@field on_update_pre? fun(placement: snacks.image.Placement)
+---@field type? snacks.image.Type
+---@field auto_resize? boolean
 ```
 
 ## 📦 Module
@@ -243,6 +260,7 @@ docs for more information on how to customize these styles
 ---@field buf snacks.image.buf
 ---@field doc snacks.image.doc
 ---@field convert snacks.image.convert
+---@field inline snacks.image.inline
 Snacks.image = {}
 ```
 

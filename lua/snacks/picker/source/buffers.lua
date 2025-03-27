@@ -28,7 +28,7 @@ function M.buffers(opts, ctx)
       local mark = vim.api.nvim_buf_get_mark(buf, '"')
       local flags = {
         buf == current_buf and "%" or (buf == alternate_buf and "#" or ""),
-        info.hidden == 1 and "h" or "a",
+        info.hidden == 1 and "h" or (#(info.windows or {}) > 0) and "a" or "",
         vim.bo[buf].readonly and "=" or "",
         info.changed == 1 and "+" or "",
       }

@@ -7,5 +7,4 @@
 
 (math
   (#set! image.ext "math.typ")
-  (formula) @image
-) @image.content
+) @image.content @image
