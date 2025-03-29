@@ -329,11 +329,6 @@ Snacks.picker.pick({source = "files", ...})
       dir_open = "󰝰 ",
       file = "󰈔 "
     },
-    expanders = {
-      enabled = false,
-      dir = " ",
-      dir_open = " ",
-    },
     keymaps = {
       nowait = "󰓅 "
     },
@@ -341,6 +336,11 @@ Snacks.picker.pick({source = "files", ...})
       vertical = "│ ",
       middle   = "├╴",
       last     = "└╴",
+      expanders = {
+        enabled = false,
+        closed = " ",
+        open = " ",
+      },
     },
     undo = {
       saved   = " ",
