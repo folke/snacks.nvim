@@ -326,6 +326,11 @@ local defaults = {
       dir_open = "󰝰 ",
       file = "󰈔 "
     },
+    expanders = {
+      enabled = false,
+      dir = " ",
+      dir_open = " ",
+    },
     keymaps = {
       nowait = "󰓅 "
     },

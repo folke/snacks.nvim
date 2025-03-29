@@ -329,6 +329,11 @@ Snacks.picker.pick({source = "files", ...})
       dir_open = "󰝰 ",
       file = "󰈔 "
     },
+    expanders = {
+      enabled = false,
+      dir = " ",
+      dir_open = " ",
+    },
     keymaps = {
       nowait = "󰓅 "
     },
@@ -772,6 +777,7 @@ Implementation for `vim.ui.select`
 ---@type snacks.picker.ui_select
 Snacks.picker.select(...)
 ```
+
 ## 🔍 Sources
 
 ### `autocmds`
@@ -2357,7 +2363,6 @@ M.sidebar
 }
 ```
 
-
 ## 📦 `snacks.picker.actions`
 
 ```lua
@@ -2730,8 +2735,6 @@ Snacks.picker.actions.toggle_preview(picker)
 ```lua
 Snacks.picker.actions.yank(picker, item, action)
 ```
-
-
 
 ## 📦 `snacks.picker.core.picker`
 

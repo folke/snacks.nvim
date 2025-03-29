@@ -256,6 +256,9 @@ function M.tree(item, picker)
     node = node.parent
   end
   ret[#ret + 1] = { table.concat(indent), "SnacksPickerTree" }
+  if item.dir and picker.opts.icons.expanders.enabled ~= false then
+    ret[#ret + 1] = { item.open and picker.opts.icons.expanders.dir_open or picker.opts.icons.expanders.dir }
+  end
   return ret
 end
 
