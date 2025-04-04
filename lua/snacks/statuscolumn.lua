@@ -20,6 +20,7 @@ M.meta = {
 ---@field left snacks.statuscolumn.Components
 ---@field right snacks.statuscolumn.Components
 ---@field enabled? boolean
+---@field show_both_line_numbers? boolean
 local defaults = {
   left = { "mark", "sign" }, -- priority of signs on the left (high to low)
   right = { "fold", "git" }, -- priority of signs on the right (high to low)
@@ -32,6 +33,7 @@ local defaults = {
     patterns = { "GitSign", "MiniDiffSign" },
   },
   refresh = 50, -- refresh at most every 50ms
+  show_both_line_numbers = false,
 }
 
 local config = Snacks.config.get("statuscolumn", defaults)
@@ -191,7 +193,11 @@ function M._get()
     if rnu and nu and vim.v.relnum == 0 then
       num = vim.v.lnum
     elseif rnu then
-      num = vim.v.relnum
+      if config.show_both_line_numbers then
+        num = vim.v.lnum .. " " .. vim.v.relnum
+      else
+        num = vim.v.relnum
+      end
     else
       num = vim.v.lnum
     end
