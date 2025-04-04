@@ -16,6 +16,10 @@ function M.start(path, cb)
   end
   local handle = assert(vim.uv.new_fs_event())
   local ok, err = handle:start(path, {}, function(_, file, events)
+    if not file then
+      return -- Prevent crash on directory-level event
+    end
+
     file = path .. "/" .. file
     if cb then
       cb(file, events)
