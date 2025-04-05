@@ -467,7 +467,7 @@ M.lines = {
   format = "lines",
   layout = {
     preview = "main",
-    preset = "ivy",
+    preset = "ivy_split",
   },
   jump = { match = true },
   -- allow any window to be used as the main window
