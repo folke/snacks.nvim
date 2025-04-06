@@ -5,6 +5,16 @@ local size ---@type snacks.image.terminal.Dim?
 ---@type snacks.image.Env[]
 local environments = {
   {
+    name = "tmux",
+    env = { TERM = "tmux", TMUX = true },
+    setup = function()
+      pcall(vim.fn.system, { "tmux", "set", "-p", "allow-passthrough", "all" })
+    end,
+    transform = function(data)
+      return ("\027Ptmux;" .. data:gsub("\027", "\027\027")) .. "\027\\"
+    end,
+  },
+  {
     name = "kitty",
     env = { TERM = "kitty", KITTY_PID = true },
     supported = true,
@@ -27,16 +37,6 @@ local environments = {
     },
     supported = true,
     placeholders = false,
-  },
-  {
-    name = "tmux",
-    env = { TERM = "tmux", TMUX = true },
-    setup = function()
-      pcall(vim.fn.system, { "tmux", "set", "-p", "allow-passthrough", "all" })
-    end,
-    transform = function(data)
-      return ("\027Ptmux;" .. data:gsub("\027", "\027\027")) .. "\027\\"
-    end,
   },
   { name = "zellij", env = { TERM = "zellij", ZELLIJ = true }, supported = false, placeholders = false },
   { name = "ssh", env = { SSH_CLIENT = true, SSH_CONNECTION = true }, remote = true },
@@ -131,6 +131,7 @@ function M.env()
     name = "",
     env = {},
   }
+  local tmux_detected = false
   for _, e in ipairs(environments) do
     local override = os.getenv("SNACKS_" .. e.name:upper())
     if override then
@@ -143,8 +144,17 @@ function M.env()
           break
         end
       end
+      if tmux_detected and not e.detected and e.env.TERM then
+        local ok, term = pcall(vim.fn.system, { "tmux", "display-message", "-p", "#{client_termname}" })
+        if ok and term:find(e.env.TERM) then
+          e.detected = true
+        end
+      end
     end
     if e.detected then
+      if e.name == "tmux" then
+        tmux_detected = true
+      end
       M._env.name = M._env.name .. "/" .. e.name
       if e.supported ~= nil then
         M._env.supported = e.supported
