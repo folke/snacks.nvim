@@ -1065,47 +1065,96 @@ end
 ---@param opts {source:(string|fun(): string), height?:number, width?:number}|snacks.dashboard.Item
 ---@return snacks.dashboard.Gen
 function M.sections.image(opts)
-  -- Ensure the URL starts with http, https, or ftp
+  -- if image source is a function, compute it. Take it as it is otherwise
   local source = type(opts.source) == "function" and opts.source() or opts.source
-  return function(self)
-    local height = opts.height or 10
-    local width = opts.width
-    if not width then
-      width = self.opts.width - (opts.indent or 0)
+  -- All images must go to PNG format, the conversion process takes time
+  local conversion_status = 0 -- 0: in progress, 1: done, 2: failed
+  -- This will create PNG convertor only but it won't actually trigger it.
+  local convertor = Snacks.image.convert.convert({
+    src = source,
+    on_done = function(convert)
+      if convert:error() then
+        conversion_status = 2
+        vim.notify("Failed to convert dashboard image to PNG file", "error")
+      else
+        conversion_status = 1
+      end
     end
-    local buf = vim.api.nvim_create_buf(false, true)
-    return {
-      action = nil,
-      key = nil,
-      label = nil,
-      render = function(_, pos)
-        local win = vim.api.nvim_open_win(buf, false, {
-          bufpos = { pos[1] - 1, pos[2] + 1 },
-          col = opts.indent or 0,
-          focusable = false,
-          height = height,
-          noautocmd = true,
-          relative = "win",
-          row = 0,
-          zindex = Snacks.config.styles.dashboard.zindex + 1,
-          style = "minimal",
-          width = width,
-          win = self.win,
-        })
-        local hl = opts.hl and hl_groups[opts.hl] or opts.hl or "SnacksDashboardTerminal"
-        Snacks.util.wo(win, { winhighlight = "TermCursorNC:" .. hl .. ",NormalFloat:" .. hl })
-        Snacks.util.bo(buf, { filetype = Snacks.config.styles.dashboard.bo.filetype })
-        Snacks.image.placement.new(buf, source, {})
-        local close = vim.schedule_wrap(function()
-          pcall(vim.api.nvim_win_close, win, true)
-          pcall(vim.api.nvim_buf_delete, buf, { force = true })
-          return true
-        end)
-        self.on("UpdatePre", close, self.augroup)
-        self.on("Closed", close, self.augroup)
-      end,
-      text = ("\n"):rep(height - 1),
-    }
+  })
+  -- run the converter
+  convertor:run()
+  -- wait in a non-blocking way for conversion to finish (or to get the image from cache)
+  -- check if conversion is finished every 200ms, but no more than 10 seconds (probably too much)
+  -- TODO consider reducing timeout value
+  vim.wait(10000, function() return conversion_status > 0 end, 200, false)
+  if(conversion_status == 1) then
+    -- SUCCESS
+    return function(self)
+      -- maximum width of the image
+      local width = opts.width or self.opts.width
+      -- maximum height of the image
+      local height = opts.height or 20
+      -- how big the image will be (in cells, width x height)
+      local cells = Snacks.image.util.fit(convertor.file, { width = width, height = height }, { full = true })
+      -- calculate indentation based on alignment
+      local indent = 0
+      if opts.align == "center" then
+        indent = math.floor((self.opts.width - cells.width) / 2)
+      elseif opts.align == "right" then
+        indent = self.opts.width - cells.width
+      end
+      -- from this point onwards, the code is almost the same as for the terminal section
+      local buf = vim.api.nvim_create_buf(false, true)
+      return {
+        action = nil,
+        key = nil,
+        label = nil,
+        render = function(_, pos)
+          local win = vim.api.nvim_open_win(buf, false, {
+            bufpos = { pos[1] - 1, pos[2] + 1 },
+            -- starting column of the image
+            col = indent,
+            focusable = false,
+            -- real height of the image
+            height = cells.height,
+            noautocmd = true,
+            relative = "win",
+            -- starting row of the image
+            row = 0,
+            zindex = Snacks.config.styles.dashboard.zindex + 1,
+            style = "minimal",
+            -- adjust width of the window based on indentation
+            width = self.opts.width - indent,
+            win = self.win,
+          })
+          local hl = opts.hl and hl_groups[opts.hl] or opts.hl or "SnacksDashboardTerminal"
+          Snacks.util.wo(win, { winhighlight = "TermCursorNC:" .. hl .. ",NormalFloat:" .. hl })
+          Snacks.util.bo(buf, { filetype = Snacks.config.styles.dashboard.bo.filetype })
+          -- Place the image finally
+          Snacks.image.placement.new(buf, source, {})
+          local close = vim.schedule_wrap(function()
+            pcall(vim.api.nvim_win_close, win, true)
+            pcall(vim.api.nvim_buf_delete, buf, { force = true })
+            return true
+          end)
+          self.on("UpdatePre", close, self.augroup)
+          self.on("Closed", close, self.augroup)
+        end,
+        -- add empty lines according to real image height
+        text = ("\n"):rep(cells.height - 1),
+      }
+    end
+  else
+    -- Image conversion failed, returning NOP code
+    return function(_)
+      return {
+        action = nil,
+        key = nil,
+        label = nil,
+        render = function(_, _) end,
+        text = ""
+      }
+    end
   end
 end
 
