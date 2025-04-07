@@ -59,31 +59,23 @@ function M.fit(file, cells, opts)
     img_pixels = M.dim(file)
   end
   local img_cells = M.pixels_to_cells(img_pixels)
-
-  local ret = vim.deepcopy(cells)
-  -- if not opts.full then
-  if img_cells.width <= cells.width and img_cells.height <= cells.height then
+  -- if the image is smaller than available space and scale-to-fit is turned off, return image size without change
+  if img_cells.width <= cells.width and img_cells.height <= cells.height and not opts.full then
     return img_cells
   end
-  ret.width = math.min(cells.width, img_cells.width)
-  ret.height = math.min(cells.height, img_cells.height)
-  -- end
-
-  local scale = ret.width / ret.height
-  local img_scale = img_cells.width / img_cells.height
-  local fit_height = math.floor(ret.width / img_scale + 0.5)
-  local fit_width = math.floor(ret.height * img_scale + 0.5)
-
-  if ret.height == fit_height or ret.width == fit_width then
-    -- Image fits exactly
-  elseif img_scale > scale then
-    -- Image is wider relative to height - fit to width
-    ret.height = fit_height
-  else
-    -- Image is taller relative to width - fit to height
-    ret.width = fit_width
-  end
-  return M.norm(ret)
+  -- horizontal scaling facotr
+  local scale_row = cells.width / img_cells.width
+  -- vertical scaling factor
+  local scale_height = cells.height / img_cells.height
+  -- choose smaller scale as the final one
+  local scale = math.min(scale_row, scale_height)
+  -- calculate scaled dimensions so that the image fits the available space
+  local result = M.norm({
+    width = img_cells.width * scale,
+    height = img_cells.height * scale,
+  })
+  return result
 end
 
 return M
+
