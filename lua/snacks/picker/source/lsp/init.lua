@@ -426,4 +426,122 @@ function M.declarations(opts, ctx)
   return M.get_locations("textDocument/declaration", opts, ctx.filter)
 end
 
+---@param opts snacks.picker.lsp.Config
+---@type snacks.picker.finder
+function M.incoming_calls(opts, ctx)
+  local win = ctx.filter.current_win
+  local buf = ctx.filter.current_buf
+  local bufmap = M.bufmap()
+
+  ---@async
+  ---@param cb async fun(item: snacks.picker.finder.Item)
+  return function(cb)
+    local async = Async.running()
+    local cancel = {} ---@type fun()[]
+
+    async:on(
+      "abort",
+      vim.schedule_wrap(function()
+        vim.tbl_map(pcall, cancel)
+        cancel = {}
+      end)
+    )
+
+    vim.schedule(function()
+      -- First prepare the call hierarchy
+      local clients = M.get_clients(buf, "textDocument/prepareCallHierarchy")
+      if vim.tbl_isempty(clients) then
+        return async:resume()
+      end
+
+      local remaining = #clients
+      for _, client in ipairs(clients) do
+        local params = vim.lsp.util.make_position_params(win, client.offset_encoding)
+        local status, request_id = client:request("textDocument/prepareCallHierarchy", params, function(_, result)
+          if result and not vim.tbl_isempty(result) then
+            -- Then get incoming calls for each item
+            local call_remaining = #result
+            if call_remaining == 0 then
+              remaining = remaining - 1
+              if remaining == 0 then
+                async:resume()
+              end
+              return
+            end
+
+            for _, item in ipairs(result) do
+              local call_clients = M.get_clients(buf, "callHierarchy/incomingCalls")
+              if vim.tbl_isempty(call_clients) then
+                call_remaining = call_remaining - 1
+                if call_remaining == 0 then
+                  remaining = remaining - 1
+                  if remaining == 0 then
+                    async:resume()
+                  end
+                end
+                return
+              end
+
+              local incoming_remaining = #call_clients
+              for _, call_client in ipairs(call_clients) do
+                local call_params = { item = item }
+                local call_status, call_request_id = call_client:request("callHierarchy/incomingCalls", call_params, function(_, calls)
+                  if calls then
+                    for _, call in ipairs(calls) do
+                      ---@type snacks.picker.finder.Item
+                      local item = {
+                        text = call.from.name .. " " .. call.from.detail,
+                        kind = "Call",
+                        detail = call.from.detail,
+                        name = call.from.name,
+                      }
+                      local loc = {
+                        uri = call.from.uri,
+                        range = call.from.range,
+                      }
+                      M.add_loc(item, loc, call_client)
+                      item.buf = bufmap[item.file]
+                      ---@diagnostic disable-next-line: await-in-sync
+                      cb(item)
+                    end
+                  end
+                  incoming_remaining = incoming_remaining - 1
+                  if incoming_remaining == 0 then
+                    call_remaining = call_remaining - 1
+                    if call_remaining == 0 then
+                      remaining = remaining - 1
+                      if remaining == 0 then
+                        async:resume()
+                      end
+                    end
+                  end
+                end)
+                if call_status and call_request_id then
+                  table.insert(cancel, function()
+                    call_client:cancel_request(call_request_id)
+                  end)
+                end
+              end
+            end
+          else
+            remaining = remaining - 1
+            if remaining == 0 then
+              async:resume()
+            end
+          end
+        end)
+        if status and request_id then
+          table.insert(cancel, function()
+            client:cancel_request(request_id)
+          end)
+        end
+      end
+    end)
+
+    async:suspend()
+    cancel = {}
+    async = Async.nop()
+  end
+end
+
 return M

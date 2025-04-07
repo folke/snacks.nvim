@@ -35,6 +35,7 @@
 ---@field lsp_declarations fun(opts?: snacks.picker.lsp.Config|{}): snacks.Picker
 ---@field lsp_definitions fun(opts?: snacks.picker.lsp.Config|{}): snacks.Picker
 ---@field lsp_implementations fun(opts?: snacks.picker.lsp.Config|{}): snacks.Picker
+---@field lsp_incoming_calls fun(opts?: snacks.picker.lsp.Config|{}): snacks.Picker
 ---@field lsp_references fun(opts?: snacks.picker.lsp.references.Config|{}): snacks.Picker
 ---@field lsp_symbols fun(opts?: snacks.picker.lsp.symbols.Config|{}): snacks.Picker
 ---@field lsp_type_definitions fun(opts?: snacks.picker.lsp.Config|{}): snacks.Picker
