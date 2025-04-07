@@ -1062,7 +1062,7 @@ function M.sections.terminal(opts)
   end
 end
 
----@param opts {source:(string|fun(): string), height?:number, width?:number}|snacks.dashboard.Item
+---@param opts {source:(string|fun(): string), height?:number, width?:number, align?: "left"|"center"|"right}|snacks.dashboard.Item
 ---@return snacks.dashboard.Gen
 function M.sections.image(opts)
   -- if image source is a function, compute it. Take it as it is otherwise
