@@ -31,6 +31,8 @@ local environments = {
   {
     name = "tmux",
     env = { TERM = "tmux", TMUX = true },
+    supported = true,
+    placeholders = true,
     setup = function()
       pcall(vim.fn.system, { "tmux", "set", "-p", "allow-passthrough", "all" })
     end,
