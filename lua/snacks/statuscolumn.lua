@@ -143,7 +143,7 @@ function M.line_signs(win, buf, lnum)
   -- Get fold signs
   vim.api.nvim_win_call(win, function()
     if vim.fn.foldclosed(lnum) >= 0 then
-      signs[#signs + 1] = { text = vim.opt.fillchars:get().foldclose or "", type = "fold" }
+      signs[#signs + 1] = { text = vim.opt.fillchars:get().foldclose or "", texthl = "FoldColumn", type = "fold" }
     elseif config.folds.open and vim.fn.foldlevel(lnum) > vim.fn.foldlevel(lnum - 1) then
       signs[#signs + 1] = { text = vim.opt.fillchars:get().foldopen or "", type = "fold" }
     end
