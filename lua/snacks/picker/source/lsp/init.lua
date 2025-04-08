@@ -470,57 +470,43 @@ function M.incoming_calls(opts, ctx)
             end
 
             for _, item in ipairs(result) do
-              local call_clients = M.get_clients(buf, "callHierarchy/incomingCalls")
-              if vim.tbl_isempty(call_clients) then
-                call_remaining = call_remaining - 1
-                if call_remaining == 0 then
-                  remaining = remaining - 1
-                  if remaining == 0 then
-                    async:resume()
-                  end
-                end
-                return
-              end
-
-              local incoming_remaining = #call_clients
-              for _, call_client in ipairs(call_clients) do
-                local call_params = { item = item }
-                local call_status, call_request_id = call_client:request("callHierarchy/incomingCalls", call_params, function(_, calls)
+              local call_params = { item = item }
+              local call_status, call_request_id = client:request(
+                "callHierarchy/incomingCalls",
+                call_params,
+                function(_, calls)
                   if calls then
                     for _, call in ipairs(calls) do
                       ---@type snacks.picker.finder.Item
                       local item = {
-                        text = call.from.name .. " " .. call.from.detail,
-                        kind = "Call",
-                        detail = call.from.detail,
-                        name = call.from.name,
+                        text = call.from.name .. "    " .. call.from.detail,
+                        kind = M.symbol_kind(call.from.kind),
+                        line = "    " .. call.from.detail,
                       }
                       local loc = {
                         uri = call.from.uri,
                         range = call.from.range,
                       }
-                      M.add_loc(item, loc, call_client)
+                      M.add_loc(item, loc, client)
                       item.buf = bufmap[item.file]
+                      item.text = item.file .. "    " .. call.from.detail
                       ---@diagnostic disable-next-line: await-in-sync
                       cb(item)
                     end
                   end
-                  incoming_remaining = incoming_remaining - 1
-                  if incoming_remaining == 0 then
-                    call_remaining = call_remaining - 1
-                    if call_remaining == 0 then
-                      remaining = remaining - 1
-                      if remaining == 0 then
-                        async:resume()
-                      end
+                  call_remaining = call_remaining - 1
+                  if call_remaining == 0 then
+                    remaining = remaining - 1
+                    if remaining == 0 then
+                      async:resume()
                     end
                   end
-                end)
-                if call_status and call_request_id then
-                  table.insert(cancel, function()
-                    call_client:cancel_request(call_request_id)
-                  end)
                 end
+              )
+              if call_status and call_request_id then
+                table.insert(cancel, function()
+                  client:cancel_request(call_request_id)
+                end)
               end
             end
           else
