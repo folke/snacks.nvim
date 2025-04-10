@@ -47,7 +47,6 @@ function M.filename(item, picker)
     return ret
   end
   local path = Snacks.picker.util.path(item) or item.file
-  path = Snacks.picker.util.truncpath(path, picker.opts.formatters.file.truncate or 40, { cwd = picker:cwd() })
   local name, cat = path, "file"
   if item.buf and vim.api.nvim_buf_is_loaded(item.buf) then
     name = vim.bo[item.buf].filetype
@@ -65,6 +64,19 @@ function M.filename(item, picker)
     end
     icon = Snacks.picker.util.align(icon, picker.opts.formatters.file.icon_width or 2)
     ret[#ret + 1] = { icon, hl, virtual = true }
+  end
+
+  local truncate = picker.opts.formatters.file.truncate
+  if type(truncate) == "number" then
+    path = Snacks.picker.util.truncpath(path, truncate, { cwd = picker:cwd() })
+  elseif truncate == "auto" or truncate == "align" then
+    local prefix = ({ file = 0, git_status = 3, buffer = 7, lsp_symbol = 40 })[picker.opts.format]
+    if prefix then
+      local len = vim.api.nvim_win_get_width(picker.list.win.win) - Snacks.picker.highlight.offset(ret) - prefix - 2
+      path = Snacks.picker.util.truncpath(path, math.max(len, 15), { cwd = picker:cwd(), roughly = truncate == "auto" })
+    else
+      path = Snacks.picker.util.truncpath(path, 40, { cwd = picker:cwd() })
+    end
   end
 
   local base_hl = item.dir and "SnacksPickerDirectory" or "SnacksPickerFile"
