@@ -282,15 +282,17 @@ function M.cmd(cmd, ctx, opts)
 end
 
 ---@param ctx snacks.picker.preview.ctx
+local function git(ctx, ...)
+  local ret = { "git", "-c", "delta." .. vim.o.background .. "=true" }
+  vim.list_extend(ret, ctx.picker.opts.previewers.git.args or {})
+  vim.list_extend(ret, { ... })
+  return ret
+end
+
+---@param ctx snacks.picker.preview.ctx
 function M.git_show(ctx)
   local builtin = ctx.picker.opts.previewers.git.builtin
-  local cmd = {
-    "git",
-    "-c",
-    "delta." .. vim.o.background .. "=true",
-    "show",
-    ctx.item.commit,
-  }
+  local cmd = git(ctx, "show", ctx.item.commit)
   local pathspec = ctx.item.files or ctx.item.file
   pathspec = type(pathspec) == "table" and pathspec or { pathspec }
   if #pathspec > 0 then
@@ -301,14 +303,6 @@ function M.git_show(ctx)
     table.insert(cmd, 2, "--no-pager")
   end
   M.cmd(cmd, ctx, { ft = builtin and "git" or nil })
-end
-
----@param ctx snacks.picker.preview.ctx
-local function git(ctx, ...)
-  local ret = { "git", "-c", "delta." .. vim.o.background .. "=true" }
-  vim.list_extend(ret, ctx.picker.opts.previewers.git.args or {})
-  vim.list_extend(ret, { ... })
-  return ret
 end
 
 ---@param ctx snacks.picker.preview.ctx
