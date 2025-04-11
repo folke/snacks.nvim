@@ -3,20 +3,35 @@ local M = {}
 ---@param opts snacks.picker.tags.Config
 ---@type snacks.picker.finder
 function M.tags(opts, ctx)
+  -- vim.notify(vim.inspect(ctx), vim.inspect(opts), vim.log.levels.DEBUG)
   if opts.need_search ~= false and ctx.filter.search == "" then
     return function() end
   end
 
-  local tags = vim.fn.taglist(ctx.filter.search)
+  local fields, search_pat = Snacks.picker.util.parse_fields(ctx.filter.search)
+  local search
+  if search_pat == "" then
+    search = vim.tbl_get(fields, "name") or ""
+  else
+    search = search_pat
+  end
+  local tags = vim.fn.taglist(search)
 
   local items = {} ---@type snacks.picker.finder.Item[]
   local temp_bufs = {}
+
+  if tags == 0 or tags == nil then
+    return items
+  end
+
+  tags = Snacks.picker.util.regex_field_filter(fields, "file", tags, "filename")
+
   for _, tag in ipairs(tags) do
     ---@type snacks.picker.finder.Item
     ---@diagnostic disable-next-line: missing-fields
     local item = {}
     item = {
-      text = tag.name,
+      text = Snacks.picker.util.text(tag, { "name", "kind" }),
       name = tag.name,
       kind = tag.kind,
       tag = tag,
