@@ -803,6 +803,18 @@ M.spelling = {
   confirm = "item_action",
 }
 
+-- Search tags file
+---@class snacks.picker.tags.Config: snacks.picker.Config
+M.tags = {
+  finder = "tags",
+  format = "tags",
+  layout = { preset = "default" },
+  need_search = true,
+  show_empty = true,
+  supports_live = true,
+  live = true,
+}
+
 ---@class snacks.picker.treesitter.Config: snacks.picker.Config
 ---@field filter table<string, string[]|boolean>? symbol kind filter
 ---@field tree? boolean show symbol tree

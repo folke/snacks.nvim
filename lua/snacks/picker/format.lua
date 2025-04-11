@@ -680,4 +680,15 @@ function M.notification(item, picker)
   return ret
 end
 
+function M.tags(item, picker)
+  local ret = {} ---@type snacks.picker.Highlight[]
+  local tag = item.tag
+  ret[#ret + 1] = { tag.kind, "Type" }
+  ret[#ret + 1] = { ":", "SnacksPickerDelim" }
+  ret[#ret + 1] = { tag.name }
+  ret[#ret + 1] = { ":", "SnacksPickerDelim" }
+  ret[#ret + 1] = { tag.filename, "SnacksPickerDir" }
+  return ret
+end
+
 return M

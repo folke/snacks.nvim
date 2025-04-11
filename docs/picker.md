@@ -2031,6 +2031,20 @@ Not meant to be used directly.
 }
 ```
 
+### `tags`
+
+```vim
+:lua Snacks.picker.tags(opts?)
+```
+
+```lua
+{
+  finder = "tags",
+  format = "tags",
+  layout = { preset = "default" },
+}
+```
+
 ### `treesitter`
 
 ```vim

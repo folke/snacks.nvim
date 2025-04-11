@@ -2269,6 +2269,20 @@ SPELLING                                      *snacks-picker-sources-spelling*
     }
 <
 
+TAGS                                              *snacks-picker-sources-tags*
+
+>vim
+    :lua Snacks.picker.tags(opts?)
+<
+
+>lua
+    ---@class snacks.picker.tags.Config: snacks.picker.Config
+    {
+      finder = "tags",
+      format = "tags",
+      preview = "preview",
+    }
+<
 
 TREESITTER                                  *snacks-picker-sources-treesitter*
 
