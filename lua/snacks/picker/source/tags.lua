@@ -17,6 +17,8 @@ function M.tags(opts, ctx)
     local item = {}
     item = {
       text = tag.name,
+      name = tag.name,
+      kind = tag.kind,
       tag = tag,
       file = tag.filename,
       resolve = function() -- this is kinda expensive, since we have to open a buffer to search for the location of the tag
@@ -55,7 +57,6 @@ function M.tags(opts, ctx)
           local max_col = vim.fn.strdisplaywidth(vim.tbl_get(vim.api.nvim_buf_get_text(scratch_buf, line-1, 0, line-1, -1, {}), 1) or "")
           local col_start_2 = col_start - 1
           local col_end_2
-          print(col_start_2)
           if col_start_2 < 0 then col_end_2 = col_end else col_end_2 = col_end - 1 end
           col_end_2 = math.min(max_col, col_end_2)
 

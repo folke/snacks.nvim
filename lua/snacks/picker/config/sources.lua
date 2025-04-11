@@ -809,6 +809,8 @@ M.tags = {
   finder = "tags",
   format = "tags",
   layout = { preset = "default" },
+  sort = { fields = { "score:desc", "kind", "name" } },
+  matcher = { sort_empty = true },
   need_search = true,
   show_empty = true,
   supports_live = true,
