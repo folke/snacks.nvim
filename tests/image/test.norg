@@ -1,0 +1,31 @@
+# Test
+
+- foo
+
+This sentence $E = mc^2$ uses delimiters to show math inline: $`\sqrt{3x-1}+(1+x)^2`$
+
+.image ./test.png
+
+.image test.png
+This sentence uses `$` delimiters to show math inline: $\sqrt{3x-1}+(1+x)^2$
+
+This sentence $E = mc^2$ uses delimiters to show math inline: $`\sqrt{3x-1}+(1+x)^2`$
+
+**The Cauchy-Schwarz Inequality**
+$$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)$$
+
+**The Cauchy-Schwarz Inequality**
+
+```math
+\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)
+```
+
+![image](test copy.png)
+
+$\int_0^1 x^2 dx$
+
+<!-- snacks: header start
+\def\x{5}
+snacks: header end -->
+
+$ \x \leq 17 $

@@ -1,0 +1,78 @@
+# .github/labeler.yml
+
+# Label for any files under the `doc/` directory
+docs-vim:
+  - changed-files:
+      - any-glob-to-any-file: "doc/**"
+
+# Label for any files under the `docs/` directory and `README.md`
+docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "docs/**"
+          - "README.md"
+
+core:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "lua/snacks/init.lua"
+          - "lua/snacks/health.lua"
+          - "plugins/**"
+          - "queries/**"
+          - "scripts/**"
+
+# Dynamic labels for each module under `lua/snacks/`
+bigfile:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/bigfile.lua"
+bufdelete:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/bufdelete.lua"
+dashboard:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/dashboard.lua"
+debug:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/debug.lua"
+git:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/git.lua"
+gitbrowse:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/gitbrowse.lua"
+init:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/init.lua"
+lazygit:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/lazygit.lua"
+notifier:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/notifier.lua"
+notify:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/notify.lua"
+quickfile:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/quickfile.lua"
+rename:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/rename.lua"
+statuscolumn:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/statuscolumn.lua"
+terminal:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/terminal.lua"
+toggle:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/toggle.lua"
+win:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/win.lua"
+words:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/words.lua"
+picker:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/picker/**"

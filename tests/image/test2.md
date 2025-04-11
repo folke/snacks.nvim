@@ -1,0 +1,5 @@
+# test
+
+## Wikilinks
+
+!![[test.jpg]]
