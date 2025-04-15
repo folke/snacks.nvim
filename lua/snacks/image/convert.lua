@@ -50,12 +50,12 @@ local commands = {
   url = {
     cmd = {
       {
-        cmd = "curl",
-        args = { "-L", "-o", "{file}", "{src}" },
-      },
-      {
         cmd = "wget",
         args = { "-O", "{file}", "{src}" },
+      },
+      {
+        cmd = "curl",
+        args = { "-L", "-o", "{file}", "{src}" },
       },
     },
     file = function(convert, ctx)
