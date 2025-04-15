@@ -40,8 +40,9 @@ local uv = vim.uv or vim.loop
 ---@field cmd (fun(step: snacks.image.step):(snacks.image.Proc|snacks.image.Proc[]))|snacks.image.Proc|snacks.image.Proc[]
 ---@field ft? string
 ---@field file? fun(convert: snacks.image.Convert, meta: snacks.image.meta): string
+---@field should_execute? fun(convert: snacks.image.Convert, meta: snacks.image.meta): boolean
 ---@field depends? string[]
----@field on_done? fun(step: snacks.image.step)
+---@field on_done? fun(step: snacks.image.step):boolean? when return true, the step should be considered errored
 ---@field on_error? fun(step: snacks.image.step):boolean? when return true, continue to next step
 ---@field pipe? boolean
 
@@ -61,6 +62,46 @@ local commands = {
     file = function(convert, ctx)
       local src = M.norm(ctx.src)
       return M.is_uri(src) and convert:tmpfile("data") or src
+    end,
+  },
+  lfs = {
+    cmd = {
+      {
+        cwd = "{dirname}",
+        cmd = "git",
+        args = { "lfs", "pull", "--include", "{file}" },
+      },
+    },
+    pipe = false,
+    on_done = function(step)
+      -- Git lfs silently fails for a few known reasons:
+      -- 1. `git lfs install` has not been run
+      -- 2. The path is not relative to the git root
+      -- 3. The path, when made relative, does not exist
+      if M.is_git_lfs(step.meta.src) then
+        return true
+      end
+    end,
+    file = function(convert, _ctx)
+      local dir = vim.fn.fnamemodify(convert.src, ":h")
+      local home_dir = vim.fn.expand("~")
+      -- Need to make the path relative to the git root for git lfs to pull it
+      while dir ~= "" and dir ~= "/" and dir ~= home_dir do
+        local git_dir = dir .. "/.git"
+        -- Handle .git can be a file in case of worktrees
+        if vim.fn.isdirectory(git_dir) == 1 or vim.fn.filereadable(git_dir) == 1 then
+          return vim.fn.fnamemodify(convert.src, ":." .. ":p:." .. dir)
+        end
+        dir = vim.fn.fnamemodify(dir, ":h")
+      end
+
+      -- Using the absolute path here will certainly make the git-lfs command fail
+      -- However adding the error logic in yet another place increases complexity and we already handle
+      -- this error well. The only concern is the the error doesn't appear to the user sooner.
+      return convert.src
+    end,
+    should_execute = function(convert, _ctx)
+      return M.is_git_lfs(convert.src)
     end,
   },
   typ = {
@@ -313,6 +354,9 @@ function Convert:resolve()
     self:_resolve("url")
     self:_resolve("identify")
   end
+  if M.is_git_lfs(self.src) then
+    self:_resolve("lfs")
+  end
   while self:ft() ~= "png" do
     local ft = self:ft()
     local target = commands[ft] and ft or "convert"
@@ -339,7 +383,13 @@ function Convert:on_step(err)
     return self:on_done()
   end
   if step and step.cmd.on_done then
-    step.cmd.on_done(step)
+    local is_errored = step.cmd.on_done(step)
+    if is_errored then
+      -- This error message is not shown in the notification, but being non-nil is necessary
+      -- for the message to show up and the step to be considered errored
+      self._err = "Step errored"
+      return self:on_done()
+    end
   end
 
   if self._step < #self.steps then
@@ -387,7 +437,9 @@ function Convert:step()
   assert(self._step <= #self.steps, "No more steps")
 
   local step = self.steps[self._step]
-  step.done = step.done or (uv.fs_stat(step.file) ~= nil)
+  step.done = (step.done or (uv.fs_stat(step.file) ~= nil))
+    and (not step.cmd.should_execute or not step.cmd.should_execute(self, step.meta))
+
   if step.done then
     return self:on_step()
   end
@@ -454,6 +506,17 @@ end
 ---@param src string
 function M.is_uri(src)
   return src:find("^%w%w+://") == 1
+end
+
+function M.is_git_lfs(src)
+  local fd = io.open(src, "r")
+  if not fd then
+    return false
+  end
+  -- There is probably a command to more definitely check if a file is a git lfs pointer,
+  -- but is likely not as fast as checking the first line of the file.
+  local first_line = fd:read("*l")
+  return first_line == "version https://git-lfs.github.com/spec/v1"
 end
 
 ---@param src string
