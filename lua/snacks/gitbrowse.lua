@@ -25,6 +25,11 @@ local defaults = {
     end
     vim.ui.open(url)
   end,
+  -- Copy URL to system clipboard
+  copy = function(url)
+    vim.fn.setreg("+", url)
+    vim.fn.setreg('"', url)
+  end,
   ---@type "repo" | "branch" | "file" | "commit" | "permalink"
   what = "commit", -- what to open. not all remotes support all types
   branch = nil, ---@type string?
@@ -146,7 +151,73 @@ function M.open(opts)
 end
 
 ---@param opts? snacks.gitbrowse.Config
+function M.copy_link(opts)
+  local ok, err = pcall(M._copy_link, opts) -- errors are handled with notifications
+  if not ok and err ~= "__ignore__" then
+    error(err)
+  end
+end
+
+---@param opts? snacks.gitbrowse.Config
+function M._copy_link(opts)
+  opts = Snacks.config.get("gitbrowse", defaults, opts)
+
+  local remotes = M._remotes(opts)
+
+  local function copy_link(remote)
+    if remote then
+      if opts.notify ~= false then
+        Snacks.notify(("Copying [%s](%s)"):format(remote.name, remote.url), { title = "Git Browse" })
+      end
+      opts.copy(remote.url)
+    end
+  end
+
+  if #remotes == 0 then
+    return Snacks.notify.error("No git remotes found", { title = "Git Browse" })
+  elseif #remotes == 1 then
+    return copy_link(remotes[1])
+  end
+
+  vim.ui.select(remotes, {
+    prompt = "Select remote to browse",
+    format_item = function(item)
+      return item.name .. (" "):rep(8 - #item.name) .. " 🔗 " .. item.url
+    end,
+  }, copy_link)
+end
+
+---@param opts? snacks.gitbrowse.Config
 function M._open(opts)
+  opts = Snacks.config.get("gitbrowse", defaults, opts)
+
+  local remotes = M._remotes(opts)
+
+  local function open(remote)
+    if remote then
+      if opts.notify ~= false then
+        Snacks.notify(("Opening [%s](%s)"):format(remote.name, remote.url), { title = "Git Browse" })
+      end
+      opts.open(remote.url)
+    end
+  end
+
+  if #remotes == 0 then
+    return Snacks.notify.error("No git remotes found", { title = "Git Browse" })
+  elseif #remotes == 1 then
+    return open(remotes[1])
+  end
+
+  vim.ui.select(remotes, {
+    prompt = "Select remote to browse",
+    format_item = function(item)
+      return item.name .. (" "):rep(8 - #item.name) .. " 🔗 " .. item.url
+    end,
+  }, open)
+end
+
+---@param opts? snacks.gitbrowse.Config
+function M._remotes(opts)
   opts = Snacks.config.get("gitbrowse", defaults, opts)
   local file = vim.api.nvim_buf_get_name(0) ---@type string?
   file = file and (uv.fs_stat(file) or {}).type == "file" and svim.fs.normalize(file) or nil
@@ -214,27 +285,7 @@ function M._open(opts)
     end
   end
 
-  local function open(remote)
-    if remote then
-      if opts.notify ~= false then
-        Snacks.notify(("Opening [%s](%s)"):format(remote.name, remote.url), { title = "Git Browse" })
-      end
-      opts.open(remote.url)
-    end
-  end
-
-  if #remotes == 0 then
-    return Snacks.notify.error("No git remotes found", { title = "Git Browse" })
-  elseif #remotes == 1 then
-    return open(remotes[1])
-  end
-
-  vim.ui.select(remotes, {
-    prompt = "Select remote to browse",
-    format_item = function(item)
-      return item.name .. (" "):rep(8 - #item.name) .. " 🔗 " .. item.url
-    end,
-  }, open)
+  return remotes
 end
 
 return M
