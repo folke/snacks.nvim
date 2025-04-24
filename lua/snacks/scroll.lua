@@ -29,10 +29,11 @@ local defaults = {
   },
   -- faster animation when repeating scroll after delay
   animate_repeat = {
-    delay = 100, -- delay in ms before using the repeat animation
-    duration = { step = 5, total = 50 },
+    delay = 50, -- reduced delay for faster response
+    duration = { step = 3, total = 30 }, -- shorter animation duration
     easing = "linear",
   },
+  debounce_time = 200, -- default debounce time in milliseconds
   -- what buffers to animate
   filter = function(buf)
     return vim.g.snacks_scroll ~= false and vim.b[buf].snacks_scroll ~= false and vim.bo[buf].buftype ~= "terminal"
@@ -233,6 +234,8 @@ local function scroll_lines(win, from, to)
   return vim.api.nvim_win_text_height(win, { start_row = start_row, end_row = end_row }).all + offset - 1
 end
 
+local last_scroll_time = 0
+
 --- Check if we need to animate the scroll
 ---@param win number
 ---@private
@@ -272,7 +275,18 @@ function M.check(win)
   state.target = vim.deepcopy(state.view)
   wo(win, { virtualedit = "all", scrolloff = 0 })
 
-  local now = uv.hrtime()
+  local debounce_time = config.debounce_time
+
+  -- (NEW): Added a debounce mechanism to address the scrolling issue 
+  -- where holding down the `j` or `k` keys repeatedly caused glitches.
+  -- This ensures that rapid keypresses are handled efficiently by limiting 
+  -- the frequency of scroll animations.
+  local now = uv.hrtime() / 1e6 -- convert to milliseconds
+  if now - last_scroll_time < debounce_time then
+    return -- skip if debounce time hasn't passed
+  end
+  last_scroll_time = now
+
   local repeat_delta = (now - state.last) / 1e6
   state.last = now
 
