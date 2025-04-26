@@ -18,16 +18,22 @@ vim.api.nvim_create_autocmd("User", {
 
 ## [oil.nvim](https://github.com/stevearc/oil.nvim)
 
+
 ```lua
-vim.api.nvim_create_autocmd("User", {
-  pattern = "OilActionsPost",
-  callback = function(event)
-      if event.data.actions.type == "move" then
-          Snacks.rename.on_rename_file(event.data.actions.src_url, event.data.actions.dest_url)
-      end
-  end,
-})
+  vim.api.nvim_create_autocmd("User", {
+    pattern = "OilActionsPost",
+      callback = function(event)
+	for _, action in ipairs(event.data.actions) do
+	  if action.type == "move" then
+	    require("snacks").rename.on_rename_file(action.src_url, action.dest_url)
+	    end
+	  end
+	end,
+  })
 ```
+
+Note: this functionality is also supported natively in oil
+(config.lsp_file_methods).
 
 ## [neo-tree.nvim](https://github.com/nvim-neo-tree/neo-tree.nvim)
 
