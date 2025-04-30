@@ -869,6 +869,40 @@ function M.sections.recent_files(opts)
   end
 end
 
+function M.sections.harpoon(opts)
+  return function()
+    opts = opts or {}
+    local limit = opts.limit or 5
+
+    local ret = {} ---@type snacks.dashboard.Section
+    local ok, harpoon = pcall(require, "harpoon")
+
+    if not ok then
+      return ret
+    end
+    local harpoon_item = harpoon:list()
+    local items = harpoon_item.items
+
+    for _, item in ipairs(items) do
+      ret[#ret + 1] = {
+        title = vim.fn.fnamemodify(item.value, ":t"),
+        file = item.value,
+        icon = "file",
+        action = function()
+          vim.cmd("e " .. vim.fn.fnameescape(item.value))
+        end,
+        autokey = true,
+      }
+
+      if #ret >= limit then
+        break
+      end
+    end
+
+    return ret
+  end
+end
+
 --- Get the most recent projects based on git roots of recent files.
 --- The default action will change the directory to the project root,
 --- try to restore the session and open the picker if the session is not restored.
