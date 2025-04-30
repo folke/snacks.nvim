@@ -885,7 +885,6 @@ function M.sections.harpoon(opts)
 
     for _, item in ipairs(items) do
       ret[#ret + 1] = {
-        title = vim.fn.fnamemodify(item.value, ":t"),
         file = item.value,
         icon = "file",
         action = function()
