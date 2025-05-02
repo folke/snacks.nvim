@@ -429,6 +429,7 @@ end
 ---@param opts snacks.picker.lsp.Config
 ---@type snacks.picker.finder
 function M.incoming_calls(opts, ctx)
+  local lsp = require("snacks.picker.source.lsp")
   local win = ctx.filter.current_win
   local buf = ctx.filter.current_buf
   local bufmap = M.bufmap()
@@ -477,19 +478,20 @@ function M.incoming_calls(opts, ctx)
                 function(_, calls)
                   if calls then
                     for _, call in ipairs(calls) do
+                      local detail = call.from.detail or call.from.name or ""
                       ---@type snacks.picker.finder.Item
                       local item = {
-                        text = call.from.name .. "    " .. call.from.detail,
-                        kind = M.symbol_kind(call.from.kind),
-                        line = "    " .. call.from.detail,
+                        text = detail,
+                        kind = lsp.symbol_kind(call.from.kind),
+                        line = "    " .. detail,
                       }
                       local loc = {
                         uri = call.from.uri,
                         range = call.from.range,
                       }
-                      M.add_loc(item, loc, client)
+                      lsp.add_loc(item, loc, client)
                       item.buf = bufmap[item.file]
-                      item.text = item.file .. "    " .. call.from.detail
+                      item.text = item.file .. "    " .. detail
                       ---@diagnostic disable-next-line: await-in-sync
                       cb(item)
                     end

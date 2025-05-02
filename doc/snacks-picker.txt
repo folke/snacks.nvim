@@ -54,6 +54,7 @@ Table of Contents                            *snacks-picker-table-of-contents*
   - lsp_definitions                    |snacks-picker-sources-lsp_definitions|
   - lsp_implementations            |snacks-picker-sources-lsp_implementations|
   - lsp_references                      |snacks-picker-sources-lsp_references|
+  - lsp_incoming_calls              |snacks-picker-sources-lsp_incoming_calls|
   - lsp_symbols                            |snacks-picker-sources-lsp_symbols|
   - lsp_type_definitions          |snacks-picker-sources-lsp_type_definitions|
   - lsp_workspace_symbols        |snacks-picker-sources-lsp_workspace_symbols|
@@ -725,6 +726,7 @@ GENERAL                                       *snacks-picker-examples-general*
         { "gd", function() Snacks.picker.lsp_definitions() end, desc = "Goto Definition" },
         { "gD", function() Snacks.picker.lsp_declarations() end, desc = "Goto Declaration" },
         { "gr", function() Snacks.picker.lsp_references() end, nowait = true, desc = "References" },
+        { "gi", function() Snacks.picker.lsp_incoming_calls() end, desc = "Goto Incoming Call" },
         { "gI", function() Snacks.picker.lsp_implementations() end, desc = "Goto Implementation" },
         { "gy", function() Snacks.picker.lsp_type_definitions() end, desc = "Goto T[y]pe Definition" },
         { "<leader>ss", function() Snacks.picker.lsp_symbols() end, desc = "LSP Symbols" },
@@ -1795,6 +1797,26 @@ LSP implementations
     ---@type snacks.picker.lsp.Config
     {
       finder = "lsp_implementations",
+      format = "file",
+      include_current = false,
+      auto_confirm = true,
+      jump = { tagstack = true, reuse_win = true },
+    }
+<
+
+
+LSP_INCOMING_CALLS                  *snacks-picker-sources-lsp_incoming_calls*
+
+>vim
+    :lua Snacks.picker.lsp_incoming_calls(opts?)
+<
+
+LSP incoming calls
+
+>lua
+    ---@type snacks.picker.lsp.Config
+    {
+      finder = "lsp_incoming_calls",
       format = "file",
       include_current = false,
       auto_confirm = true,
