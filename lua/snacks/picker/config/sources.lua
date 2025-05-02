@@ -538,7 +538,7 @@ M.lsp_implementations = {
   jump = { tagstack = true, reuse_win = true },
 }
 
--- LSP implementations
+-- LSP incoming calls
 ---@type snacks.picker.lsp.Config
 M.lsp_incoming_calls = {
   finder = "lsp_incoming_calls",
