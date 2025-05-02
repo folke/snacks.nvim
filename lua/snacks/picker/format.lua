@@ -298,8 +298,8 @@ function M.lsp_symbol(item, picker)
   end
   local kind = item.kind or "Unknown" ---@type string
   local kind_hl = "SnacksPickerIcon" .. kind
-  ret[#ret + 1] = { picker.opts.icons.kinds[kind], kind_hl }
-  ret[#ret + 1] = { " " }
+  icon = Snacks.picker.util.align(picker.opts.icons.kinds[kind], picker.opts.formatters.file.icon_width or 2)
+  ret[#ret + 1] = { icon, kind_hl }
   local name = vim.trim(item.name:gsub("\r?\n", " "))
   name = name == "" and item.detail or name
   Snacks.picker.highlight.format(item, name, ret)
