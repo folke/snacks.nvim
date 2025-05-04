@@ -57,7 +57,7 @@ M.telescope = {
     {
       win = "preview",
       title = "{preview:Preview}",
-      width = 0.45,
+      width = 0.5,
       border = "rounded",
       title_pos = "center",
     },
