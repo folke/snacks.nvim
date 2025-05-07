@@ -243,7 +243,8 @@ In the example below, both sections are equivalent.
 
 ADVANCED                                  *snacks-dashboard-examples-advanced*
 
-A more advanced example using multiple panes
+A more advanced example using multiple panes.
+Note: requires https://github.com/charitarthchugh/shell-color-scripts
 
 >lua
     {
