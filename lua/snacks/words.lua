@@ -108,7 +108,7 @@ function M.is_enabled(opts)
   end
   local clients = (vim.lsp.get_clients or vim.lsp.get_active_clients)({ bufnr = buf })
   clients = vim.tbl_filter(function(client)
-    return client.supports_method("textDocument/documentHighlight", { bufnr = buf })
+    return client:supports_method("textDocument/documentHighlight", { bufnr = buf })
   end, clients)
   return #clients > 0
 end
