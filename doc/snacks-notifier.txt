@@ -18,6 +18,7 @@ Table of Contents                          *snacks-notifier-table-of-contents*
   - Snacks.notifier()               |snacks-notifier-module-snacks.notifier()|
   - Snacks.notifier.get_history()|snacks-notifier-module-snacks.notifier.get_history()|
   - Snacks.notifier.hide()     |snacks-notifier-module-snacks.notifier.hide()|
+  - Snacks.notifier.dnd()       |snacks-notifier-module-snacks.notifier.dnd()|
   - Snacks.notifier.notify() |snacks-notifier-module-snacks.notifier.notify()|
   - Snacks.notifier.show_history()|snacks-notifier-module-snacks.notifier.show_history()|
 8. Links                                               |snacks-notifier-links|
@@ -74,7 +75,7 @@ Advanced LSP Progress ~
           return
         end
         local p = progress[client.id]
-    
+
         for i = 1, #p + 1 do
           if i == #p + 1 or p[i].token == ev.data.params.token then
             p[i] = {
@@ -89,12 +90,12 @@ Advanced LSP Progress ~
             break
           end
         end
-    
+
         local msg = {} ---@type string[]
         progress[client.id] = vim.tbl_filter(function(v)
           return table.insert(msg, v.msg) or not v.done
         end, p)
-    
+
         local spinner = { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" }
         vim.notify(table.concat(msg, "\n"), "info", {
           id = "lsp_progress",
@@ -329,6 +330,14 @@ HISTORY                                        *snacks-notifier-types-history*
 >lua
     ---@param id? number|string
     Snacks.notifier.hide(id)
+
+
+
+`Snacks.notifier.dnd()`                              *Snacks.notifier.dnd()*
+
+>lua
+    ---@param id? booelan
+    Snacks.notifier.dnd(is_dnd)
 <
 
 
