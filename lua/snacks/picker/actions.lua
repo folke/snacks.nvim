@@ -126,10 +126,10 @@ function M.jump(picker, _, action)
   end
   if pos and pos[1] > 0 then
     vim.api.nvim_win_set_cursor(win, { pos[1], pos[2] })
-    if picker.opts.jump.center then
-      vim.cmd("norm! zzzv")
+    if picker.opts.jump.post_cmd then
+      vim.cmd(picker.opts.jump.post_cmd)
     else
-      vim.cmd("norm! zv")
+      vim.cmd("norm! zzzv")
     end
   elseif item.search then
     vim.cmd(item.search)
