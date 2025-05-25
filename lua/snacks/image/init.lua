@@ -46,6 +46,10 @@ M.meta = {
 --- Return the absolute path or url to the image.
 --- When `nil`, the path is resolved relative to the file.
 ---@field resolve? fun(file: string, src: string): string?
+--- Similar behavior to `resolve`, but the resolved value is passed to the `on_complete` callback.
+--- This is called after the given `resolve` function.
+--- Note that this only gets called when `resolve` is either not defined or returns `nil`.
+---@field async_resolve? fun(file: string, src: string, on_complete: fun(resolved_src: string|nil)): nil
 ---@field convert? snacks.image.convert.Config
 local defaults = {
   formats = {
