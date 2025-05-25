@@ -301,7 +301,7 @@ local function bounds(scope, state)
   return from, to
 end
 
---- Render the scope overlappping the given range
+--- Render the scope overlapping the given range
 ---@param scope snacks.indent.Scope
 ---@param state snacks.indent.State
 ---@private
