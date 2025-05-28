@@ -150,6 +150,7 @@ local defaults = {
 local N = {}
 
 N.ns = vim.api.nvim_create_namespace("snacks.notifier")
+N.is_dnd = false
 
 ---@param str string
 local function cap(str)
@@ -366,6 +367,9 @@ local health_msg = false
 
 ---@param opts snacks.notifier.Notif.opts
 function N:add(opts)
+  if self.is_dnd then
+    return
+  end
   if opts.checkhealth then
     health_msg = true
     return
@@ -483,6 +487,16 @@ function N:show_history(opts)
   end
   return win:show()
 end
+
+---@param is_dnd? boolean|nil
+function N:dnd(is_dnd)
+  if is_dnd == nil then
+    self.is_dnd = not self.is_dnd
+    return
+  end
+  self.is_dnd  = is_dnd
+end
+
 
 ---@param id? number|string
 function N:hide(id)
@@ -760,6 +774,10 @@ end
 ---@param opts? snacks.notifier.history
 function M.show_history(opts)
   return notifier:show_history(opts)
+end
+
+function M.dnd(opts)
+  return notifier:dnd(opts)
 end
 
 ---@private
