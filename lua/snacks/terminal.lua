@@ -173,7 +173,7 @@ function M.get(cmd, opts)
   opts = opts or {}
   local id = vim.inspect({ cmd = cmd, cwd = opts.cwd, env = opts.env, count = vim.v.count1 })
   local created = false
-  if not (terminals[id] and terminals[id]:win_valid() and terminals[id]:buf_valid()) and (opts.create ~= false) then
+  if not (terminals[id] and terminals[id]:buf_valid()) and (opts.create ~= false) then
     local ret = M.open(cmd, opts)
     ret:on("BufWipeout", function()
       terminals[id] = nil
