@@ -148,6 +148,8 @@ local defaults = {
       truncate = 40, -- truncate the file path to (roughly) this length
       filename_only = false, -- only show the filename
       icon_width = 2, -- width of the icon (in characters)
+      ---@type {align?: "left" | "right" | "center", truncate?: boolean}
+      icon_align_opts = nil,
       git_status_hl = true, -- use the git status highlight group for the filename
     },
     selected = {
