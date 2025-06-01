@@ -181,6 +181,25 @@ local commands = {
       }
     end,
   },
+  drawio = {
+    cmd = {
+      {
+        cmd = "drawio",
+        args = {
+          "--export",
+          "--transparent",
+          "--format",
+          "png",
+          "--output",
+          "{file}",
+          "{src}",
+        },
+      },
+    },
+    file = function(convert, ctx)
+      return convert:tmpfile("png")
+    end,
+  },
 }
 
 local have = {} ---@type table<string, boolean>
@@ -245,7 +264,21 @@ function Convert.new(opts)
   if M.is_uri(self.opts.src) then
     base = self.opts.src:gsub("%?.*", ""):match("^%w%w+://(.*)$") or base
   end
-  self.prefix = vim.fn.sha256(self.opts.src):sub(1, 8) .. "-" .. base:gsub("[^%w%.]+", "-")
+
+  local hash_input = opts.src
+  local ext = vim.fn.fnamemodify(self.src, ":e"):lower()
+  if not M.is_uri(opts.src) and ext == "drawio" then
+    local fd = io.open(opts.src, "rb")
+    if fd then
+      hash_input = fd:read("*a")
+      fd:close()
+    end
+  end
+
+  -- compute sha256 of the data
+  local h = vim.fn.sha256(hash_input):sub(1, 8)
+  self.prefix = h .. "-" .. base:gsub("[^%w%.]+", "-")
+
   self.meta = { src = opts.src }
   self.steps = {}
   self.tpl_data = {
