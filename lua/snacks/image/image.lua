@@ -10,7 +10,6 @@
 local M = {}
 M.__index = M
 
-local NVIM_ID_BITS = 10
 local CHUNK_SIZE = 4096
 local MAX_FSIZE = 200 * 1024 * 1024 -- 200MB
 local _id = 30
@@ -57,13 +56,40 @@ function M.new(src)
   images[self.file] = self
   _id = _id + 1
   local bit = require("bit")
+
+  local max_id_bits, nvim_id_bits
+  if Snacks.image.config.cterm256 then
+    max_id_bits = 16
+    nvim_id_bits = 4
+  else
+    max_id_bits = 32
+    nvim_id_bits = 10
+  end
+
   -- generate a unique id for this nvim instance (10 bits)
   if nvim_id == 0 then
     local pid = vim.fn.getpid()
-    nvim_id = bit.band(bit.bxor(pid, bit.rshift(pid, 5), bit.rshift(pid, NVIM_ID_BITS)), 0x3FF)
+    local mask = bit.lshift(1, nvim_id_bits) - 1
+    nvim_id = bit.band(bit.bxor(pid, bit.rshift(pid, 5), bit.rshift(pid, nvim_id_bits)), mask)
   end
+
   -- interleave the nvim id and the image id
-  self.id = bit.bor(bit.lshift(nvim_id, 24 - NVIM_ID_BITS), _id)
+  if Snacks.image.config.cterm256 then
+    local lower = bit.band(_id, 0xff)
+    local upper = bit.band(bit.rshift(_id, 8), 0xff)
+    upper = bit.bor(bit.lshift(nvim_id, 8 - nvim_id_bits), upper)
+    -- upper will be send via a diacritic (bits 24-31), lower is a cterm fg (256 colors)
+    self.id = bit.bor(bit.lshift(upper, 24), lower)
+  else
+    self.id = bit.bor(bit.lshift(nvim_id, max_id_bits - nvim_id_bits), _id)
+  end
+
+  -- TODO: better way to deal with bitwise signed: if bitwise ops set the most significant bit,
+  --       then the number is treated as negative, but regular math ops do not
+  if self.id < 0 then
+    self.id = bit.rshift(self.id, 1) * 2
+  end
+
   self.placements = {}
 
   self:run()
