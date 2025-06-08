@@ -25,30 +25,32 @@ M.__index = M
 local ns = vim.api.nvim_create_namespace("snacks.picker.preview")
 local ns_loc = vim.api.nvim_create_namespace("snacks.picker.preview.loc")
 
--- HACK: work-around for buffer-local window options mess. From the docs:
--- > When editing a buffer that has been edited before, the options from the window
--- > that was last closed are used again.  If this buffer has been edited in this
--- > window, the values from back then are used.  Otherwise the values from the
--- > last closed window where the buffer was edited last are used.
-vim.api.nvim_create_autocmd("BufWinEnter", {
-  group = vim.api.nvim_create_augroup("snacks.picker.preview.wo", { clear = true }),
-  callback = function(ev)
-    if not vim.b[ev.buf].snacks_previewed then
-      return
-    end
-    local reset = { "winhighlight", "cursorline", "number", "relativenumber", "signcolumn" }
-    local wo = {} ---@type table<string, any>
-    for _, k in ipairs(reset) do
-      wo[k] = vim.api.nvim_get_option_value(k, { scope = "global" })
-    end
-    for _, win in ipairs(vim.fn.win_findbuf(ev.buf)) do
-      if not Snacks.util.is_float(win) then -- only reset non-floating windows
-        Snacks.util.wo(win, wo)
-        vim.b[ev.buf].snacks_previewed = nil
+if not Snacks.config.picker.preview_no_winopts then
+  -- HACK: work-around for buffer-local window options mess. From the docs:
+  -- > When editing a buffer that has been edited before, the options from the window
+  -- > that was last closed are used again.  If this buffer has been edited in this
+  -- > window, the values from back then are used.  Otherwise the values from the
+  -- > last closed window where the buffer was edited last are used.
+  vim.api.nvim_create_autocmd("BufWinEnter", {
+    group = vim.api.nvim_create_augroup("snacks.picker.preview.wo", { clear = true }),
+    callback = function(ev)
+      if not vim.b[ev.buf].snacks_previewed then
+        return
       end
-    end
-  end,
-})
+      local reset = { "winhighlight", "cursorline", "number", "relativenumber", "signcolumn" }
+      local wo = {} ---@type table<string, any>
+      for _, k in ipairs(reset) do
+        wo[k] = vim.api.nvim_get_option_value(k, { scope = "global" })
+      end
+      for _, win in ipairs(vim.fn.win_findbuf(ev.buf)) do
+        if not Snacks.util.is_float(win) then -- only reset non-floating windows
+          Snacks.util.wo(win, wo)
+          vim.b[ev.buf].snacks_previewed = nil
+        end
+      end
+    end,
+  })
+end
 
 ---@param picker snacks.Picker
 function M.new(picker)
@@ -60,7 +62,7 @@ function M.new(picker)
     {
       title_pos = "center",
       minimal = false,
-      wo = {
+      wo = Snacks.config.picker.preview_no_winopts and {} or {
         cursorline = false,
         colorcolumn = "",
         number = opts.win.preview.minimal ~= true,
@@ -122,14 +124,17 @@ function M:update(picker)
     self.win.opts.win = nil
     self.win.layout = nil
   end
-  local winhl = self.winhl
-  if main then
-    winhl = (vim.wo[main].winhighlight .. ",Normal:Normal," .. "CursorLine:SnacksPickerPreviewCursorLine"):gsub(
-      "^,",
-      ""
-    )
+
+  if not Snacks.config.picker.preview_no_winopts then
+    local winhl = self.winhl
+    if main then
+      winhl = (vim.wo[main].winhighlight .. ",Normal:Normal," .. "CursorLine:SnacksPickerPreviewCursorLine"):gsub(
+        "^,",
+        ""
+      )
+    end
+    self.win.opts.wo.winhighlight = winhl
   end
-  self.win.opts.wo.winhighlight = winhl
 end
 
 --- refresh the preview after layout change
