@@ -134,7 +134,17 @@ function M.log(opts, ctx)
       Proc.proc({
         cmd = "git",
         cwd = cwd,
-        args = { "log", "-z", "--follow", "--name-status", "--pretty=format:''", "--diff-filter=R", "--", file },
+        args = git_args(
+          opts.args,
+          "log",
+          "-z",
+          "--follow",
+          "--name-status",
+          "--pretty=format:''",
+          "--diff-filter=R",
+          "--",
+          file
+        ),
       }, ctx)(function(item)
         for _, text in ipairs(vim.split(item.text, "\0")) do
           if text:find("^R%d%d%d$") then
