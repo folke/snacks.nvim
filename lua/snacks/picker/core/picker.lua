@@ -268,7 +268,6 @@ function M:init_layout(layout)
       backdrop = backdrop,
     },
   }))
-  self:attach()
 
   -- apply box highlight groups
   local boxwhl = Snacks.picker.highlight.winhl("SnacksPickerBox")
@@ -284,6 +283,7 @@ function M:attach()
   -- Check if we need to load another layout
   self.layout.root:on("VimResized", function()
     vim.schedule(function()
+      -- vim.print(Snacks.picker.config.layout(self.opts))
       self:set_layout(Snacks.picker.config.layout(self.opts))
     end)
   end)
