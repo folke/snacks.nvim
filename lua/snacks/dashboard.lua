@@ -717,7 +717,7 @@ function D:update()
 
   -- cursor movement
   local last = { 1, 0 }
-  vim.api.nvim_create_autocmd("CursorMoved", {
+  vim.api.nvim_create_autocmd({ "CursorMoved", "TextChanged" }, {
     group = vim.api.nvim_create_augroup("snacks_dashboard_cursor", { clear = true }),
     buffer = self.buf,
     callback = function()
