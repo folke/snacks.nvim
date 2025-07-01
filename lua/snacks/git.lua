@@ -27,7 +27,7 @@ end
 ---@param path? number|string buffer or path
 ---@return string?
 function M.get_root(path)
-  path = path or (vim.uv or vim.loop).cwd() or 0
+  path = path or 0
   path = type(path) == "number" and vim.api.nvim_buf_get_name(path) or path --[[@as string]]
   path = svim.fs.normalize(path)
   path = path == "" and (vim.uv or vim.loop).cwd() or path

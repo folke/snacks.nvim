@@ -26,6 +26,8 @@ function M.files(opts, ctx)
   if not opts.cwd then
     opts.cwd = Snacks.git.get_root() or uv.cwd() or "."
     ctx.picker:set_cwd(opts.cwd)
+  else
+    opts.cwd = Snacks.git.get_root(opts.cwd) or opts.cwd
   end
   local cwd = svim.fs.normalize(opts.cwd) or nil
   return require("snacks.picker.source.proc").proc({
@@ -58,6 +60,8 @@ function M.grep(opts, ctx)
   if not opts.cwd then
     opts.cwd = Snacks.git.get_root() or uv.cwd() or "."
     ctx.picker:set_cwd(opts.cwd)
+  else
+    opts.cwd = Snacks.git.get_root(opts.cwd) or opts.cwd
   end
   local cwd = svim.fs.normalize(opts.cwd) or nil
   return require("snacks.picker.source.proc").proc({
