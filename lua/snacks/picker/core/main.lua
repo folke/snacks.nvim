@@ -19,7 +19,6 @@ function M.new(opts)
   local self = setmetatable({}, M)
   self.opts = opts
   self.win = vim.api.nvim_get_current_win()
-  self.win = self:find()
   return self
 end
 
