@@ -757,6 +757,25 @@ M.registers = {
   format = "register",
   preview = "preview",
   confirm = { "copy", "close" },
+  win = {
+    input = {
+      keys = {
+        ["<c-cr>"] = { "put_register", mode = { "n", "i" }, desc = "put, close" },
+        ["<s-cr>"] = { "put_register_before", mode = { "n", "i" }, desc = "put before, close" },
+      },
+    },
+  },
+  actions = {
+    put_register = function(picker, item, action)
+      ---@cast action snacks.picker.yank.Action
+      picker:close()
+      if item then
+        local command = action and action.field == "before" and "P" or "p"
+        vim.fn.feedkeys('"' .. item.reg .. command)
+      end
+    end,
+    put_register_before = { action = "put_register", field = "before" },
+  }
 }
 
 -- Special picker that resumes the last picker
