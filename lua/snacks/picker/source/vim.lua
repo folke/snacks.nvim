@@ -273,11 +273,14 @@ function M.registers()
       value = (ok and reg_value or "") --[[@as string]]
     end
     if value ~= "" then
+      local type = vim.fn.getregtype(reg)
+      type = type == "v" and "c" or type == "V" and "l" or "b:" .. type:sub(2)
       table.insert(items, {
         text = ("%s: %s"):format(reg, value:gsub("\n", "\\n"):gsub("\r", "\\r")),
         reg = reg,
         label = reg,
         data = value,
+        type = type,
         value = value:gsub("\n", "\\n"):gsub("\r", "\\r"),
         preview = {
           text = value,
