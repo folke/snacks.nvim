@@ -762,6 +762,7 @@ M.registers = {
       keys = {
         ["<c-cr>"] = { "put_register", mode = { "n", "i" }, desc = "put, close" },
         ["<s-cr>"] = { "put_register_before", mode = { "n", "i" }, desc = "put before, close" },
+        ["<c-g>"] = { "toggle_reg", mode = { "i", "n" } },
       },
     },
   },
@@ -775,6 +776,15 @@ M.registers = {
       end
     end,
     put_register_before = { action = "put_register", field = "before" },
+    toggle_reg = function(picker)
+      if string.match(picker.input.filter.pattern, "^reg:") then
+        picker.input.filter.pattern = picker.input.filter.pattern:sub(5)
+      else
+        picker.input.filter.pattern = "reg:" .. picker.input.filter.pattern
+      end
+      picker.input:set()
+      picker.input:update()
+    end,
   }
 }
 
