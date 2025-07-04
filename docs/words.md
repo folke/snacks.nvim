@@ -39,6 +39,16 @@ Auto-show LSP references and quickly navigate between them
 }
 ```
 
+### To customize the highlight colors
+
+```lua
+vim.cmd([[highlight LspReferenceText cterm=bold ctermbg=gray guibg=#404010]])
+vim.cmd([[highlight LspReferenceRead cterm=bold ctermbg=green guibg=#104010]])
+vim.cmd([[highlight LspReferenceWrite cterm=bold ctermbg=red guibg=#401010]])
+```
+
+If the LSP notices the identifier is being written to it'll use the `LspReferenceWrite` color, if the identifier is begin read from it'll use the `LspReferenceRead` color, otherwise the fallback color `LspReferenceText` is used.
+
 ## 📦 Module
 
 ### `Snacks.words.clear()`
