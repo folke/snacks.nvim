@@ -57,7 +57,7 @@ All easing functions take these parameters:
 * `d` _(duration)_: total duration of the animation
 
 Some functions allow additional modifiers, like the elastic functions
-which also can receive an amplitud and a period parameters (defaults
+which also can receive an amplitude and a period parameters (defaults
 are included)
 
 ```lua
