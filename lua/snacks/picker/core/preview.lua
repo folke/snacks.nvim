@@ -323,7 +323,12 @@ function M:loc()
         hl_group = "SnacksPickerSearch",
       })
     elseif self.filter and vim.trim(self.filter.search) ~= "" then
-      local ok, re = pcall(vim.regex, vim.trim(self.filter.search))
+      -- regardless of the matcher options, match caseinsensitive
+      local cleaned_pattern = Snacks.picker.util.prepare_highlight_pattern(
+        self.filter.search,
+        { trim = "both", case_insensitive_regex_option = true, remove_grep_flags = true }
+      )
+      local ok, re = pcall(vim.regex, cleaned_pattern)
       if ok and re then
         local start = self.item.pos[2]
         local from, to ---@type number?, number?

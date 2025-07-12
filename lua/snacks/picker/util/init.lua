@@ -620,4 +620,41 @@ function M.globber(globs)
   end
 end
 
+---@alias snacks.picker.util.trim_mode "both"|"left"|"right"|"none"
+
+--- Prepare pattern for highlighting by removing grep flags and applying trim options
+---@param pattern string The input pattern
+---@param opts? {trim?: snacks.picker.util.trim_mode, case_insensitive_regex_option?: boolean, remove_grep_flags?: boolean} Options for trimming, case sensitivity, and grep flag removal
+---@return string cleaned_pattern The cleaned pattern ready for highlighting
+function M.prepare_highlight_pattern(pattern, opts)
+  opts = opts or {}
+  local trim_mode = opts.trim or "none"
+  local case_insensitive = opts.case_insensitive_regex_option == true -- default to false
+  local remove_grep_flags = opts.remove_grep_flags == true -- default to false
+
+  local cleaned = pattern
+
+  -- Remove grep flags like (?i), (?-i), (?m), etc. if requested
+  if remove_grep_flags then
+    cleaned = cleaned:gsub("%(%?[%-]?[imsx]*%)", "")
+  end
+
+  -- Apply trimming based on mode
+  if trim_mode == "both" then
+    cleaned = vim.trim(cleaned)
+  elseif trim_mode == "left" then
+    cleaned = cleaned:gsub("^%s*", "")
+  elseif trim_mode == "right" then
+    cleaned = cleaned:gsub("%s*$", "")
+  elseif trim_mode == "none" then
+    -- No trimming
+  end
+
+  -- Add \c for case-insensitive matching for vim.regex if requested
+  if case_insensitive and not cleaned:find("\\[Cc]") then
+    cleaned = "\\c" .. cleaned
+  end
+  return cleaned
+end
+
 return M
