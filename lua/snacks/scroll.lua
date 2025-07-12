@@ -157,7 +157,7 @@ function M.enable()
   })
 
   -- update current state on cursor move
-  vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
+  vim.api.nvim_create_autocmd({ "BufWritePost", "CursorMoved", "CursorMovedI" }, {
     group = group,
     callback = vim.schedule_wrap(function(ev)
       for _, win in ipairs(vim.fn.win_findbuf(ev.buf)) do
@@ -167,6 +167,7 @@ function M.enable()
           -- local cursor = vim.api.nvim_win_get_cursor(win)
           states[win].current.lnum = view.lnum
           states[win].current.col = view.col
+          states[win].changedtick = vim.api.nvim_buf_get_changedtick(ev.buf)
           -- states[win].current.topline = view.topline
         end
       end
@@ -177,9 +178,12 @@ function M.enable()
   vim.api.nvim_create_autocmd({ "CmdlineLeave" }, {
     group = group,
     callback = function(ev)
-      if (ev.file == "/" or ev.file == "?") and vim.o.incsearch then
+      if (ev.file == "/" or ev.file == "?") and vim.o.incsearch and not vim.v.event.abort then
         for _, win in ipairs(vim.fn.win_findbuf(ev.buf)) do
           states[win] = nil
+          vim.schedule(function()
+            get_state(win)
+          end)
         end
       end
     end,
