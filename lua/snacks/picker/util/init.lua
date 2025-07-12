@@ -636,7 +636,10 @@ function M.prepare_highlight_pattern(pattern, opts)
 
   -- Remove grep flags like (?i), (?-i), (?m), etc. if requested
   if remove_grep_flags then
-    cleaned = cleaned:gsub("%(%?[%-]?[imsx]*%)", "")
+    -- Remove flags at the beginning of the pattern
+    cleaned = cleaned:gsub("^%(%?[%-]?[imsx]*%)", "")
+    -- Remove empty parentheses
+    cleaned = cleaned:gsub("^%(%)", "")
   end
 
   -- Apply trimming based on mode
