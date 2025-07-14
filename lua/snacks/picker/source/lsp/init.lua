@@ -479,21 +479,25 @@ function M.incoming_calls(opts, ctx)
                   if calls then
                     for _, call in ipairs(calls) do
                       local text = call.from.name .. "    " .. call.from.detail
-                      ---@type snacks.picker.finder.Item
-                      local item = {
-                        text = text,
-                        kind = lsp.symbol_kind(call.from.kind),
-                        line = "    " .. text,
-                      }
-                      local loc = {
-                        uri = call.from.uri,
-                        range = call.from.range,
-                      }
-                      lsp.add_loc(item, loc, client)
-                      item.buf = bufmap[item.file]
-                      item.text = item.file .. "    " .. text
-                      ---@diagnostic disable-next-line: await-in-sync
-                      cb(item)
+                      -- Get the locations of actual call sites instead of the whole function body
+                      local ranges = call.fromRanges or { call.from.range }
+                      for _, range in ipairs(ranges) do
+                        ---@type snacks.picker.finder.Item
+                        local item = {
+                          text = text,
+                          kind = lsp.symbol_kind(call.from.kind),
+                          line = "    " .. text,
+                        }
+                        local loc = {
+                          uri = call.from.uri,
+                          range = range,
+                        }
+                        lsp.add_loc(item, loc, client)
+                        item.buf = bufmap[item.file]
+                        item.text = item.file .. "    " .. text
+                        ---@diagnostic disable-next-line: await-in-sync
+                        cb(item)
+                      end
                     end
                   end
                   call_remaining = call_remaining - 1
