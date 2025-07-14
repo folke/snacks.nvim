@@ -439,6 +439,7 @@ function M.incoming_calls(opts, ctx)
   return function(cb)
     local async = Async.running()
     local cancel = {} ---@type fun()[]
+    local done = {} ---@type table<string, boolean>
 
     async:on(
       "abort",
@@ -492,11 +493,15 @@ function M.incoming_calls(opts, ctx)
                           uri = call.from.uri,
                           range = range,
                         }
-                        lsp.add_loc(item, loc, client)
-                        item.buf = bufmap[item.file]
-                        item.text = item.file .. "    " .. text
-                        ---@diagnostic disable-next-line: await-in-sync
-                        cb(item)
+                        local loc_key = call.from.uri .. ":" .. range.start.line
+                        if not done[loc_key] then
+                          done[loc_key] = true
+                          lsp.add_loc(item, loc, client)
+                          item.buf = bufmap[item.file]
+                          item.text = item.file .. "    " .. text
+                          ---@diagnostic disable-next-line: await-in-sync
+                          cb(item)
+                        end
                       end
                     end
                   end
