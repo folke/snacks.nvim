@@ -50,20 +50,20 @@ local defaults = {
   url_patterns = {
     ["github%.com"] = {
       branch = "/tree/{branch}",
-      file = "/blob/{branch}/{file}#L{line_start}-L{line_end}",
-      permalink = "/blob/{commit}/{file}#L{line_start}-L{line_end}",
+      file = "/blob/{branch}/{file}#L{line_start}[-L{line_end}]",
+      permalink = "/blob/{commit}/{file}#L{line_start}[-L{line_end}]",
       commit = "/commit/{commit}",
     },
     ["gitlab%.com"] = {
       branch = "/-/tree/{branch}",
-      file = "/-/blob/{branch}/{file}#L{line_start}-L{line_end}",
-      permalink = "/-/blob/{commit}/{file}#L{line_start}-L{line_end}",
+      file = "/-/blob/{branch}/{file}#L{line_start}[-L{line_end}]",
+      permalink = "/-/blob/{commit}/{file}#L{line_start}[-L{line_end}]",
       commit = "/-/commit/{commit}",
     },
     ["bitbucket%.org"] = {
       branch = "/src/{branch}",
-      file = "/src/{branch}/{file}#lines-{line_start}-L{line_end}",
-      permalink = "/src/{commit}/{file}#lines-{line_start}-L{line_end}",
+      file = "/src/{branch}/{file}#lines-{line_start}[-L{line_end}]",
+      permalink = "/src/{commit}/{file}#lines-{line_start}[-L{line_end}]",
       commit = "/commits/{commit}",
     },
     ["git.sr.ht"] = {
@@ -104,9 +104,14 @@ function M.get_url(repo, fields, opts)
     if repo:find(remote) then
       local pattern = patterns[opts.what]
       if type(pattern) == "string" then
-        return repo .. pattern:gsub("(%b{})", function(key)
-          return fields[key:sub(2, -2)] or key
-        end)
+        return repo
+          .. pattern
+            :gsub("(%b[])", function(key)
+              return (fields.line_count == 1) and "" or key:sub(2, -2)
+            end)
+            :gsub("(%b{})", function(key)
+              return fields[key:sub(2, -2)] or key
+            end)
       elseif type(pattern) == "function" then
         return repo .. pattern(fields)
       end
