@@ -141,6 +141,17 @@ function Tree:expand(node)
     if not name then
       break
     end
+    if not t then
+      local full_path = node.path .. "/" .. name
+      local stat = uv.fs_stat(full_path)
+      if stat then
+        t = stat.type
+      elseif vim.fn.isdirectory(full_path) == 1 then
+        t = "directory"
+      else
+        t = "file"
+      end
+    end
     found[name] = true
     local child = self:child(node, name, t)
     child.type = t
