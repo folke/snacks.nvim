@@ -18,10 +18,27 @@ M.meta = {
 
 ---@class snacks.statuscolumn.Config
 ---@field left snacks.statuscolumn.Components
+---@field middle string|fun(int):string -- middle text, can be a function that returns a string
 ---@field right snacks.statuscolumn.Components
 ---@field enabled? boolean
 local defaults = {
   left = { "mark", "sign" }, -- priority of signs on the left (high to low)
+  middle = function(win)
+    local nu = vim.wo[win].number
+    local rnu = vim.wo[win].relativenumber
+    if (nu or rnu) and vim.v.virtnum == 0 then
+      local num ---@type number
+      if rnu and nu and vim.v.relnum == 0 then
+        num = vim.v.lnum
+      elseif rnu then
+        num = vim.v.relnum
+      else
+        num = vim.v.lnum
+      end
+      return "%=" .. num .. " "
+    end
+    return ""
+  end,
   right = { "fold", "git" }, -- priority of signs on the right (high to low)
   folds = {
     open = false, -- show open fold icons
@@ -178,26 +195,12 @@ function M._get()
     M.setup()
   end
   local win = vim.g.statusline_winid
-  local nu = vim.wo[win].number
-  local rnu = vim.wo[win].relativenumber
   local show_signs = vim.v.virtnum == 0 and vim.wo[win].signcolumn ~= "no"
   local components = { "", "", "" } -- left, middle, right
-  if not (show_signs or nu or rnu) then
+  components[2] = type(config.middle) == "function" and config.middle(win) or config.middle --[[@as string]]
+  if not (show_signs or components[2] and #components[2] > 0) then
     return ""
   end
-
-  if (nu or rnu) and vim.v.virtnum == 0 then
-    local num ---@type number
-    if rnu and nu and vim.v.relnum == 0 then
-      num = vim.v.lnum
-    elseif rnu then
-      num = vim.v.relnum
-    else
-      num = vim.v.lnum
-    end
-    components[2] = "%=" .. num .. " "
-  end
-
   if show_signs then
     local buf = vim.api.nvim_win_get_buf(win)
     local is_file = vim.bo[buf].buftype == ""
