@@ -5,6 +5,10 @@ local uv = vim.uv or vim.loop
 ---@type {cmd:string[], args:string[], enabled?:boolean, available?:boolean|string}[]
 local commands = {
   {
+    cmd = { "bfs" },
+    args = { "-exclude", "-name", ".git", "-exclude", "-name", ".bare", "-nocolor", "-type", "f,l" },
+  },
+  {
     cmd = { "fd", "fdfind" },
     args = { "--type", "f", "--type", "l", "--color", "never", "-E", ".git" },
   },
@@ -57,7 +61,7 @@ local function get_cmd(opts, filter)
   if not cmd or not args then
     return
   end
-  local is_fd, is_fd_rg, is_find, is_rg = cmd == "fd" or cmd == "fdfind", cmd ~= "find", cmd == "find", cmd == "rg"
+  local is_fd, is_fd_rg, is_find, is_rg, is_bfs = cmd == "fd" or cmd == "fdfind", cmd ~= "find", cmd == "find", cmd == "rg", cmd == "bfs"
 
   -- exclude
   for _, e in ipairs(opts.exclude or {}) do
@@ -69,6 +73,8 @@ local function get_cmd(opts, filter)
       table.insert(args, "-not")
       table.insert(args, "-path")
       table.insert(args, e)
+    elseif is_bfs then
+      vim.list_extend(args, { "-exclude", "-path", e })
     end
   end
 
@@ -83,14 +89,14 @@ local function get_cmd(opts, filter)
     elseif is_rg then
       table.insert(args, "-g")
       table.insert(args, "*." .. e)
-    elseif is_find then
+    elseif is_find or is_bfs then
       table.insert(args, "-name")
       table.insert(args, "*." .. e)
     end
   end
 
   -- hidden
-  if opts.hidden and is_fd_rg then
+  if opts.hidden and (is_fd_rg or is_bfs)then
     table.insert(args, "--hidden")
   elseif not opts.hidden and is_find then
     vim.list_extend(args, { "-not", "-path", "*/.*" })
@@ -121,7 +127,7 @@ local function get_cmd(opts, filter)
     elseif is_rg then
       table.insert(args, "--glob")
       table.insert(args, pattern)
-    elseif is_find then
+    elseif is_find or is_bfs then
       table.insert(args, "-name")
       table.insert(args, pattern)
     end
