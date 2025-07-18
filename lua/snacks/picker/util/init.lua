@@ -640,6 +640,20 @@ function M.prepare_highlight_pattern(pattern, opts)
     cleaned = cleaned:gsub("^%(%?[%-]?[imsx]*%)", "")
     -- Remove empty parentheses
     cleaned = cleaned:gsub("^%(%)", "")
+    -- Remove common regex flags and markers
+    cleaned = cleaned:gsub("^\\b", "") -- word boundary
+    cleaned = cleaned:gsub("^\\B", "") -- non-word boundary
+    cleaned = cleaned:gsub("^\\<", "") -- word start
+    cleaned = cleaned:gsub("^\\>", "") -- word end
+    cleaned = cleaned:gsub("^\\w", "") -- word character
+    cleaned = cleaned:gsub("^\\W", "") -- non-word character
+    cleaned = cleaned:gsub("^\\d", "") -- digit
+    cleaned = cleaned:gsub("^\\D", "") -- non-digit
+    cleaned = cleaned:gsub("^\\s", "") -- whitespace
+    cleaned = cleaned:gsub("^\\S", "") -- non-whitespace
+    cleaned = cleaned:gsub("^\\A", "") -- start of string
+    cleaned = cleaned:gsub("^\\Z", "") -- end of string
+    cleaned = cleaned:gsub("^\\z", "") -- absolute end of string
   end
 
   -- Apply trimming based on mode
