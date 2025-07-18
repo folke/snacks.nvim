@@ -472,11 +472,18 @@ end
 ---@param from string
 ---@param to string
 function M.copy_path(from, to)
-  if not uv.fs_stat(from) then
-    Snacks.notify.error(("File `%s` does not exist"):format(from))
+  local stat = uv.fs_stat(from)
+  local filetype
+  if stat then
+    filetype = stat.type
+  elseif vim.fn.isdirectory(from) == 1 then
+    filetype = "directory"
+  elseif vim.fn.filereadable(from) == 1 then
+    filetype = "file"
+  else
     return
   end
-  if vim.fn.isdirectory(from) == 1 then
+  if filetype == "directory" then
     M.copy_dir(from, to)
   else
     M.copy_file(from, to)
