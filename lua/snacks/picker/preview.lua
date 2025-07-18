@@ -12,19 +12,14 @@ function M.directory(ctx)
   local name = path and vim.fn.fnamemodify(path, ":t")
   ctx.preview:set_title(ctx.item.title or name)
   local ls = {} ---@type {file:string, type:"file"|"directory"}[]
-  for file, t in vim.fs.dir(ctx.item.file) do
-    if not t then
-      local full_path = ctx.item.file .. "/" .. file
-      local stat = vim.loop.fs_stat(full_path)
-      if stat then
-        t = stat.type
-      elseif vim.fn.isdirectory(full_path) == 1 then
-        t = "directory"
-      else
-        t = "file"
-      end
-    end
-    ls[#ls + 1] = { file = file, type = t }
+  for file in vim.fs.dir(ctx.item.file) do
+    local full_path = vim.fs.joinpath(ctx.item.file, file)
+    local file_type = Snacks.util.path_type(full_path)
+
+    table.insert(ls, {
+      file = file,
+      type = file_type,
+    })
   end
   ctx.preview:set_lines(vim.split(string.rep("\n", #ls), "\n"))
   table.sort(ls, function(a, b)
