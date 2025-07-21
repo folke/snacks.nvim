@@ -435,6 +435,99 @@ Similar to the Vim Startify dashboard
 }
 ```
 
+### Containers
+
+Need containers?
+
+With 3 panes:
+<img width="1900" height="1147" alt="2025-07-21_10-08-19" src="https://github.com/user-attachments/assets/3d987529-6ca8-4190-b17a-af7a2dca1d2d" />
+
+With 2 panes:
+<img width="1900" height="1147" alt="2025-07-21_10-09-45" src="https://github.com/user-attachments/assets/db2cc610-aaae-4817-9242-3c555e8e72ef" />
+
+```lua
+{
+  preset = {
+    keys = {
+      { icon = "󰀱 ", key = "h", desc = "Harpoon", action = function() require("harpoon").ui:toggle_quick_menu(harpoon:list()) end },
+      { icon = " ", key = "f", desc = "Find File", action = function() snacks.picker.files { hidden = false, ignored = true } end },
+      { icon = "󰜏 ", key = "w", desc = "Find Text", action = function() snacks.picker.grep { hidden = true, ignored = true } end },
+      { icon = " ", key = "n", desc = "New File", action = ":ene | startinsert" },
+      { icon = "󰒲 ", key = "L", desc = "Lazy", action = ":Lazy", enabled = package.loaded.lazy ~= nil },
+      { icon = " ", key = "q", desc = "Quit", action = ":qa" },
+    },
+  },
+  sections = {
+    {
+      icon = "󰉹 ",
+      title = "Working Directory",
+      section = "terminal",
+      cmd = "pwd",
+      height = 1,
+      padding = 1,
+      action = function() 
+        Snacks.explorer() 
+        end,
+      key = "e"
+    },
+    { 
+      section = "keys", 
+      gap = 1, 
+      padding = 1 
+    },
+    { section = "startup" },
+    {
+      pane = 2,
+      icon = " ",
+      title = "Git Status",
+      section = "terminal",
+      enabled = function()
+        return Snacks.git.get_root() ~= nil
+        end,
+      cmd = "git status --short --branch --renames",
+      height = 1,
+      padding = 1,
+      action = function() 
+        Snacks.lazygit()
+        end,
+      key = "g"
+    },
+    {
+      pane = 2,
+      height = 3,
+      icon = " ",
+      title = "Docker ps",
+      section = "terminal",
+      cmd = "docker ps | tail -n +2",
+    },
+    {
+      pane = 2,
+      height = 3,
+      icon = " ",
+      title = "Podman ps",
+      section = "terminal",
+      cmd = "podman ps | tail -n +2",
+    },
+    {
+      pane = 2,
+      height = 3,
+      icon = "󰆧 ",
+      title = "Distrobox ls",
+      section = "terminal",
+      cmd = "distrobox ls | tail -n +2",
+    },
+    -- {
+    --     pane = 3,
+    --     icon = "󰜘 ",
+    --     title = "Git Logs",
+    --     section = "terminal",
+    --     cmd = "git log --oneline --graph",
+    --     height = 15,
+    --     padding = 1,
+    -- },
+}
+```
+
 ## 🎨 Styles
 
 Check the [styles](https://github.com/folke/snacks.nvim/blob/main/docs/styles.md)
