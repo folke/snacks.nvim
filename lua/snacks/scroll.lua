@@ -22,6 +22,7 @@ M.meta = {
 ---@class snacks.scroll.Config
 ---@field animate snacks.animate.Config|{}
 ---@field animate_repeat snacks.animate.Config|{}|{delay:number}
+---@field on_finished fun(win:number)
 local defaults = {
   animate = {
     duration = { step = 15, total = 250 },
@@ -37,6 +38,7 @@ local defaults = {
   filter = function(buf)
     return vim.g.snacks_scroll ~= false and vim.b[buf].snacks_scroll ~= false and vim.bo[buf].buftype ~= "terminal"
   end,
+  on_finished = function(win) end,
   debug = false,
 }
 
@@ -319,6 +321,9 @@ function M.check(win)
         vim.fn.winrestview(state.target)
         state.current = vim.fn.winsaveview()
         wo(win) -- restore win options
+        if config.on_finished then
+          config.on_finished(win)
+        end
         return
       end
 
