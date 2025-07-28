@@ -352,11 +352,8 @@ M.grep = {
   show_empty = true,
   live = true, -- live grep by default
   supports_live = true,
-  actions = {
-    toggle_regex = function(picker)
-      picker.opts.regex = not picker.opts.regex
-      picker:find()
-    end,
+  toggles = {
+    regex = { value = true },
   },
   win = {
     input = {
