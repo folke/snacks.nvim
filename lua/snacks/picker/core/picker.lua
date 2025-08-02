@@ -673,14 +673,16 @@ function M:close()
   for toggle in pairs(self.opts.toggles) do
     self.init_opts[toggle] = self.opts[toggle]
   end
-  M.last = {
-    opts = self.init_opts or {},
-    selected = self:selected({ fallback = false }),
-    cursor = self.list.cursor,
-    topline = self.list.top,
-    filter = self.input.filter,
-  }
-  M.last.opts.live = self.opts.live
+  if self.init_opts.save_as_last then
+    M.last = {
+      opts = self.init_opts or {},
+      selected = self:selected({ fallback = false }),
+      cursor = self.list.cursor,
+      topline = self.list.top,
+      filter = self.input.filter,
+    }
+    M.last.opts.live = self.opts.live
+  end
 
   local current = vim.api.nvim_get_current_win()
   local is_picker_win = vim.tbl_contains({ self.input.win.win, self.list.win.win, self.preview.win.win }, current)
