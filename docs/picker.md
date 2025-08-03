@@ -595,6 +595,35 @@ Snacks.picker.pick({source = "files", ...})
 }
 ```
 
+### Search Different File Paths
+
+```lua
+-- All of these examples fallback to using neovim's CWD
+
+-- Pick files from native LSP's current root_dir
+function pick_lsp_root_files()
+  Snacks.picker.files({ cwd = vim.lsp.client.root_dir })
+end
+
+-- Pick files in the current git repo
+function pick_lsp_git_files()
+  if Snacks.git.get_root() then
+    return Snacks.picker.git_files({ untracked = true })
+  end
+  Snacks.picker.files({})
+end
+
+-- Pick files in the parent directory of the current buffer
+function pick_buffer_cwd_files()
+  local bufinfo = vim.fn.getbufinfo(0)[1]
+  local cwd = nil
+  if bufinfo.name:match("^/") then
+    cwd = vim.fs.dirname(bufinfo.name)
+  end
+  Snacks.picker.files({ cwd = cwd })
+end
+```
+
 ## 📚 Types
 
 ```lua
