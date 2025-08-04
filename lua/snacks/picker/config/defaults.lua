@@ -71,6 +71,7 @@ local M = {}
 ---@field live? boolean when true, typing will trigger live searches
 ---@field limit? number when set, the finder will stop after finding this number of items. useful for live searches
 ---@field ui_select? boolean set `vim.ui.select` to a snacks picker
+---@field resumable? boolean when true, picker resumable with `Snacks.picker.resume()`
 --- Source definition
 ---@field items? snacks.picker.finder.Item[] items to show instead of using a finder
 ---@field format? string|snacks.picker.format|string format function or preset
@@ -138,6 +139,7 @@ local defaults = {
     fields = { "score:desc", "#text", "idx" },
   },
   ui_select = true, -- replace `vim.ui.select` with the snacks picker
+  resumable = true, -- resumable with `Snacks.picker.resume()`
   ---@class snacks.picker.formatters.Config
   formatters = {
     text = {
