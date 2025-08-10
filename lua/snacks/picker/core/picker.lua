@@ -673,7 +673,7 @@ function M:close()
   for toggle in pairs(self.opts.toggles) do
     self.init_opts[toggle] = self.opts[toggle]
   end
-  if self.init_opts.save_as_last then
+  if self.opts.save_as_last == true or type(self.opts.save_as_last) == "function" and self.opts.save_as_last(self) then
     M.last = {
       opts = self.init_opts or {},
       selected = self:selected({ fallback = false }),
