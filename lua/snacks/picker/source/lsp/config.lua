@@ -173,7 +173,7 @@ function M.preview(ctx)
     )
   end
 
-  if item.cmd then
+  if item.cmd and type(item.cmd) == "table" then
     lines[#lines + 1] = "- **cmd**: `" .. table.concat(item.cmd, " ") .. "`"
   end
 
