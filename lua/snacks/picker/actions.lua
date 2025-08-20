@@ -95,8 +95,7 @@ function M.jump(picker, _, action)
       local buf = item.buf ---@type number
       if not buf then
         local path = assert(Snacks.picker.util.path(item), "Either item.buf or item.file is required")
-        local absolute_path = vim.fn.fnamemodify(path, ":p")
-        buf = vim.fn.bufadd(absolute_path)
+        buf = vim.fn.bufadd(path)
       end
       vim.bo[buf].buflisted = true
 
