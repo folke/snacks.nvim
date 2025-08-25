@@ -78,10 +78,10 @@ vim.api.nvim_create_autocmd({ 'FileType' }, {
 
       vim.ui.input({ prompt = 'Move/rename to:', default = original_file_path }, function(target_file_path)
         if target_file_path and target_file_path ~= "" then
-          local file_exists = vim.loop.fs_access(target_file_path, "W")
+          local file_exists = vim.uv.fs_access(target_file_path, "W")
 
           if not file_exists then
-            vim.loop.fs_rename(original_file_path, target_file_path)
+            vim.uv.fs_rename(original_file_path, target_file_path)
 
             Snacks.rename.on_rename_file(original_file_path, target_file_path)
           else
