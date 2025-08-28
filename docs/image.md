@@ -33,7 +33,7 @@ environment. You can do this by setting `SNACKS_${ENV_NAME}` to `true` or `false
 For example, to force detection of **ghostty** you can set `SNACKS_GHOSTTY=true`.
 
 In order to automatically display the image when opening an image file,
-or to have imaged displayed in supported document formats like `markdown` or `html`,
+or to have image displayed in supported document formats like `markdown` or `html`,
 you need to enable the `image` plugin in your `snacks` config.
 
 [ImageMagick](https://imagemagick.org/index.php) is required to convert images
