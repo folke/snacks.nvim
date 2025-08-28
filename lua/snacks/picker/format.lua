@@ -597,7 +597,6 @@ end
 function M.register(item)
   local ret = {} ---@type snacks.picker.Highlight[]
   local hl = string.match(item.reg, "[0-9]") and "Number" or string.match(item.reg, "[a-z]") and "String" or "Other"
-  ret[#ret + 1] = { " " }
   ret[#ret + 1] = { "[", "SnacksPickerDelim" }
   ret[#ret + 1] = { item.reg, "SnacksPickerRegister" .. hl }
   ret[#ret + 1] = { "]", "SnacksPickerDelim" }
