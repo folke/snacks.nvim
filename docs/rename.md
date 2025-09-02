@@ -37,7 +37,9 @@ return {
   dependencies = { "echasnovski/mini.icons" },
   opts = {
     hooks = {
-      on_rename = Snacks.rename.on_rename_file,
+      on_rename = function(src_path, destination_path)
+        Snacks.rename.on_rename_file(src_path, destination_path)
+      end,
     },
   },
 }
