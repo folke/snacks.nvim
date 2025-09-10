@@ -770,6 +770,10 @@ M.registers = {
     put_register = function(picker, item, action)
       ---@cast action snacks.picker.yank.Action
       picker:close()
+      if not vim.bo.modifiable then
+        Snacks.notify("Buffer is not modifiable", { level = "error" })
+        return
+      end
       if item then
         local command = action and action.field == "before" and "P" or "p"
         vim.fn.feedkeys('"' .. item.reg .. command)
@@ -785,7 +789,7 @@ M.registers = {
       picker.input:set()
       picker.input:update()
     end,
-  }
+  },
 }
 
 -- Special picker that resumes the last picker
