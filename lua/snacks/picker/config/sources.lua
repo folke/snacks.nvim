@@ -769,15 +769,17 @@ M.registers = {
   actions = {
     put_register = function(picker, item, action)
       ---@cast action snacks.picker.yank.Action
-      picker:close()
-      if not vim.bo.modifiable then
-        Snacks.notify("Buffer is not modifiable", { level = "error" })
-        return
-      end
-      if item then
-        local command = action and action.field == "before" and "P" or "p"
-        vim.fn.feedkeys('"' .. item.reg .. command)
-      end
+      picker:norm(function()
+        if item then
+          picker:close()
+          if not vim.bo.modifiable then
+            Snacks.notify("Buffer is not modifiable", { level = "error" })
+            return
+          end
+          local command = action and action.field == "before" and "P" or "p"
+          vim.fn.feedkeys('"' .. item.reg .. command)
+        end
+      end)
     end,
     put_register_before = { action = "put_register", field = "before" },
     toggle_reg = function(picker)
