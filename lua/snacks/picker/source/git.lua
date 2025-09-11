@@ -54,7 +54,17 @@ function M.grep(opts, ctx)
   elseif opts.submodules then
     table.insert(args, "--recurse-submodules")
   end
-  table.insert(args, ctx.filter.search)
+
+  local pattern, pargs = Snacks.picker.util.parse(ctx.filter.search)
+  table.insert(args, pattern)
+
+  args[#args + 1] = "--"
+  vim.list_extend(args, pargs)
+
+  local glob = type(opts.glob) == "table" and opts.glob or { opts.glob }
+  ---@cast glob string[]
+  vim.list_extend(args, glob)
+
   if not opts.cwd then
     opts.cwd = Snacks.git.get_root() or uv.cwd() or "."
     ctx.picker:set_cwd(opts.cwd)
