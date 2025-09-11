@@ -255,6 +255,7 @@ M.git_files = {
 ---@field untracked? boolean search in untracked files
 ---@field submodules? boolean search in submodule files
 ---@field need_search? boolean require a search pattern
+---@field glob? string|string[] glob file pattern(s)
 M.git_grep = {
   finder = "git_grep",
   format = "file",
