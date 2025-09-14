@@ -57,9 +57,19 @@ function M.grep(opts, ctx)
 
   local pattern, pargs = Snacks.picker.util.parse(ctx.filter.search)
   table.insert(args, pattern)
-
   args[#args + 1] = "--"
-  vim.list_extend(args, pargs)
+
+  local function filter_catch_all_exclusions(pathspecs)
+    local function is_valid(spec)
+      if not spec then return false end
+      if spec:match("^:[!^][*.]?$") then return false end
+      if spec:match("^:%(exclude%)[*.]?$") then return false end
+      if spec:match("^:%([^)]*$") then return false end -- unfinished `(exclude)`
+      return true
+    end
+    return vim.tbl_filter(function(spec) return is_valid(spec) end, pathspecs)
+  end
+  vim.list_extend(args, filter_catch_all_exclusions(pargs))
 
   local glob = type(opts.glob) == "table" and opts.glob or { opts.glob }
   ---@cast glob string[]
