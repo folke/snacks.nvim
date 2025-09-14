@@ -71,7 +71,7 @@ function M.grep(opts, ctx)
   end
   vim.list_extend(args, filter_catch_all_exclusions(pargs))
 
-  local glob = type(opts.glob) == "table" and opts.glob or { opts.glob }
+  local glob = type(opts.pathspec) == "table" and opts.pathspec or { opts.pathspec }
   ---@cast glob string[]
   vim.list_extend(args, glob)
 
