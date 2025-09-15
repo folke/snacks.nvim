@@ -17,6 +17,7 @@ local defaults = {
     only_scope = false, -- only show indent guides of the scope
     only_current = false, -- only show indent guides in the current window
     hl = "SnacksIndent", ---@type string|string[] hl groups for indent guides
+    skip_root_level = false, -- skip root level indent
     -- can be a list of hl groups to cycle through
     -- hl = {
     --     "SnacksIndent1",
@@ -55,6 +56,7 @@ local defaults = {
     underline = false, -- underline the start of the scope
     only_current = false, -- only show scope in the current window
     hl = "SnacksIndentScope", ---@type string|string[] hl group for scopes
+    skip_root_level = false, -- skip root level scope
   },
   chunk = {
     -- when enabled, scopes will be rendered as chunks, except for the
@@ -158,7 +160,9 @@ local function get_extmarks(indent, state)
 
   for i = 1 + offset, indent do
     local col = (i - 1) * sw - state.leftcol
-    if col >= 0 then
+    local col_threshold = config.indent.skip_root_level and 1 or 0
+
+    if col >= col_threshold then
       table.insert(cache_extmarks[key], {
         virt_text = { { config.indent.char, get_hl(i, config.indent.hl) } },
         virt_text_pos = "overlay",
@@ -321,8 +325,9 @@ function M.render_scope(scope, state)
       ephemeral = true,
     })
   end
+  local col_threshold = config.scope.skip_root_level and 1 or 0
 
-  if col < 0 then -- scope is hidden
+  if col < col_threshold then -- scope is hidden
     return
   end
 
