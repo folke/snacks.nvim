@@ -15,6 +15,7 @@ local uv = vim.uv or vim.loop
 ---@class snacks.gitbrowse.Config
 ---@field url_patterns? table<string, table<string, string|fun(fields:snacks.gitbrowse.Fields):string>>
 local defaults = {
+  commit = nil, ---@type string
   notify = true, -- show notification on open
   -- Handler to open the url in a browser
   ---@param url string
@@ -161,14 +162,19 @@ function M._open(opts)
     line_end = opts.line_end,
   }
 
-  if opts.what == "permalink" then
-    fields.commit = system(
-      { "git", "-C", cwd, "log", "-n", "1", "--pretty=format:%H", "--", file },
-      "Failed to get latest commit of file"
-    )[1]
+  -- First check if commit was passed in opts
+  if opts.what == "commit" and opts.commit then
+    fields.commit = opts.commit
   else
-    local word = vim.fn.expand("<cword>")
-    fields.commit = is_valid_commit_hash(word, cwd) and word or nil
+    if opts.what == "permalink" then
+      fields.commit = system(
+        { "git", "-C", cwd, "log", "-n", "1", "--pretty=format:%H", "--", file },
+        "Failed to get latest commit of file"
+      )[1]
+    else
+      local word = vim.fn.expand("<cword>")
+      fields.commit = is_valid_commit_hash(word, cwd) and word or nil
+    end
   end
 
   -- Get visual selection range if in visual mode
