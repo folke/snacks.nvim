@@ -26,13 +26,13 @@ The default preset comes with support for:
 - pickers:
   - [fzf-lua](https://github.com/ibhagwan/fzf-lua)
   - [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim)
-  - [mini.pick](https://github.com/echasnovski/mini.pick)
+  - [mini.pick](https://github.com/nvim-mini/mini.pick)
 - session managers: (only works with [lazy.nvim](https://github.com/folke/lazy.nvim))
   - [persistence.nvim](https://github.com/folke/persistence.nvim)
   - [persisted.nvim](https://github.com/olimorris/persisted.nvim)
   - [neovim-session-manager](https://github.com/Shatur/neovim-session-manager)
   - [posession.nvim](https://github.com/jedrzejboczar/possession.nvim)
-  - [mini.sessions](https://github.com/echasnovski/mini.sessions)
+  - [mini.sessions](https://github.com/nvim-mini/mini.sessions)
 
 ### Section actions
 

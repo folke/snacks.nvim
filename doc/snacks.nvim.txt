@@ -109,7 +109,7 @@ REQUIREMENTS                            *snacks.nvim-snacks.nvim-requirements*
 
 - **Neovim** >= 0.9.4
 - for proper icons support:
-    - mini.icons <https://github.com/echasnovski/mini.icons> _(optional)_
+    - mini.icons <https://github.com/nvim-mini/mini.icons> _(optional)_
     - nvim-web-devicons <https://github.com/nvim-tree/nvim-web-devicons> _(optional)_
     - a Nerd Font <https://www.nerdfonts.com/> **(optional)**
 
