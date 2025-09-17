@@ -16,6 +16,14 @@ function M.start(path, cb)
   end
   local handle = assert(vim.uv.new_fs_event())
   local ok, err = handle:start(path, {}, function(_, file, events)
+    -- Handle nil filename (FreeBSD kqueue bug where filename may be unavailable)
+    if file == nil then
+      if not cb then
+        Tree:refresh(path)
+        M.refresh()
+      end
+      return -- Skip cb to avoid errors; refresh only for default behavior
+    end
     file = path .. "/" .. file
     if cb then
       cb(file, events)
