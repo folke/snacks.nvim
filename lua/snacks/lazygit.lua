@@ -88,7 +88,7 @@ local function env(opts)
       end, vim.split(vim.env.LG_CONFIG_FILE or "", ",", { plain = true }))
 
       -- add the default config file if it's not already there
-      if #config_files == 0 then
+      if #config_files == 0 and vim.fn.filereadable(config_dir .. "/config.yml") == 1 then
         config_files[1] = svim.fs.normalize(config_dir .. "/config.yml")
       end
 
