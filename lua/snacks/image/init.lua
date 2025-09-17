@@ -64,6 +64,7 @@ local defaults = {
     "mkv",
     "webm",
     "pdf",
+    "icns",
   },
   force = false, -- try displaying the image, even if the terminal does not support it
   doc = {
