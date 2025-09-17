@@ -63,7 +63,15 @@ function M.filename(item, picker)
     if item.dir and item.open then
       icon = picker.opts.icons.files.dir_open
     end
-    icon = Snacks.picker.util.align(icon, picker.opts.formatters.file.icon_width or 2)
+    -- Adds padding to let icon take up 2 columns
+    if picker.opts.formatters.file.icon_align_opts and picker.opts.formatters.file.icon_width > 1 then
+      icon = icon .. " "
+    end
+    icon = Snacks.picker.util.align(
+      icon,
+      picker.opts.formatters.file.icon_width or 2,
+      picker.opts.formatters.file.icon_align_opts
+    )
     ret[#ret + 1] = { icon, hl, virtual = true }
   end
 
