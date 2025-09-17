@@ -56,8 +56,8 @@ local defaults = {
     },
     ["gitlab%.com"] = {
       branch = "/-/tree/{branch}",
-      file = "/-/blob/{branch}/{file}#L{line_start}-L{line_end}",
-      permalink = "/-/blob/{commit}/{file}#L{line_start}-L{line_end}",
+      file = "/-/blob/{branch}/{file}#L{line_start}-{line_end}",
+      permalink = "/-/blob/{commit}/{file}#L{line_start}-{line_end}",
       commit = "/-/commit/{commit}",
     },
     ["bitbucket%.org"] = {
