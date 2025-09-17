@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.24.0](https://github.com/folke/snacks.nvim/compare/v2.23.0...v2.24.0) (2025-09-17)
+
+
+### Features
+
+* **picker:** updated Snacks.picker.lsp_config to work with `vim.lsp.config` ([292d46f](https://github.com/folke/snacks.nvim/commit/292d46f773af05aaea6a21f13fcc179adea95494))
+
+
+### Bug Fixes
+
+* **indent:** check that win is valid in step. Closes [#1943](https://github.com/folke/snacks.nvim/issues/1943) ([e409f31](https://github.com/folke/snacks.nvim/commit/e409f31cc968f90139ad66941827b42ef95de7fd))
+* **picker:** lsp_config now includes any configfured LSP and excludes deprecated servers ([a0d6eba](https://github.com/folke/snacks.nvim/commit/a0d6eba1a22719ffaed9b1ac2cf79e33b1c64e4c))
+* **util:** fix invalid window error ([#1996](https://github.com/folke/snacks.nvim/issues/1996)) ([32e5bf1](https://github.com/folke/snacks.nvim/commit/32e5bf17309ca26e6075a14c3907b0959188d781))
+
+
+### Performance Improvements
+
+* **dashboard:** add basic OSC11 and CSI6n support to terminal sections (gh 10 seconds faster) ([fb016d2](https://github.com/folke/snacks.nvim/commit/fb016d20c2a415450708e3eb837462f6dcea46ba))
+
 ## [2.23.0](https://github.com/folke/snacks.nvim/compare/v2.22.0...v2.23.0) (2025-09-15)
 
 
