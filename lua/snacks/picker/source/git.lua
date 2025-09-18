@@ -111,6 +111,7 @@ function M.log(opts, ctx)
   local args = git_args(
     opts.args,
     "log",
+    opts.log_args,
     "--pretty=format:%h %s (%ch)",
     "--abbrev-commit",
     "--decorate",
