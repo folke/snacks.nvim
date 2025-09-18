@@ -757,6 +757,41 @@ M.registers = {
   format = "register",
   preview = "preview",
   confirm = { "copy", "close" },
+  win = {
+    input = {
+      keys = {
+        ["<c-cr>"] = { "put_register", mode = { "n", "i" }, desc = "put, close" },
+        ["<s-cr>"] = { "put_register_before", mode = { "n", "i" }, desc = "put before, close" },
+        ["<c-g>"] = { "toggle_reg", mode = { "i", "n" } },
+      },
+    },
+  },
+  actions = {
+    put_register = function(picker, item, action)
+      ---@cast action snacks.picker.yank.Action
+      picker:norm(function()
+        if item then
+          picker:close()
+          if not vim.bo.modifiable then
+            Snacks.notify("Buffer is not modifiable", { level = "error" })
+            return
+          end
+          local command = action and action.field == "before" and "P" or "p"
+          vim.fn.feedkeys('"' .. item.reg .. command)
+        end
+      end)
+    end,
+    put_register_before = { action = "put_register", field = "before" },
+    toggle_reg = function(picker)
+      if string.match(picker.input.filter.pattern, "^reg:") then
+        picker.input.filter.pattern = picker.input.filter.pattern:sub(5)
+      else
+        picker.input.filter.pattern = "reg:" .. picker.input.filter.pattern
+      end
+      picker.input:set()
+      picker.input:update()
+    end,
+  },
 }
 
 -- Special picker that resumes the last picker
