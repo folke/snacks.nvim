@@ -106,10 +106,17 @@ function M.is_enabled(opts)
   if not config.filter(buf) then
     return false
   end
-  local clients = (vim.lsp.get_clients or vim.lsp.get_active_clients)({ bufnr = buf })
-  clients = vim.tbl_filter(function(client)
-    return client.supports_method("textDocument/documentHighlight", { bufnr = buf })
-  end, clients)
+
+  local clients = {} ---@type vim.lsp.Client[]
+  if vim.fn.has("nvim-0.11") == 1 then
+    clients = vim.lsp.get_clients({ bufnr = buf, method = "textDocument/documentHighlight" })
+  else
+    clients = (vim.lsp.get_clients or vim.lsp.get_active_clients)({ bufnr = buf })
+    clients = vim.tbl_filter(function(client)
+      return client.supports_method("textDocument/documentHighlight", { bufnr = buf })
+    end, clients)
+  end
+
   return #clients > 0
 end
 

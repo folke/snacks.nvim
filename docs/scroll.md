@@ -5,7 +5,7 @@ Properly handles `scrolloff` and mouse scrolling.
 
 Similar plugins:
 
-- [mini.animate](https://github.com/echasnovski/mini.animate)
+- [mini.animate](https://github.com/nvim-mini/mini.animate)
 - [neoscroll.nvim](https://github.com/karb94/neoscroll.nvim)
 
 <!-- docgen -->

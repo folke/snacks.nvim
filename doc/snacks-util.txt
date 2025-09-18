@@ -11,6 +11,7 @@ Table of Contents                              *snacks-util-table-of-contents*
   - Snacks.util.debounce()         |snacks-util-module-snacks.util.debounce()|
   - Snacks.util.file_decode()   |snacks-util-module-snacks.util.file_decode()|
   - Snacks.util.file_encode()   |snacks-util-module-snacks.util.file_encode()|
+  - Snacks.util.get_lang()         |snacks-util-module-snacks.util.get_lang()|
   - Snacks.util.icon()                 |snacks-util-module-snacks.util.icon()|
   - Snacks.util.is_float()         |snacks-util-module-snacks.util.is_float()|
   - Snacks.util.is_transparent()|snacks-util-module-snacks.util.is_transparent()|
@@ -18,6 +19,7 @@ Table of Contents                              *snacks-util-table-of-contents*
   - Snacks.util.normkey()           |snacks-util-module-snacks.util.normkey()|
   - Snacks.util.on_key()             |snacks-util-module-snacks.util.on_key()|
   - Snacks.util.on_module()       |snacks-util-module-snacks.util.on_module()|
+  - Snacks.util.parse()               |snacks-util-module-snacks.util.parse()|
   - Snacks.util.redraw()             |snacks-util-module-snacks.util.redraw()|
   - Snacks.util.redraw_range() |snacks-util-module-snacks.util.redraw_range()|
   - Snacks.util.ref()                   |snacks-util-module-snacks.util.ref()|
@@ -101,6 +103,17 @@ Encodes a string to be used as a file name.
 <
 
 
+`Snacks.util.get_lang()`                              *Snacks.util.get_lang()*
+
+>lua
+    ---@param lang string|number|nil
+    ---@overload fun(buf:number):string?
+    ---@overload fun(ft:string):string?
+    ---@return string?
+    Snacks.util.get_lang(lang)
+<
+
+
 `Snacks.util.icon()`                                      *Snacks.util.icon()*
 
 Get an icon from `mini.icons` or `nvim-web-devicons`.
@@ -166,6 +179,18 @@ loaded.
     ---@param modname string
     ---@param cb fun(modname:string)
     Snacks.util.on_module(modname, cb)
+<
+
+
+`Snacks.util.parse()`                                    *Snacks.util.parse()*
+
+Parse async when available.
+
+>lua
+    ---@param parser vim.treesitter.LanguageTree
+    ---@param range boolean|Range|nil: Parse this range in the parser's source.
+    ---@param on_parse fun(err?: string, trees?: table<integer, TSTree>) Function invoked when parsing completes.
+    Snacks.util.parse(parser, range, on_parse)
 <
 
 
