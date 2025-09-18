@@ -54,7 +54,27 @@ function M.grep(opts, ctx)
   elseif opts.submodules then
     table.insert(args, "--recurse-submodules")
   end
-  table.insert(args, ctx.filter.search)
+
+  local pattern, pargs = Snacks.picker.util.parse(ctx.filter.search)
+  table.insert(args, pattern)
+  args[#args + 1] = "--"
+
+  local function filter_catch_all_exclusions(pathspecs)
+    local function is_valid(spec)
+      if not spec then return false end
+      if spec:match("^:[!^][*.]?$") then return false end
+      if spec:match("^:%(exclude%)[*.]?$") then return false end
+      if spec:match("^:%([^)]*$") then return false end -- unfinished `(exclude)`
+      return true
+    end
+    return vim.tbl_filter(function(spec) return is_valid(spec) end, pathspecs)
+  end
+  vim.list_extend(args, filter_catch_all_exclusions(pargs))
+
+  local glob = type(opts.pathspec) == "table" and opts.pathspec or { opts.pathspec }
+  ---@cast glob string[]
+  vim.list_extend(args, glob)
+
   if not opts.cwd then
     opts.cwd = Snacks.git.get_root() or uv.cwd() or "."
     ctx.picker:set_cwd(opts.cwd)
@@ -91,6 +111,7 @@ function M.log(opts, ctx)
   local args = git_args(
     opts.args,
     "log",
+    opts.log_args,
     "--pretty=format:%h %s (%ch)",
     "--abbrev-commit",
     "--decorate",

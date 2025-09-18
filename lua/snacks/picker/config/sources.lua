@@ -208,7 +208,7 @@ M.files = {
 }
 
 ---@class snacks.picker.git.Config: snacks.picker.Config
----@field args? string[] additional arguments to pass to `git ls-files`
+---@field args? string[] additional arguments to pass to `git`
 
 ---@class snacks.picker.git.branches.Config: snacks.picker.git.Config
 ---@field all? boolean show all branches, including remote
@@ -255,6 +255,7 @@ M.git_files = {
 ---@field untracked? boolean search in untracked files
 ---@field submodules? boolean search in submodule files
 ---@field need_search? boolean require a search pattern
+---@field pathspec? string|string[] pathspec pattern(s)
 M.git_grep = {
   finder = "git_grep",
   format = "file",
@@ -272,6 +273,7 @@ M.git_grep = {
 ---@field current_file? boolean show current file log
 ---@field current_line? boolean show current line log
 ---@field author? string filter commits by author
+---@field log_args? string[] additional arguments to pass as `git log <log_args>`
 M.git_log = {
   finder = "git_log",
   format = "git_log",
