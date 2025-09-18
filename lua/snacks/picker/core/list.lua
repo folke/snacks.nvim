@@ -586,7 +586,12 @@ function M:render()
     end
     local search = Snacks.picker.util.parse(vim.trim(self.picker.input.filter.search))
     if self.matcher_regex.pattern ~= search then
-      self.matcher_regex:init(search)
+      self.matcher_regex:init(
+        Snacks.picker.util.prepare_highlight_pattern(
+          search,
+          { case_insensitive_regex_option = true, remove_grep_flags = true }
+        )
+      )
     end
 
     self.visible = {}
