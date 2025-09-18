@@ -30,6 +30,7 @@ local defaults = {
   min_size = 2,
   -- try to expand the scope to this size
   max_size = nil,
+  indent_scope_find_limit = 1000, -- maximum number of lines to search for indent scopes
   cursor = true, -- when true, the column of the cursor is used to determine the scope
   edge = true, -- include the edge of the scope (typically the line above and below with smaller indent)
   siblings = false, -- expand single line scopes with single line siblings
@@ -210,7 +211,8 @@ IndentScope.__index = IndentScope
 ---@param line number 1-indexed
 ---@param indent number
 ---@param up? boolean
-function IndentScope._expand(line, indent, up)
+---@param limit? number -- nil for no limit
+function IndentScope._expand(line, indent, up, limit)
   local next = up and vim.fn.prevnonblank or vim.fn.nextnonblank
   while line do
     local i, l = IndentScope.get_indent(next(line + (up and -1 or 1)))
@@ -218,6 +220,12 @@ function IndentScope._expand(line, indent, up)
       return line
     end
     line = l
+    if limit then
+      limit = limit - 1
+    end
+    if limit == 0 then
+      return
+    end
   end
   return line
 end
@@ -289,11 +297,18 @@ function IndentScope:find(opts)
     indent = math.min(indent, vim.fn.virtcol(opts.pos) + 1)
   end
 
+  local limit = opts.indent_scope_find_limit
+  local from = IndentScope._expand(line, indent, true, limit)
+  local to = IndentScope._expand(line, indent, false, limit)
+  if not from or not to then
+    return
+  end
+
   -- expand to include bigger indents
   return IndentScope:new({
     buf = opts.buf,
-    from = IndentScope._expand(line, indent, true),
-    to = IndentScope._expand(line, indent, false),
+    from = from,
+    to = to,
     indent = indent,
   }, opts)
 end
