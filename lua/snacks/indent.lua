@@ -392,6 +392,9 @@ end
 ---@param value number
 ---@param prev? number
 local function step(scope, value, prev)
+  if not vim.api.nvim_win_is_valid(scope.win) then
+    return
+  end
   prev = prev or 0
   local cursor = vim.api.nvim_win_get_cursor(scope.win)
   local dt = math.abs(scope.from - cursor[1])

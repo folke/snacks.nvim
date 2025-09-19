@@ -28,7 +28,7 @@ Some acknowledgements:
 
 - [fzf-lua](https://github.com/ibhagwan/fzf-lua)
 - [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim)
-- [mini.pick](https://github.com/echasnovski/mini.pick)
+- [mini.pick](https://github.com/nvim-mini/mini.pick)
 
 ## 📚 Usage
 

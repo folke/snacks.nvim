@@ -203,7 +203,7 @@ end
 ---@param from number -- 1-indexed, inclusive
 ---@param to number -- 1-indexed, inclusive
 function M.redraw_range(win, from, to)
-  if vim.api.nvim__redraw then
+  if vim.api.nvim__redraw and vim.api.nvim_win_is_valid(win) then
     vim.api.nvim__redraw({ win = win, range = { math.floor(from - 1), math.floor(to) }, valid = true, flush = false })
   else
     vim.cmd([[redraw!]])
