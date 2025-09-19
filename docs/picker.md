@@ -1039,7 +1039,7 @@ Neovim commands
 
 ```lua
 ---@class snacks.picker.files.Config: snacks.picker.proc.Config
----@field cmd? "fd"| "rg"| "find" command to use. Leave empty to auto-detect
+---@field cmd? "bfs" | "fd"| "rg"| "find" command to use. Leave empty to auto-detect
 ---@field hidden? boolean show hidden files
 ---@field ignored? boolean show ignored files
 ---@field dirs? string[] directories to search
