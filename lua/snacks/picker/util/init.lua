@@ -255,6 +255,47 @@ function M.parse(str)
   return t, args
 end
 
+---@param str string
+---@return table<string, string> fields, string search
+function M.parse_fields(str)
+  local fields = {}
+  local search = ""
+  for s in vim.gsplit(str, " ") do
+    local fieldKey, fieldVal = s.match(s, "^([%w_][%w_]+):(.*)$")
+    if fieldKey then fields[fieldKey] = fieldVal end
+    if fieldKey == nil
+    then
+      if search == nil
+        then search = s
+        end search = search .. " " .. s
+    end
+  end
+  search = search:match("^%s*(.*)")
+  return fields, search
+end
+
+---@param fields table<string, string>
+---@param fieldName string
+---@param items table<string, string>
+---@param itemField any
+---@return table<string, string> items
+function M.regex_field_filter(fields, fieldName, items, itemField)
+  local the_field = vim.tbl_get(fields, fieldName)
+  if the_field then
+    local ok, re = pcall(vim.regex, the_field)
+    if ok then
+      return vim.tbl_filter(function(item)
+        local res = re:match_str(vim.tbl_get(item, itemField) or "") ~= nil
+        return res
+      end, items)
+    else
+      return items
+    end
+  else
+    return items
+  end
+end
+
 --- Resolves the item if it has a resolve function
 ---@param item snacks.picker.Item?
 function M.resolve(item)
