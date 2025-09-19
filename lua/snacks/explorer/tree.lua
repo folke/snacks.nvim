@@ -302,6 +302,13 @@ function Tree:close_all(cwd)
 end
 
 ---@param cwd string
+function Tree:open_all(cwd)
+  self:walk(self:find(cwd), function(node)
+    node.open = true
+  end, { all = true })
+end
+
+---@param cwd string
 ---@param filter fun(node: snacks.picker.explorer.Node):boolean?
 ---@param opts? {up?: boolean, path?: string}
 function Tree:next(cwd, filter, opts)
