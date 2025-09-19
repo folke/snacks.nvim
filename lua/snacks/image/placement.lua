@@ -203,12 +203,16 @@ end
 --- Renders the unicode placeholder grid in the buffer
 ---@param loc snacks.image.Loc
 function M:render_grid(loc)
+  local bit = require("bit")
+  local upper_id = bit.band(bit.rshift(self.img.id, 24), 0xff)
+
   local hl = "SnacksImage" .. self.id -- image id is encoded in the foreground color
   Snacks.util.set_hl({
     [hl] = {
-      fg = self.img.id,
+      fg = bit.band(self.img.id, 0xffffff),
       sp = self.id,
       bg = Snacks.image.config.debug.placement and "#FF007C" or "none",
+      ctermfg = bit.band(self.img.id, 0xff),
       nocombine = true,
     },
   })
@@ -222,6 +226,9 @@ function M:render_grid(loc)
       line[#line + 1] = PLACEHOLDER
       line[#line + 1] = positions[r]
       line[#line + 1] = positions[c]
+      if upper_id > 0 then
+        line[#line + 1] = positions[upper_id + 1]
+      end
     end
     img[#img + 1] = table.concat(line)
   end
