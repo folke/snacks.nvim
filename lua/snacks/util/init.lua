@@ -11,6 +11,10 @@ local uv = vim.uv or vim.loop
 local key_cache = {} ---@type table<string, string>
 local langs = {} ---@type table<string, boolean>
 
+-- Cache for buffer options to avoid redundant API calls
+local buf_options_cache = {} ---@type table<number, table<string, any>>
+local buf_cache_autocmd_id = nil
+
 ---@alias snacks.util.hl table<string, string|vim.api.keyset.highlight>
 
 local hl_groups = {} ---@type table<string, vim.api.keyset.highlight>
@@ -89,8 +93,49 @@ end
 ---@param buf number
 ---@param bo vim.bo|{}
 function M.bo(buf, bo)
-  for k, v in pairs(bo or {}) do
-    vim.api.nvim_set_option_value(k, v, { buf = buf })
+  if not bo or not next(bo) then
+    return
+  end
+
+  -- Ensure buffer is valid
+  if not vim.api.nvim_buf_is_valid(buf) then
+    -- Clean up cache for invalid buffer
+    buf_options_cache[buf] = nil
+    return
+  end
+
+  -- Initialize cache for this buffer if not exists
+  if not buf_options_cache[buf] then
+    buf_options_cache[buf] = {}
+  end
+
+  local cache = buf_options_cache[buf]
+
+  for k, v in pairs(bo) do
+    -- Only set option if value has changed
+    if cache[k] ~= v then
+      local ok, err = pcall(vim.api.nvim_set_option_value, k, v, { buf = buf })
+      if ok then
+        cache[k] = v
+      else
+        -- If setting option failed, don't cache the value
+        -- This ensures we'll try again next time
+        cache[k] = nil
+      end
+    end
+  end
+
+  -- Setup autocmd to clean up cache when buffers are deleted (only once)
+  if not buf_cache_autocmd_id then
+    buf_cache_autocmd_id = vim.api.nvim_create_autocmd("BufDelete", {
+      group = vim.api.nvim_create_augroup("snacks_util_buf_cache", { clear = true }),
+      callback = function(args)
+        local deleted_buf = args.buf
+        if buf_options_cache[deleted_buf] then
+          buf_options_cache[deleted_buf] = nil
+        end
+      end,
+    })
   end
 end
 
