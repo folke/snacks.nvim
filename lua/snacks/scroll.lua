@@ -22,6 +22,7 @@ M.meta = {
 ---@class snacks.scroll.Config
 ---@field animate snacks.animate.Config|{}
 ---@field animate_repeat snacks.animate.Config|{}|{delay:number}
+---@field on_finished fun(win:number)
 local defaults = {
   animate = {
     duration = { step = 15, total = 250 },
@@ -37,6 +38,7 @@ local defaults = {
   filter = function(buf)
     return vim.g.snacks_scroll ~= false and vim.b[buf].snacks_scroll ~= false and vim.bo[buf].buftype ~= "terminal"
   end,
+  on_finished = function(win) end,
   debug = false,
 }
 
@@ -157,7 +159,7 @@ function M.enable()
   })
 
   -- update current state on cursor move
-  vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
+  vim.api.nvim_create_autocmd({ "BufWritePost", "CursorMoved", "CursorMovedI" }, {
     group = group,
     callback = vim.schedule_wrap(function(ev)
       for _, win in ipairs(vim.fn.win_findbuf(ev.buf)) do
@@ -167,6 +169,7 @@ function M.enable()
           -- local cursor = vim.api.nvim_win_get_cursor(win)
           states[win].current.lnum = view.lnum
           states[win].current.col = view.col
+          states[win].changedtick = vim.api.nvim_buf_get_changedtick(ev.buf)
           -- states[win].current.topline = view.topline
         end
       end
@@ -177,9 +180,12 @@ function M.enable()
   vim.api.nvim_create_autocmd({ "CmdlineLeave" }, {
     group = group,
     callback = function(ev)
-      if (ev.file == "/" or ev.file == "?") and vim.o.incsearch then
+      if (ev.file == "/" or ev.file == "?") and vim.o.incsearch and not vim.v.event.abort then
         for _, win in ipairs(vim.fn.win_findbuf(ev.buf)) do
           states[win] = nil
+          vim.schedule(function()
+            get_state(win)
+          end)
         end
       end
     end,
@@ -315,6 +321,9 @@ function M.check(win)
         vim.fn.winrestview(state.target)
         state.current = vim.fn.winsaveview()
         wo(win) -- restore win options
+        if config.on_finished then
+          config.on_finished(win)
+        end
         return
       end
 

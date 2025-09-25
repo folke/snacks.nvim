@@ -204,7 +204,7 @@ function M.insert(picker, _, action)
   ---@cast action snacks.picker.insert.Action
   if action.expr then
     local value = ""
-    vim.api.nvim_buf_call(picker.input.filter.current_buf, function()
+    vim.api.nvim_win_call(picker.input.filter.current_win, function()
       value = action.expr == "line" and vim.api.nvim_get_current_line() or vim.fn.expand(action.expr)
     end)
     vim.api.nvim_win_call(picker.input.win.win, function()
