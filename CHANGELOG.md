@@ -1,5 +1,44 @@
 # Changelog
 
+## [2.23.0](https://github.com/folke/snacks.nvim/compare/v2.22.0...v2.23.0) (2025-09-15)
+
+
+### Features
+
+* **image.doc:** enable inline math rendering for neorg files. Closes [#1438](https://github.com/folke/snacks.nvim/issues/1438) ([ec487f5](https://github.com/folke/snacks.nvim/commit/ec487f5d85c12e4cee27d4e1235a1f82f99bfe03))
+* **image.inline:** honor `concealcursor` and hide conceal when selecting lines. Closes [#1478](https://github.com/folke/snacks.nvim/issues/1478) ([bc0630e](https://github.com/folke/snacks.nvim/commit/bc0630e43be5699bb94dadc302c0d21615421d93))
+* **image:** proper inline rendering of math expressions. Closes [#1318](https://github.com/folke/snacks.nvim/issues/1318). Closes [#1454](https://github.com/folke/snacks.nvim/issues/1454) ([6ea4fa7](https://github.com/folke/snacks.nvim/commit/6ea4fa72dccd6db0713c13e6672f9e8fb4007417))
+* **picker.git:** added `all` option to also list remote branched for `git_branches`. Closes [#1465](https://github.com/folke/snacks.nvim/issues/1465) ([3d695ab](https://github.com/folke/snacks.nvim/commit/3d695ab7d062d40c980ca5fd9fe6e593c8f35b12))
+* **scope:** allow disabling scopes with `vim.g.snacks_scope = false` or `vim.b.snacks_scope = false`. Closes [#1463](https://github.com/folke/snacks.nvim/issues/1463) ([5315e26](https://github.com/folke/snacks.nvim/commit/5315e267fffad9a257ab6909e87eb43e2f636049))
+* **util:** small ts parse wrapper that parses async when available ([9f0aa20](https://github.com/folke/snacks.nvim/commit/9f0aa2048945604d7f87bbc2594efa42c0f78c23))
+
+
+### Bug Fixes
+
+* **dashboard:** escape filenames for edit. Closes [#1453](https://github.com/folke/snacks.nvim/issues/1453) ([8b0e79a](https://github.com/folke/snacks.nvim/commit/8b0e79ab4cbb0bc5b22dd00a471d0b2bafb1c6f0))
+* **explorer:** confirm prompt now defaults to `No` ([f970cbb](https://github.com/folke/snacks.nvim/commit/f970cbb258d23942906be83b808d2ca2fcc24ab2))
+* **image.inline:** remove debug ([d9bb639](https://github.com/folke/snacks.nvim/commit/d9bb639feda0daf4e4df6eaa47989099b74dde46))
+* **image.latex:** don't nest image nodes ([714d761](https://github.com/folke/snacks.nvim/commit/714d7616f0b76ff7c099b5604b19a1a6ab909511))
+* **image.queries:** add image type ([1bbd479](https://github.com/folke/snacks.nvim/commit/1bbd47973df1ae2127576de8fcea720499c159ad))
+* **image:** only show anchor icon for inline images shown on the lines below. Closes [#1479](https://github.com/folke/snacks.nvim/issues/1479) ([bc2ed15](https://github.com/folke/snacks.nvim/commit/bc2ed15c41cb147f957db02959c9422b6a9b84ba))
+* **indent:** zero indent for blank lines. Closes [#1477](https://github.com/folke/snacks.nvim/issues/1477) ([cddf714](https://github.com/folke/snacks.nvim/commit/cddf714dd66a14b0cf556f9be82165b22517de1a))
+* **input:** add cr keybind for normal mode. Closes [#1468](https://github.com/folke/snacks.nvim/issues/1468). Closes [#1466](https://github.com/folke/snacks.nvim/issues/1466) ([78f0ad6](https://github.com/folke/snacks.nvim/commit/78f0ad6ce7283b0e2d6ac2b9b82ac731c7c30b93))
+* **lsp:** fix deprecated warnings related to lsp client ([07fefd2](https://github.com/folke/snacks.nvim/commit/07fefd2a99b2ae376f9704a8a3885c838cfc31c8))
+* **picker.preview:** always use builtin for git log preview ([f0d3433](https://github.com/folke/snacks.nvim/commit/f0d34336dbac2909654ca05aabc472edc73c7c8a))
+* **statuscolumn:** better way of determining open folds. Closes [#1445](https://github.com/folke/snacks.nvim/issues/1445) ([1239fb8](https://github.com/folke/snacks.nvim/commit/1239fb84bc426d4fcd1c8dc9dde8503c17501842))
+* **util.spawn:** correctly mark as faild on abort ([6917597](https://github.com/folke/snacks.nvim/commit/6917597f6d22d79fcd0bf9b0eb7845f7ffdc80a0))
+* **win:** make sure the border is set when setting the title ([76311ab](https://github.com/folke/snacks.nvim/commit/76311aba31182adcd85cc3381abca76b917668b7))
+
+
+### Performance Improvements
+
+* **image:** async treesitter parsing for images ([e55ae37](https://github.com/folke/snacks.nvim/commit/e55ae37bebd53ab0e24a47d88ef50267207ffd91))
+
+
+### Reverts
+
+* dont always set border when setting title. Closes [#1436](https://github.com/folke/snacks.nvim/issues/1436) ([fa29c6c](https://github.com/folke/snacks.nvim/commit/fa29c6c92631026a7ee41249c78bd91562e67a09))
+
 ## [2.22.0](https://github.com/folke/snacks.nvim/compare/v2.21.0...v2.22.0) (2025-02-25)
 
 

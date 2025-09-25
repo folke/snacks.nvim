@@ -33,19 +33,18 @@ local ns_loc = vim.api.nvim_create_namespace("snacks.picker.preview.loc")
 vim.api.nvim_create_autocmd("BufWinEnter", {
   group = vim.api.nvim_create_augroup("snacks.picker.preview.wo", { clear = true }),
   callback = function(ev)
-    if not vim.b[ev.buf].snacks_previewed then
+    local buf = ev.buf
+    if not vim.b[buf].snacks_previewed then
       return
     end
-    local reset = { "winhighlight", "cursorline", "number", "relativenumber", "signcolumn" }
-    local wo = {} ---@type table<string, any>
-    for _, k in ipairs(reset) do
-      wo[k] = vim.api.nvim_get_option_value(k, { scope = "global" })
+    local win = vim.api.nvim_get_current_win()
+    if buf ~= vim.api.nvim_win_get_buf(win) or vim.w[win].snacks_picker_preview or Snacks.util.is_float(win) then
+      return
     end
-    for _, win in ipairs(vim.fn.win_findbuf(ev.buf)) do
-      if not Snacks.util.is_float(win) then -- only reset non-floating windows
-        Snacks.util.wo(win, wo)
-        vim.b[ev.buf].snacks_previewed = nil
-      end
+    vim.b[buf].snacks_previewed = nil
+    local reset = { "winhighlight", "cursorline", "number", "relativenumber", "signcolumn" }
+    for _, k in ipairs(reset) do
+      vim.api.nvim_set_option_value(k, nil, { win = win, scope = "local" })
     end
   end,
 })
@@ -82,6 +81,9 @@ function M.new(picker)
         winhighlight = self.winhl,
       },
       scratch_ft = "snacks_picker_preview",
+      w = {
+        snacks_picker_preview = true,
+      },
     }
   )
   self.win_opts = {

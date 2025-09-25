@@ -1,11 +1,11 @@
 # 🍿 rename
 
 LSP-integrated file renaming with support for plugins like
-[neo-tree.nvim](https://github.com/nvim-neo-tree/neo-tree.nvim) and [mini.files](https://github.com/echasnovski/mini.files).
+[neo-tree.nvim](https://github.com/nvim-neo-tree/neo-tree.nvim) and [mini.files](https://github.com/nvim-mini/mini.files).
 
 ## 🚀 Usage
 
-## [mini.files](https://github.com/echasnovski/mini.files)
+## [mini.files](https://github.com/nvim-mini/mini.files)
 
 ```lua
 vim.api.nvim_create_autocmd("User", {

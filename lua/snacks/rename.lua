@@ -2,7 +2,7 @@
 local M = {}
 
 M.meta = {
-  desc = "LSP-integrated file renaming with support for plugins like [neo-tree.nvim](https://github.com/nvim-neo-tree/neo-tree.nvim) and [mini.files](https://github.com/echasnovski/mini.files).",
+  desc = "LSP-integrated file renaming with support for plugins like [neo-tree.nvim](https://github.com/nvim-neo-tree/neo-tree.nvim) and [mini.files](https://github.com/nvim-mini/mini.files).",
 }
 
 -- Renames the provided file, or the current buffer's file.

@@ -8,7 +8,7 @@ Use the `setup` config function to further make changes to a `bigfile` buffer.
 The context provides the actual filetype.
 
 The default implementation enables `syntax` for the buffer and disables
-[mini.animate](https://github.com/echasnovski/mini.animate) (if used)
+[mini.animate](https://github.com/nvim-mini/mini.animate) (if used)
 
 <!-- docgen -->
 

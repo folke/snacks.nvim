@@ -43,7 +43,7 @@ local function wrap(client)
   if client.wrapped then
     return client
   end
-  local methods = { "request", "supports_method", "cancel_request" }
+  local methods = { "request", "supports_method", "cancel_request", "notify" }
   -- old style
   return setmetatable({ wrapped = true }, {
     __index = function(_, k)

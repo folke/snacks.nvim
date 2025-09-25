@@ -1,6 +1,8 @@
 ---@diagnostic disable: await-in-sync
 local M = {}
 
+local has_11 = vim.fn.has("nvim-0.11") == 1
+
 ---@class snacks.picker.lsp.config.Item: snacks.picker.finder.Item
 ---@field name string
 ---@field config? vim.lsp.ClientConfig
@@ -10,36 +12,84 @@ local M = {}
 ---@field attached_buf? boolean
 ---@field enabled? boolean
 ---@field installed? boolean
+---@field deprecated? boolean
 ---@field cmd? string[]
 ---@field bin? string
+
+---@class snacks.picker.lsp.config.Config
+---@field config vim.lsp.Config
+---@field enabled? boolean
+---@field docs? string
+---@field deprecated? boolean
+
+---@param name string
+local function is_enabled(name)
+  if has_11 then
+    return vim.lsp.is_enabled(name)
+  end
+  local lspconfig = require("lspconfig.configs")
+  return lspconfig[name] and lspconfig[name].manager ~= nil
+end
+
+---@param name string
+local function get_config(name)
+  local modpath = vim.api.nvim_get_runtime_file("lsp/" .. name .. ".lua", false)[1]
+  local ret = { config = {} } ---@type snacks.picker.lsp.config.Config
+  local deprecate = vim.deprecate
+  vim.deprecate = function()
+    ret.deprecated = true
+  end
+  local ok, config = pcall(function()
+    return has_11 and vim.lsp.config[name] or loadfile(modpath)() or {}
+  end)
+  vim.deprecate = deprecate
+  ret.config = ok and config or {}
+  ret.enabled = is_enabled(name)
+  local lines = modpath and Snacks.picker.util.lines(modpath) or {}
+  local header = {} ---@type string[]
+  for _, line in ipairs(lines) do
+    if line:match("^%s*%-%-") then
+      if not line:match("@brief") then
+        header[#header + 1] = line:gsub("^%s*%-%-+%s?", "")
+      end
+    elseif not line:match("^%s*$") then
+      break
+    end
+  end
+  ret.docs = vim.trim(table.concat(header, "\n"))
+  return ret
+end
 
 ---@param opts snacks.picker.lsp.config.Config
 ---@type snacks.picker.finder
 function M.find(opts, ctx)
-  local root = vim.api.nvim_get_runtime_file("lua/lspconfig/configs.lua", false)[1]
-  if not root then
-    Snacks.notify.warn("`nvim-lspconfig` not installed?")
+  local all = vim.api.nvim_get_runtime_file("lsp/*.lua", true)
+  local available = {} ---@type table<string, string>
+  for _, f in ipairs(all) do
+    local name = f:match("([^/\\]+)%.lua$")
+    if name then
+      available[name] = name
+    end
+  end
+
+  for name in pairs(has_11 and vim.lsp.config._configs or {}) do
+    available[name] = name
+  end
+
+  if vim.tbl_count(available) == 0 then
+    Snacks.notify.warn("No LSP configurations found?")
     return {}
   end
-  root = root:gsub("%.lua$", "")
   local main_buf = vim.api.nvim_win_get_buf(ctx.picker.main)
-  local lspconfig = require("lspconfig.configs")
 
   ---@param item snacks.picker.lsp.config.Item
   local function resolve(item)
-    ---@type boolean, {docs?:{description?:string}, default_config?:vim.lsp.ClientConfig}?
-    local ok, mod = pcall(function()
-      if lspconfig[item.name] then
-        return lspconfig[item.name].config_def
-      end
-      return loadfile(root .. "/" .. item.name .. ".lua")()
-    end)
-    if not (ok and mod) then
-      return
-    end
-    item.docs = mod.docs and mod.docs.description or ""
-    item.config = item.config or mod.default_config
-    item.cmd = item.cmd or lspconfig[item.name] and lspconfig[item.name].cmd
+    local mod = get_config(item.name)
+    item.docs = item.docs or mod.docs
+    item.config = item.config or mod.config
+    item.cmd = item.cmd or mod.config.cmd
+    item.enabled = item.enabled or mod.enabled
+    item.deprecated = mod.deprecated
   end
 
   local items = {} ---@type table<string, snacks.picker.lsp.config.Item>
@@ -59,17 +109,12 @@ function M.find(opts, ctx)
     items[client.name].attached_buf = items[client.name].buffers[main_buf]
   end
 
-  for f in vim.fs.dir(root) do
-    local name = f:match("^(.*)%.lua$")
-    if name then
-      items[name] = items[name]
-        or {
-          name = name,
-          buffers = {},
-          enabled = lspconfig[name] and lspconfig[name].manager ~= nil,
-        }
-      items[name].resolve = resolve
-    end
+  for name in pairs(available) do
+    items[name] = items[name] or {
+      name = name,
+      buffers = {},
+    }
+    items[name].resolve = resolve
   end
 
   ---@param cb async fun(item: snacks.picker.finder.Item)
@@ -103,6 +148,7 @@ function M.find(opts, ctx)
           want = false
         end
       end
+      want = want and not item.deprecated
       if want then
         cb({
           name = name,
