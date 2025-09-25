@@ -399,6 +399,9 @@ function N:add(opts)
     notif.layout = n.layout
     notif.dirty = true
   end
+  if opts.history ~= false then
+    self.history[notif.id] = notif
+  end
   self.sorted = nil
   local want = numlevel(notif.level) >= numlevel(self.opts.level)
   want = want and (not self.opts.filter or self.opts.filter(notif))
@@ -406,9 +409,6 @@ function N:add(opts)
     return notif.id
   end
   self.queue[notif.id] = notif
-  if opts.history ~= false then
-    self.history[notif.id] = notif
-  end
   if self:is_blocking() then
     pcall(function()
       self:process()
