@@ -38,9 +38,11 @@ function M.get_root(path)
   end
 
   -- check cache first
-  for _, dir in ipairs(todo) do
-    if git_cache[dir] then
-      return svim.fs.normalize(dir) or nil
+  if git_cache[path] ~= nil then
+    for _, dir in ipairs(todo) do
+      if git_cache[dir] then
+        return svim.fs.normalize(dir) or nil
+      end
     end
   end
 
