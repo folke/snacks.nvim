@@ -460,7 +460,7 @@ end
 
 --- Better validation to check if path is a dir or a file
 ---@param path string
----@return "directory"|"file"|nil
+---@return "directory"|"file"
 function M.path_type(path)
   local stat = uv.fs_stat(path)
   if stat and stat.type then
@@ -468,10 +468,8 @@ function M.path_type(path)
   end
   if vim.fn.isdirectory(path) == 1 then
     return "directory"
-  elseif vim.fn.filereadable(path) == 1 then
-    return "file"
   end
-  return nil
+  return "file"
 end
 
 return M

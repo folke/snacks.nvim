@@ -141,10 +141,7 @@ function Tree:expand(node)
     if not name then
       break
     end
-    if not t then
-      local full_path = node.path .. "/" .. name
-      t = Snacks.util.path_type(full_path) or "file"
-    end
+    t = t or Snacks.util.path_type(node.path .. "/" .. name)
     found[name] = true
     local child = self:child(node, name, t)
     child.type = t
