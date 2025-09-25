@@ -990,6 +990,26 @@ function M.sections.terminal(opts)
         pty = true,
         on_stdout = function(_, data)
           data = table.concat(data, "\n")
+
+          local termenv = {
+            ["\27%]11;%?\27\\"] = function() -- OSC 11
+              local rgb = (vim.o.background == "light") and "ffff/ffff/ffff" or "0000/0000/0000"
+              return "\x1b]11;rgb:" .. rgb .. "\x1b\\"
+            end,
+            ["\27%[6n"] = function() -- CSI 6 n
+              return "\x1b[1;" .. tostring(width) .. "R"
+            end,
+          }
+          for seq, repl in pairs(termenv) do
+            if data:find(seq) then
+              vim.fn.chansend(jid, repl())
+              data = data:gsub(seq, "")
+            end
+          end
+          if data == "" then
+            return
+          end
+
           if recording:is_active() then
             table.insert(output, data)
           end
