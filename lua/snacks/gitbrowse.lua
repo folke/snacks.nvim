@@ -48,6 +48,12 @@ local defaults = {
     { "%.git$"                            , "" },
   },
   url_patterns = {
+    ["gitea%.*"] = {
+      branch = "/src/branch/{branch}",
+      file = "/src/branch/{branch}/{file}#L{line_start}-L{line_end}",
+      permalink = "/src/commit/{commit}/{file}#L{line_start}-L{line_end}",
+      commit = "/src/commit/{commit}",
+    },
     ["github%.com"] = {
       branch = "/tree/{branch}",
       file = "/blob/{branch}/{file}#L{line_start}-L{line_end}",
