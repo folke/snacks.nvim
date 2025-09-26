@@ -333,6 +333,11 @@ local defaults = {
       vertical = "│ ",
       middle   = "├╴",
       last     = "└╴",
+      expanders = {
+        enabled = false,
+        closed = " ",
+        open = " ",
+      },
     },
     undo = {
       saved   = " ",
