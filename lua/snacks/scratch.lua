@@ -174,7 +174,7 @@ function M.open(opts)
     if opts.filekey.branch and uv.fs_stat(".git") then
       local ret = vim.fn.systemlist("git branch --show-current")[1]
       if vim.v.shell_error == 0 then
-        branch = ret
+        branch = ret or "" -- fallback for detached head (ret is nil then)
       end
     end
 
