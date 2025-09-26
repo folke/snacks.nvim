@@ -774,14 +774,18 @@ end
 function M.setup()
   local keys = Snacks.config.get("scope", defaults).keys
   for key, opts in pairs(keys.textobject) do
-    vim.keymap.set({ "x", "o" }, key, function()
-      M.textobject(opts)
-    end, { silent = true, desc = opts.desc })
+    if opts then
+      vim.keymap.set({ "x", "o" }, key, function()
+        M.textobject(opts)
+      end, { silent = true, desc = opts.desc })
+    end
   end
   for key, opts in pairs(keys.jump) do
-    vim.keymap.set({ "n", "x", "o" }, key, function()
-      M.jump(opts)
-    end, { silent = true, desc = opts.desc })
+    if opts then
+      vim.keymap.set({ "n", "x", "o" }, key, function()
+        M.jump(opts)
+      end, { silent = true, desc = opts.desc })
+    end
   end
 end
 
