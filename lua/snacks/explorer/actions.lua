@@ -257,16 +257,34 @@ function M.actions.explorer_del(picker)
   if #paths == 0 then
     return
   end
+
+  -- Filter only existing paths to avoid deleting again or deleting wrong things
+  paths = vim.tbl_filter(function(path)
+    return vim.loop.fs_stat(path) ~= nil
+  end, paths)
+
+  if #paths == 0 then
+    Snacks.notify.warn("Nothing to delete — already gone?")
+    return
+  end
+
   local what = #paths == 1 and vim.fn.fnamemodify(paths[1], ":p:~:.") or #paths .. " files"
   M.confirm("Delete " .. what .. "?", function()
     for _, path in ipairs(paths) do
-      local ok, err = pcall(vim.fn.delete, path, "rf")
-      if ok then
-        Snacks.bufdelete({ file = path, force = true })
+      if vim.fn.isdirectory(path) == 1 and vim.fn.fnamemodify(path, ":p") == vim.fn.getcwd() .. "/" then
+        Snacks.notify.warn("Skipping deletion of current working directory: " .. path)
       else
-        Snacks.notify.error("Failed to delete `" .. path .. "`:\n- " .. err)
+        local ok, err = pcall(vim.fn.delete, path, "rf")
+        if ok then
+          Snacks.bufdelete({ file = path, force = true })
+          local parent_dir = vim.fs.dirname(path)
+          if vim.loop.fs_stat(parent_dir) then
+            Tree:refresh(parent_dir)
+          end
+        else
+          Snacks.notify.error("Failed to delete `" .. path .. "`:\n- " .. err)
+        end
       end
-      Tree:refresh(vim.fs.dirname(path))
     end
     picker.list:set_selected() -- clear selection
     M.update(picker)
