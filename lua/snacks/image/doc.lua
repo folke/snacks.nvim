@@ -158,34 +158,53 @@ end
 
 ---@param buf number
 ---@param src string
-function M.resolve(buf, src)
+---@param on_complete fun(resolved_src: string): nil
+function M.resolve(buf, src, on_complete)
   src = M.url_decode(src)
   local file = svim.fs.normalize(vim.api.nvim_buf_get_name(buf))
   local s = Snacks.image.config.resolve and Snacks.image.config.resolve(file, src) or nil
   if s then
-    return s
+    on_complete(s)
+    return
   end
-  if not src:find("^%w%w+://") then
-    local cwd = uv.cwd() or "."
-    local checks = { [src] = true }
-    for _, root in ipairs({ cwd, vim.fs.dirname(file) }) do
-      checks[root .. "/" .. src] = true
-      for _, dir in ipairs(Snacks.image.config.img_dirs) do
-        dir = root .. "/" .. dir
-        if M.is_dir(dir) then
-          checks[dir .. "/" .. src] = true
+  local function resolve_fallback()
+    if not src:find("^%w%w+://") then
+      local cwd = uv.cwd() or "."
+      local checks = { [src] = true }
+      for _, root in ipairs({ cwd, vim.fs.dirname(file) }) do
+        checks[root .. "/" .. src] = true
+        for _, dir in ipairs(Snacks.image.config.img_dirs) do
+          dir = root .. "/" .. dir
+          if M.is_dir(dir) then
+            checks[dir .. "/" .. src] = true
+          end
         end
       end
-    end
-    for f in pairs(checks) do
-      if vim.fn.filereadable(f) == 1 then
-        src = uv.fs_realpath(f) or f
-        break
+      for f in pairs(checks) do
+        if vim.fn.filereadable(f) == 1 then
+          src = uv.fs_realpath(f) or f
+          break
+        end
       end
+      src = svim.fs.normalize(src)
     end
-    src = svim.fs.normalize(src)
+    on_complete(src)
   end
-  return src
+  if Snacks.image.config.async_resolve then
+    Snacks.image.config.async_resolve(
+      file,
+      src,
+      vim.schedule_wrap(function(resolved_src)
+        if resolved_src then
+          on_complete(resolved_src)
+        else
+          resolve_fallback()
+        end
+      end)
+    )
+  else
+    resolve_fallback()
+  end
 end
 
 ---@param buf number
@@ -220,6 +239,7 @@ function M.find(buf, cb, opts)
   local from, to = opts.from, opts.to
   Snacks.util.parse(parser, from and to and { from, to } or true, function()
     local ret = {} ---@type snacks.image.match[]
+    local queued_image_matches_count = 0
     parser:for_each_tree(function(tstree, tree)
       if not tstree then
         return
@@ -245,16 +265,23 @@ function M.find(buf, cb, opts)
               ctx[field] = { node = nodes[1], meta = meta[id] or {} }
             end
           end
-          ret[#ret + 1] = M._img(ctx)
+          queued_image_matches_count = queued_image_matches_count + 1
+          M._img(ctx, function(img)
+            queued_image_matches_count = queued_image_matches_count - 1 ---@type integer
+            ret[#ret + 1] = img
+            if queued_image_matches_count == 0 then
+              cb(ret)
+            end
+          end)
         end
       end
     end)
-    cb(ret)
   end)
 end
 
 ---@param ctx snacks.image.ctx
-function M._img(ctx)
+---@param on_complete fun(img: snacks.image.match|nil): nil
+function M._img(ctx, on_complete)
   ctx.pos = ctx.pos or ctx.src or ctx.content
   assert(ctx.pos, "no image node")
 
@@ -281,6 +308,7 @@ function M._img(ctx)
     img.type = img.ext:match("^(%w+)%.") or img.type
   end
   if not Snacks.image.config.math.enabled and img.type == "math" then
+    on_complete(nil)
     return
   end
   if ctx.src then
@@ -295,20 +323,27 @@ function M._img(ctx)
   if transform then
     transform(img, ctx)
   end
-  if img.src then
-    img.src = M.resolve(ctx.buf, img.src)
-  end
-  if img.content and not img.src then
-    local root = Snacks.image.config.cache
-    vim.fn.mkdir(root, "p")
-    img.src = root .. "/" .. vim.fn.sha256(img.content):sub(1, 8) .. "-content." .. (img.ext or "png")
-    if vim.fn.filereadable(img.src) == 0 then
-      local fd = assert(io.open(img.src, "w"), "failed to open " .. img.src)
-      fd:write(img.content)
-      fd:close()
+  local function after_resolve()
+    if img.content and not img.src then
+      local root = Snacks.image.config.cache
+      vim.fn.mkdir(root, "p")
+      img.src = root .. "/" .. vim.fn.sha256(img.content):sub(1, 8) .. "-content." .. (img.ext or "png")
+      if vim.fn.filereadable(img.src) == 0 then
+        local fd = assert(io.open(img.src, "w"), "failed to open " .. img.src)
+        fd:write(img.content)
+        fd:close()
+      end
     end
+    on_complete(img)
   end
-  return img
+  if img.src then
+    M.resolve(ctx.buf, img.src, function(resolved_src)
+      img.src = resolved_src
+      after_resolve()
+    end)
+  else
+    after_resolve()
+  end
 end
 
 function M.hover_close()
