@@ -134,13 +134,14 @@ function M.icon(name, cat, opts)
         return opts.fallback.dir or "󰉋 ", "Directory"
       end
       local Icons = require("nvim-web-devicons")
+      local default = opts.fallback.file == ""
       if cat == "filetype" then
-        return Icons.get_icon_by_filetype(name, { default = false })
+        return Icons.get_icon_by_filetype(name, { default = default })
       elseif cat == "file" then
         local ext = name:match("%.(%w+)$")
-        return Icons.get_icon(name, ext, { default = false }) --[[@as string, string]]
+        return Icons.get_icon(name, ext, { default = default }) --[[@as string, string]]
       elseif cat == "extension" then
-        return Icons.get_icon(nil, name, { default = false }) --[[@as string, string]]
+        return Icons.get_icon(nil, name, { default = default }) --[[@as string, string]]
       end
     end,
   }
