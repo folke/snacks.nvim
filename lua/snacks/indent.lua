@@ -270,8 +270,11 @@ function M.on_win(win, buf, top, bottom)
       end
       indent = math.min(indent, parent_indent + state.shiftwidth)
       local extmarks = show_indent and indent > 0 and get_extmarks(indent, state)
-      for _, opts in ipairs(extmarks or {}) do
-        vim.api.nvim_buf_set_extmark(buf, ns, l - 1, 0, opts)
+
+      if vim.fn.foldclosed(l) == -1 then
+        for _, opts in ipairs(extmarks or {}) do
+          vim.api.nvim_buf_set_extmark(buf, ns, l - 1, 0, opts)
+        end
       end
     end
   end)
@@ -328,7 +331,8 @@ function M.render_scope(scope, state)
 
   for l = from, to do
     local i = state.indents[l]
-    if (i and i > indent) or vim.g.snacks_indent_overlap or state.blanks[l] then
+
+    if vim.fn.foldclosed(l) == -1 and ((i and i > indent) or vim.g.snacks_indent_overlap or state.blanks[l]) then
       vim.api.nvim_buf_set_extmark(scope.buf, ns, l - 1, 0, {
         virt_text = { { config.scope.char, hl } },
         virt_text_pos = "overlay",
@@ -375,7 +379,8 @@ function M.render_chunk(scope, state)
 
   for l = from, to do
     local i = state.indents[l] - state.leftcol
-    if l == scope.from then -- top line
+    if vim.fn.foldclosed(l) ~= -1 then
+    elseif l == scope.from then -- top line
       if state.breakindent then
         add(l, char.vertical, true)
       end
