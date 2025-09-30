@@ -377,6 +377,8 @@ function M.hover()
           win.opts.width = loc.width
           win.opts.height = loc.height
           win:show()
+        elseif hover and Snacks.image.config.doc.follow_cursor then
+          win:show()
         end
       end,
       inline = false,
