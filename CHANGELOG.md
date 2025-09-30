@@ -1,5 +1,32 @@
 # Changelog
 
+## [2.24.0](https://github.com/folke/snacks.nvim/compare/v2.23.0...v2.24.0) (2025-09-30)
+
+
+### Features
+
+* **picker.lsp_config:** added more info to lsp picker ([636be5c](https://github.com/folke/snacks.nvim/commit/636be5c3d1b35b2041123efcc5b2a86df0dc9f93))
+* **picker:** added custom options to `vim.ui.select` that snacks can use for a better select ([264cab1](https://github.com/folke/snacks.nvim/commit/264cab138039412a151b21fdc30d4928f50d79b4))
+* **picker:** updated Snacks.picker.lsp_config to work with `vim.lsp.config` ([292d46f](https://github.com/folke/snacks.nvim/commit/292d46f773af05aaea6a21f13fcc179adea95494))
+
+
+### Bug Fixes
+
+* **dashboard:** pcall chansend for dashoard terminal widgets ([dc65ffd](https://github.com/folke/snacks.nvim/commit/dc65ffd4f591fd68f1433e4bd815af832ed737b8))
+* **explorer:** mounted directories being detected as non-directories in Tree:expand ([#2053](https://github.com/folke/snacks.nvim/issues/2053)) ([7a5eb10](https://github.com/folke/snacks.nvim/commit/7a5eb1036a313db1880e2e11f42aa6a1c20f1a23))
+* **indent:** check that win is valid in step. Closes [#1943](https://github.com/folke/snacks.nvim/issues/1943) ([e409f31](https://github.com/folke/snacks.nvim/commit/e409f31cc968f90139ad66941827b42ef95de7fd))
+* **main:** get correct winid for prev window ([db399b1](https://github.com/folke/snacks.nvim/commit/db399b1332848477b0cd881faabe95a0efddf1c6))
+* **picker.lsp_config:** cmd can be a function ([ba745ba](https://github.com/folke/snacks.nvim/commit/ba745ba281c02b12dc898de9e652a408c48b2bbe))
+* **picker.preview:** better hack to deal with buffer local option weirdness ([c968d4d](https://github.com/folke/snacks.nvim/commit/c968d4def4ee3769e6523cd4d8599695b7183a3f))
+* **picker.preview:** dont do win-local hack for floating windows ([12b2f0d](https://github.com/folke/snacks.nvim/commit/12b2f0d2bdf18e50e8caa4e1ad3c6f6cc9365833))
+* **picker:** lsp_config now includes any configfured LSP and excludes deprecated servers ([a0d6eba](https://github.com/folke/snacks.nvim/commit/a0d6eba1a22719ffaed9b1ac2cf79e33b1c64e4c))
+* **util:** fix invalid window error ([#1996](https://github.com/folke/snacks.nvim/issues/1996)) ([32e5bf1](https://github.com/folke/snacks.nvim/commit/32e5bf17309ca26e6075a14c3907b0959188d781))
+
+
+### Performance Improvements
+
+* **dashboard:** add basic OSC11 and CSI6n support to terminal sections (gh 10 seconds faster) ([fb016d2](https://github.com/folke/snacks.nvim/commit/fb016d20c2a415450708e3eb837462f6dcea46ba))
+
 ## [2.23.0](https://github.com/folke/snacks.nvim/compare/v2.22.0...v2.23.0) (2025-09-15)
 
 
