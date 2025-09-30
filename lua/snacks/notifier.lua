@@ -69,7 +69,7 @@ local uv = vim.uv or vim.loop
 
 --- ### History
 ---@class snacks.notifier.history
----@field filter? snacks.notifier.level|fun(notif: snacks.notifier.Notif): boolean
+---@field filter? vim.log.levels|snacks.notifier.level|fun(notif: snacks.notifier.Notif): boolean
 ---@field sort? string[] # sort fields, default: {"added"}
 ---@field reverse? boolean
 
@@ -399,6 +399,9 @@ function N:add(opts)
     notif.layout = n.layout
     notif.dirty = true
   end
+  if opts.history ~= false then
+    self.history[notif.id] = notif
+  end
   self.sorted = nil
   local want = numlevel(notif.level) >= numlevel(self.opts.level)
   want = want and (not self.opts.filter or self.opts.filter(notif))
@@ -406,9 +409,6 @@ function N:add(opts)
     return notif.id
   end
   self.queue[notif.id] = notif
-  if opts.history ~= false then
-    self.history[notif.id] = notif
-  end
   if self:is_blocking() then
     pcall(function()
       self:process()
@@ -444,9 +444,9 @@ function N:get_history(opts)
   local notifs = vim.tbl_values(self.history)
   local filter = opts.filter
   if type(filter) == "string" or type(filter) == "number" then
-    local level = normlevel(filter)
+    local level = numlevel(filter)
     filter = function(n)
-      return n.level == level
+      return numlevel(n.level) >= level
     end
   end
   notifs = filter and vim.tbl_filter(filter, notifs) or notifs
