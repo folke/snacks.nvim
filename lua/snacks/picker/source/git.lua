@@ -216,9 +216,13 @@ function M.diff(opts, ctx)
   local file, line ---@type string?, number?
   local header, hunk = {}, {} ---@type string[], string[]
   local header_len = 4
+
+  local cwd = svim.fs.normalize(opts and opts.cwd or uv.cwd() or ".") or nil
+  cwd = Snacks.git.get_root(cwd) or cwd
+
   local finder = require("snacks.picker.source.proc").proc({
     opts,
-    { cmd = "git", args = args },
+    { cmd = "git", args = args, cwd = cwd },
   }, ctx)
   return function(cb)
     local function add()
@@ -228,6 +232,7 @@ function M.diff(opts, ctx)
           text = file .. ":" .. line,
           diff = diff,
           file = file,
+          cwd = cwd,
           pos = { line, 0 },
           preview = { text = diff, ft = "diff", loc = false },
         })
