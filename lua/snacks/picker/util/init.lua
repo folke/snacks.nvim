@@ -620,4 +620,58 @@ function M.globber(globs)
   end
 end
 
+---@alias snacks.picker.util.trim_mode "both"|"left"|"right"|"none"
+
+--- Prepare pattern for highlighting by removing grep flags and applying trim options
+---@param pattern string The input pattern
+---@param opts? {trim?: snacks.picker.util.trim_mode, case_insensitive_regex_option?: boolean, remove_grep_flags?: boolean} Options for trimming, case sensitivity, and grep flag removal
+---@return string cleaned_pattern The cleaned pattern ready for highlighting
+function M.prepare_highlight_pattern(pattern, opts)
+  opts = opts or {}
+  local trim_mode = opts.trim or "none"
+  local case_insensitive = opts.case_insensitive_regex_option == true -- default to false
+  local remove_grep_flags = opts.remove_grep_flags == true -- default to false
+
+  local cleaned = pattern
+
+  -- Remove grep flags like (?i), (?-i), (?m), etc. if requested
+  if remove_grep_flags then
+    -- Remove flags at the beginning of the pattern
+    cleaned = cleaned:gsub("^%(%?[%-]?[imsx]*%)", "")
+    -- Remove empty parentheses
+    cleaned = cleaned:gsub("^%(%)", "")
+    -- Remove common regex flags and markers
+    cleaned = cleaned:gsub("^\\b", "") -- word boundary
+    cleaned = cleaned:gsub("^\\B", "") -- non-word boundary
+    cleaned = cleaned:gsub("^\\<", "") -- word start
+    cleaned = cleaned:gsub("^\\>", "") -- word end
+    cleaned = cleaned:gsub("^\\w", "") -- word character
+    cleaned = cleaned:gsub("^\\W", "") -- non-word character
+    cleaned = cleaned:gsub("^\\d", "") -- digit
+    cleaned = cleaned:gsub("^\\D", "") -- non-digit
+    cleaned = cleaned:gsub("^\\s", "") -- whitespace
+    cleaned = cleaned:gsub("^\\S", "") -- non-whitespace
+    cleaned = cleaned:gsub("^\\A", "") -- start of string
+    cleaned = cleaned:gsub("^\\Z", "") -- end of string
+    cleaned = cleaned:gsub("^\\z", "") -- absolute end of string
+  end
+
+  -- Apply trimming based on mode
+  if trim_mode == "both" then
+    cleaned = vim.trim(cleaned)
+  elseif trim_mode == "left" then
+    cleaned = cleaned:gsub("^%s*", "")
+  elseif trim_mode == "right" then
+    cleaned = cleaned:gsub("%s*$", "")
+  elseif trim_mode == "none" then
+    -- No trimming
+  end
+
+  -- Add \c for case-insensitive matching for vim.regex if requested
+  if case_insensitive and not cleaned:find("\\[Cc]") then
+    cleaned = "\\c" .. cleaned
+  end
+  return cleaned
+end
+
 return M
