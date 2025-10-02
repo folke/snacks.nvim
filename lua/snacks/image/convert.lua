@@ -62,6 +62,9 @@ local commands = {
       local src = M.norm(ctx.src)
       return M.is_uri(src) and convert:tmpfile("data") or src
     end,
+    on_error = function(step)
+      vim.fs.rm(step.file)
+    end,
   },
   typ = {
     ft = "pdf",
