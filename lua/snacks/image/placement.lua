@@ -442,7 +442,7 @@ function M:state()
 
   -- scale down to fit inline
   if size.height <= 2 and is_inline() then
-    size.width = math.ceil(size.width / size.height) + 2
+    size.width = math.floor(size.width / size.height + 0.5)
     size.height = 1
   end
 

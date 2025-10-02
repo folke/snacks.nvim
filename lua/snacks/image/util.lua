@@ -38,9 +38,11 @@ end
 ---@param size snacks.image.Size
 ---@return snacks.image.Size
 function M.norm(size)
+  local normed_height = math.max(1, math.floor(size.height + 0.6)) -- TODO(yuukibarns): expose a threshold option
+  local normed_width = math.max(1, math.floor(normed_height * size.width / size.height + 0.5))
   return {
-    width = math.max(1, math.ceil(size.width)),
-    height = math.max(1, math.ceil(size.height)),
+    height = normed_height,
+    width = normed_width,
   }
 end
 
