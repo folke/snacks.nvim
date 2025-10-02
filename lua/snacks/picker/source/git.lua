@@ -212,7 +212,9 @@ end
 ---@param opts snacks.picker.git.Config
 ---@type snacks.picker.finder
 function M.diff(opts, ctx)
-  local args = git_args(opts.args, "--no-pager", "diff", "--no-color", "--no-ext-diff")
+  local args = git_args(opts.args,
+    "-c", "diff.noprefix=false",
+    "--no-pager", "diff", "--no-color", "--no-ext-diff")
   local file, line ---@type string?, number?
   local header, hunk = {}, {} ---@type string[], string[]
   local header_len = 4
