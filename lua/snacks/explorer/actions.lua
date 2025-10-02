@@ -126,6 +126,11 @@ function M.actions.explorer_close_all(picker)
   M.update(picker, { refresh = true })
 end
 
+function M.actions.explorer_open_all(picker)
+  Tree:open_all(picker:cwd())
+  M.update(picker, { refresh = true })
+end
+
 function M.actions.explorer_git_next(picker, item)
   local node = Git.next(picker:cwd(), item and item.file)
   if node then
