@@ -1,6 +1,6 @@
 # 🍿 explorer
 
-A file explorer for snacks. This is actually a [picker](https://github.com/folke/snacks.nvim/blob/main/docs/picker.md#explorer) in disguise.
+A file explorer for snacks. This is actually a [picker](https://github.com/folke/snacks.nvim/blob/main/docs/picker.md#explorer) in disguise. Unlike picker, it requires `fd` installed on your system.
 
 This module provide a shortcut to open the explorer picker and
 a setup function to replace netrw with the explorer.
