@@ -62,6 +62,7 @@ M.recent = M.files
 ---@type snacks.picker.finder
 function M.projects(opts, ctx)
   local args = {
+    "-I",
     "-H",
     "-t",
     "f",
