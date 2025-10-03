@@ -144,8 +144,13 @@ function M.line_signs(win, buf, lnum)
   vim.api.nvim_win_call(win, function()
     if vim.fn.foldclosed(lnum) >= 0 then
       signs[#signs + 1] = { text = vim.opt.fillchars:get().foldclose or "", texthl = "Folded", type = "fold" }
-    elseif config.folds.open and vim.fn.foldlevel(lnum) > vim.fn.foldlevel(lnum - 1) then
-      signs[#signs + 1] = { text = vim.opt.fillchars:get().foldopen or "", type = "fold" }
+    else
+      local foldexpr = vim.api.nvim_get_option_value("foldexpr", {})
+      if not foldexpr:find("vim%.lsp") and config.folds.open and vim.treesitter.foldexpr(lnum):sub(1, 1) == ">" then
+        signs[#signs + 1] = { text = vim.opt.fillchars:get().foldopen or "", type = "fold" }
+      elseif foldexpr:find("vim%.lsp") and config.folds.open and vim.lsp.foldexpr(lnum):sub(1, 1) == ">" then
+        signs[#signs + 1] = { text = vim.opt.fillchars:get().foldopen or "", type = "fold" }
+      end
     end
   end)
 
