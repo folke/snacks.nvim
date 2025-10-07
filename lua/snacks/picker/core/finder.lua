@@ -79,6 +79,16 @@ function M:init(filter)
   return ret
 end
 
+---@param items snacks.picker.finder.Item[]
+---@param filter snacks.picker.Filter
+function M:restore(items, filter)
+  self:abort()
+  self.items = items
+  self.filter = filter
+  -- Mark task as complete so matcher can process items
+  self.task = Async.nop()
+end
+
 ---@generic T: table
 ---@param t T
 ---@return T
