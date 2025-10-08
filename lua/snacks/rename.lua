@@ -28,23 +28,29 @@ function M.rename_file(opts)
     return rename()
   end
 
-  local root = vim.fn.getcwd()
+  -- When 'from' is a directory, fnamemodify(..., ":p") adds a trailing slash.
+  -- This causes fnamemodify(..., ":h") to incorrectly calculate the parent.
+  -- Normalize the path by removing any trailing slashes before calculation.
+  local from_for_calc = from:gsub("[/\\]$", "")
 
+  local parent = vim.fn.fnamemodify(from_for_calc, ":h")
+  local name = vim.fn.fnamemodify(from_for_calc, ":t")
+
+  local root = vim.fn.getcwd()
   if from:find(root, 1, true) ~= 1 then
     root = vim.fn.fnamemodify(from, ":p:h")
   end
-
   local extra = from:sub(#root + 2)
 
   vim.ui.input({
-    prompt = "New File Name: ",
-    default = extra,
+    prompt = "New Name: ",
+    default = name,
     completion = "file",
   }, function(value)
-    if not value or value == "" or value == extra then
+    if not value or value == "" or value == name then
       return
     end
-    to = svim.fs.normalize(root .. "/" .. value)
+    to = vim.fs.normalize(parent .. "/" .. value)
     rename()
   end)
 end
