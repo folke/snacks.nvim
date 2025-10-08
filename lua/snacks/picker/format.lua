@@ -312,18 +312,18 @@ function M.lsp_symbol(item, picker)
   return ret
 end
 
----@param kind? string
----@param count number
+---@param opts snacks.picker.ui_select.Opts
 ---@return snacks.picker.format
-function M.ui_select(kind, count)
-  return function(item)
+function M.ui_select(opts)
+  return function(item, picker)
+    local count = picker:count()
     local ret = {} ---@type snacks.picker.Highlight[]
     local idx = tostring(item.idx)
     idx = (" "):rep(#tostring(count) - #idx) .. idx
     ret[#ret + 1] = { idx .. ".", "SnacksPickerIdx" }
     ret[#ret + 1] = { " " }
 
-    if kind == "codeaction" then
+    if opts.kind == "codeaction" then
       ---@type lsp.Command|lsp.CodeAction, lsp.HandlerContext
       local action, ctx = item.item.action, item.item.ctx
       local client = vim.lsp.get_client_by_id(ctx.client_id)
@@ -331,6 +331,13 @@ function M.ui_select(kind, count)
       if client then
         ret[#ret + 1] = { " " }
         ret[#ret + 1] = { ("[%s]"):format(client.name), "SnacksPickerSpecial" }
+      end
+    elseif opts.kind == "snacks" and opts.format_item then
+      local t = opts.format_item(item.item, true)
+      if type(t) == "string" then
+        ret[#ret + 1] = { t }
+      elseif type(t) == "table" then
+        vim.list_extend(ret, t)
       end
     else
       ret[#ret + 1] = { item.formatted }
