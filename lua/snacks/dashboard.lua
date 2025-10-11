@@ -829,8 +829,8 @@ function M.sections.session(item)
     { "persisted.nvim", ":lua require('persisted').load()" },
     { "neovim-session-manager", ":SessionManager load_current_dir_session" },
     { "possession.nvim", ":PossessionLoadCwd" },
-    { "mini.sessions", ":lua require('mini.sessions').read()" },
-    { "mini.nvim", ":lua require('mini.sessions').read()" },
+    { "mini.sessions", ":lua if _G.MiniSessions == nil then require('mini.sessions').setup() end; pcall(MiniSessions.read, MiniSessions.config.file)" },
+    { "mini.nvim", ":lua if _G.MiniSessions == nil then require('mini.sessions').setup() end; pcall(MiniSessions.read, MiniSessions.config.file)" },
   }
   for _, plugin in pairs(plugins) do
     if M.have_plugin(plugin[1]) then
