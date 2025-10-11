@@ -100,7 +100,7 @@ function M.new(opts)
   local self = setmetatable({}, M)
   _id = _id + 1
   self.id = _id
-  self.init_opts = opts
+  self.init_opts = vim.tbl_deep_extend("force", {}, opts or {})
   self.opts = Snacks.picker.config.get(opts)
   if self.opts.source == "resume" then
     return M.resume()
