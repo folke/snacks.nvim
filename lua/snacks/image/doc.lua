@@ -160,7 +160,7 @@ end
 ---@param src string
 function M.resolve(buf, src)
   src = M.url_decode(src)
-  local file = svim.fs.normalize(vim.api.nvim_buf_get_name(buf))
+  local file = svim.fs.normalize(vim.b[buf].bufpath or vim.api.nvim_buf_get_name(buf))
   local s = Snacks.image.config.resolve and Snacks.image.config.resolve(file, src) or nil
   if s then
     return s
