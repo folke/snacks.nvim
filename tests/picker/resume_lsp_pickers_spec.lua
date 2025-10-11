@@ -4,82 +4,6 @@ describe("picker resume", function()
   local Picker = require("snacks.picker.core.picker")
   local Finder = require("snacks.picker.core.finder")
 
-  describe("is_lsp_source detection", function()
-    -- Access the private function through the module
-    local function is_lsp_source(source)
-      -- Create a temporary picker to test resume logic
-      -- We'll verify indirectly by checking if items are restored
-      local last_state = {
-        opts = { source = source },
-        filter = { pattern = "", search = "" },
-        selected = {},
-        cursor = 1,
-        topline = 1,
-        items = { { text = "test", idx = 1 } },
-      }
-      return last_state.opts.source and (
-        vim.tbl_contains({
-          "lsp_declarations",
-          "lsp_definitions",
-          "lsp_implementations",
-          "lsp_references",
-          "lsp_symbols",
-          "lsp_workspace_symbols",
-          "lsp_type_definitions",
-        }, last_state.opts.source) or last_state.opts.source:match("^lsp_") ~= nil
-      )
-    end
-
-    it("should detect lsp_references as LSP source", function()
-      assert.is_true(is_lsp_source("lsp_references"))
-    end)
-
-    it("should detect lsp_definitions as LSP source", function()
-      assert.is_true(is_lsp_source("lsp_definitions"))
-    end)
-
-    it("should detect lsp_implementations as LSP source", function()
-      assert.is_true(is_lsp_source("lsp_implementations"))
-    end)
-
-    it("should detect lsp_symbols as LSP source", function()
-      assert.is_true(is_lsp_source("lsp_symbols"))
-    end)
-
-    it("should detect lsp_workspace_symbols as LSP source", function()
-      assert.is_true(is_lsp_source("lsp_workspace_symbols"))
-    end)
-
-    it("should detect lsp_type_definitions as LSP source", function()
-      assert.is_true(is_lsp_source("lsp_type_definitions"))
-    end)
-
-    it("should detect lsp_declarations as LSP source", function()
-      assert.is_true(is_lsp_source("lsp_declarations"))
-    end)
-
-    it("should detect custom lsp_ prefixed sources", function()
-      assert.is_true(is_lsp_source("lsp_custom_handler"))
-    end)
-
-    it("should NOT detect grep as LSP source", function()
-      assert.is_false(is_lsp_source("grep"))
-    end)
-
-    it("should NOT detect files as LSP source", function()
-      assert.is_false(is_lsp_source("files"))
-    end)
-
-    it("should NOT detect buffers as LSP source", function()
-      assert.is_false(is_lsp_source("buffers"))
-    end)
-
-    it("should handle nil source", function()
-      local result = is_lsp_source(nil)
-      assert.equals(false, result or false)
-    end)
-  end)
-
   describe("finder restore method", function()
     it("should restore items without re-running finder", function()
       local finder = Finder.new(function()
@@ -308,3 +232,4 @@ describe("picker resume", function()
     end)
   end)
 end)
+
