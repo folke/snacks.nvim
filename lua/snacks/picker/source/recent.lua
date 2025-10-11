@@ -70,7 +70,7 @@ function M.projects(opts, ctx)
     "-t",
     "d",
     "--max-depth",
-    "2",
+    tostring(opts.max_depth or 2),
     "--follow",
     "--absolute-path",
   }
