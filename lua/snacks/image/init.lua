@@ -79,6 +79,8 @@ local defaults = {
     float = true,
     max_width = 80,
     max_height = 40,
+    -- enable the floating window to follow cursor
+    follow_cursor = false,
     -- Set to `true`, to conceal the image text when rendering inline.
     -- (experimental)
     ---@param lang string tree-sitter language
@@ -193,6 +195,7 @@ Snacks.util.set_hl({
 ---@field height? number
 ---@field min_height? number
 ---@field max_height? number
+---@field follow_cursor? boolean
 ---@field on_update? fun(placement: snacks.image.Placement)
 ---@field on_update_pre? fun(placement: snacks.image.Placement)
 ---@field type? snacks.image.Type
