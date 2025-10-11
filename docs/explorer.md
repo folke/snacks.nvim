@@ -94,3 +94,43 @@ Reveals the given file/buffer or the current buffer in the explorer
 ---@param opts? {file?:string, buf?:number}
 Snacks.explorer.reveal(opts)
 ```
+
+## 🎨 Lualine Integration
+
+The explorer provides a lualine component that displays the current file/directory path in the statusline when the explorer window has focus.
+
+### Setup
+
+Add `"snacks_explorer"` to your lualine configuration:
+
+```lua
+require("lualine").setup({
+  sections = {
+    lualine_c = {
+      "filename",
+      "snacks_explorer",
+    },
+  },
+})
+```
+
+### Options
+
+Configure the path display format:
+
+```lua
+{ "snacks_explorer", path_type = "relative" }  -- relative to cwd (default)
+{ "snacks_explorer", path_type = "display" }   -- ~-relative path
+{ "snacks_explorer", path_type = "filename" }  -- just filename
+```
+
+### LazyVim Example
+
+```lua
+{
+  "nvim-lualine/lualine.nvim",
+  opts = function(_, opts)
+    table.insert(opts.sections.lualine_c, { "snacks_explorer", path_type = "relative" })
+  end,
+}
+```

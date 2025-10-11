@@ -306,4 +306,66 @@ M.actions.explorer_warn_prev = { action = "explorer_diagnostic", severity = vim.
 M.actions.explorer_error_next = { action = "explorer_diagnostic", severity = vim.diagnostic.severity.ERROR }
 M.actions.explorer_error_prev = { action = "explorer_diagnostic", severity = vim.diagnostic.severity.ERROR, up = true }
 
+function M.update_explorer_path(picker, item)
+  if picker.opts.source ~= "explorer" then
+    _G.Snacks = _G.Snacks or {}
+    _G.Snacks.explorer = _G.Snacks.explorer or {}
+    _G.Snacks.explorer.current_path = nil
+    _G.Snacks.explorer.list_win = nil
+    return
+  end
+
+  if not item or not item.file then
+    _G.Snacks = _G.Snacks or {}
+    _G.Snacks.explorer = _G.Snacks.explorer or {}
+    _G.Snacks.explorer.current_path = nil
+    vim.schedule(function()
+      local ok, lualine = pcall(require, "lualine")
+      if ok and lualine.refresh then
+        lualine.refresh()
+      end
+    end)
+    return
+  end
+
+  _G.Snacks = _G.Snacks or {}
+  _G.Snacks.explorer = _G.Snacks.explorer or {}
+  _G.Snacks.explorer.list_win = picker.list.win.win
+  
+  local cwd = picker:cwd()
+  local relative_path = item.file
+  if vim.startswith(item.file, cwd) then
+    relative_path = item.file:sub(#cwd + 2)
+  end
+  
+  _G.Snacks.explorer.current_path = {
+    full_path = item.file,
+    display_path = vim.fn.fnamemodify(item.file, ":~"),
+    relative_path = relative_path,
+    filename = vim.fn.fnamemodify(item.file, ":t"),
+    dirname = vim.fn.fnamemodify(item.file, ":h:t"),
+    is_dir = item.dir or false,
+  }
+
+  vim.schedule(function()
+    local ok, lualine = pcall(require, "lualine")
+    if ok and lualine.refresh then
+      lualine.refresh()
+    end
+  end)
+end
+
+function M.clear_explorer_state()
+  if _G.Snacks and _G.Snacks.explorer then
+    _G.Snacks.explorer.current_path = nil
+    _G.Snacks.explorer.list_win = nil
+    vim.schedule(function()
+      local ok, lualine = pcall(require, "lualine")
+      if ok and lualine.refresh then
+        lualine.refresh()
+      end
+    end)
+  end
+end
+
 return M
