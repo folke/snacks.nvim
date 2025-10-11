@@ -48,16 +48,27 @@ local uv = vim.uv or vim.loop
 ---@type table<string, snacks.image.cmd>
 local commands = {
   url = {
-    cmd = {
-      {
-        cmd = "curl",
-        args = { "-L", "-o", "{file}", "{src}" },
-      },
-      {
-        cmd = "wget",
-        args = { "-O", "{file}", "{src}" },
-      },
-    },
+    cmd = function(_step)
+      local header_args = {} ---@type string[]
+      local url_config = Snacks.image.config.convert.url or { headers = {} }
+      for key, value in pairs(url_config.headers) do
+        header_args[#header_args + 1] = "--header=" .. key .. ": " .. value
+      end
+      local wget_args = { "-O", "{file}", "{src}" }
+      local curl_args = { "-L", "-o", "{file}", "{src}" }
+      vim.list_extend(wget_args, header_args)
+      vim.list_extend(curl_args, header_args)
+      return {
+        {
+          cmd = "wget",
+          args = wget_args,
+        },
+        {
+          cmd = "curl",
+          args = curl_args,
+        },
+      }
+    end,
     file = function(convert, ctx)
       local src = M.norm(ctx.src)
       return M.is_uri(src) and convert:tmpfile("data") or src
