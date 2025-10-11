@@ -39,11 +39,15 @@ function M.select(items, opts, on_choice)
     end,
     format = Snacks.picker.format.ui_select(opts),
     title = title,
-    layout = opts.picker and opts.picker.layout or {
-      preview = false,
-      layout = {
-        height = math.floor(math.min(vim.o.lines * 0.8 - 10, #items + 2) + 0.5),
-      },
+    layout = {
+      config = function(layout)
+        -- Fit list height to number of items, up to 10
+        for _, box in ipairs(layout.layout) do
+          if box.win == "list" and not box.height then
+            box.height = math.max(math.min(#items, vim.o.lines * 0.8 - 10), 3)
+          end
+        end
+      end,
     },
     actions = {
       confirm = function(picker, item)

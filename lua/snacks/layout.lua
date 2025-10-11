@@ -363,6 +363,11 @@ function M:update_box(box, parent)
     offset = offset + dims[c][size_main]
   end
 
+  -- if we still have free space, shrink the root box
+  if free_main > 0 and is_root then
+    orig_dim[size_main] = orig_dim[size_main] - free_main
+  end
+
   -- update box win
   local box_win = self.box_wins[box.id]
   if box_win then
