@@ -58,7 +58,7 @@ describe("picker resume", function()
     end)
   end)
 
-  describe("M.last storage", function()
+  describe("saving items", function()
     it("should store finder items on close", function()
       -- Create a buffer for the picker
       local buf = vim.api.nvim_create_buf(false, true)
@@ -232,4 +232,3 @@ describe("picker resume", function()
     end)
   end)
 end)
-
