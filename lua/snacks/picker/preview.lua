@@ -13,6 +13,7 @@ function M.directory(ctx)
   ctx.preview:set_title(ctx.item.title or name)
   local ls = {} ---@type {file:string, type:"file"|"directory"}[]
   for file, t in vim.fs.dir(ctx.item.file) do
+    t = t or Snacks.util.path_type(ctx.item.file .. "/" .. file)
     ls[#ls + 1] = { file = file, type = t }
   end
   ctx.preview:set_lines(vim.split(string.rep("\n", #ls), "\n"))

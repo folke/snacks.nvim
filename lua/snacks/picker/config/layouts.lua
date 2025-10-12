@@ -142,7 +142,7 @@ M.vertical = {
 }
 
 M.select = {
-  preview = false,
+  hidden = { "preview" },
   layout = {
     backdrop = false,
     width = 0.5,
@@ -160,7 +160,7 @@ M.select = {
 }
 
 M.vscode = {
-  preview = false,
+  hidden = { "preview" },
   layout = {
     backdrop = false,
     row = 1,
