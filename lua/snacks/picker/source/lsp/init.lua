@@ -253,16 +253,14 @@ function M.results_to_items(client, results, opts)
   local function add(result, parent)
     local name = result.name
     if opts.flatten then
-      if tonumber(name) ~= nil then
+      local sep = "."
+      if tonumber(name) then
         name = "[" .. name .. "]"
+        sep = ""
       end
 
       if parent.name and parent.name ~= "" then
-        if string.sub(name, 1, 1) ~= "[" then
-          name = parent.name .. "." .. name
-        else
-          name = parent.name .. name
-        end
+        name = parent.name .. sep .. name
       end
     end
 
