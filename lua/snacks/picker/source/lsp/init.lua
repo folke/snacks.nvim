@@ -258,7 +258,11 @@ function M.results_to_items(client, results, opts)
       end
 
       if parent.name and parent.name ~= "" then
-        name = parent.name .. "." .. name
+        if string.sub(name, 1, 1) ~= "[" then
+          name = parent.name .. "." .. name
+        else
+          name = parent.name .. name
+        end
       end
     end
 
