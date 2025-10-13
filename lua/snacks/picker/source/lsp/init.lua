@@ -242,7 +242,7 @@ end
 ---@alias lsp.ResultItem lsp.Symbol|lsp.CallHierarchyItem|{text?:string}
 ---@param client vim.lsp.Client
 ---@param results lsp.ResultItem[]
----@param opts? {default_uri?:string, filter?:(fun(result:lsp.ResultItem):boolean), text_with_file?:boolean}
+---@param opts? {default_uri?:string, filter?:(fun(result:lsp.ResultItem):boolean), text_with_file?:boolean, flatten?: boolean}
 function M.results_to_items(client, results, opts)
   opts = opts or {}
   local items = {} ---@type snacks.picker.finder.Item[]
@@ -251,12 +251,23 @@ function M.results_to_items(client, results, opts)
   ---@param result lsp.ResultItem
   ---@param parent snacks.picker.finder.Item
   local function add(result, parent)
+    local name = result.name
+    if opts.flatten then
+      if tonumber(name) ~= nil then
+        name = "[" .. name .. "]"
+      end
+
+      if parent.name and parent.name ~= "" then
+        name = parent.name .. "." .. name
+      end
+    end
+
     ---@type snacks.picker.finder.Item
     local item = {
       kind = M.symbol_kind(result.kind),
       parent = parent,
       detail = result.detail,
-      name = result.name,
+      name = name,
       text = "",
       range = result.range,
       item = result,
@@ -265,7 +276,7 @@ function M.results_to_items(client, results, opts)
     local loc = result.location or { range = result.selectionRange or result.range, uri = uri }
     loc.uri = loc.uri or uri
     M.add_loc(item, loc, client)
-    local text = table.concat({ M.symbol_kind(result.kind), result.name }, " ")
+    local text = table.concat({ M.symbol_kind(result.kind), name }, " ")
     if opts.text_with_file and item.file then
       text = text .. " " .. item.file
     end
@@ -353,6 +364,7 @@ function M.symbols(opts, ctx)
         filter = function(item)
           return want(M.symbol_kind(item.kind))
         end,
+        flatten = opts.flatten,
       })
 
       -- Fix sorting
