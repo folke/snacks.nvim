@@ -345,7 +345,8 @@ function M:update_box(box, parent)
   local free_main = free[size_main]
   for c, child in ipairs(box) do
     if not dims[c] then
-      free[size_main] = math.floor(free_main / flex)
+      -- alocate at least 1 cell
+      free[size_main] = math.max(math.floor(free_main / flex), 1)
       flex = flex - 1
       free_main = free_main - free[size_main]
       dims[c] = self:resolve(child, free)
@@ -364,7 +365,8 @@ function M:update_box(box, parent)
   end
 
   -- if we still have free space, shrink the root box
-  if free_main > 0 and is_root then
+  -- if we have negative space, enlarge the root box
+  if free_main ~= 0 and is_root then
     orig_dim[size_main] = orig_dim[size_main] - free_main
   end
 

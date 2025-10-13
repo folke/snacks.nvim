@@ -431,6 +431,7 @@ local function setqflist(items, opts)
       end_col = item.end_pos and item.end_pos[2] + 1 or nil,
       text = item.line or item.comment or item.label or item.name or item.detail or item.text,
       pattern = item.search,
+      type = ({ "E", "W", "I", "N" })[item.severity],
       valid = true,
     }
   end
