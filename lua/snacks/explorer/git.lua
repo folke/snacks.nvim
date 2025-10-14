@@ -61,6 +61,7 @@ function M.update(cwd, opts)
     hide = true,
     args = {
       "--no-pager",
+      "--no-optional-locks",
       "status",
       "--porcelain=v1",
       "--ignored=matching",
