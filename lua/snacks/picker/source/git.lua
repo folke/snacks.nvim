@@ -91,7 +91,7 @@ function M.log(opts, ctx)
   local args = git_args(
     opts.args,
     "log",
-    "--pretty=format:%h %s (%ch)",
+    "--pretty=format:%h %s (%ch) <%an>",
     "--abbrev-commit",
     "--decorate",
     "--date=short",
@@ -155,7 +155,7 @@ function M.log(opts, ctx)
         args = args,
         ---@param item snacks.picker.finder.Item
         transform = function(item)
-          local commit, msg, date = item.text:match("^(%S+) (.*) %((.*)%)$")
+          local commit, msg, date, author = item.text:match("^(%S+) (.*) %((.*)%) <(.-)>$")
           if not commit then
             Snacks.notify.error(("failed to parse log item:\n%q"):format(item.text))
             return false
@@ -164,6 +164,7 @@ function M.log(opts, ctx)
           item.commit = commit
           item.msg = msg
           item.date = date
+          item.author = author
           item.file = file
           item.files = renames
         end,
