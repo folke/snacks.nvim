@@ -147,6 +147,16 @@ Parse async when available.
 Snacks.util.parse(parser, range, on_parse)
 ```
 
+### `Snacks.util.path_type()`
+
+Better validation to check if path is a dir or a file
+
+```lua
+---@param path string
+---@return "directory"|"file"
+Snacks.util.path_type(path)
+```
+
 ### `Snacks.util.redraw()`
 
 Redraw the window.
