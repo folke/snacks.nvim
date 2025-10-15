@@ -186,6 +186,7 @@ local defaults = {
     reuse_win = false, -- reuse an existing window if the buffer is already open
     close = true, -- close the picker when jumping/editing to a location (defaults to true)
     match = false, -- jump to the first match position. (useful for `lines`)
+    post_cmd = false, -- command to run after jump
   },
   toggles = {
     follow = "f",
