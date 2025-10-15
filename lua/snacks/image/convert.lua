@@ -63,6 +63,20 @@ local commands = {
       return M.is_uri(src) and convert:tmpfile("data") or src
     end,
   },
+  svg = {
+    cmd = {
+      {
+        cwd = "{dirname}",
+        cmd = "rsvg-convert",
+        args = { "{src}", "-o", "{file}" },
+      },
+    },
+    ft = "png",
+    -- Need to add the check here so that we fallback to the convert command.
+    should_execute = function(convert, meta)
+      return vim.fn.executable("rsvg-convert") == 1
+    end,
+  },
   typ = {
     ft = "pdf",
     cmd = {
@@ -127,6 +141,19 @@ local commands = {
         args = { "-format", "%m %[fx:w]x%[fx:h] %xx%y", "{src}[0]" },
       },
     },
+    on_error = function(step)
+      local file = step.file
+      if step.proc then
+        local fd = assert(io.open(file, "w"), "Failed to open file: " .. file)
+        fd:write(step.proc:out())
+        fd:close()
+      end
+      local fd = assert(io.open(file, "r"), "Failed to open file: " .. file)
+      local info = vim.trim(fd:read("*a"))
+      fd:close()
+      local match = info:match("^(%w+)%s+(%d+)x(%d+)%s+(%d+%.?%d*)x(%d+%.?%d*)$")
+      return match ~= nil
+    end,
     on_done = function(step)
       local file = step.file
       if step.proc then
@@ -155,6 +182,13 @@ local commands = {
       local args = formats.default or { "{src}[0]" }
       local info = step.meta.info
       local format = info and info.format or vim.fn.fnamemodify(step.meta.src, ":e")
+
+      -- TODO: All downloaded content gets sent to the convert step. Instead, a generic
+      -- "data" step should be created to handle routing to the correct step based on
+      -- the detected format.
+      if format == "svg" and vim.fn.executable("rsvg-convert") == 1 then
+        return { { cmd = "rsvg-convert", args = { "{src}", "-o", "{file}" } } }
+      end
 
       local vector = vim.tbl_contains({ "pdf", "svg", "eps", "ai", "mvg" }, format)
       if vector then
