@@ -166,9 +166,16 @@ function M._open(opts)
       { "git", "-C", cwd, "log", "-n", "1", "--pretty=format:%H", "--", file },
       "Failed to get latest commit of file"
     )[1]
-  else
+  elseif opts.what == "commit" then
     local word = vim.fn.expand("<cword>")
     fields.commit = is_valid_commit_hash(word, cwd) and word or nil
+
+    if not fields.commit and not vim.fn.mode():find("[vV]") then
+      local line_number = vim.fn.line('.')
+      local blame_output = vim.fn.system(string.format("git blame -L %d,%d %s", line_number, line_number, file))
+      local commit_hash = blame_output:match("^(%w+)")
+      fields.commit = is_valid_commit_hash(commit_hash, cwd) and commit_hash or nil
+    end
   end
 
   -- Get visual selection range if in visual mode
