@@ -32,6 +32,7 @@ Better `vim.ui.input`.
 ---@field icon? string
 ---@field icon_pos? snacks.input.Pos
 ---@field prompt_pos? snacks.input.Pos
+---@field start_mode? snacks.input.StartMode
 {
   icon = " ",
   icon_hl = "SnacksInputIcon",
@@ -39,6 +40,7 @@ Better `vim.ui.input`.
   prompt_pos = "title",
   win = { style = "input" },
   expand = true,
+  start_mode = "insert",
 }
 ```
 
@@ -92,6 +94,7 @@ docs for more information on how to customize these styles
 
 ```lua
 ---@alias snacks.input.Pos "left"|"title"|false
+---@alias snacks.input.StartMode "insert"|"normal"|"visual"|"select"
 ```
 
 ```lua
