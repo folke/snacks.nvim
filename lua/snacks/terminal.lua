@@ -159,6 +159,8 @@ function M.open(cmd, opts)
     })
   end)
 
+  terminals[id] = terminal
+
   vim.cmd("noh")
   return terminal
 end
