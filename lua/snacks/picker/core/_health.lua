@@ -24,14 +24,15 @@ function M.health()
     Snacks.health.ok("`Snacks.picker.grep()` is available")
   end
 
+  local have_bfs = Snacks.health.have_tool("bfs")
   local have_fd, version_fd = Snacks.health.have_tool({
     { cmd = { "fd", "fdfind" }, version = "v8.4" },
   })
-  local have_find = have_fd
+  local have_find = have_fd or have_bfs
     or (jit.os:find("Windows") == nil and Snacks.health.have_tool({
       { cmd = "find", version = false },
     }))
-  if have_rg or have_fd or have_find then
+  if have_rg or have_fd or have_find or have_bfs then
     Snacks.health.ok("`Snacks.picker.files()` is available")
   else
     Snacks.health.error("'rg', 'fd' or 'find' is required for `Snacks.picker.files()`")
