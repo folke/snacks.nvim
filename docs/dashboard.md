@@ -294,9 +294,9 @@ A simple example with a header, keys, recent files, and projects
 {
   sections = {
     { section = "header" },
-    { section = "keys", gap = 1 },
-    { icon = " ", title = "Recent Files", section = "recent_files", indent = 2, padding = { 2, 2 } },
-    { icon = " ", title = "Projects", section = "projects", indent = 2, padding = 2 },
+    { section = "keys", gap = 1, padding = 2 },
+    { icon = " ", title = "Recent Files", section = "recent_files", indent = 2, padding = 0 },
+    { icon = " ", title = "Projects", section = "projects", indent = 2, padding = 0 },
     { section = "startup" },
   },
 }
