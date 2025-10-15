@@ -39,6 +39,7 @@ M.meta = {
 
 ---@class snacks.image.Config
 ---@field enabled? boolean enable image viewer
+---@field cterm256? boolean use 256 colors for image ids
 ---@field wo? vim.wo|{} options for windows showing the image
 ---@field bo? vim.bo|{} options for the image buffer
 ---@field formats? string[]
