@@ -16,7 +16,7 @@ end
 
 ---@param path string
 ---@param len? number
----@param opts? {cwd?: string}
+---@param opts? {cwd?: string, abbreviate?: boolean}
 function M.truncpath(path, len, opts)
   local cwd = svim.fs.normalize(opts and opts.cwd or vim.fn.getcwd(), { _fast = true, expand_env = false })
   local home = svim.fs.normalize("~")
@@ -49,16 +49,28 @@ function M.truncpath(path, len, opts)
     first = "~/" .. table.remove(parts, 1)
   end
   local width = vim.api.nvim_strwidth(ret) + vim.api.nvim_strwidth(first) + 3
-  while width < len and #parts > 0 do
-    local part = table.remove(parts) .. "/"
-    local w = vim.api.nvim_strwidth(part)
-    if width + w > len then
-      break
+  if opts and opts.abbreviate then
+    local segment_width = (len - width) / #parts
+    if segment_width <= 1 then
+      return first .. "/…/" .. ret
     end
-    ret = part .. ret
-    width = width + w
+    while #parts > 0 do
+      local part = table.remove(parts)
+      ret = part:sub(1, segment_width) .. "/" .. ret
+    end
+    return first .. "/" .. ret
+  else
+    while width < len and #parts > 0 do
+      local part = table.remove(parts) .. "/"
+      local w = vim.api.nvim_strwidth(part)
+      if width + w > len then
+        break
+      end
+      ret = part .. ret
+      width = width + w
+    end
+    return first .. "/…/" .. ret
   end
-  return first .. "/…/" .. ret
 end
 
 ---@param cmd string|string[]
