@@ -22,6 +22,7 @@ local defaults = {
 
 ---@class snacks.terminal.Opts: snacks.terminal.Config
 ---@field cwd? string
+---@field count? integer
 ---@field env? table<string, string>
 ---@field start_insert? boolean start insert mode when starting the terminal
 ---@field auto_insert? boolean start insert mode when entering the terminal buffer
@@ -82,8 +83,8 @@ end
 ---@param cmd? string | string[]
 ---@param opts? snacks.terminal.Opts
 function M.open(cmd, opts)
-  local id = vim.v.count1
   opts = Snacks.config.get("terminal", defaults --[[@as snacks.terminal.Opts]], opts)
+  local id = opts.count or vim.v.count1
   opts.win = Snacks.win.resolve("terminal", {
     position = cmd and "float" or "bottom",
   }, opts.win, { show = false })
@@ -104,7 +105,7 @@ function M.open(cmd, opts)
   ---@param self snacks.terminal
   opts.win.on_buf = function(self)
     self.cmd = cmd
-    vim.b[self.buf].snacks_terminal = { cmd = cmd, id = id }
+    vim.b[self.buf].snacks_terminal = { cmd = cmd, id = id, cwd = opts.cwd, env = opts.env }
     if on_buf then
       on_buf(self)
     end
@@ -171,7 +172,7 @@ end
 ---@return snacks.win? terminal, boolean? created
 function M.get(cmd, opts)
   opts = opts or {}
-  local id = vim.inspect({ cmd = cmd, cwd = opts.cwd, env = opts.env, count = vim.v.count1 })
+  local id = vim.inspect({ cmd = cmd, cwd = opts.cwd, env = opts.env, count = opts.count or vim.v.count1 })
   local created = false
   if not (terminals[id] and terminals[id]:buf_valid()) and (opts.create ~= false) then
     local ret = M.open(cmd, opts)
