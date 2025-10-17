@@ -242,7 +242,7 @@ end
 ---@alias lsp.ResultItem lsp.Symbol|lsp.CallHierarchyItem|{text?:string}
 ---@param client vim.lsp.Client
 ---@param results lsp.ResultItem[]
----@param opts? {default_uri?:string, filter?:(fun(result:lsp.ResultItem):boolean), text_with_file?:boolean, flatten?: boolean}
+---@param opts? {default_uri?:string, filter?:(fun(result:lsp.ResultItem):boolean), text_with_file?:boolean, flatten?: boolean, tree?: boolean}
 function M.results_to_items(client, results, opts)
   opts = opts or {}
   local items = {} ---@type snacks.picker.finder.Item[]
@@ -269,7 +269,7 @@ function M.results_to_items(client, results, opts)
       kind = M.symbol_kind(result.kind),
       parent = parent,
       detail = result.detail,
-      name = name,
+      name = (opts.flatten and not opts.tree) and name or result.name,
       text = "",
       range = result.range,
       item = result,
@@ -367,6 +367,7 @@ function M.symbols(opts, ctx)
           return want(M.symbol_kind(item.kind))
         end,
         flatten = opts.flatten,
+        tree = opts.tree,
       })
 
       -- Fix sorting
