@@ -94,10 +94,11 @@ function M.resolve(action, picker, name, stack)
     local actions = vim.tbl_map(function(a)
       return M.resolve(a, picker, nil, stack)
     end, action)
+    ---@type snacks.picker.Action
     return {
-      action = function(p, i, aa)
+      action = function(p, i)
         for _, a in ipairs(actions) do
-          a.action(p, i, aa)
+          a.action(p, i, a)
         end
       end,
       desc = table.concat(
