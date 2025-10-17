@@ -120,6 +120,7 @@ docs for more information on how to customize these styles
 ```lua
 ---@class snacks.terminal.Opts: snacks.terminal.Config
 ---@field cwd? string
+---@field count? integer
 ---@field env? table<string, string>
 ---@field start_insert? boolean start insert mode when starting the terminal
 ---@field auto_insert? boolean start insert mode when entering the terminal buffer
