@@ -581,7 +581,9 @@ function N:render(notif)
 
   local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
 
-  local pad = self.opts.padding and (win:add_padding() or 2) or 0
+  -- for the minimal style, we also have to factor in the icon width
+  local icon_width = self.opts.style == "minimal" and vim.api.nvim_strwidth(notif.icon) or 0
+  local pad = (self.opts.padding and (win:add_padding() or 2) or 0) + icon_width
   local width = win:border_text_width()
   for _, line in ipairs(lines) do
     width = math.max(width, vim.fn.strdisplaywidth(line) + pad)
