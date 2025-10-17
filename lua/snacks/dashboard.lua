@@ -224,6 +224,7 @@ function M.open(opts)
   self.win = self.opts.win or Snacks.win({ style = "dashboard", buf = self.buf, enter = true }).win --[[@as number]]
   self.win = self.win == 0 and vim.api.nvim_get_current_win() or self.win
   self.augroup = vim.api.nvim_create_augroup("snacks_dashboard", { clear = true })
+  self._last_update = 0 -- Track update timing to prevent startup flicker
   self:init()
   self:update()
   self.fire("Opened")
@@ -249,7 +250,11 @@ function D:init()
   vim.api.nvim_create_autocmd({ "WinResized", "VimResized" }, {
     group = self.augroup,
     callback = function()
-      -- only re-render if the size has changed
+      -- Prevent double updates during startup (resize autocmd firing immediately) that cause terminal flicker
+      local now = vim.uv.hrtime()
+      if now - self._last_update < 200000000 then
+        return
+      end
       if not vim.deep_equal(self._size, self:size()) then
         self:update()
       end
@@ -700,6 +705,7 @@ function D:update()
   if not (self.buf and vim.api.nvim_buf_is_valid(self.buf)) then
     return
   end
+  self._last_update = vim.uv.hrtime()
   self.fire("UpdatePre")
   self._size = self:size()
 
@@ -940,6 +946,13 @@ end
 function M.sections.terminal(opts)
   return function(self)
     local cmd = opts.cmd or 'echo "No `cmd` provided"'
+    local cmd_key = table.concat(type(cmd) == "table" and cmd or { cmd }, " ")
+
+    -- Cache terminals to prevent duplicate jobs and enable proper window cleanup
+    self._terminals = self._terminals or {}
+    if self._terminals[cmd_key] then
+      return self._terminals[cmd_key]
+    end
     local ttl = opts.ttl or 3600
     local height = opts.height or 10
     local width = opts.width
@@ -1044,13 +1057,20 @@ function M.sections.terminal(opts)
         Snacks.notify.error(("Failed to start terminal **cmd** `%s`"):format(cmd))
       end
     end
-    return {
+    local terminal_win
+    local item = {
       action = not opts.title and opts.action or nil,
       key = not opts.title and opts.key or nil,
       label = not opts.title and opts.label or nil,
       render = function(_, pos)
         self:trace("terminal.render")
-        local win = vim.api.nvim_open_win(buf, false, {
+        if not vim.api.nvim_buf_is_valid(buf) then
+          return
+        end
+        if terminal_win and vim.api.nvim_win_is_valid(terminal_win) then
+          pcall(vim.api.nvim_win_close, terminal_win, true)
+        end
+        terminal_win = vim.api.nvim_open_win(buf, false, {
           bufpos = { pos[1] - 1, pos[2] + 1 },
           col = opts.indent or 0,
           focusable = false,
@@ -1064,21 +1084,21 @@ function M.sections.terminal(opts)
           win = self.win,
         })
         local hl = opts.hl and hl_groups[opts.hl] or opts.hl or "SnacksDashboardTerminal"
-        Snacks.util.wo(win, { winhighlight = "TermCursorNC:" .. hl .. ",NormalFloat:" .. hl })
+        Snacks.util.wo(terminal_win, { winhighlight = "TermCursorNC:" .. hl .. ",NormalFloat:" .. hl })
         Snacks.util.bo(buf, { filetype = Snacks.config.styles.dashboard.bo.filetype })
         local close = vim.schedule_wrap(function()
           stopped = true
-          pcall(vim.api.nvim_win_close, win, true)
-          pcall(vim.api.nvim_buf_delete, buf, { force = true })
+          pcall(vim.api.nvim_win_close, terminal_win, true)
           pcall(vim.fn.jobstop, jid)
           return true
         end)
-        self.on("UpdatePre", close, self.augroup)
         self.on("Closed", close, self.augroup)
         self:trace()
       end,
       text = ("\n"):rep(height - 1),
     }
+    self._terminals[cmd_key] = item
+    return item
   end
 end
 
