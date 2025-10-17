@@ -103,7 +103,7 @@ function M.resolve(action, picker, name, stack)
       end,
       desc = table.concat(
         vim.tbl_map(function(a)
-          return a.desc
+          return a.desc or a.name or "unknown"
         end, actions),
         ", "
       ),
@@ -114,6 +114,7 @@ function M.resolve(action, picker, name, stack)
       action.action = M.resolve(action.action, picker, nil, stack).action
     end
     ---@cast action snacks.picker.Action
+    action.desc = action.desc or name or nil
     return action
   end
   assert(type(action) == "function", "Invalid action")
