@@ -303,6 +303,14 @@ Snacks.notifier.get_history(opts)
 Snacks.notifier.hide(id)
 ```
 
+### `Snacks.notifier.dnd()`
+
+```lua
+---@param is_dnd? boolean
+Snacks.notifier.dnd(id) -- nil/no param causes toggle
+```
+
+
 ### `Snacks.notifier.notify()`
 
 ```lua
