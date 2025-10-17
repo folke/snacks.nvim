@@ -125,6 +125,8 @@ In case of issues, make sure to run `:checkhealth snacks`.
         float = true,
         max_width = 80,
         max_height = 40,
+        -- enable the floating window to follow cursor
+        follow_cursor = false,
         -- Set to `true`, to conceal the image text when rendering inline.
         -- (experimental)
         ---@param lang string tree-sitter language
@@ -266,6 +268,7 @@ SNACKS_IMAGE                                *snacks-image-styles-snacks_image*
     ---@field width? number
     ---@field min_width? number
     ---@field max_width? number
+    ---@field follow_cursor? boolean
     ---@field height? number
     ---@field min_height? number
     ---@field max_height? number
