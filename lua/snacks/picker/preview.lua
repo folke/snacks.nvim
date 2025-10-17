@@ -318,7 +318,7 @@ function M.git_log(ctx)
     ctx,
     "--no-pager",
     "log",
-    "--pretty=format:%h %s (%ch)",
+    "--pretty=format:%h %s (%ch) <%an>",
     "--abbrev-commit",
     "--decorate",
     "--date=short",
@@ -332,7 +332,7 @@ function M.git_log(ctx)
     ft = "git",
     ---@param text string
     add = function(text)
-      local commit, msg, date = text:match("^(%S+) (.*) %((.*)%)$")
+      local commit, msg, date, author = text:match("^(%S+) (.*) %((.*)%) <(.-)>$")
       if commit then
         row = row + 1
         local hl = Snacks.picker.format.git_log({
@@ -342,6 +342,7 @@ function M.git_log(ctx)
           commit = commit,
           msg = msg,
           date = date,
+          author = author,
         }, ctx.picker)
         Snacks.picker.highlight.set(ctx.buf, ns, row, hl)
       end

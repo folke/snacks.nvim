@@ -198,6 +198,9 @@ function M.git_log(item, picker)
     msg = body
   end
   ret[#ret + 1] = { msg, msg_hl }
+  if item.author then
+    ret[#ret + 1] = { " <" .. item.author .. ">", "SnacksPickerGitIssue" }
+  end
   Snacks.picker.highlight.markdown(ret)
   Snacks.picker.highlight.highlight(ret, {
     ["#%d+"] = "SnacksPickerGitIssue",
