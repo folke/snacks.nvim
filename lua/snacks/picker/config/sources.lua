@@ -108,6 +108,12 @@ M.explorer = {
       },
     },
   },
+  on_change = function(picker, item)
+    require("snacks.explorer.actions").update_explorer_path(picker, item)
+  end,
+  on_close = function()
+    require("snacks.explorer.actions").clear_explorer_state()
+  end,
 }
 
 M.cliphist = {
