@@ -110,7 +110,7 @@ function M.projects(opts, ctx)
 
     ---@async
     proc(function(item)
-      local path = item.text
+      local path = svim.fs.normalize(item.text)
       path = path:sub(-1) == "/" and path:sub(1, -2) or path
       path = vim.fs.dirname(path)
       if ctx.filter:match({ file = path, text = path }) then
