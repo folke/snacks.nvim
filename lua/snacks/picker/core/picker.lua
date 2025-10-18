@@ -44,6 +44,7 @@ M._active = {}
 ---@field opts? snacks.picker.Config
 ---@field selected snacks.picker.Item[]
 ---@field filter snacks.picker.Filter
+---@field items? snacks.picker.Item[]
 
 ---@type snacks.picker.Last?
 M.last = nil
@@ -84,6 +85,13 @@ function M.get(opts)
   return ret
 end
 
+--- Check if a source is an LSP picker
+---@param source string|nil
+---@return boolean
+local function is_lsp_source(source)
+  return source ~= nil and source:match("^lsp_") ~= nil
+end
+
 ---@hide
 ---@param opts? snacks.picker.Config
 ---@return snacks.Picker
@@ -92,7 +100,7 @@ function M.new(opts)
   local self = setmetatable({}, M)
   _id = _id + 1
   self.id = _id
-  self.init_opts = opts
+  self.init_opts = vim.tbl_deep_extend("force", {}, opts or {})
   self.opts = Snacks.picker.config.get(opts)
   if self.opts.source == "resume" then
     return M.resume()
@@ -150,7 +158,16 @@ function M.new(opts)
     end
   end, { ms = 60, name = "preview" })
 
-  self:find()
+  if is_lsp_source(self.opts.source) and self.opts.items and type(self.opts.items) == "table" then
+    local filter = self.input.filter:clone({ trim = true })
+    self.finder:restore(self.opts.items, filter)
+    -- Still need to run matcher to process cached items
+    self.matcher:init(self.input.filter.pattern)
+    self.matcher:run(self)
+    self:progress()
+  else
+    self:find()
+  end
   return self
 end
 
@@ -458,7 +475,13 @@ function M.resume()
   end
   last.opts.pattern = last.filter.pattern
   last.opts.search = last.filter.search
+
+  if is_lsp_source(last.opts.source) and last.items then
+    last.opts.items = last.items
+  end
+
   local ret = M.new(last.opts)
+
   ret:show()
   ret.list:set_selected(last.selected)
   ret.list:update()
@@ -679,6 +702,7 @@ function M:close()
     cursor = self.list.cursor,
     topline = self.list.top,
     filter = self.input.filter,
+    items = is_lsp_source(self.opts.source) and vim.deepcopy(self.finder.items) or nil,
   }
   M.last.opts.live = self.opts.live
 
