@@ -266,23 +266,15 @@ function M.picker(picker, item, action)
   for _, p in ipairs(Snacks.picker.get({ source = source })) do
     p:close()
   end
-  if source == "recent" then
-    Snacks.picker(source, {
-      filter = {
-        cwd = Snacks.picker.util.dir(item),
-      },
-      on_show = function()
-        picker:close()
-      end,
-    })
-  else
-    Snacks.picker(source, {
-      cwd = Snacks.picker.util.dir(item),
-      on_show = function()
-        picker:close()
-      end,
-    })
-  end
+  Snacks.picker(source, {
+    cwd = Snacks.picker.util.dir(item),
+    filter = {
+      cwd = source == "recent" and Snacks.picker.util.dir(item) or nil,
+    },
+    on_show = function()
+      picker:close()
+    end,
+  })
 end
 
 M.picker_files = { action = "picker", source = "files" }
