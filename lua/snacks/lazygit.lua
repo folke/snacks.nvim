@@ -87,9 +87,12 @@ local function env(opts)
         return v:match("%S")
       end, vim.split(vim.env.LG_CONFIG_FILE or "", ",", { plain = true }))
 
-      -- add the default config file if it's not already there
+      -- add the default config file if it exists and is not already there
       if #config_files == 0 then
-        config_files[1] = svim.fs.normalize(config_dir .. "/config.yml")
+        local default_config = svim.fs.normalize(config_dir .. "/config.yml")
+        if vim.loop.fs_stat(default_config) then
+          config_files[1] = default_config
+        end
       end
 
       -- add the theme file if it's not already there
