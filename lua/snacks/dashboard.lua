@@ -806,8 +806,8 @@ function M.oldfiles(opts)
       if want then
         done[file] = true
         for _, f in ipairs(filter) do
-          local matches = file:sub(1, #f.path) == f.path and
-                          (file:len() == #f.path or file:sub(#f.path + 1, #f.path + 1) == "/")
+          local matches = file:sub(1, #f.path) == f.path
+            and (file == f.path or file:sub(#f.path + 1, #f.path + 1):find("[/\\]"))
           if matches ~= f.want then
             want = false
             break
