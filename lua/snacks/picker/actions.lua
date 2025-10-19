@@ -268,6 +268,9 @@ function M.picker(picker, item, action)
   end
   Snacks.picker(source, {
     cwd = Snacks.picker.util.dir(item),
+    filter = {
+      cwd = source == "recent" and Snacks.picker.util.dir(item) or nil,
+    },
     on_show = function()
       picker:close()
     end,
