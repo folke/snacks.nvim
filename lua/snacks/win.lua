@@ -701,7 +701,7 @@ function M:open_win()
   elseif position == "current" then
     self.win = vim.api.nvim_get_current_win()
   else
-    local parent = self.opts.win or 0
+    local parent = self.opts.win and vim.api.nvim_win_is_valid(self.opts.win) and self.opts.win or 0
     local vertical = position == "left" or position == "right"
     if parent == 0 then
       for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
