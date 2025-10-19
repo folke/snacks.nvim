@@ -347,7 +347,11 @@ function M.hover()
     return
   end
 
-  if hover and (not hover.win:valid() or hover.buf ~= current_buf or vim.fn.mode() ~= "n") then
+  if hover and (hover.buf ~= current_buf or vim.fn.mode() ~= "n") then
+    return M.hover_close()
+  end
+
+  if hover and not hover.win:valid() then
     M.hover_close()
   end
 
