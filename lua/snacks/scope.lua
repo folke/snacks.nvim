@@ -68,7 +68,7 @@ local defaults = {
   -- Alternatively, you can set them manually in your config,
   -- using the `Snacks.scope.textobject` and `Snacks.scope.jump` functions.
   keys = {
-    ---@type table<string, snacks.scope.TextObject|{desc?:string}>
+    ---@type table<string, snacks.scope.TextObject|{desc?:string}|false>
     textobject = {
       ii = {
         min_size = 2, -- minimum size of the scope
@@ -84,7 +84,7 @@ local defaults = {
         desc = "full scope",
       },
     },
-    ---@type table<string, snacks.scope.Jump|{desc?:string}>
+    ---@type table<string, snacks.scope.Jump|{desc?:string}|false>
     jump = {
       ["[i"] = {
         min_size = 1, -- allow single line scopes
