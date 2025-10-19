@@ -27,7 +27,7 @@ A collection of small QoL plugins for Neovim.
 | [picker](https://github.com/folke/snacks.nvim/blob/main/docs/picker.md) | Picker for selecting items | ‼️ |
 | [profiler](https://github.com/folke/snacks.nvim/blob/main/docs/profiler.md) | Neovim lua profiler |  |
 | [quickfile](https://github.com/folke/snacks.nvim/blob/main/docs/quickfile.md) | When doing `nvim somefile.txt`, it will render the file as quickly as possible, before loading your plugins. | ‼️ |
-| [rename](https://github.com/folke/snacks.nvim/blob/main/docs/rename.md) | LSP-integrated file renaming with support for plugins like [neo-tree.nvim](https://github.com/nvim-neo-tree/neo-tree.nvim) and [mini.files](https://github.com/echasnovski/mini.files). |  |
+| [rename](https://github.com/folke/snacks.nvim/blob/main/docs/rename.md) | LSP-integrated file renaming with support for plugins like [neo-tree.nvim](https://github.com/nvim-neo-tree/neo-tree.nvim) and [mini.files](https://github.com/nvim-mini/mini.files). |  |
 | [scope](https://github.com/folke/snacks.nvim/blob/main/docs/scope.md) | Scope detection, text objects and jumping based on treesitter or indent | ‼️ |
 | [scratch](https://github.com/folke/snacks.nvim/blob/main/docs/scratch.md) | Scratch buffers with a persistent file |  |
 | [scroll](https://github.com/folke/snacks.nvim/blob/main/docs/scroll.md) | Smooth scrolling | ‼️ |
@@ -45,7 +45,7 @@ A collection of small QoL plugins for Neovim.
 
 - **Neovim** >= 0.9.4
 - for proper icons support:
-  - [mini.icons](https://github.com/echasnovski/mini.icons) _(optional)_
+  - [mini.icons](https://github.com/nvim-mini/mini.icons) _(optional)_
   - [nvim-web-devicons](https://github.com/nvim-tree/nvim-web-devicons) _(optional)_
   - a [Nerd Font](https://www.nerdfonts.com/) **_(optional)_**
 
@@ -317,7 +317,15 @@ See the example below for how to configure `snacks.nvim`.
         _G.bt = function()
           Snacks.debug.backtrace()
         end
-        vim.print = _G.dd -- Override print to use snacks for `:=` command
+
+        -- Override print to use snacks for `:=` command
+        if vim.fn.has("nvim-0.11") == 1 then
+          vim._print = function(_, ...)
+            dd(...)
+          end
+        else
+          vim.print = _G.dd 
+        end
 
         -- Create some toggle mappings
         Snacks.toggle.option("spell", { name = "Spelling" }):map("<leader>us")

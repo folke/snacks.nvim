@@ -454,7 +454,7 @@ function M.dir(item)
   local path = type(item) == "table" and M.path(item) or item
   ---@cast path string
   path = svim.fs.normalize(path)
-  return vim.fn.isdirectory(path) == 1 and path or vim.fs.dirname(path)
+  return Snacks.util.path_type(path) == "directory" and path or vim.fs.dirname(path)
 end
 
 ---@param paths string[]
@@ -476,7 +476,7 @@ function M.copy_path(from, to)
     Snacks.notify.error(("File `%s` does not exist"):format(from))
     return
   end
-  if vim.fn.isdirectory(from) == 1 then
+  if Snacks.util.path_type(from) == "directory" then
     M.copy_dir(from, to)
   else
     M.copy_file(from, to)
