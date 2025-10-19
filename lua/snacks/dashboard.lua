@@ -717,23 +717,25 @@ function D:update()
 
   -- cursor movement
   local last = { 1, 0 }
+  local function update_cursor()
+    local item = self:find(vim.api.nvim_win_get_cursor(self.win), last)
+    -- can happen for panes without actionable items
+    item = item or vim.tbl_filter(function(it)
+      return it.action and it._
+    end, self.items)[1]
+    if item then
+      local col = self.lines[item._.row]:find("[%w%d%p]", item._.col + 1)
+      col = col or (item._.col + 1 + (item.indent and (item.indent + 1) or 0))
+      last = { item._.row, (col or item._.col + 1) - 1 }
+    end
+    vim.api.nvim_win_set_cursor(self.win, last)
+  end
   vim.api.nvim_create_autocmd("CursorMoved", {
     group = vim.api.nvim_create_augroup("snacks_dashboard_cursor", { clear = true }),
     buffer = self.buf,
-    callback = function()
-      local item = self:find(vim.api.nvim_win_get_cursor(self.win), last)
-      -- can happen for panes without actionable items
-      item = item or vim.tbl_filter(function(it)
-        return it.action and it._
-      end, self.items)[1]
-      if item then
-        local col = self.lines[item._.row]:find("[%w%d%p]", item._.col + 1)
-        col = col or (item._.col + 1 + (item.indent and (item.indent + 1) or 0))
-        last = { item._.row, (col or item._.col + 1) - 1 }
-      end
-      vim.api.nvim_win_set_cursor(self.win, last)
-    end,
+    callback = update_cursor,
   })
+  update_cursor()
   self.fire("UpdatePost")
 end
 
@@ -831,7 +833,7 @@ function M.sections.session(item)
     { "possession.nvim", ":PossessionLoadCwd" },
     { "mini.sessions", ":lua require('mini.sessions').read()" },
     { "mini.nvim", ":lua require('mini.sessions').read()" },
-    { "auto-session", ":SessionRestore"}
+    { "auto-session", ":SessionRestore" },
   }
   for _, plugin in pairs(plugins) do
     if M.have_plugin(plugin[1]) then
