@@ -1062,6 +1062,7 @@ function M.sections.terminal(opts)
           style = "minimal",
           width = width,
           win = self.win,
+          border = "none",
         })
         local hl = opts.hl and hl_groups[opts.hl] or opts.hl or "SnacksDashboardTerminal"
         Snacks.util.wo(win, { winhighlight = "TermCursorNC:" .. hl .. ",NormalFloat:" .. hl })
