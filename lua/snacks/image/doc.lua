@@ -347,7 +347,11 @@ function M.hover()
     return
   end
 
-  if hover and (not hover.win:valid() or hover.buf ~= current_buf or vim.fn.mode() ~= "n") then
+  if hover and (hover.buf ~= current_buf or vim.fn.mode() ~= "n") then
+    return M.hover_close()
+  end
+
+  if hover and not hover.win:valid() then
     M.hover_close()
   end
 
@@ -366,6 +370,7 @@ function M.hover()
     local win = Snacks.win(Snacks.win.resolve(Snacks.image.config.doc, "snacks_image", {
       show = false,
       enter = false,
+      wo = { winblend = Snacks.image.terminal.env().placeholders and 0 or nil },
     }))
     win:open_buf()
     local updated = false
