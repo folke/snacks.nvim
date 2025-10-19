@@ -22,6 +22,7 @@ local defaults = {
 
 ---@class snacks.terminal.Opts: snacks.terminal.Config
 ---@field cwd? string
+---@field count? integer
 ---@field env? table<string, string>
 ---@field start_insert? boolean start insert mode when starting the terminal
 ---@field auto_insert? boolean start insert mode when entering the terminal buffer
@@ -66,7 +67,9 @@ Snacks.config.style("terminal", {
 })
 
 ---@type table<string, snacks.win>
-local terminals = {}
+local terminals = setmetatable({}, {
+  __mode = "v",
+})
 
 local function jobstart(cmd, opts)
   opts = opts or {}
@@ -82,8 +85,8 @@ end
 ---@param cmd? string | string[]
 ---@param opts? snacks.terminal.Opts
 function M.open(cmd, opts)
-  local id = vim.v.count1
   opts = Snacks.config.get("terminal", defaults --[[@as snacks.terminal.Opts]], opts)
+  local id = opts.count or vim.v.count1
   opts.win = Snacks.win.resolve("terminal", {
     position = cmd and "float" or "bottom",
   }, opts.win, { show = false })
@@ -104,7 +107,7 @@ function M.open(cmd, opts)
   ---@param self snacks.terminal
   opts.win.on_buf = function(self)
     self.cmd = cmd
-    vim.b[self.buf].snacks_terminal = { cmd = cmd, id = id }
+    vim.b[self.buf].snacks_terminal = { cmd = cmd, id = id, cwd = opts.cwd, env = opts.env }
     if on_buf then
       on_buf(self)
     end
@@ -122,6 +125,8 @@ function M.open(cmd, opts)
   end
 
   local terminal = Snacks.win(opts.win)
+  local tid = M.tid(cmd, opts)
+  terminals[tid] = terminal
 
   if auto_insert then
     terminal:on("BufEnter", function()
@@ -145,6 +150,7 @@ function M.open(cmd, opts)
   end)
 
   terminal:on("BufWipeout", function()
+    terminals[tid] = nil
     vim.schedule(function()
       terminal:close()
     end)
@@ -163,6 +169,19 @@ function M.open(cmd, opts)
   return terminal
 end
 
+--- Get a terminal id based on the `cmd`, `cwd`, `env` and `vim.v.count1` options.
+---@param cmd? string | string[]
+---@param opts? snacks.terminal.Opts
+function M.tid(cmd, opts)
+  opts = opts or {}
+  return vim.inspect({
+    cmd = type(cmd) == "table" and cmd or { cmd },
+    cwd = opts.cwd or vim.fn.getcwd(0),
+    env = opts.env,
+    count = opts.count or vim.v.count1,
+  })
+end
+
 --- Get or create a terminal window.
 --- The terminal id is based on the `cmd`, `cwd`, `env` and `vim.v.count1` options.
 --- `opts.create` defaults to `true`.
@@ -171,14 +190,14 @@ end
 ---@return snacks.win? terminal, boolean? created
 function M.get(cmd, opts)
   opts = opts or {}
-  local id = vim.inspect({ cmd = cmd, cwd = opts.cwd, env = opts.env, count = vim.v.count1 })
+  local id = M.tid(cmd, opts)
   local created = false
   if not (terminals[id] and terminals[id]:buf_valid()) and (opts.create ~= false) then
     local ret = M.open(cmd, opts)
     ret:on("BufWipeout", function()
       terminals[id] = nil
     end, { buf = true })
-    terminals[id] = ret
+    assert(terminals[id], "Terminal was not created")
     created = true
   end
   return terminals[id], created

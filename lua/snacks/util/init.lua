@@ -458,4 +458,18 @@ function M.parse(parser, range, on_parse)
   end
 end
 
+--- Better validation to check if path is a dir or a file
+---@param path string
+---@return "directory"|"file"
+function M.path_type(path)
+  local stat = uv.fs_stat(path)
+  if stat and stat.type then
+    return stat.type
+  end
+  if vim.fn.isdirectory(path) == 1 then
+    return "directory"
+  end
+  return "file"
+end
+
 return M
