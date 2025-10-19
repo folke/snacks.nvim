@@ -15,7 +15,6 @@ local function get_cmd(opts, filter)
     "--smart-case",
     "--max-columns=500",
     "--max-columns-preview",
-    "-g",
     "--glob=!.bare",
     "--glob=!.git",
   }
