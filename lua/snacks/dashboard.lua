@@ -831,6 +831,7 @@ function M.sections.session(item)
     { "possession.nvim", ":PossessionLoadCwd" },
     { "mini.sessions", ":lua require('mini.sessions').read()" },
     { "mini.nvim", ":lua require('mini.sessions').read()" },
+    { "auto-session", ":SessionRestore"}
   }
   for _, plugin in pairs(plugins) do
     if M.have_plugin(plugin[1]) then
