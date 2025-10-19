@@ -150,7 +150,10 @@ function M._update(cwd, results)
     if s.status:sub(1, 1) ~= "!" then -- don't propagate ignored status
       add_git_status(cwd, s.status)
       for dir in Snacks.picker.util.parents(path, cwd) do
-        add_git_status(dir, s.status)
+        if not s.status:find("^.D$") or vim.fn.isdirectory(dir) == 1 then
+          -- only propagate if not deleted or still exists
+          add_git_status(dir, s.status)
+        end
       end
     end
   end
