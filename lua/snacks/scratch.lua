@@ -180,7 +180,7 @@ function M.open(opts)
 
     local filekey = {
       opts.filekey.count and tostring(vim.v.count1) or "",
-      opts.icon or "",
+      (type(opts.icon) == "table" and opts.icon[1]) or opts.icon or "",
       opts.name:gsub("|", " "),
       opts.filekey.cwd and svim.fs.normalize(assert(uv.cwd())) or "",
       branch,
@@ -267,6 +267,7 @@ function M.open(opts)
       callback = function(ev)
         vim.api.nvim_buf_call(ev.buf, function()
           vim.cmd("silent! write")
+          vim.bo[ev.buf].buflisted = false
         end)
       end,
     })
