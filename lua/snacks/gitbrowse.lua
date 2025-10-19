@@ -181,8 +181,8 @@ function M._open(opts)
     if line_start > line_end then
       line_start, line_end = line_end, line_start
     end
-    fields.line_start = line_start
-    fields.line_end = line_end
+    fields.line_start = fields.line_start or line_start
+    fields.line_end = fields.line_end or line_end
   else
     fields.line_start = fields.line_start or vim.fn.line(".")
     fields.line_end = fields.line_end or fields.line_start
