@@ -154,10 +154,8 @@ function M.option(option, opts)
     id = option,
     name = option,
     get = function()
-      if opts.global then
-        return vim.opt[option]:get() == on
-      end
-      return vim.opt_local[option]:get() == on
+      local o = opts.global and vim.opt[option]:get() or vim.opt_local[option]:get()
+      return type(on) == "table" and vim.deep_equal(o, on) or o == on
     end,
     set = function(state)
       if opts.global then
