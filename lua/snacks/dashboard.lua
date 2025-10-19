@@ -855,9 +855,11 @@ function M.sections.recent_files(opts)
   return function()
     opts = opts or {}
     local limit = opts.limit or 5
-    local root = opts.cwd and svim.fs.normalize(opts.cwd == true and vim.fn.getcwd() or opts.cwd) or ""
+    local root = opts.cwd and svim.fs.normalize(opts.cwd == true and vim.fn.getcwd() or opts.cwd) or nil
+    -- Only filter by directory when root is specified. If nil, M.oldfiles will use default filters only (excludes stdpath data/cache/state).
+    local oldfiles_opts = root and { filter = { [root] = true } } or nil
     local ret = {} ---@type snacks.dashboard.Section
-    for file in M.oldfiles({ filter = { [root] = true } }) do
+    for file in M.oldfiles(oldfiles_opts) do
       if not opts.filter or opts.filter(file) then
         ret[#ret + 1] = {
           file = file,
