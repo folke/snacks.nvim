@@ -189,6 +189,16 @@ Open a new terminal window.
 Snacks.terminal.open(cmd, opts)
 ```
 
+### `Snacks.terminal.tid()`
+
+Get a terminal id based on the `cmd`, `cwd`, `env` and `vim.v.count1` options.
+
+```lua
+---@param cmd? string | string[]
+---@param opts? snacks.terminal.Opts
+Snacks.terminal.tid(cmd, opts)
+```
+
 ### `Snacks.terminal.toggle()`
 
 Toggle a terminal window.
