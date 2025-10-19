@@ -717,23 +717,25 @@ function D:update()
 
   -- cursor movement
   local last = { 1, 0 }
+  local function update_cursor()
+    local item = self:find(vim.api.nvim_win_get_cursor(self.win), last)
+    -- can happen for panes without actionable items
+    item = item or vim.tbl_filter(function(it)
+      return it.action and it._
+    end, self.items)[1]
+    if item then
+      local col = self.lines[item._.row]:find("[%w%d%p]", item._.col + 1)
+      col = col or (item._.col + 1 + (item.indent and (item.indent + 1) or 0))
+      last = { item._.row, (col or item._.col + 1) - 1 }
+    end
+    vim.api.nvim_win_set_cursor(self.win, last)
+  end
   vim.api.nvim_create_autocmd("CursorMoved", {
     group = vim.api.nvim_create_augroup("snacks_dashboard_cursor", { clear = true }),
     buffer = self.buf,
-    callback = function()
-      local item = self:find(vim.api.nvim_win_get_cursor(self.win), last)
-      -- can happen for panes without actionable items
-      item = item or vim.tbl_filter(function(it)
-        return it.action and it._
-      end, self.items)[1]
-      if item then
-        local col = self.lines[item._.row]:find("[%w%d%p]", item._.col + 1)
-        col = col or (item._.col + 1 + (item.indent and (item.indent + 1) or 0))
-        last = { item._.row, (col or item._.col + 1) - 1 }
-      end
-      vim.api.nvim_win_set_cursor(self.win, last)
-    end,
+    callback = update_cursor,
   })
+  update_cursor()
   self.fire("UpdatePost")
 end
 
@@ -831,6 +833,7 @@ function M.sections.session(item)
     { "possession.nvim", ":PossessionLoadCwd" },
     { "mini.sessions", ":lua require('mini.sessions').read()" },
     { "mini.nvim", ":lua require('mini.sessions').read()" },
+    { "auto-session", ":SessionRestore" },
   }
   for _, plugin in pairs(plugins) do
     if M.have_plugin(plugin[1]) then
@@ -990,6 +993,26 @@ function M.sections.terminal(opts)
         pty = true,
         on_stdout = function(_, data)
           data = table.concat(data, "\n")
+
+          local termenv = {
+            ["\27%]11;%?\27\\"] = function() -- OSC 11
+              local rgb = (vim.o.background == "light") and "ffff/ffff/ffff" or "0000/0000/0000"
+              return "\x1b]11;rgb:" .. rgb .. "\x1b\\"
+            end,
+            ["\27%[6n"] = function() -- CSI 6 n
+              return "\x1b[1;" .. tostring(width) .. "R"
+            end,
+          }
+          for seq, repl in pairs(termenv) do
+            if data:find(seq) then
+              pcall(vim.fn.chansend, jid, repl())
+              data = data:gsub(seq, "")
+            end
+          end
+          if data == "" then
+            return
+          end
+
           if recording:is_active() then
             table.insert(output, data)
           end
@@ -1042,6 +1065,7 @@ function M.sections.terminal(opts)
           style = "minimal",
           width = width,
           win = self.win,
+          border = "none",
         })
         local hl = opts.hl and hl_groups[opts.hl] or opts.hl or "SnacksDashboardTerminal"
         Snacks.util.wo(win, { winhighlight = "TermCursorNC:" .. hl .. ",NormalFloat:" .. hl })

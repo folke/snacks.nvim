@@ -366,6 +366,7 @@ function M.hover()
     local win = Snacks.win(Snacks.win.resolve(Snacks.image.config.doc, "snacks_image", {
       show = false,
       enter = false,
+      wo = { winblend = Snacks.image.terminal.env().placeholders and 0 or nil },
     }))
     win:open_buf()
     local updated = false

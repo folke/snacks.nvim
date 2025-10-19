@@ -14,7 +14,7 @@ Table of Contents                             *snacks-scope-table-of-contents*
 Scope detection based on treesitter or indent.
 
 The indent-based algorithm is similar to what is used in mini.indentscope
-<https://github.com/echasnovski/mini.indentscope>.
+<https://github.com/nvim-mini/mini.indentscope>.
 
 
 ==============================================================================
@@ -54,7 +54,7 @@ The indent-based algorithm is similar to what is used in mini.indentscope
       siblings = false, -- expand single line scopes with single line siblings
       -- what buffers to attach to
       filter = function(buf)
-        return vim.bo[buf].buftype == ""
+        return vim.bo[buf].buftype == "" and vim.b[buf].snacks_scope ~= false and vim.g.snacks_scope ~= false
       end,
       -- debounce scope detection in ms
       debounce = 30,
@@ -177,9 +177,9 @@ Attach a scope listener
 `Snacks.scope.get()`                                      *Snacks.scope.get()*
 
 >lua
-    ---@param opts? snacks.scope.Opts
-    ---@return snacks.scope.Scope?
-    Snacks.scope.get(opts)
+    ---@param cb fun(scope?: snacks.scope.Scope)
+    ---@param opts? snacks.scope.Opts|{parse?:boolean}
+    Snacks.scope.get(cb, opts)
 <
 
 

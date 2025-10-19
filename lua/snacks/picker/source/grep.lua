@@ -16,7 +16,8 @@ local function get_cmd(opts, filter)
     "--max-columns=500",
     "--max-columns-preview",
     "-g",
-    "!.git",
+    "--glob=!.bare",
+    "--glob=!.git",
   }
 
   args = vim.deepcopy(args)
@@ -116,7 +117,7 @@ function M.grep(opts, ctx)
       ---@param item snacks.picker.finder.Item
       transform = function(item)
         item.cwd = cwd
-        local file, line, col, text = item.text:match("^(.+):(%d+):(%d+):(.*)$")
+        local file, line, col, text = item.text:match("^(.-):(%d+):(%d+):(.*)$")
         if not file then
           if not item.text:match("WARNING") then
             Snacks.notify.error("invalid grep output:\n" .. item.text)
