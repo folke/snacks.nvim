@@ -11,7 +11,13 @@ end
 _G.bt = function()
   Snacks.debug.backtrace()
 end
-vim.print = _G.dd
+if vim.fn.has("nvim-0.11") == 1 then
+  vim._print = function(_, ...)
+    dd(...)
+  end
+else
+  vim.print = dd
+end
 ```
 
 What this does:

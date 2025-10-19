@@ -46,44 +46,46 @@ function M.delete(opts)
   end
   buf = buf == 0 and vim.api.nvim_get_current_buf() or buf
 
-  vim.api.nvim_buf_call(buf, function()
-    if vim.bo.modified and not opts.force then
-      local ok, choice = pcall(vim.fn.confirm, ("Save changes to %q?"):format(vim.fn.bufname()), "&Yes\n&No\n&Cancel")
-      if not ok or choice == 0 or choice == 3 then -- 0 for <Esc>/<C-c> and 3 for Cancel
-        return
-      end
-      if choice == 1 then -- Yes
-        vim.cmd.write()
-      end
-    end
+  if not vim.api.nvim_buf_is_valid(buf) then
+    return
+  end
 
-    for _, win in ipairs(vim.fn.win_findbuf(buf)) do
-      vim.api.nvim_win_call(win, function()
-        if not vim.api.nvim_win_is_valid(win) or vim.api.nvim_win_get_buf(win) ~= buf then
-          return
-        end
-        -- Try using alternate buffer
-        local alt = vim.fn.bufnr("#")
-        if alt ~= buf and vim.fn.buflisted(alt) == 1 then
-          vim.api.nvim_win_set_buf(win, alt)
-          return
-        end
-
-        -- Try using previous buffer
-        local has_previous = pcall(vim.cmd, "bprevious")
-        if has_previous and buf ~= vim.api.nvim_win_get_buf(win) then
-          return
-        end
-
-        -- Create new listed buffer
-        local new_buf = vim.api.nvim_create_buf(true, false)
-        vim.api.nvim_win_set_buf(win, new_buf)
-      end)
+  -- Check if the buffer is modified
+  if vim.bo[buf].modified and not opts.force then
+    local ok, choice = pcall(vim.fn.confirm, ("Save changes to %q?"):format(vim.fn.bufname(buf)), "&Yes\n&No\n&Cancel")
+    if not ok or choice == 0 or choice == 3 then -- 0 for <Esc>/<C-c> and 3 for Cancel
+      return
+    elseif choice == 1 then -- Yes
+      vim.api.nvim_buf_call(buf, vim.cmd.write)
     end
-    if vim.api.nvim_buf_is_valid(buf) then
-      pcall(vim.cmd, (opts.wipe and "bwipeout! " or "bdelete! ") .. buf)
-    end
+  end
+
+  -- Get the most recently used listed buffer that is not the one being deleted,
+  local info = vim.fn.getbufinfo({ buflisted = 1 })
+  ---@param b vim.fn.getbufinfo.ret.item
+  info = vim.tbl_filter(function(b)
+    return b.bufnr ~= buf
+  end, info)
+  table.sort(info, function(a, b)
+    return a.lastused > b.lastused
   end)
+
+  local new_buf = info[1] and info[1].bufnr or vim.api.nvim_create_buf(true, false)
+
+  -- replace the buffer in all windows showing it,
+  -- trying to use the alternate buffer if possible
+  for _, win in ipairs(vim.fn.win_findbuf(buf)) do
+    local win_buf = new_buf
+    vim.api.nvim_win_call(win, function() -- Try using alternate buffer
+      local alt = vim.fn.bufnr("#")
+      win_buf = alt >= 0 and alt ~= buf and vim.bo[alt].buflisted and alt or win_buf
+    end)
+    vim.api.nvim_win_set_buf(win, win_buf)
+  end
+
+  if vim.api.nvim_buf_is_valid(buf) then
+    pcall(vim.cmd, (opts.wipe and "bwipeout! " or "bdelete! ") .. buf)
+  end
 end
 
 --- Delete all buffers

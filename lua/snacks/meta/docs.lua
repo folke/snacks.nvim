@@ -125,14 +125,16 @@ function M.parse(lines)
         used_comments[node:start()] = true
       end
 
-      table.insert(ret.captures, {
-        text = vim.treesitter.get_node_text(node, source),
-        name = name,
-        comment = comment,
-        line = node:start() + 1,
-        node = node,
-        fields = fields,
-      })
+      if not comment:find("@deprecated") then
+        table.insert(ret.captures, {
+          text = vim.treesitter.get_node_text(node, source),
+          name = name,
+          comment = comment,
+          line = node:start() + 1,
+          node = node,
+          fields = fields,
+        })
+      end
     end
   end
   for l in pairs(used_comments) do
