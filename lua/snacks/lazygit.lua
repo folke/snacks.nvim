@@ -215,11 +215,11 @@ function M.log(opts)
 end
 
 -- Opens lazygit with the log of the current file
----@param opts? snacks.lazygit.Config
+---@param opts? snacks.lazygit.Config|{}
 function M.log_file(opts)
   local file = vim.trim(vim.api.nvim_buf_get_name(0))
   opts = opts or {}
-  opts.args = { "-f", file }
+  opts.args = vim.list_extend(opts.args or {}, { "-f", file })
   opts.cwd = vim.fn.fnamemodify(file, ":h")
   return M.open(opts)
 end
