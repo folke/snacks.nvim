@@ -145,24 +145,32 @@ function Toggle:_wk(keys, mode)
 end
 
 ---@param option string
----@param opts? snacks.toggle.Config | {on?: unknown, off?: unknown, global?: boolean}
+---@param opts? snacks.toggle.Config | {on?: unknown, off?: unknown, subopt?: unknown, global?: boolean}
 function M.option(option, opts)
   opts = opts or {}
   local on = opts.on == nil and true or opts.on
   local off = opts.off ~= nil and opts.off or false
   return M.new({
-    id = option,
-    name = option,
+    id = opts.subopt and option .. "." .. opts.subopt or option,
+    name = opts.subopt and opts.subopt or option,
     get = function()
       local o = opts.global and vim.opt[option]:get() or vim.opt_local[option]:get()
+      if opts.subopt then
+        return vim.tbl_contains(o, opts.subopt)
+      end
       return type(on) == "table" and vim.deep_equal(o, on) or o == on
     end,
     set = function(state)
-      if opts.global then
-        vim.opt[option] = state and on or off
+      local scope = opts.global and vim.opt_global or vim.opt_local
+      if not opts.subopt then
+        scope[option] = state and on or off
         return
       end
-      vim.opt_local[option] = state and on or off
+      if state then
+        scope[option]:append(opts.subopt)
+      else
+        scope[option]:remove(opts.subopt)
+      end
     end,
   }, opts)
 end
