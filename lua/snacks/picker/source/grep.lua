@@ -16,7 +16,8 @@ local function get_cmd(opts, filter)
     "--max-columns=500",
     "--max-columns-preview",
     "-g",
-    "!.git",
+    "--glob=!.bare",
+    "--glob=!.git",
   }
 
   args = vim.deepcopy(args)
