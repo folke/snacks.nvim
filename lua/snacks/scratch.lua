@@ -174,13 +174,13 @@ function M.open(opts)
     if opts.filekey.branch and uv.fs_stat(".git") then
       local ret = vim.fn.systemlist("git branch --show-current")[1]
       if vim.v.shell_error == 0 then
-        branch = ret
+        branch = ret or "" -- fallback for detached head (ret is nil then)
       end
     end
 
     local filekey = {
       opts.filekey.count and tostring(vim.v.count1) or "",
-      opts.icon or "",
+      (type(opts.icon) == "table" and opts.icon[1]) or opts.icon or "",
       opts.name:gsub("|", " "),
       opts.filekey.cwd and svim.fs.normalize(assert(uv.cwd())) or "",
       branch,
@@ -267,6 +267,7 @@ function M.open(opts)
       callback = function(ev)
         vim.api.nvim_buf_call(ev.buf, function()
           vim.cmd("silent! write")
+          vim.bo[ev.buf].buflisted = false
         end)
       end,
     })

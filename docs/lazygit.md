@@ -117,7 +117,7 @@ Snacks.lazygit.log(opts)
 Opens lazygit with the log of the current file
 
 ```lua
----@param opts? snacks.lazygit.Config
+---@param opts? snacks.lazygit.Config|{}
 Snacks.lazygit.log_file(opts)
 ```
 
