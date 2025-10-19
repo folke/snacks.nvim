@@ -1850,6 +1850,7 @@ Open recent projects
 ---@field projects? string[] list of project directories
 ---@field patterns? string[] patterns to detect project root directories
 ---@field recent? boolean include project directories of recent files
+---@field max_depth? number maximum depth to search in dev directories (default: 2)
 {
   finder = "recent_projects",
   format = "file",
