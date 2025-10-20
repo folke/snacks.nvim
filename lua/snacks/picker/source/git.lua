@@ -61,11 +61,10 @@ function M.grep(opts, ctx)
 
   local function filter_catch_all_exclusions(pathspecs)
     local function is_valid(spec)
-      if not spec then return false end
-      if spec:match("^:[!^][*.]?$") then return false end
-      if spec:match("^:%(exclude%)[*.]?$") then return false end
-      if spec:match("^:%([^)]*$") then return false end -- unfinished `(exclude)`
-      return true
+      return spec
+        and not spec:match("^:[!^][*.]?$")
+        and not spec:match("^:%(exclude%)[*.]?$")
+        and not spec:match("^:%([^)]*$") -- unfinished `(exclude)`
     end
     return vim.tbl_filter(is_valid, pathspecs)
   end
@@ -303,7 +302,7 @@ function M.branches(opts, ctx)
     --- e.g. "* (HEAD detached at f65a2c8) f65a2c8 chore(build): auto-generate docs"
     "^(.)%s(%b())%s+(" .. commit_pat .. ")%s*(.*)$",
     --- e.g. "  main                       d2b2b7b [origin/main: behind 276] chore(build): auto-generate docs"
-    "^(.)%s(%S+)%s+(".. commit_pat .. ")%s*(.*)$",
+    "^(.)%s(%S+)%s+(" .. commit_pat .. ")%s*(.*)$",
     -- stylua: ignore end
   } ---@type string[]
 
