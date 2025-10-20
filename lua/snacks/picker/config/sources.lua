@@ -353,16 +353,6 @@ M.grep = {
   show_empty = true,
   live = true, -- live grep by default
   supports_live = true,
-  toggles = {
-    regex = { value = true },
-  },
-  win = {
-    input = {
-      keys = {
-        ["<a-r>"] = { "toggle_regex", mode = { "n", "i" }, desc = "Toggle Regex" },
-      },
-    },
-  },
 }
 
 ---@type snacks.picker.grep.Config|{}
