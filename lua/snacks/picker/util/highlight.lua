@@ -228,9 +228,10 @@ function M.resolve(line, ctx)
     ctx.offset = offset
     ctx.max_width = ctx.max_width - width
     vim.list_extend(ret, line, 1, resolve - 1)
+    offset = M.offset(ret)
     vim.list_extend(ret, line[resolve].resolve(ctx))
-    local diff = M.offset(ret, { char_idx = true }) - offset
-    vim.list_extend(ret, line, 1, resolve + 1)
+    local diff = M.offset(ret) - offset
+    vim.list_extend(ret, line, resolve + 1)
     M.fix_offset(ret, diff, resolve + 1)
   end
 
