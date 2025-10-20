@@ -881,7 +881,7 @@ end
 --- try to restore the session and open the picker if the session is not restored.
 --- You can customize the behavior by providing a custom action.
 --- Use `opts.dirs` to provide a list of directories to use instead of the git roots.
----@param opts? {limit?:number, dirs?:(string[]|fun():string[]), pick?:boolean, session?:boolean, action?:fun(dir)}
+---@param opts? {limit?:number, dirs?:(string[]|fun():string[]), pick?:boolean, session?:boolean, action?:fun(dir), filter?:fun(dir:string):boolean?}
 function M.sections.projects(opts)
   opts = vim.tbl_extend("force", { pick = true, session = true }, opts or {})
   local limit = opts.limit or 5
@@ -893,9 +893,11 @@ function M.sections.projects(opts)
     for file in M.oldfiles() do
       local dir = Snacks.git.get_root(file)
       if dir and not vim.tbl_contains(dirs, dir) then
-        table.insert(dirs, dir)
-        if #dirs >= limit then
-          break
+        if not opts.filter or opts.filter(dir) then
+          table.insert(dirs, dir)
+          if #dirs >= limit then
+            break
+          end
         end
       end
     end
@@ -903,10 +905,11 @@ function M.sections.projects(opts)
 
   local ret = {} ---@type snacks.dashboard.Item[]
   for _, dir in ipairs(dirs) do
-    ret[#ret + 1] = {
-      file = dir,
-      icon = "directory",
-      action = function(self)
+    if not opts.filter or opts.filter(dir) then
+      ret[#ret + 1] = {
+        file = dir,
+        icon = "directory",
+        action = function(self)
         if opts.action then
           return opts.action(dir)
         end
@@ -923,7 +926,8 @@ function M.sections.projects(opts)
         end
       end,
       autokey = true,
-    }
+      }
+    end
   end
   return ret
 end
