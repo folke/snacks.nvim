@@ -39,6 +39,7 @@ Open the repo of the active file in the browser (e.g., GitHub)
   end,
   ---@type "repo" | "branch" | "file" | "commit" | "permalink"
   what = "commit", -- what to open. not all remotes support all types
+  commit = nil, ---@type string?
   branch = nil, ---@type string?
   line_start = nil, ---@type number?
   line_end = nil, ---@type number?
