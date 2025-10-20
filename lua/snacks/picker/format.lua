@@ -81,7 +81,11 @@ function M._filename(ctx)
   end
 
   local truncate = picker.opts.formatters.file.truncate
-  path = Snacks.picker.util.truncpath(path, ctx.max_width, { cwd = picker:cwd(), kind = truncate })
+  path = Snacks.picker.util.truncpath(
+    path,
+    ctx.max_width - Snacks.picker.highlight.offset(ret),
+    { cwd = picker:cwd(), kind = truncate }
+  )
 
   local base_hl = item.dir and "SnacksPickerDirectory" or "SnacksPickerFile"
   local function is(prop)

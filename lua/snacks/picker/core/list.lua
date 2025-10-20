@@ -480,8 +480,8 @@ function M:format(item)
   local ctx = {
     picker = self.picker,
     item = item,
-    offset = vim.api.nvim_strwidth(text),
-    max_width = vim.api.nvim_win_get_width(self.win.win) - 5,
+    offset = 0,
+    max_width = vim.api.nvim_win_get_width(self.win.win),
   }
   line = Snacks.picker.highlight.resolve(line, ctx)
 
