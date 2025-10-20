@@ -910,11 +910,11 @@ function M.sections.projects(opts)
         file = dir,
         icon = "directory",
         action = function(self)
-        if opts.action then
-          return opts.action(dir)
-        end
-        vim.fn.chdir(dir)
-        local session = M.sections.session()
+          if opts.action then
+            return opts.action(dir)
+          end
+          vim.fn.chdir(dir)
+          local session = M.sections.session()
         -- stylua: ignore
         if opts.session and session then
           local session_loaded = false
@@ -924,8 +924,8 @@ function M.sections.projects(opts)
         elseif opts.pick then
           M.pick()
         end
-      end,
-      autokey = true,
+        end,
+        autokey = true,
       }
     end
   end
