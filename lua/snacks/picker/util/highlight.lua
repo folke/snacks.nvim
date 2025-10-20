@@ -233,6 +233,8 @@ function M.resolve(line, ctx)
     local diff = M.offset(ret) - offset
     vim.list_extend(ret, line, resolve + 1)
     M.fix_offset(ret, diff, resolve + 1)
+  else
+    return line
   end
 
   return ret
