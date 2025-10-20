@@ -623,11 +623,18 @@ M.man = {
   finder = "system_man",
   format = "man",
   preview = "man",
-  confirm = function(picker, item)
+  confirm = function(picker, item, action)
+    ---@cast action snacks.picker.jump.Action
     picker:close()
     if item then
       vim.schedule(function()
-        vim.cmd("Man " .. item.ref)
+        local cmd = "Man " .. item.ref ---@type string
+        if action.cmd == "vsplit" then
+          cmd = "vert " .. cmd
+        elseif action.cmd == "tab" then
+          cmd = "tab " .. cmd
+        end
+        vim.cmd(cmd)
       end)
     end
   end,
