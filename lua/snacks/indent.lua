@@ -301,7 +301,7 @@ local function bounds(scope, state)
   return from, to
 end
 
---- Render the scope overlappping the given range
+--- Render the scope overlapping the given range
 ---@param scope snacks.indent.Scope
 ---@param state snacks.indent.State
 ---@private
@@ -312,14 +312,17 @@ function M.render_scope(scope, state)
   local col = indent - state.leftcol
 
   if config.scope.underline and scope.from == from then
-    vim.api.nvim_buf_set_extmark(scope.buf, ns, scope.from - 1, math.max(col, 0), {
-      end_col = #vim.api.nvim_buf_get_lines(scope.buf, scope.from - 1, scope.from, false)[1],
-      hl_group = get_underline_hl(hl),
-      hl_mode = "combine",
-      priority = config.scope.priority + 1,
-      strict = false,
-      ephemeral = true,
-    })
+    local scope_first_line = vim.api.nvim_buf_get_lines(scope.buf, scope.from - 1, scope.from, false)[1]
+    if scope_first_line ~= nil then
+      vim.api.nvim_buf_set_extmark(scope.buf, ns, scope.from - 1, math.max(col, 0), {
+        end_col = #scope_first_line,
+        hl_group = get_underline_hl(hl),
+        hl_mode = "combine",
+        priority = config.scope.priority + 1,
+        strict = false,
+        ephemeral = true,
+      })
+    end
   end
 
   if col < 0 then -- scope is hidden
@@ -392,6 +395,9 @@ end
 ---@param value number
 ---@param prev? number
 local function step(scope, value, prev)
+  if not vim.api.nvim_win_is_valid(scope.win) then
+    return
+  end
   prev = prev or 0
   local cursor = vim.api.nvim_win_get_cursor(scope.win)
   local dt = math.abs(scope.from - cursor[1])

@@ -262,6 +262,10 @@ function M.layout(opts)
     end
   end
 
+  if layout.config then
+    layout = layout.config(layout) or layout
+  end
+
   return layout
 end
 

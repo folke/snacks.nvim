@@ -1,4 +1,4 @@
-*snacks.nvim.txt*             For Neovim            Last change: 2025 March 01
+*snacks.nvim.txt*            For Neovim           Last change: 2025 October 20
 
 ==============================================================================
 Table of Contents                              *snacks.nvim-table-of-contents*
@@ -109,7 +109,7 @@ REQUIREMENTS                            *snacks.nvim-snacks.nvim-requirements*
 
 - **Neovim** >= 0.9.4
 - for proper icons support:
-    - mini.icons <https://github.com/echasnovski/mini.icons> _(optional)_
+    - mini.icons <https://github.com/nvim-mini/mini.icons> _(optional)_
     - nvim-web-devicons <https://github.com/nvim-tree/nvim-web-devicons> _(optional)_
     - a Nerd Font <https://www.nerdfonts.com/> **(optional)**
 
@@ -378,7 +378,15 @@ See the example below for how to configure `snacks.nvim`.
             _G.bt = function()
               Snacks.debug.backtrace()
             end
-            vim.print = _G.dd -- Override print to use snacks for `:=` command
+    
+            -- Override print to use snacks for `:=` command
+            if vim.fn.has("nvim-0.11") == 1 then
+              vim._print = function(_, ...)
+                dd(...)
+              end
+            else
+              vim.print = _G.dd 
+            end
     
             -- Create some toggle mappings
             Snacks.toggle.option("spell", { name = "Spelling" }):map("<leader>us")

@@ -28,7 +28,7 @@ Some acknowledgements:
 
 - [fzf-lua](https://github.com/ibhagwan/fzf-lua)
 - [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim)
-- [mini.pick](https://github.com/echasnovski/mini.pick)
+- [mini.pick](https://github.com/nvim-mini/mini.pick)
 
 ## 📚 Usage
 
@@ -688,6 +688,7 @@ It's a previewer that shows a preview based on the item data.
 ---@field preset? string|fun(source:string):string
 ---@field hidden? ("input"|"preview"|"list")[] don't show the given windows when opening the picker. (only "input" and "preview" make sense)
 ---@field auto_hide? ("input"|"preview"|"list")[] hide the given windows when not focused (only "input" makes real sense)
+---@field config? fun(layout:snacks.picker.layout.Config) customize the resolved layout config
 ```
 
 ```lua
@@ -877,6 +878,7 @@ Neovim command history
   name = "cmd",
   format = "text",
   preview = "none",
+  main = { current = true },
   layout = {
     preset = "vscode",
   },
@@ -1372,6 +1374,7 @@ Neovim help tags
 ---@field icon_sources? string[]
 {
   icon_sources = { "nerd_fonts", "emoji" },
+  main = { current = true },
   finder = "icons",
   format = "icon",
   layout = { preset = "vscode" },
@@ -1389,6 +1392,7 @@ Neovim help tags
 {
   finder = "vim_jumps",
   format = "file",
+  main = { current = true },
 }
 ```
 
@@ -1503,6 +1507,7 @@ Loclist
   finder = "qf",
   format = "file",
   qf_win = 0,
+  main = { current = true },
 }
 ```
 
@@ -1849,6 +1854,7 @@ Open recent projects
 ---@field projects? string[] list of project directories
 ---@field patterns? string[] patterns to detect project root directories
 ---@field recent? boolean include project directories of recent files
+---@field max_depth? number maximum depth to search in dev directories (default: 2)
 {
   finder = "recent_projects",
   format = "file",
@@ -1938,6 +1944,7 @@ Neovim registers
 ```lua
 {
   finder = "vim_registers",
+  main = { current = true },
   format = "register",
   preview = "preview",
   confirm = { "copy", "close" },
@@ -1971,6 +1978,7 @@ Neovim search history
   name = "search",
   format = "text",
   preview = "none",
+  main = { current = true },
   layout = { preset = "vscode" },
   confirm = "search",
   formatters = { text = { ft = "regex" } },
@@ -2026,6 +2034,7 @@ Not meant to be used directly.
 {
   finder = "vim_spelling",
   format = "text",
+  main = { current = true },
   layout = { preset = "vscode" },
   confirm = "item_action",
 }
@@ -2239,7 +2248,7 @@ M.sidebar
 
 ```lua
 {
-  preview = false,
+  hidden = { "preview" },
   layout = {
     backdrop = false,
     width = 0.5,
@@ -2341,7 +2350,7 @@ M.sidebar
 
 ```lua
 {
-  preview = false,
+  hidden = { "preview" },
   layout = {
     backdrop = false,
     row = 1,
@@ -2574,6 +2583,12 @@ Send selected or all items to the location list.
 Snacks.picker.actions.loclist(picker)
 ```
 
+### `Snacks.picker.actions.paste()`
+
+```lua
+Snacks.picker.actions.paste(picker, item, action)
+```
+
 ### `Snacks.picker.actions.pick_win()`
 
 ```lua
@@ -2614,12 +2629,6 @@ Snacks.picker.actions.preview_scroll_right(picker)
 
 ```lua
 Snacks.picker.actions.preview_scroll_up(picker)
-```
-
-### `Snacks.picker.actions.put()`
-
-```lua
-Snacks.picker.actions.put(picker, item, action)
 ```
 
 ### `Snacks.picker.actions.qflist()`

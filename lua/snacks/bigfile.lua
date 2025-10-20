@@ -21,6 +21,7 @@ local defaults = {
     end
     Snacks.util.wo(0, { foldmethod = "manual", statuscolumn = "", conceallevel = 0 })
     vim.b.minianimate_disable = true
+    vim.b.minihipatterns_disable = true
     vim.schedule(function()
       if vim.api.nvim_buf_is_valid(ctx.buf) then
         vim.bo[ctx.buf].syntax = ctx.ft
@@ -40,7 +41,7 @@ function M.setup()
           if not path or not buf or vim.bo[buf].filetype == "bigfile" then
             return
           end
-          if path ~= vim.api.nvim_buf_get_name(buf) then
+          if path ~= vim.fs.normalize(vim.api.nvim_buf_get_name(buf)) then
             return
           end
           local size = vim.fn.getfsize(path)

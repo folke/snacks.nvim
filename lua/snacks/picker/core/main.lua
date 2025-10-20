@@ -40,7 +40,7 @@ function M:find()
   if self.opts.current then
     return current
   end
-  local prev = vim.fn.winnr("#")
+  local prev = vim.fn.win_getid(vim.fn.winnr("#"))
   local non_float = 0
   local wins = { self.win, current, prev }
   local all = vim.api.nvim_tabpage_list_wins(0)
