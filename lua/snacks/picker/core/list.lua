@@ -475,6 +475,16 @@ function M:format(item)
 
   -- Add the formatted item
   local line = self.picker.format(item, self.picker)
+
+  ---@type snacks.picker.format.ctx
+  local ctx = {
+    picker = self.picker,
+    item = item,
+    offset = vim.api.nvim_strwidth(text),
+    max_width = vim.api.nvim_win_get_width(self.win.win) - 5,
+  }
+  line = Snacks.picker.highlight.resolve(line, ctx)
+
   while #line > 0 and type(line[#line][1]) == "string" and line[#line][1]:find("^%s*$") do
     table.remove(line)
   end

@@ -41,13 +41,26 @@ end
 
 ---@param item snacks.picker.Item
 function M.filename(item, picker)
+  ---@type snacks.picker.Text[]
+  return {
+    {
+      "",
+      resolve = function(ctx)
+        return M._filename(ctx)
+      end,
+    },
+  }
+end
+
+---@type snacks.picker.format.resolve
+function M._filename(ctx)
+  local picker, item = ctx.picker, ctx.item
   ---@type snacks.picker.Highlight[]
   local ret = {}
   if not item.file then
     return ret
   end
   local path = Snacks.picker.util.path(item) or item.file
-  path = Snacks.picker.util.truncpath(path, picker.opts.formatters.file.truncate or 40, { cwd = picker:cwd() })
   local name, cat = path, "file"
   if item.buf and vim.api.nvim_buf_is_loaded(item.buf) then
     name = vim.bo[item.buf].filetype
@@ -66,6 +79,9 @@ function M.filename(item, picker)
     icon = Snacks.picker.util.align(icon, picker.opts.formatters.file.icon_width or 2)
     ret[#ret + 1] = { icon, hl, virtual = true }
   end
+
+  local truncate = picker.opts.formatters.file.truncate
+  path = Snacks.picker.util.truncpath(path, ctx.max_width, { cwd = picker:cwd(), kind = truncate })
 
   local base_hl = item.dir and "SnacksPickerDirectory" or "SnacksPickerFile"
   local function is(prop)
