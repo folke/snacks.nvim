@@ -484,14 +484,15 @@ function M.yank(picker, item, action)
 end
 M.copy = M.yank
 
-function M.put(picker, item, action)
+function M.paste(picker, item, action)
   ---@cast action snacks.picker.yank.Action
   picker:close()
   if item then
     local value = item[action.field] or item.data or item.text
-    vim.api.nvim_put({ value }, "", true, true)
+    vim.api.nvim_paste(value, true, -1)
   end
 end
+M.put = M.paste
 
 function M.history_back(picker)
   picker:hist()
