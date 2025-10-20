@@ -29,6 +29,22 @@ vim.api.nvim_create_autocmd("User", {
 })
 ```
 
+## [fyler.nvim](https://github.com/A7Lavinraj/fyler.nvim)
+
+```lua
+return {
+  "A7Lavinraj/fyler.nvim",
+  dependencies = { "echasnovski/mini.icons" },
+  opts = {
+    hooks = {
+      on_rename = function(src_path, destination_path)
+        Snacks.rename.on_rename_file(src_path, destination_path)
+      end,
+    },
+  },
+}
+```
+
 ## [neo-tree.nvim](https://github.com/nvim-neo-tree/neo-tree.nvim)
 
 ```lua
