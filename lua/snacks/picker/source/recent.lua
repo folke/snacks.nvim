@@ -33,7 +33,7 @@ function M.files(opts, ctx)
   local current_file = svim.fs.normalize(vim.api.nvim_buf_get_name(0), { _fast = true })
   ---@type number[]
   local bufs = vim.tbl_filter(function(b)
-    return vim.api.nvim_buf_get_name(b) ~= "" and vim.bo[b].buftype == "" and vim.bo[b].buflisted
+    return vim.api.nvim_buf_get_name(b) ~= "" and vim.bo[b].buftype == ""
   end, vim.api.nvim_list_bufs())
   table.sort(bufs, function(a, b)
     return vim.fn.getbufinfo(a)[1].lastused > vim.fn.getbufinfo(b)[1].lastused
