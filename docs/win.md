@@ -65,6 +65,7 @@ Snacks.win({
 ---@field b? table<string, any> buffer local variables
 ---@field w? table<string, any> window local variables
 ---@field ft? string filetype to use for treesitter/syntax highlighting. Won't override existing filetype
+---@field scratch_ft? string filetype to use for scratch buffers
 ---@field keys? table<string, false|string|fun(self: snacks.win)|snacks.win.Keys> Key mappings
 ---@field on_buf? fun(self: snacks.win) Callback after opening the buffer
 ---@field on_win? fun(self: snacks.win) Callback after opening the window
@@ -207,7 +208,7 @@ docs for more information on how to customize these styles
 ---@field backdrop? snacks.win
 ---@field keys snacks.win.Keys[]
 ---@field events (snacks.win.Event|{event:string|string[]})[]
----@field meta table<string, string>
+---@field meta table<string, any>
 ---@field closed? boolean
 Snacks.win = {}
 ```
@@ -268,6 +269,12 @@ win:buf_valid()
 win:close(opts)
 ```
 
+### `win:destroy()`
+
+```lua
+win:destroy()
+```
+
 ### `win:dim()`
 
 ```lua
@@ -280,6 +287,12 @@ win:dim(parent)
 ```lua
 ---@param actions string|string[]
 win:execute(actions)
+```
+
+### `win:fixbuf()`
+
+```lua
+win:fixbuf()
 ```
 
 ### `win:focus()`
@@ -298,6 +311,13 @@ win:has_border()
 
 ```lua
 win:hide()
+```
+
+### `win:hscroll()`
+
+```lua
+---@param left? boolean
+win:hscroll(left)
 ```
 
 ### `win:is_floating()`
@@ -320,6 +340,12 @@ win:line(line)
 win:lines(from, to)
 ```
 
+### `win:map()`
+
+```lua
+win:map()
+```
+
 ### `win:on()`
 
 ```lua
@@ -327,6 +353,12 @@ win:lines(from, to)
 ---@param cb fun(self: snacks.win, ev:vim.api.keyset.create_autocmd.callback_args):boolean?
 ---@param opts? snacks.win.Event
 win:on(event, cb, opts)
+```
+
+### `win:on_current_tab()`
+
+```lua
+win:on_current_tab()
 ```
 
 ### `win:on_resize()`
@@ -361,10 +393,17 @@ win:scratch()
 win:scroll(up)
 ```
 
+### `win:set_buf()`
+
+```lua
+---@param buf number
+win:set_buf(buf)
+```
+
 ### `win:set_title()`
 
 ```lua
----@param title string
+---@param title string|{[1]:string, [2]:string}[]
 ---@param pos? "center"|"left"|"right"
 win:set_title(title, pos)
 ```

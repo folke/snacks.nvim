@@ -1,4 +1,4 @@
-*snacks-debug.txt*                                                 snacks.nvim
+*snacks-debug*                                                snacks_debug
 
 ==============================================================================
 Table of Contents                             *snacks-debug-table-of-contents*
@@ -7,6 +7,7 @@ Table of Contents                             *snacks-debug-table-of-contents*
 2. Module                                                |snacks-debug-module|
   - Snacks.debug()                        |snacks-debug-module-snacks.debug()|
   - Snacks.debug.backtrace()    |snacks-debug-module-snacks.debug.backtrace()|
+  - Snacks.debug.cmd()                |snacks-debug-module-snacks.debug.cmd()|
   - Snacks.debug.inspect()        |snacks-debug-module-snacks.debug.inspect()|
   - Snacks.debug.log()                |snacks-debug-module-snacks.debug.log()|
   - Snacks.debug.metrics()        |snacks-debug-module-snacks.debug.metrics()|
@@ -28,7 +29,13 @@ Personally, I have the code below at the top of my `init.lua`
     _G.bt = function()
       Snacks.debug.backtrace()
     end
-    vim.print = _G.dd
+    if vim.fn.has("nvim-0.11") == 1 then
+      vim._print = function(_, ...)
+        dd(...)
+      end
+    else
+      vim.print = dd
+    end
 <
 
 Whatthis does:
@@ -43,6 +50,20 @@ Whatthis does:
 
 ==============================================================================
 1. Types                                                  *snacks-debug-types*
+
+>lua
+    ---@class snacks.debug.cmd
+    ---@field cmd string|string[]
+    ---@field level? snacks.notifier.level
+    ---@field title? string
+    ---@field args? string[]
+    ---@field cwd? string
+    ---@field group? boolean
+    ---@field notify? boolean
+    ---@field footer? string
+    ---@field header? string
+    ---@field props? table<string, string>
+<
 
 >lua
     ---@alias snacks.debug.Trace {name: string, time: number, [number]:snacks.debug.Trace}
@@ -70,6 +91,14 @@ Show a notification with a pretty backtrace
     ---@param msg? string|string[]
     ---@param opts? snacks.notify.Opts
     Snacks.debug.backtrace(msg, opts)
+<
+
+
+`Snacks.debug.cmd()`                                      *Snacks.debug.cmd()*
+
+>lua
+    ---@param opts snacks.debug.cmd
+    Snacks.debug.cmd(opts)
 <
 
 

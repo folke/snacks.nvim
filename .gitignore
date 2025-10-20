@@ -5,5 +5,10 @@
 /debug
 /doc/tags
 foo.*
+foo*.*
 node_modules
 tt.*
+/tmp
+repomix*
+.DS_Store
+.aider*

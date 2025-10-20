@@ -11,12 +11,33 @@ M.default = {
     {
       box = "vertical",
       border = "rounded",
-      title = "{source} {live}",
-      title_pos = "center",
+      title = "{title} {live} {flags}",
       { win = "input", height = 1, border = "bottom" },
       { win = "list", border = "none" },
     },
-    { win = "preview", border = "rounded", width = 0.5 },
+    { win = "preview", title = "{preview}", border = "rounded", width = 0.5 },
+  },
+}
+
+M.sidebar = {
+  preview = "main",
+  layout = {
+    backdrop = false,
+    width = 40,
+    min_width = 40,
+    height = 0,
+    position = "left",
+    border = "none",
+    box = "vertical",
+    {
+      win = "input",
+      height = 1,
+      border = "rounded",
+      title = "{title} {live} {flags}",
+      title_pos = "center",
+    },
+    { win = "list", border = "none" },
+    { win = "preview", title = "{preview}", height = 0.4, border = "top" },
   },
 }
 
@@ -31,13 +52,13 @@ M.telescope = {
     {
       box = "vertical",
       { win = "list", title = " Results ", title_pos = "center", border = "rounded" },
-      { win = "input", height = 1, border = "rounded", title = "{source} {live}", title_pos = "center" },
+      { win = "input", height = 1, border = "rounded", title = "{title} {live} {flags}", title_pos = "center" },
     },
     {
       win = "preview",
+      title = "{preview:Preview}",
       width = 0.45,
       border = "rounded",
-      title = " Preview ",
       title_pos = "center",
     },
   },
@@ -51,13 +72,33 @@ M.ivy = {
     width = 0,
     height = 0.4,
     border = "top",
-    title = " {source} {live}",
+    title = " {title} {live} {flags}",
     title_pos = "left",
     { win = "input", height = 1, border = "bottom" },
     {
       box = "horizontal",
       { win = "list", border = "none" },
-      { win = "preview", width = 0.6, border = "left" },
+      { win = "preview", title = "{preview}", width = 0.6, border = "left" },
+    },
+  },
+}
+
+M.ivy_split = {
+  preview = "main",
+  layout = {
+    box = "vertical",
+    backdrop = false,
+    width = 0,
+    height = 0.4,
+    position = "bottom",
+    border = "top",
+    title = " {title} {live} {flags}",
+    title_pos = "left",
+    { win = "input", height = 1, border = "bottom" },
+    {
+      box = "horizontal",
+      { win = "list", border = "none" },
+      { win = "preview", title = "{preview}", width = 0.6, border = "left" },
     },
   },
 }
@@ -71,11 +112,11 @@ M.dropdown = {
     height = 0.8,
     border = "none",
     box = "vertical",
-    { win = "preview", height = 0.4, border = "rounded" },
+    { win = "preview", title = "{preview}", height = 0.4, border = "rounded" },
     {
       box = "vertical",
       border = "rounded",
-      title = "{source} {live}",
+      title = "{title} {live} {flags}",
       title_pos = "center",
       { win = "input", height = 1, border = "bottom" },
       { win = "list", border = "none" },
@@ -92,34 +133,34 @@ M.vertical = {
     min_height = 30,
     box = "vertical",
     border = "rounded",
-    title = "{source} {live}",
+    title = "{title} {live} {flags}",
     title_pos = "center",
     { win = "input", height = 1, border = "bottom" },
     { win = "list", border = "none" },
-    { win = "preview", height = 0.4, border = "top" },
+    { win = "preview", title = "{preview}", height = 0.4, border = "top" },
   },
 }
 
 M.select = {
-  preview = false,
+  hidden = { "preview" },
   layout = {
     backdrop = false,
     width = 0.5,
     min_width = 80,
     height = 0.4,
-    min_height = 10,
+    min_height = 3,
     box = "vertical",
     border = "rounded",
-    title = " Select ",
+    title = "{title}",
     title_pos = "center",
     { win = "input", height = 1, border = "bottom" },
     { win = "list", border = "none" },
-    { win = "preview", height = 0.4, border = "top" },
+    { win = "preview", title = "{preview}", height = 0.4, border = "top" },
   },
 }
 
 M.vscode = {
-  preview = false,
+  hidden = { "preview" },
   layout = {
     backdrop = false,
     row = 1,
@@ -128,10 +169,15 @@ M.vscode = {
     height = 0.4,
     border = "none",
     box = "vertical",
-    { win = "input", height = 1, border = "rounded", title = "{source} {live}", title_pos = "center" },
+    { win = "input", height = 1, border = "rounded", title = "{title} {live} {flags}", title_pos = "center" },
     { win = "list", border = "hpad" },
-    { win = "preview", border = "rounded" },
+    { win = "preview", title = "{preview}", border = "rounded" },
   },
 }
+
+M.left = M.sidebar
+M.right = { preset = "sidebar", layout = { position = "right" } }
+M.top = { preset = "ivy", layout = { position = "top" } }
+M.bottom = { preset = "ivy", layout = { position = "bottom" } }
 
 return M

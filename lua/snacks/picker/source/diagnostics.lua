@@ -1,19 +1,16 @@
 local M = {}
 local uv = vim.uv or vim.loop
 
----@class snacks.picker
----@field diagnostics fun(opts?: snacks.picker.diagnostics.Config): snacks.Picker
-
 ---@param opts snacks.picker.diagnostics.Config
 ---@type snacks.picker.finder
-function M.diagnostics(opts, filter)
+function M.diagnostics(opts, ctx)
   local items = {} ---@type snacks.picker.finder.Item[]
   local current_buf = vim.api.nvim_get_current_buf()
-  local cwd = vim.fs.normalize(uv.cwd() or ".")
-  for _, diag in ipairs(vim.diagnostic.get(filter.buf, { severity = opts.severity })) do
+  local cwd = svim.fs.normalize(uv.cwd() or ".")
+  for _, diag in ipairs(vim.diagnostic.get(ctx.filter.buf, { severity = opts.severity })) do
     local buf = diag.bufnr
     if buf and vim.api.nvim_buf_is_valid(buf) then
-      local file = vim.fs.normalize(vim.api.nvim_buf_get_name(buf), { _fast = true })
+      local file = svim.fs.normalize(vim.api.nvim_buf_get_name(buf), { _fast = true })
       local severity = diag.severity
       severity = type(severity) == "number" and vim.diagnostic.severity[severity] or severity
       ---@cast severity string?
@@ -25,14 +22,14 @@ function M.diagnostics(opts, filter)
         is_cwd = file:sub(1, #cwd) == cwd and 0 or 1,
         lnum = diag.lnum,
         severity = diag.severity,
-        pos = { diag.lnum + 1, diag.col + 1 },
-        end_pos = diag.end_lnum and { diag.end_lnum + 1, diag.end_col + 1 } or nil,
+        pos = { diag.lnum + 1, diag.col },
+        end_pos = diag.end_lnum and { diag.end_lnum + 1, diag.end_col } or nil,
         item = diag,
         comment = diag.message,
       }
     end
   end
-  return filter:filter(items)
+  return ctx.filter:filter(items)
 end
 
 return M

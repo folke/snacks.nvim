@@ -78,14 +78,15 @@ describe("scope", function()
             ft = "lua",
             ts = ts,
           })
-          local scope = Snacks.scope.get({
+          Snacks.scope.get(function(scope)
+            assert(scope)
+            assert((scope.node == nil) == not ts)
+            assert.same(scope.from, s[1])
+            assert.same(scope.to, s[2])
+          end, {
             pos = { line, 0 },
             treesitter = { enabled = ts },
           })
-          assert(scope)
-          assert((scope.node == nil) == not ts)
-          assert.same(scope.from, s[1])
-          assert.same(scope.to, s[2])
         end)
       end
     end

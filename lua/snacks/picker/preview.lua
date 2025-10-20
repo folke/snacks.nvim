@@ -7,12 +7,20 @@ local ns = vim.api.nvim_create_namespace("snacks.picker.preview")
 ---@param ctx snacks.picker.preview.ctx
 function M.directory(ctx)
   ctx.preview:reset()
+  ctx.preview:minimal()
+  local path = Snacks.picker.util.path(ctx.item)
+  if not path then
+    ctx.preview:notify("Item has no `file`", "error")
+    return
+  end
+  local name = vim.fn.fnamemodify(path, ":t")
+  ctx.preview:set_title(ctx.item.title or name)
   local ls = {} ---@type {file:string, type:"file"|"directory"}[]
-  for file, t in vim.fs.dir(ctx.item.file) do
+  for file, t in vim.fs.dir(path) do
+    t = t or Snacks.util.path_type(path .. "/" .. file)
     ls[#ls + 1] = { file = file, type = t }
   end
-  vim.api.nvim_buf_set_lines(ctx.buf, 0, -1, false, vim.split(string.rep("\n", #ls), "\n"))
-  vim.bo[ctx.buf].modifiable = false
+  ctx.preview:set_lines(vim.split(string.rep("\n", #ls), "\n"))
   table.sort(ls, function(a, b)
     if a.type ~= b.type then
       return a.type == "directory"
@@ -20,15 +28,24 @@ function M.directory(ctx)
     return a.file < b.file
   end)
   for i, item in ipairs(ls) do
-    local cat = item.type == "directory" and "directory" or "file"
-    local hl = item.type == "directory" and "Directory" or nil
-    local path = item.file
-    local icon, icon_hl = Snacks.util.icon(path, cat)
-    local line = { { icon .. " ", icon_hl }, { path, hl } }
+    local is_dir = item.type == "directory"
+    local cat = is_dir and "directory" or "file"
+    local hl = is_dir and "Directory" or nil
+    local icon, icon_hl = Snacks.util.icon(item.file, cat, {
+      fallback = ctx.picker.opts.icons.files,
+    })
+    local line = { { icon .. " ", icon_hl }, { item.file, hl } }
     vim.api.nvim_buf_set_extmark(ctx.buf, ns, i - 1, 0, {
       virt_text = line,
     })
   end
+end
+
+---@param ctx snacks.picker.preview.ctx
+function M.image(ctx)
+  local buf = ctx.preview:scratch()
+  ctx.preview:set_title(ctx.item.title or vim.fn.fnamemodify(ctx.item.file, ":t"))
+  Snacks.image.buf.attach(buf, { src = Snacks.picker.util.path(ctx.item) })
 end
 
 ---@param ctx snacks.picker.preview.ctx
@@ -45,7 +62,7 @@ function M.preview(ctx)
   assert(type(ctx.item.preview) == "table", "item.preview must be a table")
   ctx.preview:reset()
   local lines = vim.split(ctx.item.preview.text, "\n")
-  vim.api.nvim_buf_set_lines(ctx.buf, 0, -1, false, lines)
+  ctx.preview:set_lines(lines)
   if ctx.item.preview.ft then
     ctx.preview:highlight({ ft = ctx.item.preview.ft })
   end
@@ -61,20 +78,39 @@ end
 
 ---@param ctx snacks.picker.preview.ctx
 function M.file(ctx)
+  if ctx.item.buf and not ctx.item.file and not vim.api.nvim_buf_is_valid(ctx.item.buf) then
+    ctx.preview:notify("Buffer no longer exists", "error")
+    return
+  end
+
+  -- used by some LSP servers that load buffers with custom URIs
+  if ctx.item.buf and vim.uri_from_bufnr(ctx.item.buf):sub(1, 4) ~= "file" then
+    vim.fn.bufload(ctx.item.buf)
+  elseif ctx.item.file and ctx.item.file:find("^%w+://") then
+    ctx.item.buf = vim.fn.bufadd(ctx.item.file)
+    vim.fn.bufload(ctx.item.buf)
+  end
+
   if ctx.item.buf and vim.api.nvim_buf_is_loaded(ctx.item.buf) then
     local name = vim.api.nvim_buf_get_name(ctx.item.buf)
     name = uv.fs_stat(name) and vim.fn.fnamemodify(name, ":t") or name
     ctx.preview:set_title(name)
-    vim.api.nvim_win_set_buf(ctx.win, ctx.item.buf)
+    ctx.preview:set_buf(ctx.item.buf)
   else
     local path = Snacks.picker.util.path(ctx.item)
     if not path then
       ctx.preview:notify("Item has no `file`", "error")
       return
     end
+
+    if Snacks.image.supports_file(path) then
+      return M.image(ctx)
+    end
+
     -- re-use existing preview when path is the same
     if path ~= Snacks.picker.util.path(ctx.prev) then
       ctx.preview:reset()
+      vim.bo[ctx.buf].buftype = ""
 
       local name = vim.fn.fnamemodify(path, ":t")
       ctx.preview:set_title(ctx.item.title or name)
@@ -99,6 +135,11 @@ function M.file(ctx)
 
       local file = assert(io.open(path, "r"))
 
+      local is_binary = false
+      local ft = ctx.picker.opts.previewers.file.ft or vim.filetype.match({ filename = path })
+      if ft == "bigfile" then
+        ft = nil
+      end
       local lines = {}
       for line in file:lines() do
         ---@cast line string
@@ -107,16 +148,21 @@ function M.file(ctx)
         end
         -- Check for binary data in the current line
         if line:find("[%z\1-\8\11\12\14-\31]") then
-          ctx.preview:notify("binary file", "warn")
-          return
+          is_binary = true
+          if not ft then
+            ctx.preview:notify("binary file", "warn")
+            return
+          end
         end
         table.insert(lines, line)
       end
 
       file:close()
 
-      vim.api.nvim_buf_set_lines(ctx.buf, 0, -1, false, lines)
-      vim.bo[ctx.buf].modifiable = false
+      if is_binary then
+        ctx.preview:wo({ number = false, relativenumber = false, cursorline = false, signcolumn = "no" })
+      end
+      ctx.preview:set_lines(lines)
       ctx.preview:highlight({ file = path, ft = ctx.picker.opts.previewers.file.ft, buf = ctx.buf })
     end
   end
@@ -125,14 +171,37 @@ end
 
 ---@param cmd string[]
 ---@param ctx snacks.picker.preview.ctx
----@param opts? {env?:table<string, string>, pty?:boolean, ft?:string}
+---@param opts? {add?:fun(text:string, row:number), env?:table<string, string>, pty?:boolean, ft?:string, input?:string}
 function M.cmd(cmd, ctx, opts)
   opts = opts or {}
   local buf = ctx.preview:scratch()
+  vim.bo[buf].buftype = "nofile"
   local pty = opts.pty ~= false and not opts.ft
   local killed = false
   local chan = pty and vim.api.nvim_open_term(buf, {}) or nil
   local output = {} ---@type string[]
+  local line ---@type string?
+  local l = 0
+
+  if ctx.picker.opts.debug.proc then
+    local args = vim.deepcopy(cmd)
+    table.remove(args, 1)
+    vim.schedule(function()
+      Snacks.debug.cmd({ cmd = cmd[1], args = args, cwd = ctx.item.cwd, group = true })
+    end)
+  end
+
+  ---@param text string
+  local function add_line(text)
+    l = l + 1
+    vim.bo[buf].modifiable = true
+    if opts.add then
+      opts.add(text, l)
+    else
+      vim.api.nvim_buf_set_lines(buf, l - 1, l, false, { text })
+    end
+    vim.bo[buf].modifiable = false
+  end
 
   ---@param data string
   local function add(data)
@@ -144,17 +213,22 @@ function M.cmd(cmd, ctx, opts)
         end)
       end
     else
-      vim.bo[buf].modifiable = true
-      local lines = vim.split(table.concat(output, "\n"), "\n")
-      vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-      vim.bo[buf].modifiable = false
+      line = (line or "") .. data
+      local lines = vim.split(line, "\r?\n")
+      line = table.remove(lines)
+      for _, text in ipairs(lines) do
+        add_line(text)
+      end
     end
   end
 
   local jid = vim.fn.jobstart(cmd, {
     height = pty and vim.api.nvim_win_get_height(ctx.win) or nil,
     width = pty and vim.api.nvim_win_get_width(ctx.win) or nil,
-    pty = pty,
+    -- a bit weird, but we need to set `pty` to `nil` when `opts.input` is set
+    -- otherwise the job never receives the input.
+    -- Probably won't work with all commands
+    pty = not opts.input and pty or nil,
     cwd = ctx.item.cwd or ctx.picker.opts.cwd,
     env = vim.tbl_extend("force", {
       PAGER = "cat",
@@ -167,10 +241,13 @@ function M.cmd(cmd, ctx, opts)
       add(table.concat(data, "\n"))
     end,
     on_exit = function(_, code)
+      if not killed and line and line ~= "" and vim.api.nvim_buf_is_valid(buf) then
+        add_line(line)
+      end
       if not killed and code ~= 0 then
         Snacks.notify.error(
           ("Terminal **cmd** `%s` failed with code `%d`:\n- `vim.o.shell = %q`\n\nOutput:\n%s"):format(
-            cmd,
+            type(cmd) == "table" and table.concat(cmd, " ") or cmd,
             code,
             vim.o.shell,
             vim.trim(table.concat(output, ""))
@@ -178,7 +255,20 @@ function M.cmd(cmd, ctx, opts)
         )
       end
     end,
+    sync = true,
   })
+  if jid <= 0 then
+    Snacks.notify.error(("Failed to start terminal **cmd** `%s`"):format(cmd))
+    if chan then
+      vim.fn.chanclose(chan)
+    end
+    return
+  end
+
+  if opts.input then
+    vim.fn.chansend(jid, opts.input .. "\n")
+    vim.fn.chanclose(jid, "stdin")
+  end
   if opts.ft then
     ctx.preview:highlight({ ft = opts.ft })
   end
@@ -192,14 +282,12 @@ function M.cmd(cmd, ctx, opts)
       end
     end,
   })
-  if jid <= 0 then
-    Snacks.notify.error(("Failed to start terminal **cmd** `%s`"):format(cmd))
-  end
+  return jid
 end
 
 ---@param ctx snacks.picker.preview.ctx
 function M.git_show(ctx)
-  local native = ctx.picker.opts.previewers.git.native
+  local builtin = ctx.picker.opts.previewers.git.builtin
   local cmd = {
     "git",
     "-c",
@@ -207,33 +295,107 @@ function M.git_show(ctx)
     "show",
     ctx.item.commit,
   }
-  if not native then
+  local pathspec = ctx.item.files or ctx.item.file
+  pathspec = type(pathspec) == "table" and pathspec or { pathspec }
+  if #pathspec > 0 then
+    cmd[#cmd + 1] = "--"
+    vim.list_extend(cmd, pathspec)
+  end
+  if builtin then
     table.insert(cmd, 2, "--no-pager")
   end
-  M.cmd(cmd, ctx, { ft = not native and "git" or nil })
+  M.cmd(cmd, ctx, { ft = builtin and "git" or nil })
+end
+
+---@param ctx snacks.picker.preview.ctx
+local function git(ctx, ...)
+  local ret = { "git", "-c", "delta." .. vim.o.background .. "=true" }
+  vim.list_extend(ret, ctx.picker.opts.previewers.git.args or {})
+  vim.list_extend(ret, { ... })
+  return ret
+end
+
+---@param ctx snacks.picker.preview.ctx
+function M.git_log(ctx)
+  local cmd = git(
+    ctx,
+    "--no-pager",
+    "log",
+    "--pretty=format:%h %s (%ch)",
+    "--abbrev-commit",
+    "--decorate",
+    "--date=short",
+    "--color=never",
+    "--no-show-signature",
+    "--no-patch",
+    ctx.item.commit
+  )
+  local row = 0
+  M.cmd(cmd, ctx, {
+    ft = "git",
+    ---@param text string
+    add = function(text)
+      local commit, msg, date = text:match("^(%S+) (.*) %((.*)%)$")
+      if commit then
+        row = row + 1
+        local hl = Snacks.picker.format.git_log({
+          idx = 1,
+          score = 0,
+          text = "",
+          commit = commit,
+          msg = msg,
+          date = date,
+        }, ctx.picker)
+        Snacks.picker.highlight.set(ctx.buf, ns, row, hl)
+      end
+    end,
+  })
+end
+
+---@param ctx snacks.picker.preview.ctx
+function M.diff(ctx)
+  local builtin = ctx.picker.opts.previewers.diff.builtin
+  if builtin then
+    ctx.item.preview = { text = ctx.item.diff, ft = "diff" }
+    return M.preview(ctx)
+  end
+  local cmd = vim.deepcopy(ctx.picker.opts.previewers.diff.cmd)
+  if cmd[1] == "delta" then
+    table.insert(cmd, 2, "--" .. vim.o.background)
+  end
+  M.cmd(cmd, ctx, {
+    pty = true,
+    input = ctx.item.diff,
+  })
 end
 
 ---@param ctx snacks.picker.preview.ctx
 function M.git_diff(ctx)
-  local native = ctx.picker.opts.previewers.git.native
-  local cmd = {
-    "git",
-    "-c",
-    "delta." .. vim.o.background .. "=true",
-    "diff",
-    "--",
-    ctx.item.file,
-  }
-  if not native then
+  local builtin = ctx.picker.opts.previewers.git.builtin
+  local cmd = git(ctx, "diff", "HEAD")
+  if ctx.item.file then
+    vim.list_extend(cmd, { "--", ctx.item.file })
+  end
+  if builtin then
     table.insert(cmd, 2, "--no-pager")
   end
-  M.cmd(cmd, ctx, { ft = not native and "diff" or nil })
+  M.cmd(cmd, ctx, { ft = builtin and "diff" or nil })
+end
+
+---@param ctx snacks.picker.preview.ctx
+function M.git_stash(ctx)
+  local builtin = ctx.picker.opts.previewers.git.builtin
+  local cmd = git(ctx, "stash", "show", "--patch", ctx.item.stash)
+  if builtin then
+    table.insert(cmd, 2, "--no-pager")
+  end
+  M.cmd(cmd, ctx, { ft = builtin and "diff" or nil })
 end
 
 ---@param ctx snacks.picker.preview.ctx
 function M.git_status(ctx)
-  local s = vim.trim(ctx.item.status):sub(1, 1)
-  if s == "?" then
+  local ss = ctx.item.status
+  if ss:find("^[A?]") then
     M.file(ctx)
   else
     M.git_diff(ctx)
@@ -246,10 +408,10 @@ function M.colorscheme(ctx)
     ctx.preview.state.colorscheme = vim.g.colors_name or "default"
     ctx.preview.state.background = vim.o.background
     ctx.preview.win:on("WinClosed", function()
-      if not ctx.preview.state.colorscheme then
-        return
-      end
       vim.schedule(function()
+        if not ctx.preview.state.colorscheme then
+          return
+        end
         vim.cmd("colorscheme " .. ctx.preview.state.colorscheme)
         vim.o.background = ctx.preview.state.background
       end)

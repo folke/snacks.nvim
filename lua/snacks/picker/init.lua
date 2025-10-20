@@ -50,7 +50,9 @@ M.meta = {
 }
 
 -- create actual picker functions for autocomplete
-vim.schedule(M.config.setup)
+vim.defer_fn(function()
+  M.config.setup()
+end, 10)
 
 --- Create a new picker
 ---@param source? string
@@ -63,9 +65,14 @@ function M.pick(source, opts)
   opts = opts or {}
   opts.source = source or opts.source
   -- Show pickers if no source, items or finder is provided
-  if not (opts.source or opts.items or opts.finder) then
+  if not (opts.source or opts.items or opts.finder or opts.multi) then
     opts.source = "pickers"
     return M.pick(opts)
+  end
+  local current = opts.source and M.get({ source = opts.source })[1]
+  if current then
+    current:close()
+    return
   end
   return require("snacks.picker.core.picker").new(opts)
 end
@@ -86,6 +93,13 @@ end
 ---@private
 function M.health()
   require("snacks.picker.core._health").health()
+end
+
+--- Get active pickers, optionally filtered by source,
+--- or the current tab
+---@param opts? {source?: string, tab?: boolean} tab defaults to true
+function M.get(opts)
+  return require("snacks.picker.core.picker").get(opts)
 end
 
 return M

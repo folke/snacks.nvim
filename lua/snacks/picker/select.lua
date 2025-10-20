@@ -2,50 +2,77 @@ local M = {}
 
 ---@alias snacks.picker.ui_select fun(items: any[], opts?: {prompt?: string, format_item?: (fun(item: any): string), kind?: string}, on_choice: fun(item?: any, idx?: number))
 
+---@class snacks.picker.ui_select.Opts: vim.ui.select.Opts
+---@field format_item? fun(item: any, is_snacks: boolean):(string|snacks.picker.Highlight[])
+---@field picker? snacks.picker.Config
+
 ---@generic T
 ---@param items T[] Arbitrary items
----@param opts? {prompt?: string, format_item?: (fun(item: T): string), kind?: string}
+---@param opts? snacks.picker.ui_select.Opts
 ---@param on_choice fun(item?: T, idx?: number)
 function M.select(items, opts, on_choice)
   assert(type(on_choice) == "function", "on_choice must be a function")
   opts = opts or {}
 
-  ---@type snacks.picker.finder.Item[]
-  local finder_items = {}
-  for idx, item in ipairs(items) do
-    local text = (opts.format_item or tostring)(item)
-    table.insert(finder_items, {
-      formatted = text,
-      text = idx .. " " .. text,
-      item = item,
-      idx = idx,
-    })
-  end
-
   local title = opts.prompt or "Select"
   title = title:gsub("^%s*", ""):gsub("[%s:]*$", "")
-  local layout = Snacks.picker.config.layout("select")
-  layout.preview = false
-  layout.layout.height = math.floor(math.min(vim.o.lines * 0.8 - 10, #items + 2) + 0.5) + 10
-  layout.layout.title = " " .. title .. " "
-  layout.layout.title_pos = "center"
+  local completed = false
+  opts.kind = opts.kind or (opts.picker and "snacks") or opts.kind
 
-  ---@type snacks.picker.finder.Item[]
-  return Snacks.picker.pick({
+  ---@type snacks.picker.Config
+  local picker_opts = {
     source = "select",
-    items = finder_items,
-    main = { current = true },
-    format = Snacks.picker.format.ui_select(opts.kind, #items),
+    finder = function()
+      ---@type snacks.picker.finder.Item[]
+      local ret = {}
+      for idx, item in ipairs(items) do
+        local text = (opts.format_item or tostring)(item)
+        ---@type snacks.picker.finder.Item
+        local it = type(item) == "table" and setmetatable({}, { __index = item }) or {}
+        it.formatted = text
+        it.text = idx .. " " .. text
+        it.item = item
+        it.idx = idx
+        ret[#ret + 1] = it
+      end
+      return ret
+    end,
+    format = Snacks.picker.format.ui_select(opts),
+    title = title,
+    layout = {
+      config = function(layout)
+        -- Fit list height to number of items, up to 10
+        for _, box in ipairs(layout.layout) do
+          if box.win == "list" and not box.height then
+            box.height = math.max(math.min(#items, vim.o.lines * 0.8 - 10), 3)
+          end
+        end
+      end,
+    },
     actions = {
       confirm = function(picker, item)
+        if completed then
+          return
+        end
+        completed = true
         picker:close()
         vim.schedule(function()
           on_choice(item and item.item, item and item.idx)
         end)
       end,
     },
-    layout = layout,
-  })
+    on_close = function()
+      if completed then
+        return
+      end
+      completed = true
+      vim.schedule(on_choice)
+    end,
+  }
+  if opts.picker then
+    picker_opts = Snacks.config.merge({}, vim.deepcopy(picker_opts), opts.picker)
+  end
+  return Snacks.picker.pick(picker_opts)
 end
 
 return M

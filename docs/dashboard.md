@@ -26,13 +26,13 @@ The default preset comes with support for:
 - pickers:
   - [fzf-lua](https://github.com/ibhagwan/fzf-lua)
   - [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim)
-  - [mini.pick](https://github.com/echasnovski/mini.pick)
+  - [mini.pick](https://github.com/nvim-mini/mini.pick)
 - session managers: (only works with [lazy.nvim](https://github.com/folke/lazy.nvim))
   - [persistence.nvim](https://github.com/folke/persistence.nvim)
   - [persisted.nvim](https://github.com/olimorris/persisted.nvim)
   - [neovim-session-manager](https://github.com/Shatur/neovim-session-manager)
   - [posession.nvim](https://github.com/jedrzejboczar/possession.nvim)
-  - [mini.sessions](https://github.com/echasnovski/mini.sessions)
+  - [mini.sessions](https://github.com/nvim-mini/mini.sessions)
 
 ### Section actions
 
@@ -161,7 +161,7 @@ In the example below, both sections are equivalent.
   formats = {
     icon = function(item)
       if item.file and item.icon == "file" or item.icon == "directory" then
-        return M.icon(item.file, item.icon)
+        return Snacks.dashboard.icon(item.file, item.icon)
       end
       return { item.icon, width = 2, hl = "icon" }
     end,
@@ -357,7 +357,7 @@ Advanced example using the GitHub CLI.
           icon = " ",
           title = "Open PRs",
           cmd = "gh pr list -L 3",
-          key = "p",
+          key = "P",
           action = function()
             vim.fn.jobstart("gh pr list --web", { detach = true })
           end,
@@ -623,7 +623,7 @@ Get the most recent files, optionally filtered by the
 current working directory or a custom directory.
 
 ```lua
----@param opts? {limit?:number, cwd?:string|boolean}
+---@param opts? {limit?:number, cwd?:string|boolean, filter?:fun(file:string):boolean?}
 ---@return snacks.dashboard.Gen
 Snacks.dashboard.sections.recent_files(opts)
 ```

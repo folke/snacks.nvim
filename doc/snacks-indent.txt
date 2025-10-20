@@ -1,4 +1,4 @@
-*snacks-indent.txt*                                                snacks.nvim
+*snacks-indent*                                              snacks_indent
 
 ==============================================================================
 Table of Contents                            *snacks-indent-table-of-contents*
@@ -7,6 +7,7 @@ Table of Contents                            *snacks-indent-table-of-contents*
 2. Config                                               |snacks-indent-config|
 3. Types                                                 |snacks-indent-types|
 4. Module                                               |snacks-indent-module|
+  - Snacks.indent.debug_win() |snacks-indent-module-snacks.indent.debug_win()|
   - Snacks.indent.disable()     |snacks-indent-module-snacks.indent.disable()|
   - Snacks.indent.enable()       |snacks-indent-module-snacks.indent.enable()|
 5. Links                                                 |snacks-indent-links|
@@ -15,7 +16,7 @@ Visualize indent guides and scopes based on treesitter or indent.
 Similar plugins:
 
 - indent-blankline.nvim <https://github.com/lukas-reineke/indent-blankline.nvim>
-- mini.indentscope <https://github.com/echasnovski/mini.indentscope>
+- mini.indentscope <https://github.com/nvim-mini/mini.indentscope>
 
 
 ==============================================================================
@@ -108,11 +109,6 @@ Similar plugins:
           arrow = ">",
         },
       },
-      blank = {
-        char = " ",
-        -- char = "·",
-        hl = "SnacksIndentBlank", ---@type string|string[] hl group for blank spaces
-      },
       -- filter for buffers to enable indent guides
       filter = function(buf)
         return vim.g.snacks_indent ~= false and vim.b[buf].snacks_indent ~= false and vim.bo[buf].buftype == ""
@@ -134,6 +130,13 @@ Similar plugins:
 
 ==============================================================================
 4. Module                                               *snacks-indent-module*
+
+
+`Snacks.indent.debug_win()`                        *Snacks.indent.debug_win()*
+
+>lua
+    Snacks.indent.debug_win()
+<
 
 
 `Snacks.indent.disable()`                            *Snacks.indent.disable()*

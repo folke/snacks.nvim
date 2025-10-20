@@ -1,4 +1,4 @@
-*snacks-dim.txt*                                                   snacks.nvim
+*snacks-dim*                                                    snacks_dim
 
 ==============================================================================
 Table of Contents                               *snacks-dim-table-of-contents*

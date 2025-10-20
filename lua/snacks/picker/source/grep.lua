@@ -2,11 +2,6 @@ local M = {}
 
 local uv = vim.uv or vim.loop
 
----@class snacks.picker
----@field grep fun(opts?: snacks.picker.grep.Config): snacks.Picker
----@field grep_word fun(opts?: snacks.picker.grep.Config): snacks.Picker
----@field grep_buffers fun(opts?: snacks.picker.grep.Config): snacks.Picker
-
 ---@param opts snacks.picker.grep.Config
 ---@param filter snacks.picker.Filter
 local function get_cmd(opts, filter)
@@ -20,11 +15,16 @@ local function get_cmd(opts, filter)
     "--smart-case",
     "--max-columns=500",
     "--max-columns-preview",
-    "-g",
-    "!.git",
+    "--glob=!.bare",
+    "--glob=!.git",
   }
 
   args = vim.deepcopy(args)
+
+  -- exclude
+  for _, e in ipairs(opts.exclude or {}) do
+    vim.list_extend(args, { "-g", "!" .. e })
+  end
 
   -- hidden
   if opts.hidden then
@@ -61,10 +61,15 @@ local function get_cmd(opts, filter)
     args[#args + 1] = g
   end
 
-  args[#args + 1] = "--"
+  -- extra args
+  vim.list_extend(args, opts.args or {})
 
   -- search pattern
-  table.insert(args, filter.search)
+  local pattern, pargs = Snacks.picker.util.parse(filter.search)
+  vim.list_extend(args, pargs)
+
+  args[#args + 1] = "--"
+  table.insert(args, pattern)
 
   local paths = {} ---@type string[]
 
@@ -75,13 +80,15 @@ local function get_cmd(opts, filter)
         paths[#paths + 1] = name
       end
     end
-  elseif opts.dirs and #opts.dirs > 0 then
-    paths = opts.dirs or {}
+  end
+  vim.list_extend(paths, opts.dirs or {})
+  if opts.rtp then
+    vim.list_extend(paths, Snacks.picker.util.rtp())
   end
 
   -- dirs
   if #paths > 0 then
-    paths = vim.tbl_map(vim.fs.normalize, paths) ---@type string[]
+    paths = vim.tbl_map(svim.fs.normalize, paths) ---@type string[]
     vim.list_extend(args, paths)
   end
 
@@ -90,33 +97,39 @@ end
 
 ---@param opts snacks.picker.grep.Config
 ---@type snacks.picker.finder
-function M.grep(opts, filter)
-  if opts.need_search ~= false and filter.search == "" then
+function M.grep(opts, ctx)
+  if opts.need_search ~= false and ctx.filter.search == "" then
     return function() end
   end
-  local absolute = (opts.dirs and #opts.dirs > 0) or opts.buffers
-  local cwd = not absolute and vim.fs.normalize(opts and opts.cwd or uv.cwd() or ".") or nil
-  local cmd, args = get_cmd(opts, filter)
-  return require("snacks.picker.source.proc").proc(vim.tbl_deep_extend("force", {
-    notify = false,
-    cmd = cmd,
-    args = args,
-    ---@param item snacks.picker.finder.Item
-    transform = function(item)
-      item.cwd = cwd
-      local file, line, col, text = item.text:match("^(.+):(%d+):(%d+):(.*)$")
-      if not file then
-        if not item.text:match("WARNING") then
-          error("invalid grep output: " .. item.text)
+  local absolute = (opts.dirs and #opts.dirs > 0) or opts.buffers or opts.rtp
+  local cwd = not absolute and svim.fs.normalize(opts and opts.cwd or uv.cwd() or ".") or nil
+  local cmd, args = get_cmd(opts, ctx.filter)
+  if opts.debug.grep then
+    Snacks.notify.info("grep: " .. cmd .. " " .. table.concat(args, " "))
+  end
+  return require("snacks.picker.source.proc").proc({
+    opts,
+    {
+      notify = false, -- never notify on grep errors, since it's impossible to know if the error is due to the search pattern
+      cmd = cmd,
+      args = args,
+      ---@param item snacks.picker.finder.Item
+      transform = function(item)
+        item.cwd = cwd
+        local file, line, col, text = item.text:match("^(.-):(%d+):(%d+):(.*)$")
+        if not file then
+          if not item.text:match("WARNING") then
+            Snacks.notify.error("invalid grep output:\n" .. item.text)
+          end
+          return false
+        else
+          item.line = text
+          item.file = file
+          item.pos = { tonumber(line), tonumber(col) - 1 }
         end
-        return false
-      else
-        item.line = text
-        item.file = file
-        item.pos = { tonumber(line), tonumber(col) }
-      end
-    end,
-  }, opts or {}))
+      end,
+    },
+  }, ctx)
 end
 
 return M

@@ -58,9 +58,17 @@ function Async:init(fn)
   return M.add(self)
 end
 
+function Async:aborted()
+  return self._aborted
+end
+
 function Async:_done()
+  if self._co == nil then
+    return
+  end
   self:_emit("done")
   self._fn = nil
+  M._threads[self._co] = nil
   self._co = nil
   self._on = {}
 end
@@ -103,10 +111,52 @@ end
 
 ---@async
 function Async:sleep(ms)
+  self:defer(ms, function() end)
+end
+
+--- Suspends the current async context.
+--- Runs `fn` on the main thread and resumes the async context,
+--- returning the result of `fn` or raising an error if `fn` errors.
+---@generic T: any?
+---@param fn fun(): T?
+---@async
+---@return T
+function Async:schedule(fn)
+  self:assert()
+  local ret ---@type {[1]: boolean, [number]:any}
+  vim.schedule(function()
+    ret = { pcall(fn) }
+    self:resume()
+  end)
+  self:suspend()
+  if not ret[1] then
+    error(ret[2])
+  end
+  return select(2, unpack(ret))
+end
+
+function Async:assert()
+  assert(coroutine.running() == self._co, "Not in an async context")
+end
+
+--- Same as schedule, but defers the execution by `ms` milliseconds.
+---@generic T: any
+---@param fn fun(): T?
+---@param ms number
+---@async
+---@return T
+function Async:defer(ms, fn)
+  self:assert()
+  local ret ---@type {[1]: boolean, [number]:any}
   vim.defer_fn(function()
+    ret = { pcall(fn) }
     self:resume()
   end, ms)
   self:suspend()
+  if not ret[1] then
+    error(ret[2])
+  end
+  return select(2, unpack(ret))
 end
 
 ---@async
@@ -139,6 +189,9 @@ end
 
 ---@async
 function Async:wait()
+  if not self:running() then
+    return self
+  end
   if coroutine.running() == self._co then
     error("Cannot wait on self")
   end
@@ -163,7 +216,7 @@ function Async:step()
   end
   local status = coroutine.status(self._co)
   if status == "suspended" then
-    local ok, res = coroutine.resume(self._co)
+    local ok, res = coroutine.resume(self._co, self._aborted and "abort" or nil)
     if not ok then
       error(res)
     elseif res then
@@ -178,7 +231,10 @@ function Async:abort()
     return
   end
   self._aborted = true
-  coroutine.resume(self._co, "abort")
+  if self._co and coroutine.running() == self._co then
+    error("aborted", 2)
+  end
+  self:resume()
 end
 
 function M.abort()

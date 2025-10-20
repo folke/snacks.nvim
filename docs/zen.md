@@ -91,6 +91,9 @@ docs for more information on how to customize these styles
   wo = {
     winhighlight = "NormalFloat:Normal",
   },
+  w = {
+    snacks_main = true,
+  },
 }
 ```
 

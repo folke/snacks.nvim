@@ -74,11 +74,6 @@ local defaults = {
       arrow = ">",
     },
   },
-  blank = {
-    char = " ",
-    -- char = "·",
-    hl = "SnacksIndentBlank", ---@type string|string[] hl group for blank spaces
-  },
   -- filter for buffers to enable indent guides
   filter = function(buf)
     return vim.g.snacks_indent ~= false and vim.b[buf].snacks_indent ~= false and vim.bo[buf].buftype == ""
@@ -209,6 +204,10 @@ local function get_state(win, buf, top, bottom)
   return state
 end
 
+function M.debug_win()
+  Snacks.debug.inspect(states[vim.api.nvim_get_current_win()])
+end
+
 --- Called during every redraw cycle, so it should be fast.
 --- Everything that can be cached should be cached.
 ---@param win number
@@ -257,7 +256,7 @@ function M.on_win(win, buf, top, bottom)
           indents[prev] = indents[prev] or vim.fn.indent(prev)
           indents[next] = indents[next] or vim.fn.indent(next)
           indent = math.min(indents[prev], indents[next])
-          if indents[prev] ~= indents[next] then
+          if indents[prev] ~= indents[next] and indent > 0 then
             indent = indent + state.shiftwidth
           end
         else
@@ -302,25 +301,28 @@ local function bounds(scope, state)
   return from, to
 end
 
---- Render the scope overlappping the given range
+--- Render the scope overlapping the given range
 ---@param scope snacks.indent.Scope
 ---@param state snacks.indent.State
 ---@private
 function M.render_scope(scope, state)
   local indent = (scope.indent or 2)
-  local hl = get_hl(scope.indent + 1, config.scope.hl)
+  local hl = get_hl(math.floor(scope.indent / state.shiftwidth) + 1, config.scope.hl)
   local from, to = bounds(scope, state)
   local col = indent - state.leftcol
 
   if config.scope.underline and scope.from == from then
-    vim.api.nvim_buf_set_extmark(scope.buf, ns, scope.from - 1, math.max(col, 0), {
-      end_col = #vim.api.nvim_buf_get_lines(scope.buf, scope.from - 1, scope.from, false)[1],
-      hl_group = get_underline_hl(hl),
-      hl_mode = "combine",
-      priority = config.scope.priority + 1,
-      strict = false,
-      ephemeral = true,
-    })
+    local scope_first_line = vim.api.nvim_buf_get_lines(scope.buf, scope.from - 1, scope.from, false)[1]
+    if scope_first_line ~= nil then
+      vim.api.nvim_buf_set_extmark(scope.buf, ns, scope.from - 1, math.max(col, 0), {
+        end_col = #scope_first_line,
+        hl_group = get_underline_hl(hl),
+        hl_mode = "combine",
+        priority = config.scope.priority + 1,
+        strict = false,
+        ephemeral = true,
+      })
+    end
   end
 
   if col < 0 then -- scope is hidden
@@ -355,7 +357,7 @@ function M.render_chunk(scope, state)
     return
   end
   local from, to = bounds(scope, state)
-  local hl = get_hl(scope.indent + 1, config.chunk.hl)
+  local hl = get_hl(math.floor(scope.indent / state.shiftwidth) + 1, config.chunk.hl)
   local char = config.chunk.char
 
   ---@param l number
@@ -393,6 +395,9 @@ end
 ---@param value number
 ---@param prev? number
 local function step(scope, value, prev)
+  if not vim.api.nvim_win_is_valid(scope.win) then
+    return
+  end
   prev = prev or 0
   local cursor = vim.api.nvim_win_get_cursor(scope.win)
   local dt = math.abs(scope.from - cursor[1])
@@ -526,13 +531,13 @@ function M.enable()
   })
 
   -- redraw when shiftwidth changes
-  vim.api.nvim_create_autocmd("OptionSet", {
-    group = group,
-    pattern = { "shiftwidth", "listchars", "list" },
-    callback = vim.schedule_wrap(function()
-      vim.cmd([[redraw!]])
-    end),
-  })
+  -- vim.api.nvim_create_autocmd("OptionSet", {
+  --   group = group,
+  --   pattern = { "shiftwidth", "listchars", "list" },
+  --   callback = vim.schedule_wrap(function()
+  --     vim.cmd([[redraw!]])
+  --   end),
+  -- })
 end
 
 -- Disable indent guides

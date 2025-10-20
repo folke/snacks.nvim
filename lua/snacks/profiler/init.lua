@@ -37,7 +37,7 @@ require("snacks")
 ---@class snacks.profiler.Pick: snacks.profiler.Find
 ---@field picker? snacks.profiler.Picker
 
----@alias snacks.profiler.Picker "auto"|"fzf-lua"|"telescope"|"trouble"
+---@alias snacks.profiler.Picker "snacks"|"trouble"
 ---@alias snacks.profiler.Pick.spec snacks.profiler.Pick|{preset?:string}|fun():snacks.profiler.Pick
 
 ---@alias snacks.profiler.Field
@@ -133,7 +133,7 @@ local defaults = {
     align = 80,
   },
   pick = {
-    picker = "auto", ---@type snacks.profiler.Picker
+    picker = "snacks", ---@type snacks.profiler.Picker
     ---@type snacks.profiler.Badge.type[]
     badges = { "time", "count", "name" },
     ---@type snacks.profiler.Highlights

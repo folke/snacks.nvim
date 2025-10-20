@@ -1,4 +1,4 @@
-*snacks-statuscolumn.txt*                                          snacks.nvim
+*snacks-statuscolumn*                                  snacks_statuscolumn
 
 ==============================================================================
 Table of Contents                      *snacks-statuscolumn-table-of-contents*
@@ -8,6 +8,7 @@ Table of Contents                      *snacks-statuscolumn-table-of-contents*
 3. Types                                           |snacks-statuscolumn-types|
 4. Module                                         |snacks-statuscolumn-module|
   - Snacks.statuscolumn()   |snacks-statuscolumn-module-snacks.statuscolumn()|
+  - Snacks.statuscolumn.click_fold()|snacks-statuscolumn-module-snacks.statuscolumn.click_fold()|
   - Snacks.statuscolumn.get()|snacks-statuscolumn-module-snacks.statuscolumn.get()|
 
 ==============================================================================
@@ -71,6 +72,13 @@ Table of Contents                      *snacks-statuscolumn-table-of-contents*
 >lua
     ---@type fun(): string
     Snacks.statuscolumn()
+<
+
+
+`Snacks.statuscolumn.click_fold()`                         *Snacks.statuscolumn.click_fold()*
+
+>lua
+    Snacks.statuscolumn.click_fold()
 <
 
 

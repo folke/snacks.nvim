@@ -29,6 +29,7 @@ Toggle keymaps integrated with which-key icons / colors
 ---@class snacks.toggle.Config
 ---@field icon? string|{ enabled: string, disabled: string }
 ---@field color? string|{ enabled: string, disabled: string }
+---@field wk_desc? string|{ enabled: string, disabled: string }
 ---@field map? fun(mode: string|string[], lhs: string, rhs: string|fun(), opts?: vim.keymap.set.Opts)
 ---@field which_key? boolean
 ---@field notify? boolean
@@ -45,6 +46,10 @@ Toggle keymaps integrated with which-key icons / colors
   color = {
     enabled = "green",
     disabled = "yellow",
+  },
+  wk_desc = {
+    enabled = "Disable ",
+    disabled = "Enable ",
   },
 }
 ```
@@ -126,7 +131,7 @@ Snacks.toggle.new(...)
 
 ```lua
 ---@param option string
----@param opts? snacks.toggle.Config | {on?: unknown, off?: unknown}
+---@param opts? snacks.toggle.Config | {on?: unknown, off?: unknown, global?: boolean}
 Snacks.toggle.option(option, opts)
 ```
 

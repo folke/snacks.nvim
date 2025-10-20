@@ -1,17 +1,30 @@
 # 🍿 rename
 
 LSP-integrated file renaming with support for plugins like
-[neo-tree.nvim](https://github.com/nvim-neo-tree/neo-tree.nvim) and [mini.files](https://github.com/echasnovski/mini.files).
+[neo-tree.nvim](https://github.com/nvim-neo-tree/neo-tree.nvim) and [mini.files](https://github.com/nvim-mini/mini.files).
 
 ## 🚀 Usage
 
-## [mini.files](https://github.com/echasnovski/mini.files)
+## [mini.files](https://github.com/nvim-mini/mini.files)
 
 ```lua
 vim.api.nvim_create_autocmd("User", {
   pattern = "MiniFilesActionRename",
   callback = function(event)
     Snacks.rename.on_rename_file(event.data.from, event.data.to)
+  end,
+})
+```
+
+## [oil.nvim](https://github.com/stevearc/oil.nvim)
+
+```lua
+vim.api.nvim_create_autocmd("User", {
+  pattern = "OilActionsPost",
+  callback = function(event)
+      if event.data.actions.type == "move" then
+          Snacks.rename.on_rename_file(event.data.actions.src_url, event.data.actions.dest_url)
+      end
   end,
 })
 ```
@@ -53,6 +66,37 @@ vim.api.nvim_create_autocmd("User", {
 })
 ```
 
+## netrw (builtin file explorer)
+
+```lua
+vim.api.nvim_create_autocmd({ 'FileType' }, {
+  pattern = { 'netrw' },
+  group = vim.api.nvim_create_augroup('NetrwOnRename', { clear = true }),
+  callback = function()
+    vim.keymap.set("n", "R", function()
+      local original_file_path = vim.b.netrw_curdir .. '/' .. vim.fn["netrw#Call"]("NetrwGetWord")
+
+      vim.ui.input({ prompt = 'Move/rename to:', default = original_file_path }, function(target_file_path)
+        if target_file_path and target_file_path ~= "" then
+          local file_exists = vim.uv.fs_access(target_file_path, "W")
+
+          if not file_exists then
+            vim.uv.fs_rename(original_file_path, target_file_path)
+
+            Snacks.rename.on_rename_file(original_file_path, target_file_path)
+          else
+            vim.notify("File '" .. target_file_path .. "' already exists! Skipping...", vim.log.levels.ERROR)
+          end
+
+          -- Refresh netrw
+          vim.cmd(':Ex ' .. vim.b.netrw_curdir)
+        end
+      end)
+    end, { remap = true, buffer = true })
+  end
+})
+```
+
 <!-- docgen -->
 
 ## 📦 Module
@@ -70,9 +114,11 @@ Snacks.rename.on_rename_file(from, to, rename)
 
 ### `Snacks.rename.rename_file()`
 
-Prompt for the new filename,
+Renames the provided file, or the current buffer's file.
+Prompt for the new filename if `to` is not provided.
 do the rename, and trigger LSP handlers
 
 ```lua
-Snacks.rename.rename_file()
+---@param opts? {from?: string, to?:string, on_rename?: fun(to:string, from:string, ok:boolean)}
+Snacks.rename.rename_file(opts)
 ```

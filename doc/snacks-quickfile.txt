@@ -1,4 +1,4 @@
-*snacks-quickfile.txt*                                             snacks.nvim
+*snacks-quickfile*                                        snacks_quickfile
 
 ==============================================================================
 Table of Contents                         *snacks-quickfile-table-of-contents*

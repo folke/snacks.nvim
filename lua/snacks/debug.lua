@@ -10,7 +10,21 @@ M.meta = {
   desc = "Pretty inspect & backtraces for debugging",
 }
 
+---@class snacks.debug.cmd
+---@field cmd string|string[]
+---@field level? snacks.notifier.level
+---@field title? string
+---@field args? string[]
+---@field cwd? string
+---@field group? boolean
+---@field notify? boolean
+---@field footer? string
+---@field header? string
+---@field props? table<string, string>
+
 local uv = vim.uv or vim.loop
+
+local MAX_INSPECT_LINES = 2000
 
 vim.schedule(function()
   Snacks.util.set_hl({
@@ -40,7 +54,14 @@ function M.inspect(...)
   end
   vim.schedule(function()
     local title = "Debug: " .. vim.fn.fnamemodify(caller.source:sub(2), ":~:.") .. ":" .. caller.linedefined
-    Snacks.notify.warn(vim.inspect(len == 1 and obj[1] or len > 0 and obj or nil), { title = title, ft = "lua" })
+    local lines = vim.split(vim.inspect(len == 1 and obj[1] or len > 0 and obj or nil), "\n")
+    if #lines > MAX_INSPECT_LINES then
+      local c = #lines
+      lines = vim.list_slice(lines, 1, MAX_INSPECT_LINES)
+      lines[#lines + 1] = ""
+      lines[#lines + 1] = (c - MAX_INSPECT_LINES) .. " more lines have been truncated …"
+    end
+    Snacks.notify.warn(lines, { title = title, ft = "lua" })
   end)
 end
 
@@ -131,9 +152,13 @@ function M.run(opts)
     for _, line in ipairs(vim.split(str, "\n", { plain = true })) do
       table.insert(virt_lines, { { "  │ ", "SnacksDebugIndent" }, { line, "SnacksDebugPrint" } })
     end
-    vim.api.nvim_buf_set_extmark(buf, ns, (get_line() or 1) - 1, 0, {
-      virt_lines = virt_lines,
-    })
+
+    local line = (get_line() or 1) - 1
+    vim.schedule(function()
+      vim.api.nvim_buf_set_extmark(buf, ns, line, 0, {
+        virt_lines = virt_lines,
+      })
+    end)
   end
 
   -- Load the code
@@ -143,7 +168,7 @@ function M.run(opts)
   end
 
   -- Setup the env
-  local env = { print = opts.print and vim.schedule_wrap(on_print) or nil }
+  local env = { print = opts.print and on_print or nil }
   package.seeall(env)
   setfenv(chunk, env)
   xpcall(chunk, function(e)
@@ -330,6 +355,58 @@ function M.metrics()
   end
   lines[#lines + 1] = ("```lua\n%s\n```"):format(vim.inspect(uv.getrusage()))
   Snacks.notify.warn(lines, { title = "Metrics" })
+end
+
+---@param opts snacks.debug.cmd
+function M.cmd(opts)
+  local cmd = opts.cmd
+  local args = vim.deepcopy(opts.args or {})
+  if type(cmd) == "table" then
+    vim.list_extend(args, cmd, 2)
+    cmd = cmd[1]
+  end
+  args = vim.tbl_map(tostring, args)
+  ---@cast cmd string
+  local lines = { cmd } ---@type string[]
+  for _, arg in ipairs(args or {}) do
+    arg = arg:find("[%$%s%?]") and vim.fn.shellescape(arg) or arg
+    if #arg + #lines[#lines] > 40 then
+      lines[#lines] = lines[#lines] .. " \\"
+      table.insert(lines, "  " .. arg)
+    else
+      lines[#lines] = lines[#lines] .. " " .. arg
+    end
+  end
+  local props = vim.deepcopy(opts.props or {})
+  props.cwd = props.cwd or vim.fn.fnamemodify(opts.cwd or uv.cwd() or ".", ":~")
+  local prop_keys = vim.tbl_keys(props) ---@type string[]
+  table.sort(prop_keys)
+  local prop_lines = {} ---@type string[]
+  for _, key in ipairs(prop_keys) do
+    table.insert(prop_lines, ("- **%s**: %s"):format(key, props[key]))
+  end
+
+  local id = cmd
+  lines = {
+    opts.header or "",
+    table.concat(prop_lines, "\n"),
+    "```sh",
+    table.concat(lines, " \n"),
+    "```",
+    opts.footer or "",
+  }
+  if opts.title and not opts.notify then
+    table.insert(lines, 1, ("# %s\n"):format(opts.title))
+  end
+  local msg = vim.trim(table.concat(lines, "\n")):gsub("\n\n+", "\n\n")
+  if opts.notify ~= false then
+    Snacks.notify(msg, {
+      id = opts.group and ("snacks.debug.cmd." .. id) or nil,
+      level = opts.level or vim.log.levels.INFO,
+      title = opts.title or "Cmd Debug",
+    })
+  end
+  return msg
 end
 
 return M

@@ -17,10 +17,6 @@ local M = {}
 ---@field user_data? any Any user data associated with the item.
 ---@field vcol? number Visual column number. Indicates if the column number is a visual column number (when set to 1) or a byte index (when set to 0).
 
----@class snacks.picker
----@field loclist fun(opts?: snacks.picker.Config): snacks.Picker
----@field qflist fun(opts?: snacks.picker.Config): snacks.Picker
-
 ---@class snacks.picker.qf.Config
 ---@field qf_win? number
 ---@field filter? snacks.picker.filter.Config
@@ -35,7 +31,7 @@ local severities = {
 
 ---@param opts snacks.picker.qf.Config
 ---@type snacks.picker.finder
-function M.qf(opts, filter)
+function M.qf(opts, ctx)
   local win = opts.qf_win
   win = win == 0 and vim.api.nvim_get_current_win() or win
 
@@ -68,7 +64,7 @@ function M.qf(opts, filter)
       ret[#ret].item.line = ret[#ret].item.line .. "\n" .. item.text
     end
   end
-  return filter:filter(ret)
+  return ctx.filter:filter(ret)
 end
 
 return M

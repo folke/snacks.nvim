@@ -13,12 +13,6 @@ M.meta = {
   needs_setup = true,
 }
 
--- Numbers in Neovim are weird
--- They show when either number or relativenumber is true
-local LINE_NR = "%=%{%(&number || &relativenumber) && v:virtnum == 0 ? ("
-  .. (vim.fn.has("nvim-0.11") == 1 and '"%l"' or 'v:relnum == 0 ? (&number ? "%l" : "%r") : (&relativenumber ? "%r" : "%l")')
-  .. ') : ""%} '
-
 ---@alias snacks.statuscolumn.Component "mark"|"sign"|"fold"|"git"
 ---@alias snacks.statuscolumn.Components snacks.statuscolumn.Component[]|fun(win:number,buf:number,lnum:number):snacks.statuscolumn.Component[]
 
@@ -150,7 +144,7 @@ function M.line_signs(win, buf, lnum)
   vim.api.nvim_win_call(win, function()
     if vim.fn.foldclosed(lnum) >= 0 then
       signs[#signs + 1] = { text = vim.opt.fillchars:get().foldclose or "", texthl = "Folded", type = "fold" }
-    elseif config.folds.open and tostring(vim.treesitter.foldexpr(vim.v.lnum)):sub(1, 1) == ">" then
+    elseif config.folds.open and vim.fn.foldlevel(lnum) > vim.fn.foldlevel(lnum - 1) then
       signs[#signs + 1] = { text = vim.opt.fillchars:get().foldopen or "", type = "fold" }
     end
   end)
@@ -184,8 +178,25 @@ function M._get()
     M.setup()
   end
   local win = vim.g.statusline_winid
+  local nu = vim.wo[win].number
+  local rnu = vim.wo[win].relativenumber
   local show_signs = vim.v.virtnum == 0 and vim.wo[win].signcolumn ~= "no"
-  local components = { "", LINE_NR, "" } -- left, middle, right
+  local components = { "", "", "" } -- left, middle, right
+  if not (show_signs or nu or rnu) then
+    return ""
+  end
+
+  if (nu or rnu) and vim.v.virtnum == 0 then
+    local num ---@type number
+    if rnu and nu and vim.v.relnum == 0 then
+      num = vim.v.lnum
+    elseif rnu then
+      num = vim.v.relnum
+    else
+      num = vim.v.lnum
+    end
+    components[2] = "%=" .. num .. " "
+  end
 
   if show_signs then
     local buf = vim.api.nvim_win_get_buf(win)
@@ -228,13 +239,14 @@ function M._get()
     end
   end
 
-  return table.concat(components, "")
+  local ret = table.concat(components, "")
+  return "%@v:lua.require'snacks.statuscolumn'.click_fold@" .. ret .. "%T"
 end
 
 function M.get()
   local win = vim.g.statusline_winid
   local buf = vim.api.nvim_win_get_buf(win)
-  local key = ("%d:%d:%d:%d"):format(win, buf, vim.v.lnum, vim.v.virtnum and 1 or 0)
+  local key = ("%d:%d:%d:%d:%d"):format(win, buf, vim.v.lnum, vim.v.virtnum ~= 0 and 1 or 0, vim.v.relnum)
   if cache[key] then
     return cache[key]
   end
@@ -254,6 +266,16 @@ function M.health()
   elseif not config.enabled and ready then
     Snacks.health.ok(("is manually configured\n- `vim.o.statuscolumn = %q`"):format(vim.o.statuscolumn))
   end
+end
+
+function M.click_fold()
+  local pos = vim.fn.getmousepos()
+  vim.api.nvim_win_set_cursor(pos.winid, { pos.line, 1 })
+  vim.api.nvim_win_call(pos.winid, function()
+    if vim.fn.foldlevel(pos.line) > 0 then
+      vim.cmd("normal! za")
+    end
+  end)
 end
 
 return M
