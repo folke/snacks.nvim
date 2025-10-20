@@ -63,7 +63,7 @@ M.meta = {
 ---@field col? number|fun(self:snacks.win):number Column of the window. Use <1 for relative column. (default: center)
 ---@field row? number|fun(self:snacks.win):number Row of the window. Use <1 for relative row. (default: center)
 ---@field minimal? boolean Disable a bunch of options to make the window minimal (default: true)
----@field position? "float"|"bottom"|"top"|"left"|"right"
+---@field position? "float"|"bottom"|"top"|"left"|"right"|"current"
 ---@field border? "none"|"top"|"right"|"bottom"|"left"|"hpad"|"vpad"|"rounded"|"single"|"double"|"solid"|"shadow"|string[]|false
 ---@field buf? number If set, use this buffer instead of creating a new one
 ---@field file? string If set, use this file instead of creating a new buffer
@@ -700,6 +700,7 @@ function M:open_win()
     self.win = vim.api.nvim_open_win(self.buf, enter, opts)
   elseif position == "current" then
     self.win = vim.api.nvim_get_current_win()
+    vim.api.nvim_win_set_buf(self.win, self.buf)
   else
     local parent = self.opts.win and vim.api.nvim_win_is_valid(self.opts.win) and self.opts.win or 0
     local vertical = position == "left" or position == "right"
