@@ -41,6 +41,20 @@ end
 
 ---@param item snacks.picker.Item
 function M.filename(item, picker)
+  ---@type snacks.picker.Text[]
+  return {
+    {
+      "",
+      resolve = function(ctx)
+        return M._filename(ctx)
+      end,
+    },
+  }
+end
+
+---@type snacks.picker.format.resolve
+function M._filename(ctx)
+  local picker, item = ctx.picker, ctx.item
   ---@type snacks.picker.Highlight[]
   local ret = {}
   if not item.file then
@@ -67,17 +81,17 @@ function M.filename(item, picker)
   end
 
   local truncate = picker.opts.formatters.file.truncate
-  if type(truncate) == "number" then
-    path = Snacks.picker.util.truncpath(path, truncate, { cwd = picker:cwd() })
-  elseif truncate == "auto" or truncate == "align" then
-    local prefix = ({ file = 0, git_status = 3, buffer = 7, lsp_symbol = 40 })[picker.opts.format]
-    if prefix then
-      local len = vim.api.nvim_win_get_width(picker.list.win.win) - Snacks.picker.highlight.offset(ret) - prefix - 2
-      path = Snacks.picker.util.truncpath(path, math.max(len, 15), { cwd = picker:cwd(), roughly = truncate == "auto" })
-    else
-      path = Snacks.picker.util.truncpath(path, 40, { cwd = picker:cwd() })
-    end
-  end
+  path = Snacks.picker.util.truncpath(path, ctx.max_width, { cwd = picker:cwd(), kind = truncate })
+  -- if type(truncate) == "number" then
+  -- elseif truncate == "auto" or truncate == "align" then
+  --   local prefix = ({ file = 0, git_status = 3, buffer = 7, lsp_symbol = 40 })[picker.opts.format]
+  --   if prefix then
+  --     local len = vim.api.nvim_win_get_width(picker.list.win.win) - Snacks.picker.highlight.offset(ret) - prefix - 2
+  --     path = Snacks.picker.util.truncpath(path, math.max(len, 15), { cwd = picker:cwd(), roughly = truncate == "auto" })
+  --   else
+  --     path = Snacks.picker.util.truncpath(path, 40, { cwd = picker:cwd() })
+  --   end
+  -- end
 
   local base_hl = item.dir and "SnacksPickerDirectory" or "SnacksPickerFile"
   local function is(prop)

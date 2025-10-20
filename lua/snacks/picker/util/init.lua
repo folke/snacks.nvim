@@ -16,8 +16,9 @@ end
 
 ---@param path string
 ---@param len number
----@param opts? {cwd?: string, roughly?: boolean}
+---@param opts? {cwd?: string, kind?: "left" | "center" | "right"}
 function M.truncpath(path, len, opts)
+  opts = opts or {}
   local cwd = svim.fs.normalize(opts and opts.cwd or vim.fn.getcwd(), { _fast = true, expand_env = false })
   local home = svim.fs.normalize("~")
   path = svim.fs.normalize(path, { _fast = true, expand_env = false })
@@ -35,8 +36,10 @@ function M.truncpath(path, len, opts)
   end
   path = path:gsub("/$", "")
 
-  if opts and opts.roughly == false then
-    return M.truncate(path, len, -1)
+  if opts.kind == "left" then
+    return M.truncate(path, len, true)
+  elseif opts.kind == "right" then
+    return M.truncate(path, len, false)
   end
 
   if vim.api.nvim_strwidth(path) <= len then
@@ -139,11 +142,11 @@ end
 
 ---@param text string
 ---@param width number
----@param direction? -1 | 1
-function M.truncate(text, width, direction)
+---@param left? boolean
+function M.truncate(text, width, left)
   local tw = vim.api.nvim_strwidth(text)
   if tw > width then
-    return direction == -1 and "…" .. vim.fn.strcharpart(text, tw - width + 1, width - 1)
+    return left and "…" .. vim.fn.strcharpart(text, tw - width + 1, width - 1)
       or vim.fn.strcharpart(text, 0, width - 1) .. "…"
   end
   return text

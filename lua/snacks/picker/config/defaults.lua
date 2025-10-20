@@ -1,7 +1,14 @@
 local M = {}
 
+---@class snacks.picker.format.ctx
+---@field picker snacks.Picker
+---@field item snacks.picker.Item
+---@field offset number
+---@field max_width number
+
+---@alias snacks.picker.format.resolve fun(ctx:snacks.picker.format.ctx):snacks.picker.Highlight[]
 ---@alias snacks.picker.Extmark vim.api.keyset.set_extmark|{col:number, row?:number, field?:string}
----@alias snacks.picker.Text {[1]:string, [2]:string?, virtual?:boolean, field?:string}
+---@alias snacks.picker.Text {[1]:string, [2]:string?, virtual?:boolean, field?:string, resolve?:snacks.picker.format.resolve}
 ---@alias snacks.picker.Highlight snacks.picker.Text|snacks.picker.Extmark
 ---@alias snacks.picker.format fun(item:snacks.picker.Item, picker:snacks.Picker):snacks.picker.Highlight[]
 ---@alias snacks.picker.preview fun(ctx: snacks.picker.preview.ctx):boolean?
@@ -146,11 +153,11 @@ local defaults = {
     },
     file = {
       filename_first = false, -- display filename before the file path
-      --- * number: truncate the file path to (roughly) this length
-      --- * auto: similar to number, but based on the window width
-      --- * align: align filename to the right border of the window
-      ---@type number|"auto"|"align"
-      truncate = 40,
+      --- * left: truncate the beginning of the path
+      --- * center: truncate the middle of the path
+      --- * right: truncate the end of the path
+      ---@type "left"|"center"|"right"
+      truncate = "center",
       filename_only = false, -- only show the filename
       icon_width = 2, -- width of the icon (in characters)
       git_status_hl = true, -- use the git status highlight group for the filename
