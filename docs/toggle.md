@@ -32,7 +32,7 @@ Toggle keymaps integrated with which-key icons / colors
 ---@field wk_desc? string|{ enabled: string, disabled: string }
 ---@field map? fun(mode: string|string[], lhs: string, rhs: string|fun(), opts?: vim.keymap.set.Opts)
 ---@field which_key? boolean
----@field notify? boolean
+---@field notify? boolean|fun(state:boolean, opts: snacks.toggle.Opts)
 {
   map = vim.keymap.set, -- keymap.set function to use
   which_key = true, -- integrate with which-key to show enabled/disabled icons and colors

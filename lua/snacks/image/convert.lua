@@ -62,6 +62,9 @@ local commands = {
       local src = M.norm(ctx.src)
       return M.is_uri(src) and convert:tmpfile("data") or src
     end,
+    on_error = function(step)
+      vim.fs.rm(step.file)
+    end,
   },
   typ = {
     ft = "pdf",
@@ -120,11 +123,11 @@ local commands = {
     cmd = {
       {
         cmd = "magick",
-        args = { "identify", "-format", "%m %[fx:w]x%[fx:h] %xx%y", "{src}[0]" },
+        args = { "identify", "-format", "%m %[fx:w]x%[fx:h] %xx%y", "{src}[{page}]" },
       },
       {
         cmd = "identify",
-        args = { "-format", "%m %[fx:w]x%[fx:h] %xx%y", "{src}[0]" },
+        args = { "-format", "%m %[fx:w]x%[fx:h] %xx%y", "{src}[{page}]" },
       },
     },
     on_done = function(step)
@@ -152,7 +155,7 @@ local commands = {
     ft = "png",
     cmd = function(step)
       local formats = vim.deepcopy(Snacks.image.config.convert.magick or {})
-      local args = formats.default or { "{src}[0]" }
+      local args = formats.default or { "{src}[{page}]" }
       local info = step.meta.info
       local format = info and info.format or vim.fn.fnamemodify(step.meta.src, ":e")
 
@@ -222,6 +225,7 @@ end
 ---@class snacks.image.Convert
 ---@field opts snacks.image.convert.Opts
 ---@field src string
+---@field page number
 ---@field file string
 ---@field prefix string
 ---@field meta snacks.image.meta
@@ -237,6 +241,7 @@ Convert.__index = Convert
 function Convert.new(opts)
   vim.fn.mkdir(Snacks.image.config.cache, "p")
   local self = setmetatable({}, Convert)
+  opts.src, self.page = M.get_page(opts.src)
   opts.src = M.norm(opts.src)
   self.opts = opts
   self.src = opts.src
@@ -245,7 +250,7 @@ function Convert.new(opts)
   if M.is_uri(self.opts.src) then
     base = self.opts.src:gsub("%?.*", ""):match("^%w%w+://(.*)$") or base
   end
-  self.prefix = vim.fn.sha256(self.opts.src):sub(1, 8) .. "-" .. base:gsub("[^%w%.]+", "-")
+  self.prefix = vim.fn.sha256(self.opts.src .. self.page):sub(1, 8) .. "-" .. base:gsub("[^%w%.]+", "-")
   self.meta = { src = opts.src }
   self.steps = {}
   self.tpl_data = {
@@ -407,6 +412,7 @@ function Convert:step()
     name = vim.fn.fnamemodify(step.file, ":t:r"),
     dirname = vim.fs.dirname(step.meta.src),
     src = step.meta.src,
+    page = self.page,
   }, self.tpl_data)
 
   for a, arg in ipairs(args) do
@@ -465,6 +471,14 @@ function M.norm(src)
     src = svim.fs.normalize(vim.fn.fnamemodify(src, ":p"))
   end
   return src
+end
+
+---@param src string
+---@return string, number
+function M.get_page(src)
+  local parts = vim.split(src, "#page=", { plain = true })
+  local page_number = tonumber(parts[2]) or 1
+  return parts[1], page_number - 1
 end
 
 ---@param opts snacks.image.convert.Opts
