@@ -209,4 +209,8 @@ function M:del(pid)
   end
 end
 
+function M.clear()
+  images = {}
+end
+
 return M

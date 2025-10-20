@@ -127,7 +127,7 @@ function M.icon(name, cat, opts)
   opts.fallback = opts.fallback or {}
   local try = {
     function()
-      return require("mini.icons").get(cat or "file", name)
+      return MiniIcons.get(cat or "file", name)
     end,
     function()
       if cat == "directory" then

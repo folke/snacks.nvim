@@ -586,7 +586,7 @@ function M.file_git_status(item, picker)
   local icon = status.status:sub(1, 1):upper()
   icon = status.status == "untracked" and "?" or status.status == "ignored" and "!" or icon
   if picker.opts.icons.git.enabled then
-    icon = picker.opts.icons.git[status.status] or icon --[[@as string]]
+    icon = picker.opts.icons.git[status.unmerged and "unmerged" or status.status] or icon --[[@as string]]
     if status.staged then
       icon = picker.opts.icons.git.staged
     end

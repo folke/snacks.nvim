@@ -53,6 +53,10 @@ function M:is_current()
 end
 
 function M:record(value)
+  -- don't record value if it's identical to the last recorded value
+  if vim.deep_equal(self.kv:get(math.max(self.idx - 1, 1)), value) then
+    return
+  end
   self.kv:set(self.idx, value)
 end
 

@@ -613,7 +613,7 @@ You can customize the behavior by providing a custom action.
 Use `opts.dirs` to provide a list of directories to use instead of the git roots.
 
 ```lua
----@param opts? {limit?:number, dirs?:(string[]|fun():string[]), pick?:boolean, session?:boolean, action?:fun(dir)}
+---@param opts? {limit?:number, dirs?:(string[]|fun():string[]), pick?:boolean, session?:boolean, action?:fun(dir), filter?:fun(dir:string):boolean?}
 Snacks.dashboard.sections.projects(opts)
 ```
 

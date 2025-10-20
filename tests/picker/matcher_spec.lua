@@ -88,7 +88,7 @@ describe("fuzzy matching", function()
       it(("should find fuzzy matches for %q with %s"):format(pattern, algo), function()
         local matches = {} ---@type string[]
         for _, file in ipairs(M.files) do
-          if matcher[algo](matcher, file, chars) then
+          if matcher[algo](matcher, file, file, chars) then
             table.insert(matches, file)
           end
         end
