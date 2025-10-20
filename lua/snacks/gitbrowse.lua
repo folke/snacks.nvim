@@ -27,6 +27,7 @@ local defaults = {
   end,
   ---@type "repo" | "branch" | "file" | "commit" | "permalink"
   what = "commit", -- what to open. not all remotes support all types
+  commit = nil, ---@type string?
   branch = nil, ---@type string?
   line_start = nil, ---@type number?
   line_end = nil, ---@type number?
@@ -159,16 +160,19 @@ function M._open(opts)
     file = file and system({ "git", "-C", cwd, "ls-files", "--full-name", file }, "Failed to get git file path")[1],
     line_start = opts.line_start,
     line_end = opts.line_end,
+    commit = opts.commit,
   }
 
-  if opts.what == "permalink" then
-    fields.commit = system(
-      { "git", "-C", cwd, "log", "-n", "1", "--pretty=format:%H", "--", file },
-      "Failed to get latest commit of file"
-    )[1]
-  else
-    local word = vim.fn.expand("<cword>")
-    fields.commit = is_valid_commit_hash(word, cwd) and word or nil
+  if not fields.commit then
+    if opts.what == "permalink" then
+      fields.commit = system(
+        { "git", "-C", cwd, "log", "-n", "1", "--pretty=format:%H", "--", file },
+        "Failed to get latest commit of file"
+      )[1]
+    else
+      local word = vim.fn.expand("<cword>")
+      fields.commit = is_valid_commit_hash(word, cwd) and word or nil
+    end
   end
 
   -- Get visual selection range if in visual mode
