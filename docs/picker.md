@@ -878,6 +878,7 @@ Neovim command history
   name = "cmd",
   format = "text",
   preview = "none",
+  main = { current = true },
   layout = {
     preset = "vscode",
   },
@@ -1373,6 +1374,7 @@ Neovim help tags
 ---@field icon_sources? string[]
 {
   icon_sources = { "nerd_fonts", "emoji" },
+  main = { current = true },
   finder = "icons",
   format = "icon",
   layout = { preset = "vscode" },
@@ -1390,6 +1392,7 @@ Neovim help tags
 {
   finder = "vim_jumps",
   format = "file",
+  main = { current = true },
 }
 ```
 
@@ -1504,6 +1507,7 @@ Loclist
   finder = "qf",
   format = "file",
   qf_win = 0,
+  main = { current = true },
 }
 ```
 
@@ -1940,6 +1944,7 @@ Neovim registers
 ```lua
 {
   finder = "vim_registers",
+  main = { current = true },
   format = "register",
   preview = "preview",
   confirm = { "copy", "close" },
@@ -1973,6 +1978,7 @@ Neovim search history
   name = "search",
   format = "text",
   preview = "none",
+  main = { current = true },
   layout = { preset = "vscode" },
   confirm = "search",
   formatters = { text = { ft = "regex" } },
@@ -2028,6 +2034,7 @@ Not meant to be used directly.
 {
   finder = "vim_spelling",
   format = "text",
+  main = { current = true },
   layout = { preset = "vscode" },
   confirm = "item_action",
 }
@@ -2576,6 +2583,12 @@ Send selected or all items to the location list.
 Snacks.picker.actions.loclist(picker)
 ```
 
+### `Snacks.picker.actions.paste()`
+
+```lua
+Snacks.picker.actions.paste(picker, item, action)
+```
+
 ### `Snacks.picker.actions.pick_win()`
 
 ```lua
@@ -2616,12 +2629,6 @@ Snacks.picker.actions.preview_scroll_right(picker)
 
 ```lua
 Snacks.picker.actions.preview_scroll_up(picker)
-```
-
-### `Snacks.picker.actions.put()`
-
-```lua
-Snacks.picker.actions.put(picker, item, action)
 ```
 
 ### `Snacks.picker.actions.qflist()`
