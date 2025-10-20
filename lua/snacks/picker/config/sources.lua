@@ -141,6 +141,7 @@ M.command_history = {
   name = "cmd",
   format = "text",
   preview = "none",
+  main = { current = true },
   layout = {
     preset = "vscode",
   },
@@ -400,6 +401,7 @@ M.highlights = {
 ---@field icon_sources? string[]
 M.icons = {
   icon_sources = { "nerd_fonts", "emoji" },
+  main = { current = true },
   finder = "icons",
   format = "icon",
   layout = { preset = "vscode" },
@@ -409,6 +411,7 @@ M.icons = {
 M.jumps = {
   finder = "vim_jumps",
   format = "file",
+  main = { current = true },
 }
 
 ---@class snacks.picker.keymaps.Config: snacks.picker.Config
@@ -488,6 +491,7 @@ M.loclist = {
   finder = "qf",
   format = "file",
   qf_win = 0,
+  main = { current = true },
 }
 
 ---@class snacks.picker.lsp.Config: snacks.picker.Config
@@ -755,6 +759,7 @@ M.recent = {
 -- Neovim registers
 M.registers = {
   finder = "vim_registers",
+  main = { current = true },
   format = "register",
   preview = "preview",
   confirm = { "copy", "close" },
@@ -770,6 +775,7 @@ M.search_history = {
   name = "search",
   format = "text",
   preview = "none",
+  main = { current = true },
   layout = { preset = "vscode" },
   confirm = "search",
   formatters = { text = { ft = "regex" } },
@@ -800,6 +806,7 @@ M.smart = {
 M.spelling = {
   finder = "vim_spelling",
   format = "text",
+  main = { current = true },
   layout = { preset = "vscode" },
   confirm = "item_action",
 }
