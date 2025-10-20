@@ -67,7 +67,7 @@ function M.grep(opts, ctx)
       if spec:match("^:%([^)]*$") then return false end -- unfinished `(exclude)`
       return true
     end
-    return vim.tbl_filter(function(spec) return is_valid(spec) end, pathspecs)
+    return vim.tbl_filter(is_valid, pathspecs)
   end
   vim.list_extend(args, filter_catch_all_exclusions(pargs))
 
