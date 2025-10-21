@@ -208,8 +208,12 @@ M.files = {
   supports_live = true,
 }
 
----@class snacks.picker.git.Config: snacks.picker.Config
+--- Git arguments are use like this:
+---  * git [<cmd_args>] <cmd> [<args>]
+---  * cmd may be `status`, `log`, `diff`, etc.
+---@class snacks.picker.git.Config: snacks.picker.Config,snacks.picker.git.Args
 ---@field args? string[] additional arguments to pass to `git`
+---@field cmd_args? string[] additional arguments to pass to the `git <cmd>``
 
 ---@class snacks.picker.git.branches.Config: snacks.picker.git.Config
 ---@field all? boolean show all branches, including remote
@@ -257,6 +261,7 @@ M.git_files = {
 ---@field submodules? boolean search in submodule files
 ---@field need_search? boolean require a search pattern
 ---@field pathspec? string|string[] pathspec pattern(s)
+---@field ignorecase? boolean ignore case
 M.git_grep = {
   finder = "git_grep",
   format = "file",
@@ -322,6 +327,7 @@ M.git_status = {
     input = {
       keys = {
         ["<Tab>"] = { "git_stage", mode = { "n", "i" } },
+        ["<c-r>"] = { "git_restore", mode = { "n", "i" } },
       },
     },
   },

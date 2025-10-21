@@ -286,15 +286,17 @@ function M.cmd(cmd, ctx, opts)
 end
 
 ---@param ctx snacks.picker.preview.ctx
+local function git(ctx, ...)
+  local ret = { "git", "-c", "delta." .. vim.o.background .. "=true" }
+  vim.list_extend(ret, ctx.picker.opts.previewers.git.args or {})
+  vim.list_extend(ret, { ... })
+  return ret
+end
+
+---@param ctx snacks.picker.preview.ctx
 function M.git_show(ctx)
   local builtin = ctx.picker.opts.previewers.git.builtin
-  local cmd = {
-    "git",
-    "-c",
-    "delta." .. vim.o.background .. "=true",
-    "show",
-    ctx.item.commit,
-  }
+  local cmd = git(ctx, "show", ctx.item.commit)
   local pathspec = ctx.item.files or ctx.item.file
   pathspec = type(pathspec) == "table" and pathspec or { pathspec }
   if #pathspec > 0 then
@@ -308,20 +310,12 @@ function M.git_show(ctx)
 end
 
 ---@param ctx snacks.picker.preview.ctx
-local function git(ctx, ...)
-  local ret = { "git", "-c", "delta." .. vim.o.background .. "=true" }
-  vim.list_extend(ret, ctx.picker.opts.previewers.git.args or {})
-  vim.list_extend(ret, { ... })
-  return ret
-end
-
----@param ctx snacks.picker.preview.ctx
 function M.git_log(ctx)
   local cmd = git(
     ctx,
     "--no-pager",
     "log",
-    "--pretty=format:%h %s (%ch)",
+    "--pretty=format:%h %s (%ch) <%an>",
     "--abbrev-commit",
     "--decorate",
     "--date=short",
@@ -335,7 +329,7 @@ function M.git_log(ctx)
     ft = "git",
     ---@param text string
     add = function(text)
-      local commit, msg, date = text:match("^(%S+) (.*) %((.*)%)$")
+      local commit, msg, date, author = text:match("^(%S+) (.*) %((.*)%) <(.*)>$")
       if commit then
         row = row + 1
         local hl = Snacks.picker.format.git_log({
@@ -345,6 +339,7 @@ function M.git_log(ctx)
           commit = commit,
           msg = msg,
           date = date,
+          author = author,
         }, ctx.picker)
         Snacks.picker.highlight.set(ctx.buf, ns, row, hl)
       end

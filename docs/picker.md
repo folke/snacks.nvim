@@ -91,6 +91,7 @@ Snacks.picker.pick({source = "files", ...})
 ---@field title? string defaults to a capitalized source name
 ---@field auto_close? boolean automatically close the picker when focusing another window (defaults to true)
 ---@field show_empty? boolean show the picker even when there are no items
+---@field show_delay? number delay (in ms) to wait before showing the picker while no results yet
 ---@field focus? "input"|"list" where to focus when the picker is opened (defaults to "input")
 ---@field enter? boolean enter the picker when opening it
 ---@field toggles? table<string, string|false|snacks.picker.toggle>
@@ -116,6 +117,7 @@ Snacks.picker.pick({source = "files", ...})
   prompt = " ",
   sources = {},
   focus = "input",
+  show_delay = 100,
   layout = {
     cycle = true,
     --- Use the default layout or vertical if the window is too narrow
@@ -154,6 +156,7 @@ Snacks.picker.pick({source = "files", ...})
       --- * right: truncate the end of the path
       ---@type "left"|"center"|"right"
       truncate = "center",
+      min_width = 20, -- minimum length of the truncated path
       filename_only = false, -- only show the filename
       icon_width = 2, -- width of the icon (in characters)
       git_status_hl = true, -- use the git status highlight group for the filename
@@ -292,6 +295,7 @@ Snacks.picker.pick({source = "files", ...})
         ["<c-n>"] = "list_down",
         ["<c-p>"] = "list_up",
         ["<c-q>"] = "qflist",
+        ["<c-g>"] = "print_path",
         ["<c-s>"] = "edit_split",
         ["<c-t>"] = "tab",
         ["<c-u>"] = "list_scroll_up",
@@ -625,15 +629,7 @@ Snacks.picker.pick({source = "files", ...})
 ```
 
 ```lua
----@class snacks.picker.format.ctx
----@field picker snacks.Picker
----@field item snacks.picker.Item
----@field offset number
----@field max_width number
-```
-
-```lua
----@alias snacks.picker.format.resolve fun(ctx:snacks.picker.format.ctx):snacks.picker.Highlight[]
+---@alias snacks.picker.format.resolve fun(max_width:number):snacks.picker.Highlight[]
 ---@alias snacks.picker.Extmark vim.api.keyset.set_extmark|{col:number, row?:number, field?:string}
 ---@alias snacks.picker.Text {[1]:string, [2]:string?, virtual?:boolean, field?:string, resolve?:snacks.picker.format.resolve}
 ---@alias snacks.picker.Highlight snacks.picker.Text|snacks.picker.Extmark
@@ -684,6 +680,7 @@ It's a previewer that shows a preview based on the item data.
 ---@field highlights? snacks.picker.Highlight[][]
 ---@field preview? snacks.picker.Item.preview
 ---@field resolve? fun(item:snacks.picker.Item)
+---@field positions? number[] indices of matched characters in `text`
 ```
 
 ```lua
@@ -1160,7 +1157,7 @@ Grep in git files
 ---@field untracked? boolean search in untracked files
 ---@field submodules? boolean search in submodule files
 ---@field need_search? boolean require a search pattern
----@field pathspec? string|string[] pathspec pattern(s)
+---@field ignorecase? boolean ignore case
 {
   finder = "git_grep",
   format = "file",
@@ -1266,6 +1263,7 @@ Git log
     input = {
       keys = {
         ["<Tab>"] = { "git_stage", mode = { "n", "i" } },
+        ["<c-r>"] = { "git_restore", mode = { "n", "i" } },
       },
     },
   },
@@ -2469,6 +2467,12 @@ Snacks.picker.actions.git_branch_del(picker, item)
 Snacks.picker.actions.git_checkout(picker, item)
 ```
 
+### `Snacks.picker.actions.git_restore()`
+
+```lua
+Snacks.picker.actions.git_restore(picker)
+```
+
 ### `Snacks.picker.actions.git_stage()`
 
 ```lua
@@ -2651,6 +2655,24 @@ Snacks.picker.actions.preview_scroll_right(picker)
 
 ```lua
 Snacks.picker.actions.preview_scroll_up(picker)
+```
+
+### `Snacks.picker.actions.print_cwd()`
+
+```lua
+Snacks.picker.actions.print_cwd(picker)
+```
+
+### `Snacks.picker.actions.print_dir()`
+
+```lua
+Snacks.picker.actions.print_dir(picker)
+```
+
+### `Snacks.picker.actions.print_path()`
+
+```lua
+Snacks.picker.actions.print_path(picker, item)
 ```
 
 ### `Snacks.picker.actions.qflist()`

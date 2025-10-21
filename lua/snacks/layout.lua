@@ -324,8 +324,14 @@ function M:update_box(box, parent)
   end
   local free = vim.deepcopy(dim)
 
+  local box_win = self.box_wins[box.id]
+
   local function size(child)
-    return child[size_main] or 0
+    local ret = child[size_main] or 0
+    if type(ret) == "function" then
+      ret = ret(box_win)
+    end
+    return ret
   end
 
   local dims = {} ---@type table<number, snacks.win.Dim>
@@ -371,7 +377,6 @@ function M:update_box(box, parent)
   end
 
   -- update box win
-  local box_win = self.box_wins[box.id]
   if box_win then
     if not is_root then
       box_win.opts.win = self.root.win

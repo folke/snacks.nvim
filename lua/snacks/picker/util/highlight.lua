@@ -112,6 +112,21 @@ function M.offset(line, opts)
 end
 
 ---@param line snacks.picker.Highlight[]
+---@param positions number[]
+---@param offset? number
+function M.matches(line, positions, offset)
+  offset = offset or 0
+  for _, pos in ipairs(positions) do
+    table.insert(line, {
+      col = pos - 1 + offset,
+      end_col = pos + offset,
+      hl_group = "SnacksPickerMatch",
+    })
+  end
+  return line
+end
+
+---@param line snacks.picker.Highlight[]
 ---@param item snacks.picker.Item
 ---@param text string
 ---@param opts? {hl_group?:string, lang?:string}
@@ -204,8 +219,8 @@ end
 
 --- Resolves the first flex text in the line.
 ---@param line snacks.picker.Highlight[]
----@param ctx snacks.picker.format.ctx
-function M.resolve(line, ctx)
+---@param max_width number
+function M.resolve(line, max_width)
   local ret = {} ---@type snacks.picker.Highlight[]
   local offset = 0
   local width = 0
@@ -225,11 +240,9 @@ function M.resolve(line, ctx)
   end
 
   if resolve then
-    ctx.offset = offset
-    ctx.max_width = ctx.max_width - width
     vim.list_extend(ret, line, 1, resolve - 1)
     offset = M.offset(ret)
-    vim.list_extend(ret, line[resolve].resolve(ctx))
+    vim.list_extend(ret, line[resolve].resolve(max_width - width))
     local diff = M.offset(ret) - offset
     vim.list_extend(ret, line, resolve + 1)
     M.fix_offset(ret, diff, resolve + 1)

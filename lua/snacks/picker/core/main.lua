@@ -18,8 +18,7 @@ function M.new(opts)
   }, opts or {})
   local self = setmetatable({}, M)
   self.opts = opts
-  self.win = vim.api.nvim_get_current_win()
-  self.win = self:find()
+  self:update()
   return self
 end
 
@@ -30,19 +29,25 @@ function M:get()
   return self.win
 end
 
+function M:update()
+  self.win = self:find()
+end
+
 ---@param win number
 function M:set(win)
   self.win = win
 end
 
-function M:find()
+---@param extra? number[]
+function M:find(extra)
   local current = vim.api.nvim_get_current_win()
+  self.win = self.win or current
   if self.opts.current then
     return current
   end
   local prev = vim.fn.win_getid(vim.fn.winnr("#"))
   local non_float = 0
-  local wins = { self.win, current, prev }
+  local wins = { current, self.win, prev }
   local all = vim.api.nvim_tabpage_list_wins(0)
   -- sort all by lastused of the win buffer
   table.sort(all, function(a, b)

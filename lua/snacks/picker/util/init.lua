@@ -56,6 +56,9 @@ function M.truncpath(path, len, opts)
     first = "~/" .. table.remove(parts, 1)
   end
   local width = vim.api.nvim_strwidth(ret) + vim.api.nvim_strwidth(first) + 3
+  if width > len then
+    return first .. "/…/" .. M.truncate(ret, len - vim.api.nvim_strwidth(first) - 3, true)
+  end
   while width < len and #parts > 0 do
     local part = table.remove(parts) .. "/"
     local w = vim.api.nvim_strwidth(part)
