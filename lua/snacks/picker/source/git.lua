@@ -54,6 +54,9 @@ function M.grep(opts, ctx)
   elseif opts.submodules then
     table.insert(args, "--recurse-submodules")
   end
+  if opts.ignorecase then
+    table.insert(args, "-i")
+  end
   table.insert(args, ctx.filter.search)
   if not opts.cwd then
     opts.cwd = Snacks.git.get_root() or uv.cwd() or "."
@@ -134,7 +137,17 @@ function M.log(opts, ctx)
       Proc.proc({
         cmd = "git",
         cwd = cwd,
-        args = { "log", "-z", "--follow", "--name-status", "--pretty=format:''", "--diff-filter=R", "--", file },
+        args = git_args(
+          opts.args,
+          "log",
+          "-z",
+          "--follow",
+          "--name-status",
+          "--pretty=format:''",
+          "--diff-filter=R",
+          "--",
+          file
+        ),
       }, ctx)(function(item)
         for _, text in ipairs(vim.split(item.text, "\0")) do
           if text:find("^R%d%d%d$") then

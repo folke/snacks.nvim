@@ -90,6 +90,7 @@ In case of issues, make sure to run `:checkhealth snacks`.
     "mkv",
     "webm",
     "pdf",
+    "icns",
   },
   force = false, -- try displaying the image, even if the terminal does not support it
   doc = {

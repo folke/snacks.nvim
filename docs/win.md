@@ -74,6 +74,7 @@ Snacks.win({
 ---@field text? string|string[]|fun():(string[]|string) Initial lines to set in the buffer
 ---@field actions? table<string, snacks.win.Action.spec> Actions that can be used in key mappings
 ---@field resize? boolean Automatically resize the window when the editor is resized
+---@field stack? boolean When enabled, multiple split windows with the same position will be stacked together (useful for terminals)
 {
   show = true,
   fixbuf = true,

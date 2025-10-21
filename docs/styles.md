@@ -262,6 +262,7 @@ The other options are used with `:lua Snacks.dashboard()`
     filetype = "snacks_terminal",
   },
   wo = {},
+  stack = true, -- when enabled, multiple split windows with the same position will be stacked together (useful for terminals)
   keys = {
     q = "hide",
     gf = function(self)
