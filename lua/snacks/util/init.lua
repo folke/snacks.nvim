@@ -127,7 +127,7 @@ function M.icon(name, cat, opts)
   opts.fallback = opts.fallback or {}
   local try = {
     function()
-      return require("mini.icons").get(cat or "file", name)
+      return MiniIcons.get(cat or "file", name)
     end,
     function()
       if cat == "directory" then
@@ -203,7 +203,7 @@ end
 ---@param from number -- 1-indexed, inclusive
 ---@param to number -- 1-indexed, inclusive
 function M.redraw_range(win, from, to)
-  if vim.api.nvim__redraw then
+  if vim.api.nvim__redraw and vim.api.nvim_win_is_valid(win) then
     vim.api.nvim__redraw({ win = win, range = { math.floor(from - 1), math.floor(to) }, valid = true, flush = false })
   else
     vim.cmd([[redraw!]])
@@ -456,6 +456,20 @@ function M.parse(parser, range, on_parse)
     parser:parse(range)
     on_parse(nil, parser:trees())
   end
+end
+
+--- Better validation to check if path is a dir or a file
+---@param path string
+---@return "directory"|"file"
+function M.path_type(path)
+  local stat = uv.fs_stat(path)
+  if stat and stat.type then
+    return stat.type
+  end
+  if vim.fn.isdirectory(path) == 1 then
+    return "directory"
+  end
+  return "file"
 end
 
 return M

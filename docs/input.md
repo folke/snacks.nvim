@@ -95,11 +95,15 @@ docs for more information on how to customize these styles
 ```
 
 ```lua
+---@alias snacks.input.Highlight {[1]:number, [2]:number, [3]:string}
+```
+
+```lua
 ---@class snacks.input.Opts: snacks.input.Config,{}
 ---@field prompt? string
 ---@field default? string
 ---@field completion? string
----@field highlight? fun()
+---@field highlight? fun(text: string): snacks.input.Highlight[]
 ```
 
 ## 📦 Module

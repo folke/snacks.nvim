@@ -13,7 +13,7 @@ Table of Contents                            *snacks-rename-table-of-contents*
   - Snacks.rename.rename_file()|snacks-rename-module-snacks.rename.rename_file()|
 LSP-integrated file renaming with support for plugins like neo-tree.nvim
 <https://github.com/nvim-neo-tree/neo-tree.nvim> and mini.files
-<https://github.com/echasnovski/mini.files>.
+<https://github.com/nvim-mini/mini.files>.
 
 
 ==============================================================================

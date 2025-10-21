@@ -1,7 +1,8 @@
 local M = {}
 
+---@alias snacks.picker.format.resolve fun(max_width:number):snacks.picker.Highlight[]
 ---@alias snacks.picker.Extmark vim.api.keyset.set_extmark|{col:number, row?:number, field?:string}
----@alias snacks.picker.Text {[1]:string, [2]:string?, virtual?:boolean, field?:string}
+---@alias snacks.picker.Text {[1]:string, [2]:string?, virtual?:boolean, field?:string, resolve?:snacks.picker.format.resolve}
 ---@alias snacks.picker.Highlight snacks.picker.Text|snacks.picker.Extmark
 ---@alias snacks.picker.format fun(item:snacks.picker.Item, picker:snacks.Picker):snacks.picker.Highlight[]
 ---@alias snacks.picker.preview fun(ctx: snacks.picker.preview.ctx):boolean?
@@ -56,6 +57,7 @@ local M = {}
 ---@field preset? string|fun(source:string):string
 ---@field hidden? ("input"|"preview"|"list")[] don't show the given windows when opening the picker. (only "input" and "preview" make sense)
 ---@field auto_hide? ("input"|"preview"|"list")[] hide the given windows when not focused (only "input" makes real sense)
+---@field config? fun(layout:snacks.picker.layout.Config) customize the resolved layout config
 
 ---@class snacks.picker.win.Config
 ---@field input? snacks.win.Config|{} input window config
@@ -145,7 +147,12 @@ local defaults = {
     },
     file = {
       filename_first = false, -- display filename before the file path
-      truncate = 40, -- truncate the file path to (roughly) this length
+      --- * left: truncate the beginning of the path
+      --- * center: truncate the middle of the path
+      --- * right: truncate the end of the path
+      ---@type "left"|"center"|"right"
+      truncate = "center",
+      min_width = 20, -- minimum length of the truncated path
       filename_only = false, -- only show the filename
       icon_width = 2, -- width of the icon (in characters)
       git_status_hl = true, -- use the git status highlight group for the filename
@@ -216,6 +223,7 @@ local defaults = {
         ["<a-f>"] = { "toggle_follow", mode = { "i", "n" } },
         ["<a-h>"] = { "toggle_hidden", mode = { "i", "n" } },
         ["<a-i>"] = { "toggle_ignored", mode = { "i", "n" } },
+        ["<a-r>"] = { "toggle_regex", mode = { "i", "n" } },
         ["<a-m>"] = { "toggle_maximize", mode = { "i", "n" } },
         ["<a-p>"] = { "toggle_preview", mode = { "i", "n" } },
         ["<a-w>"] = { "cycle_win", mode = { "i", "n" } },
@@ -283,6 +291,7 @@ local defaults = {
         ["<c-n>"] = "list_down",
         ["<c-p>"] = "list_up",
         ["<c-q>"] = "qflist",
+        ["<c-g>"] = "print_path",
         ["<c-s>"] = "edit_split",
         ["<c-t>"] = "tab",
         ["<c-u>"] = "list_scroll_up",

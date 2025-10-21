@@ -113,7 +113,7 @@ local defaults = {
   formats = {
     icon = function(item)
       if item.file and item.icon == "file" or item.icon == "directory" then
-        return M.icon(item.file, item.icon)
+        return Snacks.dashboard.icon(item.file, item.icon)
       end
       return { item.icon, width = 2, hl = "icon" }
     end,
@@ -717,23 +717,25 @@ function D:update()
 
   -- cursor movement
   local last = { 1, 0 }
+  local function update_cursor()
+    local item = self:find(vim.api.nvim_win_get_cursor(self.win), last)
+    -- can happen for panes without actionable items
+    item = item or vim.tbl_filter(function(it)
+      return it.action and it._
+    end, self.items)[1]
+    if item then
+      local col = self.lines[item._.row]:find("[%w%d%p]", item._.col + 1)
+      col = col or (item._.col + 1 + (item.indent and (item.indent + 1) or 0))
+      last = { item._.row, (col or item._.col + 1) - 1 }
+    end
+    vim.api.nvim_win_set_cursor(self.win, last)
+  end
   vim.api.nvim_create_autocmd("CursorMoved", {
     group = vim.api.nvim_create_augroup("snacks_dashboard_cursor", { clear = true }),
     buffer = self.buf,
-    callback = function()
-      local item = self:find(vim.api.nvim_win_get_cursor(self.win), last)
-      -- can happen for panes without actionable items
-      item = item or vim.tbl_filter(function(it)
-        return it.action and it._
-      end, self.items)[1]
-      if item then
-        local col = self.lines[item._.row]:find("[%w%d%p]", item._.col + 1)
-        col = col or (item._.col + 1 + (item.indent and (item.indent + 1) or 0))
-        last = { item._.row, (col or item._.col + 1) - 1 }
-      end
-      vim.api.nvim_win_set_cursor(self.win, last)
-    end,
+    callback = update_cursor,
   })
+  update_cursor()
   self.fire("UpdatePost")
 end
 
@@ -804,7 +806,9 @@ function M.oldfiles(opts)
       if want then
         done[file] = true
         for _, f in ipairs(filter) do
-          if (file:sub(1, #f.path) == f.path) ~= f.want then
+          local matches = file:sub(1, #f.path) == f.path
+            and (file == f.path or file:sub(#f.path + 1, #f.path + 1):find("[/\\]") ~= nil)
+          if matches ~= f.want then
             want = false
             break
           end
@@ -831,6 +835,7 @@ function M.sections.session(item)
     { "possession.nvim", ":PossessionLoadCwd" },
     { "mini.sessions", ":lua require('mini.sessions').read()" },
     { "mini.nvim", ":lua require('mini.sessions').read()" },
+    { "auto-session", ":AutoSession restore" },
   }
   for _, plugin in pairs(plugins) do
     if M.have_plugin(plugin[1]) then
@@ -850,9 +855,11 @@ function M.sections.recent_files(opts)
   return function()
     opts = opts or {}
     local limit = opts.limit or 5
-    local root = opts.cwd and svim.fs.normalize(opts.cwd == true and vim.fn.getcwd() or opts.cwd) or ""
+    local root = opts.cwd and svim.fs.normalize(opts.cwd == true and vim.fn.getcwd() or opts.cwd) or nil
+    -- Only filter by directory when root is specified. If nil, M.oldfiles will use default filters only (excludes stdpath data/cache/state).
+    local oldfiles_opts = root and { filter = { [root] = true } } or nil
     local ret = {} ---@type snacks.dashboard.Section
-    for file in M.oldfiles({ filter = { [root] = true } }) do
+    for file in M.oldfiles(oldfiles_opts) do
       if not opts.filter or opts.filter(file) then
         ret[#ret + 1] = {
           file = file,
@@ -874,7 +881,7 @@ end
 --- try to restore the session and open the picker if the session is not restored.
 --- You can customize the behavior by providing a custom action.
 --- Use `opts.dirs` to provide a list of directories to use instead of the git roots.
----@param opts? {limit?:number, dirs?:(string[]|fun():string[]), pick?:boolean, session?:boolean, action?:fun(dir)}
+---@param opts? {limit?:number, dirs?:(string[]|fun():string[]), pick?:boolean, session?:boolean, action?:fun(dir), filter?:fun(dir:string):boolean?}
 function M.sections.projects(opts)
   opts = vim.tbl_extend("force", { pick = true, session = true }, opts or {})
   local limit = opts.limit or 5
@@ -886,9 +893,11 @@ function M.sections.projects(opts)
     for file in M.oldfiles() do
       local dir = Snacks.git.get_root(file)
       if dir and not vim.tbl_contains(dirs, dir) then
-        table.insert(dirs, dir)
-        if #dirs >= limit then
-          break
+        if not opts.filter or opts.filter(dir) then
+          table.insert(dirs, dir)
+          if #dirs >= limit then
+            break
+          end
         end
       end
     end
@@ -896,15 +905,16 @@ function M.sections.projects(opts)
 
   local ret = {} ---@type snacks.dashboard.Item[]
   for _, dir in ipairs(dirs) do
-    ret[#ret + 1] = {
-      file = dir,
-      icon = "directory",
-      action = function(self)
-        if opts.action then
-          return opts.action(dir)
-        end
-        vim.fn.chdir(dir)
-        local session = M.sections.session()
+    if not opts.filter or opts.filter(dir) then
+      ret[#ret + 1] = {
+        file = dir,
+        icon = "directory",
+        action = function(self)
+          if opts.action then
+            return opts.action(dir)
+          end
+          vim.fn.chdir(dir)
+          local session = M.sections.session()
         -- stylua: ignore
         if opts.session and session then
           local session_loaded = false
@@ -914,9 +924,10 @@ function M.sections.projects(opts)
         elseif opts.pick then
           M.pick()
         end
-      end,
-      autokey = true,
-    }
+        end,
+        autokey = true,
+      }
+    end
   end
   return ret
 end
@@ -990,6 +1001,26 @@ function M.sections.terminal(opts)
         pty = true,
         on_stdout = function(_, data)
           data = table.concat(data, "\n")
+
+          local termenv = {
+            ["\27%]11;%?\27\\"] = function() -- OSC 11
+              local rgb = (vim.o.background == "light") and "ffff/ffff/ffff" or "0000/0000/0000"
+              return "\x1b]11;rgb:" .. rgb .. "\x1b\\"
+            end,
+            ["\27%[6n"] = function() -- CSI 6 n
+              return "\x1b[1;" .. tostring(width) .. "R"
+            end,
+          }
+          for seq, repl in pairs(termenv) do
+            if data:find(seq) then
+              pcall(vim.fn.chansend, jid, repl())
+              data = data:gsub(seq, "")
+            end
+          end
+          if data == "" then
+            return
+          end
+
           if recording:is_active() then
             table.insert(output, data)
           end
@@ -1042,6 +1073,7 @@ function M.sections.terminal(opts)
           style = "minimal",
           width = width,
           win = self.win,
+          border = "none",
         })
         local hl = opts.hl and hl_groups[opts.hl] or opts.hl or "SnacksDashboardTerminal"
         Snacks.util.wo(win, { winhighlight = "TermCursorNC:" .. hl .. ",NormalFloat:" .. hl })
