@@ -73,7 +73,17 @@ function M.grep(opts, ctx)
   if opts.ignorecase then
     table.insert(args, "-i")
   end
-  table.insert(args, ctx.filter.search)
+
+  local pattern, pargs = Snacks.picker.util.parse(ctx.filter.search)
+  table.insert(args, pattern)
+
+  args[#args + 1] = "--"
+  vim.list_extend(args, pargs)
+
+  local pathspec = type(opts.pathspec) == "table" and opts.pathspec or { opts.pathspec }
+  ---@cast pathspec string[]
+  vim.list_extend(args, pathspec)
+
   if not opts.cwd then
     opts.cwd = Snacks.git.get_root() or uv.cwd() or "."
     ctx.picker:set_cwd(opts.cwd)

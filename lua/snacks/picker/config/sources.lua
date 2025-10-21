@@ -260,6 +260,7 @@ M.git_files = {
 ---@field untracked? boolean search in untracked files
 ---@field submodules? boolean search in submodule files
 ---@field need_search? boolean require a search pattern
+---@field pathspec? string|string[] pathspec pattern(s)
 ---@field ignorecase? boolean ignore case
 M.git_grep = {
   finder = "git_grep",
