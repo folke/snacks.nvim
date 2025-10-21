@@ -1193,13 +1193,28 @@ function M.setup()
   local options = { showtabline = vim.o.showtabline, laststatus = vim.o.laststatus }
   vim.o.showtabline, vim.o.laststatus = 0, 0
   local dashboard = M.open({ buf = buf, win = wins[1] })
-  D.on("Closed", function()
+
+  local function restore()
     for k, v in pairs(options) do
       if vim.o[k] == 0 and v ~= 0 then
         vim.o[k] = v
       end
     end
-  end, dashboard.augroup)
+    options = {}
+  end
+
+  D.on("Closed", restore, dashboard.augroup)
+
+  vim.api.nvim_create_autocmd("WinEnter", {
+    group = dashboard.augroup,
+    callback = function()
+      local win = vim.api.nvim_get_current_win()
+      local is_float = vim.api.nvim_win_get_config(win).relative ~= ""
+      if win ~= dashboard.win and not is_float then
+        restore()
+      end
+    end,
+  })
 
   if Snacks.config.dashboard.debug then
     Snacks.debug.stats({ min = 0.2 })

@@ -76,6 +76,15 @@ local commands = {
       return Snacks.image.config.cache .. "/" .. truncated .. ".data"
     end,
   },
+  icns = {
+    ft = "png",
+    cmd = {
+      {
+        cmd = "sips",
+        args = { "-s", "format", "png", "{src}", "--out", "{file}" },
+      },
+    },
+  },
   url = {
     cmd = {
       {
@@ -92,7 +101,9 @@ local commands = {
       return M.is_uri(src) and convert:tmpfile("data") or src
     end,
     on_error = function(step)
-      vim.fs.rm(step.file)
+      if uv.fs_stat(step.file) then
+        vim.fs.rm(step.file)
+      end
     end,
   },
   typ = {

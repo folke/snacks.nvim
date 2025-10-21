@@ -63,6 +63,13 @@ function State.new(picker)
     end
   end)
 
+  picker.list.win:on("WinEnter", function(_, ev)
+    local p = ref()
+    if p then
+      p._main:update()
+    end
+  end)
+
   picker.list.win:on("DirChanged", function(_, ev)
     local p = ref()
     if p then
