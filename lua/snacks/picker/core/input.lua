@@ -30,7 +30,7 @@ function M.new(picker)
       end
       vim.fn.prompt_setprompt(win.buf, "")
       vim.bo[win.buf].modified = false
-      local text = picker.opts.live and self.filter.search or self.filter.pattern
+      local text = picker.opts.live and (self.filter.search or "") or (self.filter.pattern or "")
       vim.api.nvim_buf_set_lines(win.buf, 0, -1, false, { text })
       vim.bo[win.buf].modified = false
     end,
@@ -177,7 +177,7 @@ function M:set(pattern, search)
   self.filter.pattern = pattern or self.filter.pattern
   self.filter.search = search or self.filter.search
   vim.api.nvim_buf_set_lines(self.win.buf, 0, -1, false, {
-    self.picker.opts.live and self.filter.search or self.filter.pattern,
+    self.picker.opts.live and (self.filter.search or "") or (self.filter.pattern or ""),
   })
   vim.bo[self.win.buf].modified = false
   vim.api.nvim_win_set_cursor(self.win.win, { 1, #self:get() + 1 })
