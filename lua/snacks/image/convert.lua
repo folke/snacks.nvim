@@ -50,19 +50,30 @@ local commands = {
   data_img = {
     cmd = function(step)
       local image_src = step.meta.src
-      local clean_image_data = image_src:gsub("^data:image/%w+;base64,", "")
-      local replaced_with_plus = clean_image_data:gsub(" ", "+")
+      local clean_image_data = image_src:gsub("^data:image/%w+;base64,", ""):gsub(" ", "+")
+      local decoded = vim.base64 and vim.base64.decode(clean_image_data) or nil
+      if not decoded then
+        -- returning empty command
+        return {
+          cmd = "echo",
+          args = {},
+        }
+      end
+      local filename = step.file
+      local f = io.open(filename, "wb")
+      if f then
+        f:write(decoded)
+        f:close()
+      end
+      -- returning empty command
       return {
-        cmd = "sh",
-        args = {
-          "-c",
-          "echo '" .. replaced_with_plus .. "' | base64 --decode > {file}_uconv && magick convert {file}_uconv {file}",
-        },
+        cmd = "echo",
+        args = {},
       }
     end,
     file = function(convert, ctx)
-      local truncated = string.sub(convert.prefix, 1, 50)
-      return Snacks.image.config.cache .. "/" .. truncated .. ".png"
+      local truncated = convert.prefix
+      return Snacks.image.config.cache .. "/" .. truncated .. ".data"
     end,
   },
   url = {
@@ -269,6 +280,10 @@ function Convert.new(opts)
     base = self.opts.src:gsub("%?.*", ""):match("^%w%w+://(.*)$") or base
   end
   self.prefix = vim.fn.sha256(self.opts.src .. self.page):sub(1, 8) .. "-" .. base:gsub("[^%w%.]+", "-")
+  if self.opts.src:find("^data:") then
+    -- in order to get rid of big file names
+    self.prefix = self.prefix:sub(1, 64)
+  end
   self.meta = { src = opts.src }
   self.steps = {}
   self.tpl_data = {
@@ -334,6 +349,7 @@ end
 function Convert:resolve()
   if self.src:find("^data:") == 1 then
     self:_resolve("data_img")
+    self:_resolve("identify")
   end
   if M.is_uri(self.src) then
     self:_resolve("url")
@@ -346,9 +362,7 @@ function Convert:resolve()
       break
     end
   end
-  if not (self.src:find("^data:") == 1) then
-    self:_resolve("identify")
-  end
+  self:_resolve("identify")
   self.file = self.meta.src
 end
 
