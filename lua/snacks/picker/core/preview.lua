@@ -325,7 +325,7 @@ function M:loc()
         hl_group = "SnacksPickerSearch",
       })
     elseif self.filter and vim.trim(self.filter.search) ~= "" then
-      local ok, re = pcall(vim.regex, vim.trim(self.filter.search))
+      local ok, re = pcall(vim.regex, "\\c" .. vim.trim(self.filter.search))
       if ok and re then
         local start = self.item.pos[2]
         local from, to ---@type number?, number?
