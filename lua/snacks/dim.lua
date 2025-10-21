@@ -108,7 +108,9 @@ function M.enable(opts)
             buf = buf,
           }
         end
-
+        if scope == nil then
+          return
+        end
         Snacks.animate(scopes_anim[win].from, scope.from, function(v)
           if not scopes_anim[win] or not vim.api.nvim_win_is_valid(win) then
             return

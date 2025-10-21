@@ -475,6 +475,9 @@ function M:format(item)
 
   -- Add the formatted item
   local line = self.picker.format(item, self.picker)
+
+  line = Snacks.picker.highlight.resolve(line, vim.api.nvim_win_get_width(self.win.win))
+
   while #line > 0 and type(line[#line][1]) == "string" and line[#line][1]:find("^%s*$") do
     table.remove(line)
   end

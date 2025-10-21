@@ -29,24 +29,16 @@ end
 function M.get_root(path)
   path = path or 0
   path = type(path) == "number" and vim.api.nvim_buf_get_name(path) or path --[[@as string]]
-  path = svim.fs.normalize(path)
   path = path == "" and (vim.uv or vim.loop).cwd() or path
+  path = svim.fs.normalize(path)
 
-  local todo = { path } ---@type string[]
+  if is_git_root(path) then
+    return path
+  end
+
   for dir in vim.fs.parents(path) do
-    table.insert(todo, dir)
-  end
-
-  -- check cache first
-  for _, dir in ipairs(todo) do
-    if git_cache[dir] then
-      return svim.fs.normalize(dir) or nil
-    end
-  end
-
-  for _, dir in ipairs(todo) do
     if is_git_root(dir) then
-      return svim.fs.normalize(dir) or nil
+      return svim.fs.normalize(dir)
     end
   end
 
