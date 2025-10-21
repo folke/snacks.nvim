@@ -353,8 +353,15 @@ function M:loc()
     end
   elseif self.item.search then
     vim.api.nvim_win_call(self.win.win, function()
-      vim.cmd("keepjumps norm! gg")
-      if pcall(vim.cmd, self.item.search) then
+      local found = false
+      vim.fn.cursor(1, 1)
+      if self.item.search:match("^[/?]") then
+        local opts = "cw" .. (self.item.search:sub(1, 1) == "?" and "b" or "")
+        found = vim.fn.search("\\M\\C" .. self.item.search:sub(2), opts) ~= 0
+      else
+        found = pcall(vim.cmd, self.item.search)
+      end
+      if found then
         vim.cmd("norm! zz")
         self:wo({ cursorline = true })
       end
