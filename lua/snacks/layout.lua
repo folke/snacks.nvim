@@ -250,11 +250,20 @@ function M:update()
     bottom = (vim.o.cmdheight + (vim.o.laststatus == 3 and 1 or 0)) or 0
     top = (vim.o.showtabline == 2 or (vim.o.showtabline == 1 and #vim.api.nvim_list_tabpages() > 1)) and 1 or 0
   end
+
+  local parent_width = layout.relative == "win"
+    and vim.api.nvim_win_get_width(self.root.opts.win or 0)
+    or vim.o.columns;
+
+  local parent_height = layout.relative == "win"
+    and vim.api.nvim_win_get_height(self.root.opts.win or 0)
+    or vim.o.lines - top - bottom;
+
   self:update_box(layout, {
     col = 0,
     row = self.opts.fullscreen and self.split and top or 0, -- only needed for fullscreen splits
-    width = vim.o.columns,
-    height = vim.o.lines - top - bottom,
+    width = parent_width,
+    height = parent_height,
   })
 
   -- fix fullscreen float layouts
