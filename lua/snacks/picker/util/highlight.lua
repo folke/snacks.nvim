@@ -112,6 +112,21 @@ function M.offset(line, opts)
 end
 
 ---@param line snacks.picker.Highlight[]
+---@param positions number[]
+---@param offset? number
+function M.matches(line, positions, offset)
+  offset = offset or 0
+  for _, pos in ipairs(positions) do
+    table.insert(line, {
+      col = pos - 1 + offset,
+      end_col = pos + offset,
+      hl_group = "SnacksPickerMatch",
+    })
+  end
+  return line
+end
+
+---@param line snacks.picker.Highlight[]
 ---@param item snacks.picker.Item
 ---@param text string
 ---@param opts? {hl_group?:string, lang?:string}
@@ -202,6 +217,42 @@ function M.winhl(prefix, links)
   return table.concat(ret, ",")
 end
 
+--- Resolves the first flex text in the line.
+---@param line snacks.picker.Highlight[]
+---@param max_width number
+function M.resolve(line, max_width)
+  local ret = {} ---@type snacks.picker.Highlight[]
+  local offset = 0
+  local width = 0
+  local resolve ---@type number?
+
+  for t, text in ipairs(line) do
+    local w = M.offset({ text }, { char_idx = true })
+    if not resolve and type(text) == "table" and text.resolve then
+      ---@cast text snacks.picker.Text
+      resolve = t
+    elseif resolve then
+      width = width + w
+    else
+      width = width + w
+      offset = offset + w
+    end
+  end
+
+  if resolve then
+    vim.list_extend(ret, line, 1, resolve - 1)
+    offset = M.offset(ret)
+    vim.list_extend(ret, line[resolve].resolve(max_width - width))
+    local diff = M.offset(ret) - offset
+    vim.list_extend(ret, line, resolve + 1)
+    M.fix_offset(ret, diff, resolve + 1)
+  else
+    return line
+  end
+
+  return ret
+end
+
 ---@param line snacks.picker.Highlight[]
 ---@param opts? {offset?:number}
 function M.to_text(line, opts)
@@ -248,13 +299,16 @@ function M.to_text(line, opts)
 end
 
 ---@param hl snacks.picker.Highlight[]
-function M.fix_offset(hl, offset)
-  for _, t in ipairs(hl) do
-    if t.col then
-      t.col = t.col + offset
-    end
-    if t.end_col then
-      t.end_col = t.end_col + offset
+---@param start_idx? number
+function M.fix_offset(hl, offset, start_idx)
+  for i, t in ipairs(hl) do
+    if start_idx == nil or i >= start_idx then
+      if t.col then
+        t.col = t.col + offset
+      end
+      if t.end_col then
+        t.end_col = t.end_col + offset
+      end
     end
   end
 end

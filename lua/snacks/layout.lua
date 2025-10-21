@@ -324,8 +324,14 @@ function M:update_box(box, parent)
   end
   local free = vim.deepcopy(dim)
 
+  local box_win = self.box_wins[box.id]
+
   local function size(child)
-    return child[size_main] or 0
+    local ret = child[size_main] or 0
+    if type(ret) == "function" then
+      ret = ret(box_win)
+    end
+    return ret
   end
 
   local dims = {} ---@type table<number, snacks.win.Dim>
@@ -345,7 +351,8 @@ function M:update_box(box, parent)
   local free_main = free[size_main]
   for c, child in ipairs(box) do
     if not dims[c] then
-      free[size_main] = math.floor(free_main / flex)
+      -- alocate at least 1 cell
+      free[size_main] = math.max(math.floor(free_main / flex), 1)
       flex = flex - 1
       free_main = free_main - free[size_main]
       dims[c] = self:resolve(child, free)
@@ -363,8 +370,13 @@ function M:update_box(box, parent)
     offset = offset + dims[c][size_main]
   end
 
+  -- if we still have free space, shrink the root box
+  -- if we have negative space, enlarge the root box
+  if free_main ~= 0 and is_root then
+    orig_dim[size_main] = orig_dim[size_main] - free_main
+  end
+
   -- update box win
-  local box_win = self.box_wins[box.id]
   if box_win then
     if not is_root then
       box_win.opts.win = self.root.win

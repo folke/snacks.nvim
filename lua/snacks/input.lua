@@ -75,16 +75,20 @@ Snacks.config.style("input", {
 
 local ui_input = vim.ui.input
 
+---@alias snacks.input.Highlight {[1]:number, [2]:number, [3]:string}
+
 ---@class snacks.input.Opts: snacks.input.Config,{}
 ---@field prompt? string
 ---@field default? string
 ---@field completion? string
----@field highlight? fun()
+---@field highlight? fun(text: string): snacks.input.Highlight[]
 
 ---@class snacks.input.ctx
 ---@field opts? snacks.input.Opts
 ---@field win? snacks.win
 local ctx = {}
+
+local ns = vim.api.nvim_create_namespace("snacks.input")
 
 ---@param opts? snacks.input.Opts
 ---@param on_confirm fun(value?: string)
@@ -178,7 +182,9 @@ function M.input(opts, on_confirm)
         self:close()
       end,
       stopinsert = function()
-        vim.cmd("stopinsert")
+        vim.schedule(function()
+          vim.cmd("stopinsert")
+        end)
       end,
       confirm = function(self)
         confirm(self:text())
@@ -211,7 +217,7 @@ function M.input(opts, on_confirm)
   })
 
   local parent_zindex = vim.api.nvim_win_get_config(parent_win).zindex
-  opts.win.zindex = parent_zindex and parent_zindex + 1 or opts.win.zindex
+  opts.win.zindex = math.max((parent_zindex or 50) + 1, opts.win.zindex or 50)
 
   local min_width = opts.win.width or 60
   if opts.expand then
@@ -228,6 +234,23 @@ function M.input(opts, on_confirm)
   if opts.default then
     vim.api.nvim_buf_set_lines(win.buf, 0, -1, false, { opts.default })
   end
+
+  local function highlight()
+    if type(opts.highlight) ~= "function" then
+      return
+    end
+    local text = win:text()
+    vim.api.nvim_buf_clear_namespace(win.buf, ns, 0, -1)
+    for _, hl in ipairs(opts.highlight(text)) do
+      vim.api.nvim_buf_set_extmark(win.buf, ns, 0, hl[1], {
+        end_col = hl[2],
+        hl_group = hl[3],
+        strict = false,
+      })
+    end
+  end
+
+  highlight()
 
   vim.api.nvim_win_call(win.win, function()
     vim.cmd("startinsert!")
@@ -246,6 +269,7 @@ function M.input(opts, on_confirm)
     if not win:valid() then
       return
     end
+    highlight()
     vim.bo[win.buf].modified = false
     if opts.expand then
       if vim.api.nvim_win_is_valid(parent_win) then

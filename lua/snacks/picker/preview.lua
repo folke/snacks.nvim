@@ -9,10 +9,15 @@ function M.directory(ctx)
   ctx.preview:reset()
   ctx.preview:minimal()
   local path = Snacks.picker.util.path(ctx.item)
-  local name = path and vim.fn.fnamemodify(path, ":t")
+  if not path then
+    ctx.preview:notify("Item has no `file`", "error")
+    return
+  end
+  local name = vim.fn.fnamemodify(path, ":t")
   ctx.preview:set_title(ctx.item.title or name)
   local ls = {} ---@type {file:string, type:"file"|"directory"}[]
-  for file, t in vim.fs.dir(ctx.item.file) do
+  for file, t in vim.fs.dir(path) do
+    t = t or Snacks.util.path_type(path .. "/" .. file)
     ls[#ls + 1] = { file = file, type = t }
   end
   ctx.preview:set_lines(vim.split(string.rep("\n", #ls), "\n"))
@@ -26,11 +31,10 @@ function M.directory(ctx)
     local is_dir = item.type == "directory"
     local cat = is_dir and "directory" or "file"
     local hl = is_dir and "Directory" or nil
-    local path = item.file
-    local icon, icon_hl = Snacks.util.icon(path, cat, {
+    local icon, icon_hl = Snacks.util.icon(item.file, cat, {
       fallback = ctx.picker.opts.icons.files,
     })
-    local line = { { icon .. " ", icon_hl }, { path, hl } }
+    local line = { { icon .. " ", icon_hl }, { item.file, hl } }
     vim.api.nvim_buf_set_extmark(ctx.buf, ns, i - 1, 0, {
       virt_text = line,
     })
@@ -282,15 +286,17 @@ function M.cmd(cmd, ctx, opts)
 end
 
 ---@param ctx snacks.picker.preview.ctx
+local function git(ctx, ...)
+  local ret = { "git", "-c", "delta." .. vim.o.background .. "=true" }
+  vim.list_extend(ret, ctx.picker.opts.previewers.git.args or {})
+  vim.list_extend(ret, { ... })
+  return ret
+end
+
+---@param ctx snacks.picker.preview.ctx
 function M.git_show(ctx)
   local builtin = ctx.picker.opts.previewers.git.builtin
-  local cmd = {
-    "git",
-    "-c",
-    "delta." .. vim.o.background .. "=true",
-    "show",
-    ctx.item.commit,
-  }
+  local cmd = git(ctx, "show", ctx.item.commit)
   local pathspec = ctx.item.files or ctx.item.file
   pathspec = type(pathspec) == "table" and pathspec or { pathspec }
   if #pathspec > 0 then
@@ -304,20 +310,12 @@ function M.git_show(ctx)
 end
 
 ---@param ctx snacks.picker.preview.ctx
-local function git(ctx, ...)
-  local ret = { "git", "-c", "delta." .. vim.o.background .. "=true" }
-  vim.list_extend(ret, ctx.picker.opts.previewers.git.args or {})
-  vim.list_extend(ret, { ... })
-  return ret
-end
-
----@param ctx snacks.picker.preview.ctx
 function M.git_log(ctx)
   local cmd = git(
     ctx,
     "--no-pager",
     "log",
-    "--pretty=format:%h %s (%ch)",
+    "--pretty=format:%h %s (%ch) <%an>",
     "--abbrev-commit",
     "--decorate",
     "--date=short",
@@ -331,7 +329,7 @@ function M.git_log(ctx)
     ft = "git",
     ---@param text string
     add = function(text)
-      local commit, msg, date = text:match("^(%S+) (.*) %((.*)%)$")
+      local commit, msg, date, author = text:match("^(%S+) (.*) %((.*)%) <(.*)>$")
       if commit then
         row = row + 1
         local hl = Snacks.picker.format.git_log({
@@ -341,6 +339,7 @@ function M.git_log(ctx)
           commit = commit,
           msg = msg,
           date = date,
+          author = author,
         }, ctx.picker)
         Snacks.picker.highlight.set(ctx.buf, ns, row, hl)
       end

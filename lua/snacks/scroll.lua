@@ -260,7 +260,7 @@ function M.check(win)
     stats.mousescroll = stats.mousescroll + 1
     state.current = vim.deepcopy(state.view)
     return
-  elseif math.abs(state.view.topline - state.current.topline) == 0 then
+  elseif math.abs(state.view.topline - state.current.topline) <= 1 then
     stats.skipped = stats.skipped + 1
     state.current = vim.deepcopy(state.view)
     return

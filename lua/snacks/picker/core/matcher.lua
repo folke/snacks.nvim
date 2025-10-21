@@ -484,7 +484,7 @@ function M:_match(item, mods)
   str = mods.ignorecase and str:lower() or str
   local from, to ---@type number?, number?
   if mods.fuzzy then
-    return self:fuzzy(str, mods.chars)
+    return self:fuzzy(str, str_orig, mods.chars)
   end
   if mods.exact_prefix then
     if str:sub(1, #mods.pattern) == mods.pattern then
@@ -519,15 +519,16 @@ function M:_match(item, mods)
 end
 
 ---@param str string
+---@param str_orig string
 ---@param pattern string[]
 ---@param init? number
 ---@return number? from, number? to
-function M:fuzzy_find(str, pattern, init)
+function M:fuzzy_find(str, str_orig, pattern, init)
   local from = string.find(str, pattern[1], init or 1, true)
   if not from then
     return
   end
-  self.score:init(str, from)
+  self.score:init(str_orig, from)
   ---@type number?, number
   local last, n = from, #pattern
   for i = 2, n do
@@ -544,10 +545,11 @@ end
 --- Does a forward scan followed by a backward scan for each end position,
 --- to find the best match.
 ---@param str string
+---@param str_orig string
 ---@param pattern string[]
 ---@return number? score, number? from, number? to, string? str
-function M:fuzzy(str, pattern)
-  local from, to = self:fuzzy_find(str, pattern)
+function M:fuzzy(str, str_orig, pattern)
+  local from, to = self:fuzzy_find(str, str_orig, pattern)
   if not from then
     return
   end
@@ -558,7 +560,7 @@ function M:fuzzy(str, pattern)
     if self.score.score > best_score then
       best_from, best_to, best_score = from, to, self.score.score
     end
-    from, to = self:fuzzy_find(str, pattern, from + 1)
+    from, to = self:fuzzy_find(str, str_orig, pattern, from + 1)
   end
   return best_score, best_from, best_to, str
 end

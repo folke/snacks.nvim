@@ -5,7 +5,7 @@ Visualize indent guides and scopes based on treesitter or indent.
 Similar plugins:
 
 - [indent-blankline.nvim](https://github.com/lukas-reineke/indent-blankline.nvim)
-- [mini.indentscope](https://github.com/echasnovski/mini.indentscope)
+- [mini.indentscope](https://github.com/nvim-mini/mini.indentscope)
 
 ![image](https://github.com/user-attachments/assets/56a99495-05ab-488e-9619-574cb7ff2b7d)
 
@@ -99,7 +99,9 @@ Similar plugins:
     },
   },
   -- filter for buffers to enable indent guides
-  filter = function(buf)
+  ---@param buf number
+  ---@param win number
+  filter = function(buf, win)
     return vim.g.snacks_indent ~= false and vim.b[buf].snacks_indent ~= false and vim.bo[buf].buftype == ""
   end,
 }

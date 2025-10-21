@@ -153,6 +153,19 @@ function M.close(picker)
   end)
 end
 
+function M.print_cwd(picker)
+  print(vim.fn.fnamemodify(picker:cwd(), ":p:~"))
+end
+
+function M.print_dir(picker)
+  print(vim.fn.fnamemodify(picker:dir(), ":p:~"))
+end
+
+function M.print_path(picker, item)
+  local path = item and Snacks.picker.util.path(item) or picker:dir()
+  print(vim.fn.fnamemodify(path, ":p:~"))
+end
+
 function M.cancel(picker)
   picker:norm(function()
     local main = require("snacks.picker.core.main").new({ float = false, file = false })
@@ -268,6 +281,9 @@ function M.picker(picker, item, action)
   end
   Snacks.picker(source, {
     cwd = Snacks.picker.util.dir(item),
+    filter = {
+      cwd = source == "recent" and Snacks.picker.util.dir(item) or nil,
+    },
     on_show = function()
       picker:close()
     end,
@@ -331,6 +347,42 @@ function M.git_stage(picker)
       end
     end, { cwd = item.cwd })
   end
+end
+
+function M.git_restore(picker)
+  local items = picker:selected({ fallback = true })
+  if #items == 0 then
+    return
+  end
+
+  -- Confirm before discarding changes
+  ---@param item snacks.picker.Item
+  local files = vim.tbl_map(function(item)
+    return Snacks.picker.util.path(item)
+  end, items)
+  local msg = #items == 1 and ("Discard changes to `%s`?"):format(files[1])
+    or ("Discard changes to %d files?"):format(#items)
+
+  Snacks.picker.select({ "No", "Yes" }, { prompt = msg }, function(_, idx)
+    if not idx and idx == 2 then
+      return
+    end
+    local done = 0
+    for _, item in ipairs(items) do
+      local cmd = { "git", "restore", item.file }
+      Snacks.picker.util.cmd(cmd, function(data, code)
+        done = done + 1
+        if done == #items then
+          vim.schedule(function()
+            picker.list:set_selected()
+            picker.list:set_target()
+            picker:find()
+            vim.cmd.startinsert()
+          end)
+        end
+      end, { cwd = item.cwd })
+    end
+  end)
 end
 
 function M.git_stash_apply(_, item)
@@ -431,6 +483,7 @@ local function setqflist(items, opts)
       end_col = item.end_pos and item.end_pos[2] + 1 or nil,
       text = item.line or item.comment or item.label or item.name or item.detail or item.text,
       pattern = item.search,
+      type = ({ "E", "W", "I", "N" })[item.severity],
       valid = true,
     }
   end
@@ -480,14 +533,15 @@ function M.yank(picker, item, action)
 end
 M.copy = M.yank
 
-function M.put(picker, item, action)
+function M.paste(picker, item, action)
   ---@cast action snacks.picker.yank.Action
   picker:close()
   if item then
     local value = item[action.field] or item.data or item.text
-    vim.api.nvim_put({ value }, "", true, true)
+    vim.api.nvim_paste(value, true, -1)
   end
 end
+M.put = M.paste
 
 function M.history_back(picker)
   picker:hist()

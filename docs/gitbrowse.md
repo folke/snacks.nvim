@@ -39,6 +39,7 @@ Open the repo of the active file in the browser (e.g., GitHub)
   end,
   ---@type "repo" | "branch" | "file" | "commit" | "permalink"
   what = "commit", -- what to open. not all remotes support all types
+  commit = nil, ---@type string?
   branch = nil, ---@type string?
   line_start = nil, ---@type number?
   line_end = nil, ---@type number?
@@ -67,8 +68,8 @@ Open the repo of the active file in the browser (e.g., GitHub)
     },
     ["gitlab%.com"] = {
       branch = "/-/tree/{branch}",
-      file = "/-/blob/{branch}/{file}#L{line_start}-L{line_end}",
-      permalink = "/-/blob/{commit}/{file}#L{line_start}-L{line_end}",
+      file = "/-/blob/{branch}/{file}#L{line_start}-{line_end}",
+      permalink = "/-/blob/{commit}/{file}#L{line_start}-{line_end}",
       commit = "/-/commit/{commit}",
     },
     ["bitbucket%.org"] = {
