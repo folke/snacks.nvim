@@ -383,9 +383,8 @@ function M:render_fallback(state)
     local border = setmetatable({ opts = vim.api.nvim_win_get_config(win) }, { __index = Snacks.win }):border_size()
     local pos = vim.api.nvim_win_get_position(win)
     if
-      (vim.o.showtabline == 2)
-      or (vim.o.showtabline == 1 and vim.fn.tabpagenr("$") > 1)
-      or (Snacks.config.styles.snacks_image.relative ~= "editor")
+      (Snacks.config.styles.snacks_image.relative ~= "editor")
+      and ((vim.o.showtabline == 2) or (vim.o.showtabline == 1 and vim.fn.tabpagenr("$") > 1))
     then
       terminal.set_cursor({ pos[1] + border.top, pos[2] + border.left })
     else
