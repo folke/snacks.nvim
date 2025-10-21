@@ -384,7 +384,7 @@ function M:render_fallback(state)
     local pos = vim.api.nvim_win_get_position(win)
     if (vim.o.showtabline == 2) or (vim.o.showtabline == 1 and vim.fn.tabpagenr("$") > 1)
       or (Snacks.config.styles.snacks_image.relative ~= "editor") then
-        terminal.set_cursor({ pos[1] + border.top, pos[2] + border.left })
+      terminal.set_cursor({ pos[1] + border.top, pos[2] + border.left })
     else
       terminal.set_cursor({ pos[1] + 1 + border.top, pos[2] + border.left })
     end
