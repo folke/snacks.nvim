@@ -165,7 +165,7 @@ function M.resolve(buf, src)
   if s then
     return s
   end
-  if not src:find("^%w%w+://") then
+  if not src:find("^%w%w+://") and not src:find("^data:") then
     local cwd = uv.cwd() or "."
     local checks = { [src] = true }
     for _, root in ipairs({ cwd, vim.fs.dirname(file) }) do
