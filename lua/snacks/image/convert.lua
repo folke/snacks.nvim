@@ -56,12 +56,7 @@ local commands = {
         cmd = "sh",
         args = {
           "-c",
-          "echo '"
-            .. replaced_with_plus
-            .. "' | base64 --decode > {file}_uconv && magick convert {file}_uconv {file}"
-            .. "; echo "
-            .. replaced_with_plus
-            .. " > ~/dbgg.txt ",
+          "echo '" .. replaced_with_plus .. "' | base64 --decode > {file}_uconv && magick convert {file}_uconv {file}",
         },
       }
     end,
@@ -136,43 +131,6 @@ local commands = {
     },
     file = function(convert, ctx)
       return convert:tmpfile(vim.o.background .. ".png")
-    end,
-  },
-  identify_img_data = {
-    pipe = false,
-    file = function(convert, ctx)
-      local truncated = string.sub(convert.prefix, 1, 50)
-      return Snacks.image.config.cache .. "/" .. truncated .. ".png"
-    end,
-    cmd = {
-      {
-        cmd = "magick",
-        args = { "identify", "-format", "%m %[fx:w]x%[fx:h] %xx%y", "{src}[{page}]" },
-      },
-      {
-        cmd = "identify",
-        args = { "-format", "%m %[fx:w]x%[fx:h] %xx%y", "{src}[{page}]" },
-      },
-    },
-    on_done = function(step)
-      local file = step.file
-      if step.proc then
-        local fd = assert(io.open(file, "w"), "Failed to open file: " .. file)
-        fd:write(step.proc:out())
-        fd:close()
-      end
-      local fd = assert(io.open(file, "r"), "Failed to open file: " .. file)
-      local info = vim.trim(fd:read("*a"))
-      fd:close()
-      local format, w, h, x, y = info:match("^(%w+)%s+(%d+)x(%d+)%s+(%d+%.?%d*)x(%d+%.?%d*)$")
-      if not format then
-        return
-      end
-      step.meta.info = {
-        format = format:lower(),
-        size = { width = tonumber(w) or 0, height = tonumber(h) or 0 },
-        dpi = { width = tonumber(x) or 0, height = tonumber(y) or 0 },
-      }
     end,
   },
   identify = {
@@ -424,7 +382,7 @@ function Convert:on_done()
   local step = self:current()
   self._done = true
   if self._err and Snacks.image.config.convert.notify then
-    local title = step and ("Conversion failed at step `%s` %s"):format(step.name, self.meta.src) or "Conversion failed"
+    local title = step and ("Conversion failed at step `%s` "):format(step.name) or "Conversion failed"
     if step and step.proc then
       step.proc:debug({ title = title })
     else
