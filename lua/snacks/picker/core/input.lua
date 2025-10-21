@@ -121,7 +121,7 @@ function M:statuscolumn()
       parts[#parts + 1] = ("%%#%s#%s%%*"):format(hl, str:gsub("%%", "%%"))
     end
   end
-  local pattern = self.picker.opts.live and self.filter.pattern or self.filter.search
+  local pattern = self.picker.opts.live and (self.filter.pattern or "") or (self.filter.search or "")
   if pattern ~= "" then
     if #pattern > 20 then
       pattern = Snacks.picker.util.truncate(pattern, 20)
