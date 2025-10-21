@@ -39,7 +39,6 @@ function M.severity(item, picker)
   return ret
 end
 
----@param item snacks.picker.Item
 function M.filename(item, picker)
   ---@type snacks.picker.Highlight[]
   local ret = {}
@@ -47,7 +46,6 @@ function M.filename(item, picker)
     return ret
   end
   local path = Snacks.picker.util.path(item) or item.file
-  path = Snacks.picker.util.truncpath(path, picker.opts.formatters.file.truncate or 40, { cwd = picker:cwd() })
   local name, cat = path, "file"
   if item.buf and vim.api.nvim_buf_is_loaded(item.buf) then
     name = vim.bo[item.buf].filetype
@@ -91,19 +89,31 @@ function M.filename(item, picker)
     path = vim.fn.fnamemodify(item.file, ":t")
     ret[#ret + 1] = { path, base_hl, field = "file" }
   else
-    local dir, base = path:match("^(.*)/(.+)$")
-    if base and dir then
-      if picker.opts.formatters.file.filename_first then
-        ret[#ret + 1] = { base, base_hl, field = "file" }
-        ret[#ret + 1] = { " " }
-        ret[#ret + 1] = { dir, dir_hl, field = "file" }
-      else
-        ret[#ret + 1] = { dir .. "/", dir_hl, field = "file" }
-        ret[#ret + 1] = { base, base_hl, field = "file" }
-      end
-    else
-      ret[#ret + 1] = { path, base_hl, field = "file" }
-    end
+    ret[#ret + 1] = {
+      "",
+      resolve = function(max_width)
+        local truncpath = Snacks.picker.util.truncpath(
+          path,
+          math.max(max_width, picker.opts.formatters.file.min_width or 20),
+          { cwd = picker:cwd(), kind = picker.opts.formatters.file.truncate }
+        )
+        local dir, base = truncpath:match("^(.*)/(.+)$")
+        local resolved = {} ---@type snacks.picker.Highlight[]
+        if base and dir then
+          if picker.opts.formatters.file.filename_first then
+            resolved[#resolved + 1] = { base, base_hl, field = "file" }
+            resolved[#resolved + 1] = { " " }
+            resolved[#resolved + 1] = { dir, dir_hl, field = "file" }
+          else
+            resolved[#resolved + 1] = { dir .. "/", dir_hl, field = "file" }
+            resolved[#resolved + 1] = { base, base_hl, field = "file" }
+          end
+        else
+          resolved[#resolved + 1] = { truncpath, base_hl, field = "file" }
+        end
+        return resolved
+      end,
+    }
   end
   if item.pos and item.pos[1] > 0 then
     ret[#ret + 1] = { ":", "SnacksPickerDelim" }
@@ -157,6 +167,10 @@ function M.file(item, picker)
   end
 
   if item.line then
+    if item.positions then
+      local offset = Snacks.picker.highlight.offset(ret)
+      Snacks.picker.highlight.matches(ret, item.positions, offset)
+    end
     Snacks.picker.highlight.format(item, item.line, ret)
     table.insert(ret, { " " })
   end
@@ -586,7 +600,7 @@ function M.file_git_status(item, picker)
   local icon = status.status:sub(1, 1):upper()
   icon = status.status == "untracked" and "?" or status.status == "ignored" and "!" or icon
   if picker.opts.icons.git.enabled then
-    icon = picker.opts.icons.git[status.status] or icon --[[@as string]]
+    icon = picker.opts.icons.git[status.unmerged and "unmerged" or status.status] or icon --[[@as string]]
     if status.staged then
       icon = picker.opts.icons.git.staged
     end

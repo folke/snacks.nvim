@@ -153,6 +153,19 @@ function M.close(picker)
   end)
 end
 
+function M.print_cwd(picker)
+  print(vim.fn.fnamemodify(picker:cwd(), ":p:~"))
+end
+
+function M.print_dir(picker)
+  print(vim.fn.fnamemodify(picker:dir(), ":p:~"))
+end
+
+function M.print_path(picker, item)
+  local path = item and Snacks.picker.util.path(item) or picker:dir()
+  print(vim.fn.fnamemodify(path, ":p:~"))
+end
+
 function M.cancel(picker)
   picker:norm(function()
     local main = require("snacks.picker.core.main").new({ float = false, file = false })
@@ -268,6 +281,9 @@ function M.picker(picker, item, action)
   end
   Snacks.picker(source, {
     cwd = Snacks.picker.util.dir(item),
+    filter = {
+      cwd = source == "recent" and Snacks.picker.util.dir(item) or nil,
+    },
     on_show = function()
       picker:close()
     end,
@@ -431,6 +447,7 @@ local function setqflist(items, opts)
       end_col = item.end_pos and item.end_pos[2] + 1 or nil,
       text = item.line or item.comment or item.label or item.name or item.detail or item.text,
       pattern = item.search,
+      type = ({ "E", "W", "I", "N" })[item.severity],
       valid = true,
     }
   end
@@ -480,14 +497,15 @@ function M.yank(picker, item, action)
 end
 M.copy = M.yank
 
-function M.put(picker, item, action)
+function M.paste(picker, item, action)
   ---@cast action snacks.picker.yank.Action
   picker:close()
   if item then
     local value = item[action.field] or item.data or item.text
-    vim.api.nvim_put({ value }, "", true, true)
+    vim.api.nvim_paste(value, true, -1)
   end
 end
+M.put = M.paste
 
 function M.history_back(picker)
   picker:hist()

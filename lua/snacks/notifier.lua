@@ -69,7 +69,7 @@ local uv = vim.uv or vim.loop
 
 --- ### History
 ---@class snacks.notifier.history
----@field filter? snacks.notifier.level|fun(notif: snacks.notifier.Notif): boolean
+---@field filter? vim.log.levels|snacks.notifier.level|fun(notif: snacks.notifier.Notif): boolean
 ---@field sort? string[] # sort fields, default: {"added"}
 ---@field reverse? boolean
 
@@ -399,6 +399,9 @@ function N:add(opts)
     notif.layout = n.layout
     notif.dirty = true
   end
+  if opts.history ~= false then
+    self.history[notif.id] = notif
+  end
   self.sorted = nil
   local want = numlevel(notif.level) >= numlevel(self.opts.level)
   want = want and (not self.opts.filter or self.opts.filter(notif))
@@ -406,9 +409,6 @@ function N:add(opts)
     return notif.id
   end
   self.queue[notif.id] = notif
-  if opts.history ~= false then
-    self.history[notif.id] = notif
-  end
   if self:is_blocking() then
     pcall(function()
       self:process()
@@ -444,9 +444,9 @@ function N:get_history(opts)
   local notifs = vim.tbl_values(self.history)
   local filter = opts.filter
   if type(filter) == "string" or type(filter) == "number" then
-    local level = normlevel(filter)
+    local level = numlevel(filter)
     filter = function(n)
-      return n.level == level
+      return numlevel(n.level) >= level
     end
   end
   notifs = filter and vim.tbl_filter(filter, notifs) or notifs
@@ -581,7 +581,9 @@ function N:render(notif)
 
   local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
 
-  local pad = self.opts.padding and (win:add_padding() or 2) or 0
+  -- for the minimal style, we also have to factor in the icon width
+  local icon_width = self.opts.style == "minimal" and vim.api.nvim_strwidth(notif.icon) or 0
+  local pad = (self.opts.padding and (win:add_padding() or 2) or 0) + icon_width
   local width = win:border_text_width()
   for _, line in ipairs(lines) do
     width = math.max(width, vim.fn.strdisplaywidth(line) + pad)

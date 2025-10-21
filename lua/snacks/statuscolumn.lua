@@ -13,6 +13,52 @@ M.meta = {
   needs_setup = true,
 }
 
+---@class snacks.statuscolumn.FoldInfo
+---@field start number Line number where deepest fold starts
+---@field level number Fold level, when zero other fields are N/A
+---@field llevel number Lowest level that starts in v:lnum
+---@field lines number Number of lines from v:lnum to end of closed fold
+
+---@type ffi.namespace*
+local C
+
+local function _ffi()
+  if not C then
+    local ffi = require("ffi")
+    ffi.cdef([[
+      typedef struct {} Error;
+      typedef struct {} win_T;
+      typedef struct {
+        int start;  // line number where deepest fold starts
+        int level;  // fold level, when zero other fields are N/A
+        int llevel; // lowest level that starts in v:lnum
+        int lines;  // number of lines from v:lnum to end of closed fold
+      } foldinfo_T;
+      foldinfo_T fold_info(win_T* wp, int lnum);
+      win_T *find_window_by_handle(int Window, Error *err);
+    ]])
+    C = ffi.C
+  end
+  return C
+end
+
+-- Returns fold info for a given window and line number
+---@param win number
+---@param lnum number
+local function fold_info(win, lnum)
+  pcall(_ffi)
+  if not C then
+    return
+  end
+  local ffi = require("ffi")
+  local err = ffi.new("Error")
+  local wp = C.find_window_by_handle(win, err)
+  if wp == nil then
+    return
+  end
+  return C.fold_info(wp, lnum) ---@type snacks.statuscolumn.FoldInfo
+end
+
 ---@alias snacks.statuscolumn.Component "mark"|"sign"|"fold"|"git"
 ---@alias snacks.statuscolumn.Components snacks.statuscolumn.Component[]|fun(win:number,buf:number,lnum:number):snacks.statuscolumn.Component[]
 
@@ -144,8 +190,11 @@ function M.line_signs(win, buf, lnum)
   vim.api.nvim_win_call(win, function()
     if vim.fn.foldclosed(lnum) >= 0 then
       signs[#signs + 1] = { text = vim.opt.fillchars:get().foldclose or "", texthl = "Folded", type = "fold" }
-    elseif config.folds.open and vim.fn.foldlevel(lnum) > vim.fn.foldlevel(lnum - 1) then
-      signs[#signs + 1] = { text = vim.opt.fillchars:get().foldopen or "", type = "fold" }
+    elseif config.folds.open then
+      local info = fold_info(win, lnum)
+      if info and info.level > 0 and info.start == lnum then
+        signs[#signs + 1] = { text = vim.opt.fillchars:get().foldopen or "", type = "fold" }
+      end
     end
   end)
 

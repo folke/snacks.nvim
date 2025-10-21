@@ -475,6 +475,9 @@ function M:format(item)
 
   -- Add the formatted item
   local line = self.picker.format(item, self.picker)
+
+  line = Snacks.picker.highlight.resolve(line, vim.api.nvim_win_get_width(self.win.win))
+
   while #line > 0 and type(line[#line][1]) == "string" and line[#line][1]:find("^%s*$") do
     table.remove(line)
   end
@@ -496,27 +499,17 @@ function M:format(item)
       }
       it[field] = text:sub(extmark.col + 1, extmark.end_col)
       local positions = self.matcher:positions(it)
-      for _, pos in ipairs(positions[field] or {}) do
-        table.insert(extmarks, {
-          col = pos - 1 + extmark.col,
-          end_col = pos + extmark.col,
-          hl_group = "SnacksPickerMatch",
-        })
-      end
+      Snacks.picker.highlight.matches(extmarks, positions[field] or {}, extmark.col)
     end
   end
 
   -- Highlight match positions for text
   local it = { text = text:gsub("%s*$", ""), idx = 1, score = 0, file = item.file }
   local positions = self.matcher:positions(it).text or {}
-  vim.list_extend(positions, self.matcher_regex:positions(it).text or {})
-  for _, pos in ipairs(positions) do
-    table.insert(extmarks, {
-      col = pos - 1,
-      end_col = pos,
-      hl_group = "SnacksPickerMatch",
-    })
+  if not item.positions then
+    vim.list_extend(positions, self.matcher_regex:positions(it).text or {})
   end
+  Snacks.picker.highlight.matches(extmarks, positions)
   return text, extmarks
 end
 

@@ -54,6 +54,9 @@ function M.grep(opts, ctx)
   elseif opts.submodules then
     table.insert(args, "--recurse-submodules")
   end
+  if opts.ignorecase then
+    table.insert(args, "-i")
+  end
   table.insert(args, ctx.filter.search)
   if not opts.cwd then
     opts.cwd = Snacks.git.get_root() or uv.cwd() or "."
@@ -134,7 +137,17 @@ function M.log(opts, ctx)
       Proc.proc({
         cmd = "git",
         cwd = cwd,
-        args = { "log", "-z", "--follow", "--name-status", "--pretty=format:''", "--diff-filter=R", "--", file },
+        args = git_args(
+          opts.args,
+          "log",
+          "-z",
+          "--follow",
+          "--name-status",
+          "--pretty=format:''",
+          "--diff-filter=R",
+          "--",
+          file
+        ),
       }, ctx)(function(item)
         for _, text in ipairs(vim.split(item.text, "\0")) do
           if text:find("^R%d%d%d$") then
@@ -212,13 +225,17 @@ end
 ---@param opts snacks.picker.git.Config
 ---@type snacks.picker.finder
 function M.diff(opts, ctx)
-  local args = git_args(opts.args, "--no-pager", "diff", "--no-color", "--no-ext-diff")
+  local args = git_args(opts.args, "-c", "diff.noprefix=false", "--no-pager", "diff", "--no-color", "--no-ext-diff")
   local file, line ---@type string?, number?
   local header, hunk = {}, {} ---@type string[], string[]
   local header_len = 4
+
+  local cwd = svim.fs.normalize(opts and opts.cwd or uv.cwd() or ".") or nil
+  cwd = Snacks.git.get_root(cwd) or cwd
+
   local finder = require("snacks.picker.source.proc").proc({
     opts,
-    { cmd = "git", args = args },
+    { cmd = "git", args = args, cwd = cwd },
   }, ctx)
   return function(cb)
     local function add()
@@ -228,6 +245,7 @@ function M.diff(opts, ctx)
           text = file .. ":" .. line,
           diff = diff,
           file = file,
+          cwd = cwd,
           pos = { line, 0 },
           preview = { text = diff, ft = "diff", loc = false },
         })

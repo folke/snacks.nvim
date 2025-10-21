@@ -271,7 +271,7 @@ Notification object
 
 ```lua
 ---@class snacks.notifier.history
----@field filter? snacks.notifier.level|fun(notif: snacks.notifier.Notif): boolean
+---@field filter? vim.log.levels|snacks.notifier.level|fun(notif: snacks.notifier.Notif): boolean
 ---@field sort? string[] # sort fields, default: {"added"}
 ---@field reverse? boolean
 ```

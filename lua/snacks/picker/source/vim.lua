@@ -74,7 +74,7 @@ function M.marks(opts)
     local file = mark.file or bufname
     local buf = mark.pos[1] and mark.pos[1] > 0 and mark.pos[1] or nil
     local line ---@type string?
-    if buf and mark.pos[2] > 0 and vim.api.nvim_buf_is_valid(mark.pos[2]) then
+    if buf and mark.pos[2] > 0 and vim.api.nvim_buf_is_valid(mark.pos[1]) then
       line = vim.api.nvim_buf_get_lines(buf, mark.pos[2] - 1, mark.pos[2], false)[1]
     end
     local label = mark.mark:sub(2, 2)

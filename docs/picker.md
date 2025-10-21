@@ -14,7 +14,7 @@ Snacks now comes with a modern fuzzy-finder to navigate the Neovim universe.
 - 🔎 over 40 [built-in sources](https://github.com/folke/snacks.nvim/blob/main/docs/picker.md#-sources)
 - 🚀 Fast and powerful fuzzy matching engine that supports the [fzf](https://junegunn.github.io/fzf/search-syntax/) search syntax
   - additionally supports field searches like `file:lua$ 'function`
-  - `files` and `grep` additionally support adding optiont like `foo -- -e=lua`
+  - `files` and `grep` additionally support adding options like `foo -- -e=lua`
 - 🌲 uses **treesitter** highlighting where it makes sense
 - 🧹 Sane default settings so you can start using it right away
 - 💪 Finders and matchers run asynchronously for maximum performance
@@ -149,7 +149,12 @@ Snacks.picker.pick({source = "files", ...})
     },
     file = {
       filename_first = false, -- display filename before the file path
-      truncate = 40, -- truncate the file path to (roughly) this length
+      --- * left: truncate the beginning of the path
+      --- * center: truncate the middle of the path
+      --- * right: truncate the end of the path
+      ---@type "left"|"center"|"right"
+      truncate = "center",
+      min_width = 20, -- minimum length of the truncated path
       filename_only = false, -- only show the filename
       icon_width = 2, -- width of the icon (in characters)
       git_status_hl = true, -- use the git status highlight group for the filename
@@ -220,6 +225,7 @@ Snacks.picker.pick({source = "files", ...})
         ["<a-f>"] = { "toggle_follow", mode = { "i", "n" } },
         ["<a-h>"] = { "toggle_hidden", mode = { "i", "n" } },
         ["<a-i>"] = { "toggle_ignored", mode = { "i", "n" } },
+        ["<a-r>"] = { "toggle_regex", mode = { "i", "n" } },
         ["<a-m>"] = { "toggle_maximize", mode = { "i", "n" } },
         ["<a-p>"] = { "toggle_preview", mode = { "i", "n" } },
         ["<a-w>"] = { "cycle_win", mode = { "i", "n" } },
@@ -287,6 +293,7 @@ Snacks.picker.pick({source = "files", ...})
         ["<c-n>"] = "list_down",
         ["<c-p>"] = "list_up",
         ["<c-q>"] = "qflist",
+        ["<c-g>"] = "print_path",
         ["<c-s>"] = "edit_split",
         ["<c-t>"] = "tab",
         ["<c-u>"] = "list_scroll_up",
@@ -620,8 +627,9 @@ Snacks.picker.pick({source = "files", ...})
 ```
 
 ```lua
+---@alias snacks.picker.format.resolve fun(max_width:number):snacks.picker.Highlight[]
 ---@alias snacks.picker.Extmark vim.api.keyset.set_extmark|{col:number, row?:number, field?:string}
----@alias snacks.picker.Text {[1]:string, [2]:string?, virtual?:boolean, field?:string}
+---@alias snacks.picker.Text {[1]:string, [2]:string?, virtual?:boolean, field?:string, resolve?:snacks.picker.format.resolve}
 ---@alias snacks.picker.Highlight snacks.picker.Text|snacks.picker.Extmark
 ---@alias snacks.picker.format fun(item:snacks.picker.Item, picker:snacks.Picker):snacks.picker.Highlight[]
 ---@alias snacks.picker.preview fun(ctx: snacks.picker.preview.ctx):boolean?
@@ -670,6 +678,7 @@ It's a previewer that shows a preview based on the item data.
 ---@field highlights? snacks.picker.Highlight[][]
 ---@field preview? snacks.picker.Item.preview
 ---@field resolve? fun(item:snacks.picker.Item)
+---@field positions? number[] indices of matched characters in `text`
 ```
 
 ```lua
@@ -688,6 +697,7 @@ It's a previewer that shows a preview based on the item data.
 ---@field preset? string|fun(source:string):string
 ---@field hidden? ("input"|"preview"|"list")[] don't show the given windows when opening the picker. (only "input" and "preview" make sense)
 ---@field auto_hide? ("input"|"preview"|"list")[] hide the given windows when not focused (only "input" makes real sense)
+---@field config? fun(layout:snacks.picker.layout.Config) customize the resolved layout config
 ```
 
 ```lua
@@ -877,6 +887,7 @@ Neovim command history
   name = "cmd",
   format = "text",
   preview = "none",
+  main = { current = true },
   layout = {
     preset = "vscode",
   },
@@ -1144,6 +1155,7 @@ Grep in git files
 ---@field untracked? boolean search in untracked files
 ---@field submodules? boolean search in submodule files
 ---@field need_search? boolean require a search pattern
+---@field ignorecase? boolean ignore case
 {
   finder = "git_grep",
   format = "file",
@@ -1372,6 +1384,7 @@ Neovim help tags
 ---@field icon_sources? string[]
 {
   icon_sources = { "nerd_fonts", "emoji" },
+  main = { current = true },
   finder = "icons",
   format = "icon",
   layout = { preset = "vscode" },
@@ -1389,6 +1402,7 @@ Neovim help tags
 {
   finder = "vim_jumps",
   format = "file",
+  main = { current = true },
 }
 ```
 
@@ -1503,6 +1517,7 @@ Loclist
   finder = "qf",
   format = "file",
   qf_win = 0,
+  main = { current = true },
 }
 ```
 
@@ -1707,11 +1722,18 @@ vim.tbl_extend("force", {}, M.lsp_symbols, {
   finder = "system_man",
   format = "man",
   preview = "man",
-  confirm = function(picker, item)
+  confirm = function(picker, item, action)
+    ---@cast action snacks.picker.jump.Action
     picker:close()
     if item then
       vim.schedule(function()
-        vim.cmd("Man " .. item.ref)
+        local cmd = "Man " .. item.ref ---@type string
+        if action.cmd == "vsplit" then
+          cmd = "vert " .. cmd
+        elseif action.cmd == "tab" then
+          cmd = "tab " .. cmd
+        end
+        vim.cmd(cmd)
       end)
     end
   end,
@@ -1849,6 +1871,7 @@ Open recent projects
 ---@field projects? string[] list of project directories
 ---@field patterns? string[] patterns to detect project root directories
 ---@field recent? boolean include project directories of recent files
+---@field max_depth? number maximum depth to search in dev directories (default: 2)
 {
   finder = "recent_projects",
   format = "file",
@@ -1938,6 +1961,7 @@ Neovim registers
 ```lua
 {
   finder = "vim_registers",
+  main = { current = true },
   format = "register",
   preview = "preview",
   confirm = { "copy", "close" },
@@ -1971,6 +1995,7 @@ Neovim search history
   name = "search",
   format = "text",
   preview = "none",
+  main = { current = true },
   layout = { preset = "vscode" },
   confirm = "search",
   formatters = { text = { ft = "regex" } },
@@ -2026,6 +2051,7 @@ Not meant to be used directly.
 {
   finder = "vim_spelling",
   format = "text",
+  main = { current = true },
   layout = { preset = "vscode" },
   confirm = "item_action",
 }
@@ -2259,7 +2285,7 @@ M.sidebar
 
 ```lua
 {
-  preview = false,
+  hidden = { "preview" },
   layout = {
     backdrop = false,
     width = 0.5,
@@ -2361,7 +2387,7 @@ M.sidebar
 
 ```lua
 {
-  preview = false,
+  hidden = { "preview" },
   layout = {
     backdrop = false,
     row = 1,
@@ -2594,6 +2620,12 @@ Send selected or all items to the location list.
 Snacks.picker.actions.loclist(picker)
 ```
 
+### `Snacks.picker.actions.paste()`
+
+```lua
+Snacks.picker.actions.paste(picker, item, action)
+```
+
 ### `Snacks.picker.actions.pick_win()`
 
 ```lua
@@ -2636,10 +2668,22 @@ Snacks.picker.actions.preview_scroll_right(picker)
 Snacks.picker.actions.preview_scroll_up(picker)
 ```
 
-### `Snacks.picker.actions.put()`
+### `Snacks.picker.actions.print_cwd()`
 
 ```lua
-Snacks.picker.actions.put(picker, item, action)
+Snacks.picker.actions.print_cwd(picker)
+```
+
+### `Snacks.picker.actions.print_dir()`
+
+```lua
+Snacks.picker.actions.print_dir(picker)
+```
+
+### `Snacks.picker.actions.print_path()`
+
+```lua
+Snacks.picker.actions.print_path(picker, item)
 ```
 
 ### `Snacks.picker.actions.qflist()`

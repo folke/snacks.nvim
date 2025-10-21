@@ -149,6 +149,7 @@ Please refer to the readme of each plugin for their specific configuration.
       "mkv",
       "webm",
       "pdf",
+      "icns",
     },
   },
 }
