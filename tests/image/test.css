@@ -1,0 +1,4 @@
+.foo {
+  background: lightblue url("./test.png") no-repeat fixed center;
+  content: url(test.png);
+}

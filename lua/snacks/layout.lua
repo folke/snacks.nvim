@@ -32,6 +32,7 @@ M.meta = {
 ---@field fullscreen? boolean open in fullscreen
 ---@field hidden? string[] list of windows that will be excluded from the layout (but can be toggled)
 ---@field on_update? fun(layout: snacks.layout)
+---@field on_update_pre? fun(layout: snacks.layout)
 local defaults = {
   layout = {
     width = 0.6,
@@ -260,6 +261,11 @@ function M:update()
   if self.opts.fullscreen and not self.split then
     self.root.opts.row = self.root.opts.row + top
   end
+
+  if self.opts.on_update_pre then
+    self.opts.on_update_pre(self)
+  end
+
   for _, win in pairs(self:get_wins()) do
     if win:valid() then
       -- update windows with eventignore=all
@@ -318,8 +324,14 @@ function M:update_box(box, parent)
   end
   local free = vim.deepcopy(dim)
 
+  local box_win = self.box_wins[box.id]
+
   local function size(child)
-    return child[size_main] or 0
+    local ret = child[size_main] or 0
+    if type(ret) == "function" then
+      ret = ret(box_win)
+    end
+    return ret
   end
 
   local dims = {} ---@type table<number, snacks.win.Dim>
@@ -339,7 +351,8 @@ function M:update_box(box, parent)
   local free_main = free[size_main]
   for c, child in ipairs(box) do
     if not dims[c] then
-      free[size_main] = math.floor(free_main / flex)
+      -- alocate at least 1 cell
+      free[size_main] = math.max(math.floor(free_main / flex), 1)
       flex = flex - 1
       free_main = free_main - free[size_main]
       dims[c] = self:resolve(child, free)
@@ -357,8 +370,13 @@ function M:update_box(box, parent)
     offset = offset + dims[c][size_main]
   end
 
+  -- if we still have free space, shrink the root box
+  -- if we have negative space, enlarge the root box
+  if free_main ~= 0 and is_root then
+    orig_dim[size_main] = orig_dim[size_main] - free_main
+  end
+
   -- update box win
-  local box_win = self.box_wins[box.id]
   if box_win then
     if not is_root then
       box_win.opts.win = self.root.win
@@ -451,7 +469,7 @@ function M:update_win(win, parent)
       win = self.root.win,
       backdrop = false,
       resize = false,
-      zindex = self.root.opts.zindex + win.depth,
+      zindex = (self.opts.layout.zindex or 50) + win.depth + 1,
       w = { snacks_layout = true },
     }
   )

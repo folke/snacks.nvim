@@ -3,7 +3,7 @@
 Scope detection based on treesitter or indent.
 
 The indent-based algorithm is similar to what is used
-in [mini.indentscope](https://github.com/echasnovski/mini.indentscope).
+in [mini.indentscope](https://github.com/nvim-mini/mini.indentscope).
 
 <!-- docgen -->
 
@@ -41,7 +41,7 @@ in [mini.indentscope](https://github.com/echasnovski/mini.indentscope).
   siblings = false, -- expand single line scopes with single line siblings
   -- what buffers to attach to
   filter = function(buf)
-    return vim.bo[buf].buftype == ""
+    return vim.bo[buf].buftype == "" and vim.b[buf].snacks_scope ~= false and vim.g.snacks_scope ~= false
   end,
   -- debounce scope detection in ms
   debounce = 30,
@@ -74,7 +74,7 @@ in [mini.indentscope](https://github.com/echasnovski/mini.indentscope).
   -- Alternatively, you can set them manually in your config,
   -- using the `Snacks.scope.textobject` and `Snacks.scope.jump` functions.
   keys = {
-    ---@type table<string, snacks.scope.TextObject|{desc?:string}>
+    ---@type table<string, snacks.scope.TextObject|{desc?:string}|false>
     textobject = {
       ii = {
         min_size = 2, -- minimum size of the scope
@@ -90,7 +90,7 @@ in [mini.indentscope](https://github.com/echasnovski/mini.indentscope).
         desc = "full scope",
       },
     },
-    ---@type table<string, snacks.scope.Jump|{desc?:string}>
+    ---@type table<string, snacks.scope.Jump|{desc?:string}|false>
     jump = {
       ["[i"] = {
         min_size = 1, -- allow single line scopes
@@ -158,9 +158,9 @@ Snacks.scope.attach(cb, opts)
 ### `Snacks.scope.get()`
 
 ```lua
----@param opts? snacks.scope.Opts
----@return snacks.scope.Scope?
-Snacks.scope.get(opts)
+---@param cb fun(scope?: snacks.scope.Scope)
+---@param opts? snacks.scope.Opts|{parse?:boolean}
+Snacks.scope.get(cb, opts)
 ```
 
 ### `Snacks.scope.jump()`

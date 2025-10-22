@@ -10,12 +10,12 @@ M.default = {
     height = 0.8,
     {
       box = "vertical",
-      border = "rounded",
+      border = true,
       title = "{title} {live} {flags}",
       { win = "input", height = 1, border = "bottom" },
       { win = "list", border = "none" },
     },
-    { win = "preview", title = "{preview}", border = "rounded", width = 0.5 },
+    { win = "preview", title = "{preview}", border = true, width = 0.5 },
   },
 }
 
@@ -32,7 +32,7 @@ M.sidebar = {
     {
       win = "input",
       height = 1,
-      border = "rounded",
+      border = true,
       title = "{title} {live} {flags}",
       title_pos = "center",
     },
@@ -51,14 +51,14 @@ M.telescope = {
     border = "none",
     {
       box = "vertical",
-      { win = "list", title = " Results ", title_pos = "center", border = "rounded" },
-      { win = "input", height = 1, border = "rounded", title = "{title} {live} {flags}", title_pos = "center" },
+      { win = "list", title = " Results ", title_pos = "center", border = true },
+      { win = "input", height = 1, border = true, title = "{title} {live} {flags}", title_pos = "center" },
     },
     {
       win = "preview",
       title = "{preview:Preview}",
       width = 0.45,
-      border = "rounded",
+      border = true,
       title_pos = "center",
     },
   },
@@ -112,10 +112,10 @@ M.dropdown = {
     height = 0.8,
     border = "none",
     box = "vertical",
-    { win = "preview", title = "{preview}", height = 0.4, border = "rounded" },
+    { win = "preview", title = "{preview}", height = 0.4, border = true },
     {
       box = "vertical",
-      border = "rounded",
+      border = true,
       title = "{title} {live} {flags}",
       title_pos = "center",
       { win = "input", height = 1, border = "bottom" },
@@ -132,7 +132,7 @@ M.vertical = {
     height = 0.8,
     min_height = 30,
     box = "vertical",
-    border = "rounded",
+    border = true,
     title = "{title} {live} {flags}",
     title_pos = "center",
     { win = "input", height = 1, border = "bottom" },
@@ -142,7 +142,7 @@ M.vertical = {
 }
 
 M.select = {
-  preview = false,
+  hidden = { "preview" },
   layout = {
     backdrop = false,
     width = 0.5,
@@ -150,7 +150,7 @@ M.select = {
     height = 0.4,
     min_height = 3,
     box = "vertical",
-    border = "rounded",
+    border = true,
     title = "{title}",
     title_pos = "center",
     { win = "input", height = 1, border = "bottom" },
@@ -160,7 +160,7 @@ M.select = {
 }
 
 M.vscode = {
-  preview = false,
+  hidden = { "preview" },
   layout = {
     backdrop = false,
     row = 1,
@@ -169,9 +169,9 @@ M.vscode = {
     height = 0.4,
     border = "none",
     box = "vertical",
-    { win = "input", height = 1, border = "rounded", title = "{title} {live} {flags}", title_pos = "center" },
+    { win = "input", height = 1, border = true, title = "{title} {live} {flags}", title_pos = "center" },
     { win = "list", border = "hpad" },
-    { win = "preview", title = "{preview}", border = "rounded" },
+    { win = "preview", title = "{preview}", border = true },
   },
 }
 

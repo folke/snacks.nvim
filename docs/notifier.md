@@ -164,7 +164,7 @@ docs for more information on how to customize these styles
 
 ```lua
 {
-  border = "rounded",
+  border = true,
   zindex = 100,
   ft = "markdown",
   wo = {
@@ -181,7 +181,7 @@ docs for more information on how to customize these styles
 
 ```lua
 {
-  border = "rounded",
+  border = true,
   zindex = 100,
   width = 0.6,
   height = 0.6,
@@ -271,7 +271,7 @@ Notification object
 
 ```lua
 ---@class snacks.notifier.history
----@field filter? snacks.notifier.level|fun(notif: snacks.notifier.Notif): boolean
+---@field filter? vim.log.levels|snacks.notifier.level|fun(notif: snacks.notifier.Notif): boolean
 ---@field sort? string[] # sort fields, default: {"added"}
 ---@field reverse? boolean
 ```

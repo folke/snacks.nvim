@@ -13,6 +13,9 @@ local M = {}
 ---@field field? string
 ---@field notify? boolean
 
+---@class snacks.picker.insert.Action: snacks.picker.Action
+---@field expr string
+
 ---@enum (key) snacks.picker.EditCmd
 local edit_cmd = {
   edit = "buffer",
@@ -150,7 +153,27 @@ function M.close(picker)
   end)
 end
 
-M.cancel = "close"
+function M.print_cwd(picker)
+  print(vim.fn.fnamemodify(picker:cwd(), ":p:~"))
+end
+
+function M.print_dir(picker)
+  print(vim.fn.fnamemodify(picker:dir(), ":p:~"))
+end
+
+function M.print_path(picker, item)
+  local path = item and Snacks.picker.util.path(item) or picker:dir()
+  print(vim.fn.fnamemodify(path, ":p:~"))
+end
+
+function M.cancel(picker)
+  picker:norm(function()
+    local main = require("snacks.picker.core.main").new({ float = false, file = false })
+    vim.api.nvim_set_current_win(main:get())
+    picker:close()
+  end)
+end
+
 M.confirm = M.jump -- default confirm action
 
 M.split = { action = "confirm", cmd = "split" }
@@ -189,6 +212,26 @@ M.layout_right = { action = "layout", layout = "right" }
 function M.toggle_maximize(picker)
   picker.layout:maximize()
 end
+
+function M.insert(picker, _, action)
+  ---@cast action snacks.picker.insert.Action
+  if action.expr then
+    local value = ""
+    vim.api.nvim_buf_call(picker.input.filter.current_buf, function()
+      value = action.expr == "line" and vim.api.nvim_get_current_line() or vim.fn.expand(action.expr)
+    end)
+    vim.api.nvim_win_call(picker.input.win.win, function()
+      vim.api.nvim_put({ value }, "c", true, true)
+    end)
+  end
+end
+M.insert_cword = { action = "insert", expr = "<cword>" }
+M.insert_cWORD = { action = "insert", expr = "<cWORD>" }
+M.insert_filename = { action = "insert", expr = "%" }
+M.insert_file = { action = "insert", expr = "<cfile>" }
+M.insert_line = { action = "insert", expr = "line" }
+M.insert_file_full = { action = "insert", expr = "<cfile>:p" }
+M.insert_alt = { action = "insert", expr = "#" }
 
 function M.toggle_preview(picker)
   picker:toggle("preview")
@@ -238,6 +281,9 @@ function M.picker(picker, item, action)
   end
   Snacks.picker(source, {
     cwd = Snacks.picker.util.dir(item),
+    filter = {
+      cwd = source == "recent" and Snacks.picker.util.dir(item) or nil,
+    },
     on_show = function()
       picker:close()
     end,
@@ -303,6 +349,42 @@ function M.git_stage(picker)
   end
 end
 
+function M.git_restore(picker)
+  local items = picker:selected({ fallback = true })
+  if #items == 0 then
+    return
+  end
+
+  -- Confirm before discarding changes
+  ---@param item snacks.picker.Item
+  local files = vim.tbl_map(function(item)
+    return Snacks.picker.util.path(item)
+  end, items)
+  local msg = #items == 1 and ("Discard changes to `%s`?"):format(files[1])
+    or ("Discard changes to %d files?"):format(#items)
+
+  Snacks.picker.select({ "No", "Yes" }, { prompt = msg }, function(_, idx)
+    if not idx and idx == 2 then
+      return
+    end
+    local done = 0
+    for _, item in ipairs(items) do
+      local cmd = { "git", "restore", item.file }
+      Snacks.picker.util.cmd(cmd, function(data, code)
+        done = done + 1
+        if done == #items then
+          vim.schedule(function()
+            picker.list:set_selected()
+            picker.list:set_target()
+            picker:find()
+            vim.cmd.startinsert()
+          end)
+        end
+      end, { cwd = item.cwd })
+    end
+  end)
+end
+
 function M.git_stash_apply(_, item)
   if not item then
     return
@@ -316,12 +398,16 @@ end
 function M.git_checkout(picker, item)
   picker:close()
   if item then
-    local what = item.branch or item.commit
+    local what = item.branch or item.commit --[[@as string?]]
     if not what then
       Snacks.notify.warn("No branch or commit found", { title = "Snacks Picker" })
       return
     end
     local cmd = { "git", "checkout", what }
+    local remote_branch = what:match("^remotes/[^/]+/(.+)$")
+    if remote_branch then
+      cmd = { "git", "checkout", "-b", remote_branch, what }
+    end
     if item.file then
       vim.list_extend(cmd, { "--", item.file })
     end
@@ -397,6 +483,7 @@ local function setqflist(items, opts)
       end_col = item.end_pos and item.end_pos[2] + 1 or nil,
       text = item.line or item.comment or item.label or item.name or item.detail or item.text,
       pattern = item.search,
+      type = ({ "E", "W", "I", "N" })[item.severity],
       valid = true,
     }
   end
@@ -446,14 +533,15 @@ function M.yank(picker, item, action)
 end
 M.copy = M.yank
 
-function M.put(picker, item, action)
+function M.paste(picker, item, action)
   ---@cast action snacks.picker.yank.Action
   picker:close()
   if item then
     local value = item[action.field] or item.data or item.text
-    vim.api.nvim_put({ value }, "", true, true)
+    vim.api.nvim_paste(value, true, -1)
   end
 end
+M.put = M.paste
 
 function M.history_back(picker)
   picker:hist()
@@ -487,7 +575,10 @@ function M.cmd(picker, item)
   picker:close()
   if item and item.cmd then
     vim.schedule(function()
-      vim.api.nvim_input(":" .. item.cmd)
+      vim.api.nvim_input(":")
+      vim.schedule(function()
+        vim.fn.setcmdline(item.cmd)
+      end)
     end)
   end
 end
@@ -495,7 +586,10 @@ end
 function M.search(picker, item)
   picker:close()
   if item then
-    vim.api.nvim_input("/" .. item.text)
+    vim.api.nvim_input("/")
+    vim.schedule(function()
+      vim.fn.setcmdline(item.text)
+    end)
   end
 end
 

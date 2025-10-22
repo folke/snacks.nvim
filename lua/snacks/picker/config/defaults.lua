@@ -1,7 +1,8 @@
 local M = {}
 
+---@alias snacks.picker.format.resolve fun(max_width:number):snacks.picker.Highlight[]
 ---@alias snacks.picker.Extmark vim.api.keyset.set_extmark|{col:number, row?:number, field?:string}
----@alias snacks.picker.Text {[1]:string, [2]:string?, virtual?:boolean, field?:string}
+---@alias snacks.picker.Text {[1]:string, [2]:string?, virtual?:boolean, field?:string, resolve?:snacks.picker.format.resolve}
 ---@alias snacks.picker.Highlight snacks.picker.Text|snacks.picker.Extmark
 ---@alias snacks.picker.format fun(item:snacks.picker.Item, picker:snacks.Picker):snacks.picker.Highlight[]
 ---@alias snacks.picker.preview fun(ctx: snacks.picker.preview.ctx):boolean?
@@ -42,6 +43,7 @@ local M = {}
 ---@field highlights? snacks.picker.Highlight[][]
 ---@field preview? snacks.picker.Item.preview
 ---@field resolve? fun(item:snacks.picker.Item)
+---@field positions? number[] indices of matched characters in `text`
 
 ---@class snacks.picker.finder.Item: snacks.picker.Item
 ---@field idx? number
@@ -56,6 +58,7 @@ local M = {}
 ---@field preset? string|fun(source:string):string
 ---@field hidden? ("input"|"preview"|"list")[] don't show the given windows when opening the picker. (only "input" and "preview" make sense)
 ---@field auto_hide? ("input"|"preview"|"list")[] hide the given windows when not focused (only "input" makes real sense)
+---@field config? fun(layout:snacks.picker.layout.Config) customize the resolved layout config
 
 ---@class snacks.picker.win.Config
 ---@field input? snacks.win.Config|{} input window config
@@ -70,6 +73,7 @@ local M = {}
 ---@field cwd? string current working directory
 ---@field live? boolean when true, typing will trigger live searches
 ---@field limit? number when set, the finder will stop after finding this number of items. useful for live searches
+---@field limit_live? number when set, the finder will stop after finding this number of items during live searches. useful for performance
 ---@field ui_select? boolean set `vim.ui.select` to a snacks picker
 --- Source definition
 ---@field items? snacks.picker.finder.Item[] items to show instead of using a finder
@@ -87,6 +91,7 @@ local M = {}
 ---@field title? string defaults to a capitalized source name
 ---@field auto_close? boolean automatically close the picker when focusing another window (defaults to true)
 ---@field show_empty? boolean show the picker even when there are no items
+---@field show_delay? number delay (in ms) to wait before showing the picker while no results yet
 ---@field focus? "input"|"list" where to focus when the picker is opened (defaults to "input")
 ---@field enter? boolean enter the picker when opening it
 ---@field toggles? table<string, string|false|snacks.picker.toggle>
@@ -112,6 +117,8 @@ local defaults = {
   prompt = " ",
   sources = {},
   focus = "input",
+  show_delay = 1000,
+  limit_live = 10000,
   layout = {
     cycle = true,
     --- Use the default layout or vertical if the window is too narrow
@@ -145,7 +152,12 @@ local defaults = {
     },
     file = {
       filename_first = false, -- display filename before the file path
-      truncate = 40, -- truncate the file path to (roughly) this length
+      --- * left: truncate the beginning of the path
+      --- * center: truncate the middle of the path
+      --- * right: truncate the end of the path
+      ---@type "left"|"center"|"right"
+      truncate = "center",
+      min_width = 20, -- minimum length of the truncated path
       filename_only = false, -- only show the filename
       icon_width = 2, -- width of the icon (in characters)
       git_status_hl = true, -- use the git status highlight group for the filename
@@ -163,8 +175,12 @@ local defaults = {
   },
   ---@class snacks.picker.previewers.Config
   previewers = {
+    diff = {
+      builtin = true, -- use Neovim for previewing diffs (true) or use an external tool (false)
+      cmd = { "delta" }, -- example to show a diff with delta
+    },
     git = {
-      native = false, -- use native (terminal) or Neovim for previewing git diffs and commits
+      builtin = true, -- use Neovim for previewing git output (true) or use git (false)
       args = {}, -- additional arguments passed to the git command. Useful to set pager options usin `-c ...`
     },
     file = {
@@ -199,11 +215,11 @@ local defaults = {
         ["/"] = "toggle_focus",
         ["<C-Down>"] = { "history_forward", mode = { "i", "n" } },
         ["<C-Up>"] = { "history_back", mode = { "i", "n" } },
-        ["<C-c>"] = { "close", mode = "i" },
+        ["<C-c>"] = { "cancel", mode = "i" },
         ["<C-w>"] = { "<c-s-w>", mode = { "i" }, expr = true, desc = "delete word" },
         ["<CR>"] = { "confirm", mode = { "n", "i" } },
         ["<Down>"] = { "list_down", mode = { "i", "n" } },
-        ["<Esc>"] = "close",
+        ["<Esc>"] = "cancel",
         ["<S-CR>"] = { { "pick_win", "jump" }, mode = { "n", "i" } },
         ["<S-Tab>"] = { "select_and_prev", mode = { "i", "n" } },
         ["<Tab>"] = { "select_and_next", mode = { "i", "n" } },
@@ -212,6 +228,7 @@ local defaults = {
         ["<a-f>"] = { "toggle_follow", mode = { "i", "n" } },
         ["<a-h>"] = { "toggle_hidden", mode = { "i", "n" } },
         ["<a-i>"] = { "toggle_ignored", mode = { "i", "n" } },
+        ["<a-r>"] = { "toggle_regex", mode = { "i", "n" } },
         ["<a-m>"] = { "toggle_maximize", mode = { "i", "n" } },
         ["<a-p>"] = { "toggle_preview", mode = { "i", "n" } },
         ["<a-w>"] = { "cycle_win", mode = { "i", "n" } },
@@ -226,8 +243,16 @@ local defaults = {
         ["<c-p>"] = { "list_up", mode = { "i", "n" } },
         ["<c-q>"] = { "qflist", mode = { "i", "n" } },
         ["<c-s>"] = { "edit_split", mode = { "i", "n" } },
+        ["<c-t>"] = { "tab", mode = { "n", "i" } },
         ["<c-u>"] = { "list_scroll_up", mode = { "i", "n" } },
         ["<c-v>"] = { "edit_vsplit", mode = { "i", "n" } },
+        ["<c-r>#"] = { "insert_alt", mode = "i" },
+        ["<c-r>%"] = { "insert_filename", mode = "i" },
+        ["<c-r><c-a>"] = { "insert_cWORD", mode = "i" },
+        ["<c-r><c-f>"] = { "insert_file", mode = "i" },
+        ["<c-r><c-l>"] = { "insert_line", mode = "i" },
+        ["<c-r><c-p>"] = { "insert_file_full", mode = "i" },
+        ["<c-r><c-w>"] = { "insert_cword", mode = "i" },
         ["<c-w>H"] = "layout_left",
         ["<c-w>J"] = "layout_bottom",
         ["<c-w>K"] = "layout_top",
@@ -250,7 +275,7 @@ local defaults = {
         ["<2-LeftMouse>"] = "confirm",
         ["<CR>"] = "confirm",
         ["<Down>"] = "list_down",
-        ["<Esc>"] = "close",
+        ["<Esc>"] = "cancel",
         ["<S-CR>"] = { { "pick_win", "jump" } },
         ["<S-Tab>"] = { "select_and_prev", mode = { "n", "x" } },
         ["<Tab>"] = { "select_and_next", mode = { "n", "x" } },
@@ -270,7 +295,10 @@ local defaults = {
         ["<c-k>"] = "list_up",
         ["<c-n>"] = "list_down",
         ["<c-p>"] = "list_up",
+        ["<c-q>"] = "qflist",
+        ["<c-g>"] = "print_path",
         ["<c-s>"] = "edit_split",
+        ["<c-t>"] = "tab",
         ["<c-u>"] = "list_scroll_up",
         ["<c-v>"] = "edit_vsplit",
         ["<c-w>H"] = "layout_left",
@@ -296,11 +324,9 @@ local defaults = {
     -- preview window
     preview = {
       keys = {
-        ["<Esc>"] = "close",
+        ["<Esc>"] = "cancel",
         ["q"] = "close",
         ["i"] = "focus_input",
-        ["<ScrollWheelDown>"] = "list_scroll_wheel_down",
-        ["<ScrollWheelUp>"] = "list_scroll_wheel_up",
         ["<a-w>"] = "cycle_win",
       },
     },
@@ -310,6 +336,9 @@ local defaults = {
   icons = {
     files = {
       enabled = true, -- show file icons
+      dir = "󰉋 ",
+      dir_open = "󰝰 ",
+      file = "󰈔 "
     },
     keymaps = {
       nowait = "󰓅 "

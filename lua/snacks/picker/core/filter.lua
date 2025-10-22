@@ -39,13 +39,13 @@ function M:init(opts)
   self.paths = {}
   local cwd = self.opts and self.opts.cwd
   self.cwd = type(cwd) == "string" and cwd or opts.cwd or uv.cwd() or "."
-  self.cwd = vim.fs.normalize(self.cwd --[[@as string]], { _fast = true })
+  self.cwd = svim.fs.normalize(self.cwd --[[@as string]], { _fast = true })
   if not self.all and self.opts then
     self.buf = self.opts.buf == true and 0 or self.opts.buf --[[@as number?]]
     self.buf = self.buf == 0 and M.current_buf or self.buf
-    self.file = self.buf and vim.fs.normalize(vim.api.nvim_buf_get_name(self.buf), { _fast = true }) or nil
+    self.file = self.buf and svim.fs.normalize(vim.api.nvim_buf_get_name(self.buf), { _fast = true }) or nil
     for path, want in pairs(self.opts.paths or {}) do
-      table.insert(self.paths, { path = vim.fs.normalize(path), want = want })
+      table.insert(self.paths, { path = svim.fs.normalize(path), want = want })
     end
   end
   return self
@@ -58,7 +58,7 @@ end
 ---@param cwd string
 function M:set_cwd(cwd)
   self.cwd = cwd
-  self.cwd = vim.fs.normalize(self.cwd --[[@as string]], { _fast = true })
+  self.cwd = svim.fs.normalize(self.cwd --[[@as string]], { _fast = true })
 end
 
 ---@param opts? {trim?:boolean}

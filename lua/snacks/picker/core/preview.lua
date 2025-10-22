@@ -33,19 +33,18 @@ local ns_loc = vim.api.nvim_create_namespace("snacks.picker.preview.loc")
 vim.api.nvim_create_autocmd("BufWinEnter", {
   group = vim.api.nvim_create_augroup("snacks.picker.preview.wo", { clear = true }),
   callback = function(ev)
-    if not vim.b[ev.buf].snacks_previewed then
+    local buf = ev.buf
+    if not vim.b[buf].snacks_previewed then
       return
     end
-    local reset = { "winhighlight", "cursorline", "number", "relativenumber", "signcolumn" }
-    local wo = {} ---@type table<string, any>
-    for _, k in ipairs(reset) do
-      wo[k] = vim.api.nvim_get_option_value(k, { scope = "global" })
+    local win = vim.api.nvim_get_current_win()
+    if buf ~= vim.api.nvim_win_get_buf(win) or vim.w[win].snacks_picker_preview or Snacks.util.is_float(win) then
+      return
     end
-    for _, win in ipairs(vim.fn.win_findbuf(ev.buf)) do
-      if not Snacks.util.is_float(win) then -- only reset non-floating windows
-        Snacks.util.wo(win, wo)
-        vim.b[ev.buf].snacks_previewed = nil
-      end
+    vim.b[buf].snacks_previewed = nil
+    local reset = { "winhighlight", "cursorline", "number", "relativenumber", "signcolumn" }
+    for _, k in ipairs(reset) do
+      vim.api.nvim_set_option_value(k, nil, { win = win, scope = "local" })
     end
   end,
 })
@@ -82,12 +81,16 @@ function M.new(picker)
         winhighlight = self.winhl,
       },
       scratch_ft = "snacks_picker_preview",
+      w = {
+        snacks_picker_preview = true,
+      },
     }
   )
   self.win_opts = {
     main = {
       relative = "win",
       backdrop = false,
+      zindex = 40, -- Lower than default (50) so input/help windows stay on top
     },
     layout = {
       backdrop = win_opts.backdrop == true,
@@ -277,7 +280,7 @@ function M:highlight(opts)
     })
   end
   self:check_big()
-  local lang = Snacks.picker.highlight.get_lang({ lang = opts.lang, ft = ft })
+  local lang = Snacks.util.get_lang(opts.lang or ft)
   if not (lang and pcall(vim.treesitter.start, self.win.buf, lang)) and ft then
     vim.bo[self.win.buf].syntax = ft
   end
@@ -316,7 +319,16 @@ function M:loc()
 
   if self.item.pos and self.item.pos[1] > 0 and self.item.pos[1] <= line_count then
     show(self.item.pos)
-    if self.item.end_pos then
+    if self.item.positions then
+      for _, extmark in ipairs(Snacks.picker.highlight.matches({}, self.item.positions)) do
+        local col, row = extmark.col, self.item.pos[1]
+        extmark.col = nil
+        extmark.row = nil
+        extmark.field = nil
+        extmark.hl_group = "SnacksPickerSearch"
+        pcall(vim.api.nvim_buf_set_extmark, self.win.buf, ns_loc, row - 1, col, extmark)
+      end
+    elseif self.item.end_pos then
       vim.api.nvim_buf_set_extmark(self.win.buf, ns_loc, self.item.pos[1] - 1, self.item.pos[2], {
         end_row = self.item.end_pos[1] - 1,
         end_col = self.item.end_pos[2],
@@ -341,9 +353,9 @@ function M:loc()
     end
   elseif self.item.search then
     vim.api.nvim_win_call(self.win.win, function()
-      vim.cmd("keepjumps norm! gg")
-      if pcall(vim.cmd, self.item.search) then
-        vim.cmd("norm! zz")
+      if pcall(vim.cmd, ":0;" .. self.item.search) then
+        vim.fn.histdel("search", -1) -- remove from search history
+        vim.cmd("norm! zzze")
         self:wo({ cursorline = true })
       end
     end)

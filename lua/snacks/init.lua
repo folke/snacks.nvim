@@ -10,6 +10,7 @@ setmetatable(M, {
 })
 
 _G.Snacks = M
+_G.svim = vim.fn.has("nvim-0.11") == 1 and vim or require("snacks.compat")
 
 ---@class snacks.Config.base
 ---@field example? string
@@ -17,10 +18,28 @@ _G.Snacks = M
 
 ---@class snacks.Config: snacks.plugins.Config
 ---@field styles? table<string, snacks.win.Config>
+---@field image? snacks.image.Config|{}
 local config = {
   image = {
     -- define these here, so that we don't need to load the image module
-    formats = { "png", "jpg", "jpeg", "gif", "bmp", "webp", "tiff", "heic", "avif", "mp4", "mov", "avi", "mkv", "webm" },
+    formats = {
+      "png",
+      "jpg",
+      "jpeg",
+      "gif",
+      "bmp",
+      "webp",
+      "tiff",
+      "heic",
+      "avif",
+      "mp4",
+      "mov",
+      "avi",
+      "mkv",
+      "webm",
+      "pdf",
+      "icns",
+    },
   },
 }
 config.styles = {}
@@ -36,9 +55,8 @@ M.config = setmetatable({}, {
   end,
 })
 
-local islist = vim.islist or vim.tbl_islist
 local is_dict_like = function(v) -- has string and number keys
-  return type(v) == "table" and (vim.tbl_isempty(v) or not islist(v))
+  return type(v) == "table" and (vim.tbl_isempty(v) or not svim.islist(v))
 end
 local is_dict = function(v) -- has only string keys
   return type(v) == "table" and (vim.tbl_isempty(v) or not v[1])

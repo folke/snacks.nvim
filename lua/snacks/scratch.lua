@@ -71,9 +71,6 @@ local defaults = {
 
 Snacks.util.set_hl({
   Title = "FloatTitle",
-  Footer = "FloatFooter",
-  Key = "DiagnosticVirtualTextInfo",
-  Desc = "DiagnosticInfo",
 }, { prefix = "SnacksScratch", default = true })
 
 Snacks.config.style("scratch", {
@@ -85,9 +82,8 @@ Snacks.config.style("scratch", {
   -- position = "right",
   zindex = 20,
   wo = { winhighlight = "NormalFloat:Normal" },
-  border = "rounded",
-  title_pos = "center",
-  footer_pos = "center",
+  footer_keys = true,
+  border = true,
 })
 
 --- Return a list of scratch buffers sorted by mtime.
@@ -101,7 +97,7 @@ function M.list()
       local decoded = Snacks.util.file_decode(file)
       local count, icon, name, cwd, branch, ft = decoded:match("^(%d*)|([^|]*)|([^|]*)|([^|]*)|([^|]*)%.([^|]*)$")
       if count and icon and name and cwd and branch and ft then
-        file = vim.fs.normalize(root .. "/" .. file)
+        file = svim.fs.normalize(root .. "/" .. file)
         table.insert(ret, {
           file = file,
           stat = uv.fs_stat(file),
@@ -174,15 +170,15 @@ function M.open(opts)
     if opts.filekey.branch and uv.fs_stat(".git") then
       local ret = vim.fn.systemlist("git branch --show-current")[1]
       if vim.v.shell_error == 0 then
-        branch = ret
+        branch = ret or "" -- fallback for detached head (ret is nil then)
       end
     end
 
     local filekey = {
       opts.filekey.count and tostring(vim.v.count1) or "",
-      opts.icon or "",
+      (type(opts.icon) == "table" and opts.icon[1]) or opts.icon or "",
       opts.name:gsub("|", " "),
-      opts.filekey.cwd and vim.fs.normalize(assert(uv.cwd())) or "",
+      opts.filekey.cwd and svim.fs.normalize(assert(uv.cwd())) or "",
       branch,
     }
 
@@ -190,7 +186,7 @@ function M.open(opts)
     local fname = Snacks.util.file_encode(table.concat(filekey, "|") .. "." .. ft)
     file = opts.root .. "/" .. fname
   end
-  file = vim.fs.normalize(file)
+  file = svim.fs.normalize(file)
 
   local icon, icon_hl = unpack(type(opts.icon) == "table" and opts.icon or { opts.icon, nil })
   ---@cast icon string
@@ -245,21 +241,6 @@ function M.open(opts)
   end
 
   opts.win.buf = buf
-  local ret = Snacks.win(opts.win)
-  ret.opts.footer = {}
-  table.sort(ret.keys, function(a, b)
-    return a[1] < b[1]
-  end)
-  for _, key in ipairs(ret.keys) do
-    local keymap = vim.fn.keytrans(Snacks.util.keycode(key[1]))
-    table.insert(ret.opts.footer, { " " })
-    table.insert(ret.opts.footer, { " " .. keymap .. " ", "SnacksScratchKey" })
-    table.insert(ret.opts.footer, { " " .. (key.desc or keymap) .. " ", "SnacksScratchDesc" })
-  end
-  table.insert(ret.opts.footer, { " " })
-  for _, t in ipairs(ret.opts.footer) do
-    t[2] = t[2] or "SnacksScratchFooter"
-  end
   if opts.autowrite then
     vim.api.nvim_create_autocmd("BufHidden", {
       group = vim.api.nvim_create_augroup("snacks_scratch_autowrite_" .. buf, { clear = true }),
@@ -267,11 +248,12 @@ function M.open(opts)
       callback = function(ev)
         vim.api.nvim_buf_call(ev.buf, function()
           vim.cmd("silent! write")
+          vim.bo[ev.buf].buflisted = false
         end)
       end,
     })
   end
-  return ret:show()
+  return Snacks.win(opts.win):show()
 end
 
 return M

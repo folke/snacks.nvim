@@ -111,7 +111,7 @@ function M:run(picker)
   local yield ---@type fun()
   local ctx = self:ctx(picker)
   local finder = self._find(picker.opts, ctx, self:deprecated(picker))
-  local limit = picker.opts.limit or math.huge
+  local limit = (picker.opts.live and picker.opts.limit_live or picker.opts.limit) or math.huge
 
   ---@param item snacks.picker.finder.Item
   local function add(item)
@@ -141,6 +141,8 @@ function M:run(picker)
     return
   end
 
+  local running = true
+
   collectgarbage("stop") -- moar speed
   ---@cast finder snacks.picker.finder.async
   ---@diagnostic disable-next-line: await-in-sync
@@ -150,6 +152,18 @@ function M:run(picker)
     finder(function(item)
       if #self.items >= limit then
         return self.task:abort()
+      end
+      if not running then
+        Snacks.debug.backtrace({
+          "Finder yielded after done. This is a bug.",
+          ("- aborted: `%s`"):format(self.task:aborted() or false),
+          "",
+          "# Backtrace",
+        }, {
+          level = vim.log.levels.ERROR,
+          title = "Snacks Picker Finder",
+        })
+        return
       end
       add(item)
       picker.matcher.task:resume()
@@ -162,6 +176,7 @@ function M:run(picker)
       picker.matcher.task:resume()
       picker:update()
     end
+    running = false
   end)
 end
 

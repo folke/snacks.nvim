@@ -14,7 +14,7 @@ Snacks now comes with a modern fuzzy-finder to navigate the Neovim universe.
 - 🔎 over 40 [built-in sources](https://github.com/folke/snacks.nvim/blob/main/docs/picker.md#-sources)
 - 🚀 Fast and powerful fuzzy matching engine that supports the [fzf](https://junegunn.github.io/fzf/search-syntax/) search syntax
   - additionally supports field searches like `file:lua$ 'function`
-  - `files` and `grep` additionally support adding optiont like `foo -- -e=lua`
+  - `files` and `grep` additionally support adding options like `foo -- -e=lua`
 - 🌲 uses **treesitter** highlighting where it makes sense
 - 🧹 Sane default settings so you can start using it right away
 - 💪 Finders and matchers run asynchronously for maximum performance
@@ -28,7 +28,7 @@ Some acknowledgements:
 
 - [fzf-lua](https://github.com/ibhagwan/fzf-lua)
 - [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim)
-- [mini.pick](https://github.com/echasnovski/mini.pick)
+- [mini.pick](https://github.com/nvim-mini/mini.pick)
 
 ## 📚 Usage
 
@@ -74,6 +74,7 @@ Snacks.picker.pick({source = "files", ...})
 ---@field cwd? string current working directory
 ---@field live? boolean when true, typing will trigger live searches
 ---@field limit? number when set, the finder will stop after finding this number of items. useful for live searches
+---@field limit_live? number when set, the finder will stop after finding this number of items during live searches. useful for performance
 ---@field ui_select? boolean set `vim.ui.select` to a snacks picker
 --- Source definition
 ---@field items? snacks.picker.finder.Item[] items to show instead of using a finder
@@ -91,6 +92,7 @@ Snacks.picker.pick({source = "files", ...})
 ---@field title? string defaults to a capitalized source name
 ---@field auto_close? boolean automatically close the picker when focusing another window (defaults to true)
 ---@field show_empty? boolean show the picker even when there are no items
+---@field show_delay? number delay (in ms) to wait before showing the picker while no results yet
 ---@field focus? "input"|"list" where to focus when the picker is opened (defaults to "input")
 ---@field enter? boolean enter the picker when opening it
 ---@field toggles? table<string, string|false|snacks.picker.toggle>
@@ -116,6 +118,8 @@ Snacks.picker.pick({source = "files", ...})
   prompt = " ",
   sources = {},
   focus = "input",
+  show_delay = 1000,
+  limit_live = 10000,
   layout = {
     cycle = true,
     --- Use the default layout or vertical if the window is too narrow
@@ -149,7 +153,12 @@ Snacks.picker.pick({source = "files", ...})
     },
     file = {
       filename_first = false, -- display filename before the file path
-      truncate = 40, -- truncate the file path to (roughly) this length
+      --- * left: truncate the beginning of the path
+      --- * center: truncate the middle of the path
+      --- * right: truncate the end of the path
+      ---@type "left"|"center"|"right"
+      truncate = "center",
+      min_width = 20, -- minimum length of the truncated path
       filename_only = false, -- only show the filename
       icon_width = 2, -- width of the icon (in characters)
       git_status_hl = true, -- use the git status highlight group for the filename
@@ -167,8 +176,12 @@ Snacks.picker.pick({source = "files", ...})
   },
   ---@class snacks.picker.previewers.Config
   previewers = {
+    diff = {
+      builtin = true, -- use Neovim for previewing diffs (true) or use an external tool (false)
+      cmd = { "delta" }, -- example to show a diff with delta
+    },
     git = {
-      native = false, -- use native (terminal) or Neovim for previewing git diffs and commits
+      builtin = true, -- use Neovim for previewing git output (true) or use git (false)
       args = {}, -- additional arguments passed to the git command. Useful to set pager options usin `-c ...`
     },
     file = {
@@ -203,11 +216,11 @@ Snacks.picker.pick({source = "files", ...})
         ["/"] = "toggle_focus",
         ["<C-Down>"] = { "history_forward", mode = { "i", "n" } },
         ["<C-Up>"] = { "history_back", mode = { "i", "n" } },
-        ["<C-c>"] = { "close", mode = "i" },
+        ["<C-c>"] = { "cancel", mode = "i" },
         ["<C-w>"] = { "<c-s-w>", mode = { "i" }, expr = true, desc = "delete word" },
         ["<CR>"] = { "confirm", mode = { "n", "i" } },
         ["<Down>"] = { "list_down", mode = { "i", "n" } },
-        ["<Esc>"] = "close",
+        ["<Esc>"] = "cancel",
         ["<S-CR>"] = { { "pick_win", "jump" }, mode = { "n", "i" } },
         ["<S-Tab>"] = { "select_and_prev", mode = { "i", "n" } },
         ["<Tab>"] = { "select_and_next", mode = { "i", "n" } },
@@ -216,6 +229,7 @@ Snacks.picker.pick({source = "files", ...})
         ["<a-f>"] = { "toggle_follow", mode = { "i", "n" } },
         ["<a-h>"] = { "toggle_hidden", mode = { "i", "n" } },
         ["<a-i>"] = { "toggle_ignored", mode = { "i", "n" } },
+        ["<a-r>"] = { "toggle_regex", mode = { "i", "n" } },
         ["<a-m>"] = { "toggle_maximize", mode = { "i", "n" } },
         ["<a-p>"] = { "toggle_preview", mode = { "i", "n" } },
         ["<a-w>"] = { "cycle_win", mode = { "i", "n" } },
@@ -230,8 +244,16 @@ Snacks.picker.pick({source = "files", ...})
         ["<c-p>"] = { "list_up", mode = { "i", "n" } },
         ["<c-q>"] = { "qflist", mode = { "i", "n" } },
         ["<c-s>"] = { "edit_split", mode = { "i", "n" } },
+        ["<c-t>"] = { "tab", mode = { "n", "i" } },
         ["<c-u>"] = { "list_scroll_up", mode = { "i", "n" } },
         ["<c-v>"] = { "edit_vsplit", mode = { "i", "n" } },
+        ["<c-r>#"] = { "insert_alt", mode = "i" },
+        ["<c-r>%"] = { "insert_filename", mode = "i" },
+        ["<c-r><c-a>"] = { "insert_cWORD", mode = "i" },
+        ["<c-r><c-f>"] = { "insert_file", mode = "i" },
+        ["<c-r><c-l>"] = { "insert_line", mode = "i" },
+        ["<c-r><c-p>"] = { "insert_file_full", mode = "i" },
+        ["<c-r><c-w>"] = { "insert_cword", mode = "i" },
         ["<c-w>H"] = "layout_left",
         ["<c-w>J"] = "layout_bottom",
         ["<c-w>K"] = "layout_top",
@@ -254,7 +276,7 @@ Snacks.picker.pick({source = "files", ...})
         ["<2-LeftMouse>"] = "confirm",
         ["<CR>"] = "confirm",
         ["<Down>"] = "list_down",
-        ["<Esc>"] = "close",
+        ["<Esc>"] = "cancel",
         ["<S-CR>"] = { { "pick_win", "jump" } },
         ["<S-Tab>"] = { "select_and_prev", mode = { "n", "x" } },
         ["<Tab>"] = { "select_and_next", mode = { "n", "x" } },
@@ -274,7 +296,10 @@ Snacks.picker.pick({source = "files", ...})
         ["<c-k>"] = "list_up",
         ["<c-n>"] = "list_down",
         ["<c-p>"] = "list_up",
+        ["<c-q>"] = "qflist",
+        ["<c-g>"] = "print_path",
         ["<c-s>"] = "edit_split",
+        ["<c-t>"] = "tab",
         ["<c-u>"] = "list_scroll_up",
         ["<c-v>"] = "edit_vsplit",
         ["<c-w>H"] = "layout_left",
@@ -300,11 +325,9 @@ Snacks.picker.pick({source = "files", ...})
     -- preview window
     preview = {
       keys = {
-        ["<Esc>"] = "close",
+        ["<Esc>"] = "cancel",
         ["q"] = "close",
         ["i"] = "focus_input",
-        ["<ScrollWheelDown>"] = "list_scroll_wheel_down",
-        ["<ScrollWheelUp>"] = "list_scroll_wheel_up",
         ["<a-w>"] = "cycle_win",
       },
     },
@@ -313,6 +336,9 @@ Snacks.picker.pick({source = "files", ...})
   icons = {
     files = {
       enabled = true, -- show file icons
+      dir = "󰉋 ",
+      dir_open = "󰝰 ",
+      file = "󰈔 "
     },
     keymaps = {
       nowait = "󰓅 "
@@ -532,6 +558,8 @@ Snacks.picker.pick({source = "files", ...})
     { "gr", function() Snacks.picker.lsp_references() end, nowait = true, desc = "References" },
     { "gI", function() Snacks.picker.lsp_implementations() end, desc = "Goto Implementation" },
     { "gy", function() Snacks.picker.lsp_type_definitions() end, desc = "Goto T[y]pe Definition" },
+    { "gai", function() Snacks.picker.lsp_incoming_calls() end, desc = "C[a]lls Incoming" },
+    { "gao", function() Snacks.picker.lsp_outgoing_calls() end, desc = "C[a]lls Outgoing" },
     { "<leader>ss", function() Snacks.picker.lsp_symbols() end, desc = "LSP Symbols" },
     { "<leader>sS", function() Snacks.picker.lsp_workspace_symbols() end, desc = "LSP Workspace Symbols" },
   },
@@ -583,6 +611,13 @@ Snacks.picker.pick({source = "files", ...})
 ## 📚 Types
 
 ```lua
+---@class snacks.picker.resume.Opts
+---@field source? string
+---@field include? string[]
+---@field exclude? string[]
+```
+
+```lua
 ---@class snacks.picker.jump.Action: snacks.picker.Action
 ---@field cmd? snacks.picker.EditCmd
 ```
@@ -600,8 +635,14 @@ Snacks.picker.pick({source = "files", ...})
 ```
 
 ```lua
+---@class snacks.picker.insert.Action: snacks.picker.Action
+---@field expr string
+```
+
+```lua
+---@alias snacks.picker.format.resolve fun(max_width:number):snacks.picker.Highlight[]
 ---@alias snacks.picker.Extmark vim.api.keyset.set_extmark|{col:number, row?:number, field?:string}
----@alias snacks.picker.Text {[1]:string, [2]:string?, virtual?:boolean, field?:string}
+---@alias snacks.picker.Text {[1]:string, [2]:string?, virtual?:boolean, field?:string, resolve?:snacks.picker.format.resolve}
 ---@alias snacks.picker.Highlight snacks.picker.Text|snacks.picker.Extmark
 ---@alias snacks.picker.format fun(item:snacks.picker.Item, picker:snacks.Picker):snacks.picker.Highlight[]
 ---@alias snacks.picker.preview fun(ctx: snacks.picker.preview.ctx):boolean?
@@ -650,6 +691,7 @@ It's a previewer that shows a preview based on the item data.
 ---@field highlights? snacks.picker.Highlight[][]
 ---@field preview? snacks.picker.Item.preview
 ---@field resolve? fun(item:snacks.picker.Item)
+---@field positions? number[] indices of matched characters in `text`
 ```
 
 ```lua
@@ -668,6 +710,7 @@ It's a previewer that shows a preview based on the item data.
 ---@field preset? string|fun(source:string):string
 ---@field hidden? ("input"|"preview"|"list")[] don't show the given windows when opening the picker. (only "input" and "preview" make sense)
 ---@field auto_hide? ("input"|"preview"|"list")[] hide the given windows when not focused (only "input" makes real sense)
+---@field config? fun(layout:snacks.picker.layout.Config) customize the resolved layout config
 ```
 
 ```lua
@@ -679,15 +722,6 @@ It's a previewer that shows a preview based on the item data.
 
 ```lua
 ---@alias snacks.Picker.ref (fun():snacks.Picker?)|{value?: snacks.Picker}
-```
-
-```lua
----@class snacks.picker.Last
----@field cursor number
----@field topline number
----@field opts? snacks.picker.Config
----@field selected snacks.picker.Item[]
----@field filter snacks.picker.Filter
 ```
 
 ```lua
@@ -744,6 +778,15 @@ Create a new picker
 Snacks.picker.pick(source, opts)
 ```
 
+### `Snacks.picker.resume()`
+
+```lua
+---@param opts? snacks.picker.resume.Opts
+---@overload fun(source:string):snacks.Picker?
+---@return snacks.Picker?
+Snacks.picker.resume(opts)
+```
+
 ### `Snacks.picker.select()`
 
 Implementation for `vim.ui.select`
@@ -793,7 +836,6 @@ Snacks.picker.select(...)
   win = {
     input = {
       keys = {
-        ["dd"] = "bufdelete",
         ["<c-x>"] = { "bufdelete", mode = { "n", "i" } },
       },
     },
@@ -858,6 +900,7 @@ Neovim command history
   name = "cmd",
   format = "text",
   preview = "none",
+  main = { current = true },
   layout = {
     preset = "vscode",
   },
@@ -988,7 +1031,8 @@ Neovim commands
         ["m"] = "explorer_move",
         ["o"] = "explorer_open", -- open with system application
         ["P"] = "toggle_preview",
-        ["y"] = "explorer_yank",
+        ["y"] = { "explorer_yank", mode = { "n", "x" } },
+        ["p"] = "explorer_paste",
         ["u"] = "explorer_update",
         ["<c-c>"] = "tcd",
         ["<leader>/"] = "picker_grep",
@@ -1046,7 +1090,10 @@ Neovim commands
 ```
 
 ```lua
+---@class snacks.picker.git.branches.Config: snacks.picker.git.Config
+---@field all? boolean show all branches, including remote
 {
+  all = false,
   finder = "git_branches",
   format = "git_branch",
   preview = "git_log",
@@ -1059,6 +1106,7 @@ Neovim commands
       },
     },
   },
+  ---@param picker snacks.Picker
   on_show = function(picker)
     for i, item in ipairs(picker:items()) do
       if item.current then
@@ -1078,10 +1126,11 @@ Neovim commands
 ```
 
 ```lua
+---@type snacks.picker.git.Config
 {
   finder = "git_diff",
   format = "file",
-  preview = "preview",
+  preview = "diff",
 }
 ```
 
@@ -1094,7 +1143,7 @@ Neovim commands
 Find git files
 
 ```lua
----@class snacks.picker.git.files.Config: snacks.picker.Config
+---@class snacks.picker.git.files.Config: snacks.picker.git.Config
 ---@field untracked? boolean show untracked files
 ---@field submodules? boolean show submodule files
 {
@@ -1115,10 +1164,12 @@ Find git files
 Grep in git files
 
 ```lua
----@class snacks.picker.git.grep.Config: snacks.picker.Config
+---@class snacks.picker.git.grep.Config: snacks.picker.git.Config
 ---@field untracked? boolean search in untracked files
 ---@field submodules? boolean search in submodule files
 ---@field need_search? boolean require a search pattern
+---@field pathspec? string|string[] pathspec pattern(s)
+---@field ignorecase? boolean ignore case
 {
   finder = "git_grep",
   format = "file",
@@ -1140,15 +1191,18 @@ Grep in git files
 Git log
 
 ```lua
----@class snacks.picker.git.log.Config: snacks.picker.Config
+---@class snacks.picker.git.log.Config: snacks.picker.git.Config
 ---@field follow? boolean track file history across renames
 ---@field current_file? boolean show current file log
 ---@field current_line? boolean show current line log
+---@field author? string filter commits by author
 {
   finder = "git_log",
   format = "git_log",
   preview = "git_show",
   confirm = "git_checkout",
+  supports_live = true,
+  sort = { fields = { "score:desc", "idx" } },
 }
 ```
 
@@ -1167,6 +1221,7 @@ Git log
   current_file = true,
   follow = true,
   confirm = "git_checkout",
+  sort = { fields = { "score:desc", "idx" } },
 }
 ```
 
@@ -1185,6 +1240,7 @@ Git log
   current_line = true,
   follow = true,
   confirm = "git_checkout",
+  sort = { fields = { "score:desc", "idx" } },
 }
 ```
 
@@ -1210,7 +1266,7 @@ Git log
 ```
 
 ```lua
----@class snacks.picker.git.status.Config: snacks.picker.Config
+---@class snacks.picker.git.status.Config: snacks.picker.git.Config
 ---@field ignored? boolean show ignored files
 {
   finder = "git_status",
@@ -1220,6 +1276,7 @@ Git log
     input = {
       keys = {
         ["<Tab>"] = { "git_stage", mode = { "n", "i" } },
+        ["<c-r>"] = { "git_restore", mode = { "n", "i" } },
       },
     },
   },
@@ -1285,6 +1342,7 @@ Git log
 ---@type snacks.picker.grep.Config|{}
 {
   finder = "grep",
+  regex = false,
   format = "file",
   search = function(picker)
     return picker:word()
@@ -1342,6 +1400,7 @@ Neovim help tags
 ---@field icon_sources? string[]
 {
   icon_sources = { "nerd_fonts", "emoji" },
+  main = { current = true },
   finder = "icons",
   format = "icon",
   layout = { preset = "vscode" },
@@ -1359,6 +1418,7 @@ Neovim help tags
 {
   finder = "vim_jumps",
   format = "file",
+  main = { current = true },
 }
 ```
 
@@ -1382,11 +1442,14 @@ Neovim help tags
   plugs = false,
   ["local"] = true,
   modes = { "n", "v", "x", "s", "o", "i", "c", "t" },
+  ---@param picker snacks.Picker
   confirm = function(picker, item)
-    picker:close()
-    if item then
-      vim.api.nvim_input(item.item.lhs)
-    end
+    picker:norm(function()
+      if item then
+        picker:close()
+        vim.api.nvim_input(item.item.lhs)
+      end
+    end)
   end,
   actions = {
     toggle_global = function(picker)
@@ -1470,6 +1533,7 @@ Loclist
   finder = "qf",
   format = "file",
   qf_win = 0,
+  main = { current = true },
 }
 ```
 
@@ -1551,6 +1615,46 @@ LSP implementations
 }
 ```
 
+### `lsp_incoming_calls`
+
+```vim
+:lua Snacks.picker.lsp_incoming_calls(opts?)
+```
+
+LSP incoming calls
+
+```lua
+---@type snacks.picker.lsp.Config
+{
+  finder = "lsp_incoming_calls",
+  format = "lsp_symbol",
+  include_current = false,
+  workspace = true, -- this ensures the file is included in the formatter
+  auto_confirm = true,
+  jump = { tagstack = true, reuse_win = true },
+}
+```
+
+### `lsp_outgoing_calls`
+
+```vim
+:lua Snacks.picker.lsp_outgoing_calls(opts?)
+```
+
+LSP outgoing calls
+
+```lua
+---@type snacks.picker.lsp.Config
+{
+  finder = "lsp_outgoing_calls",
+  format = "lsp_symbol",
+  include_current = false,
+  workspace = true, -- this ensures the file is included in the formatter
+  auto_confirm = true,
+  jump = { tagstack = true, reuse_win = true },
+}
+```
+
 ### `lsp_references`
 
 ```vim
@@ -1583,6 +1687,7 @@ LSP document symbols
 ```lua
 ---@class snacks.picker.lsp.symbols.Config: snacks.picker.Config
 ---@field tree? boolean show symbol tree
+---@field keep_parents? boolean keep parent symbols when filtering
 ---@field filter table<string, string[]|boolean>? symbol kind filter
 ---@field workspace? boolean show workspace symbols
 {
@@ -1674,11 +1779,18 @@ vim.tbl_extend("force", {}, M.lsp_symbols, {
   finder = "system_man",
   format = "man",
   preview = "man",
-  confirm = function(picker, item)
+  confirm = function(picker, item, action)
+    ---@cast action snacks.picker.jump.Action
     picker:close()
     if item then
       vim.schedule(function()
-        vim.cmd("Man " .. item.ref)
+        local cmd = "Man " .. item.ref ---@type string
+        if action.cmd == "vsplit" then
+          cmd = "vert " .. cmd
+        elseif action.cmd == "tab" then
+          cmd = "tab " .. cmd
+        end
+        vim.cmd(cmd)
       end)
     end
   end,
@@ -1816,6 +1928,7 @@ Open recent projects
 ---@field projects? string[] list of project directories
 ---@field patterns? string[] patterns to detect project root directories
 ---@field recent? boolean include project directories of recent files
+---@field max_depth? number maximum depth to search in dev directories (default: 2)
 {
   finder = "recent_projects",
   format = "file",
@@ -1905,6 +2018,7 @@ Neovim registers
 ```lua
 {
   finder = "vim_registers",
+  main = { current = true },
   format = "register",
   preview = "preview",
   confirm = { "copy", "close" },
@@ -1938,6 +2052,7 @@ Neovim search history
   name = "search",
   format = "text",
   preview = "none",
+  main = { current = true },
   layout = { preset = "vscode" },
   confirm = "search",
   formatters = { text = { ft = "regex" } },
@@ -1993,8 +2108,26 @@ Not meant to be used directly.
 {
   finder = "vim_spelling",
   format = "text",
+  main = { current = true },
   layout = { preset = "vscode" },
   confirm = "item_action",
+}
+```
+
+### `tags`
+
+```vim
+:lua Snacks.picker.tags(opts?)
+```
+
+Search tags file
+
+```lua
+---@class snacks.picker.tags.Config: snacks.picker.Config
+{
+  workspace = true, -- search tags in the workspace
+  finder = "vim_tags",
+  format = "lsp_symbol",
 }
 ```
 
@@ -2043,7 +2176,7 @@ Not meant to be used directly.
 {
   finder = "vim_undo",
   format = "undo",
-  preview = "preview",
+  preview = "diff",
   confirm = "item_action",
   win = {
     preview = { wo = { number = false, relativenumber = false, signcolumn = "no" } },
@@ -2108,12 +2241,12 @@ Open a project from zoxide
     height = 0.8,
     {
       box = "vertical",
-      border = "rounded",
+      border = true,
       title = "{title} {live} {flags}",
       { win = "input", height = 1, border = "bottom" },
       { win = "list", border = "none" },
     },
-    { win = "preview", title = "{preview}", border = "rounded", width = 0.5 },
+    { win = "preview", title = "{preview}", border = true, width = 0.5 },
   },
 }
 ```
@@ -2130,10 +2263,10 @@ Open a project from zoxide
     height = 0.8,
     border = "none",
     box = "vertical",
-    { win = "preview", title = "{preview}", height = 0.4, border = "rounded" },
+    { win = "preview", title = "{preview}", height = 0.4, border = true },
     {
       box = "vertical",
-      border = "rounded",
+      border = true,
       title = "{title} {live} {flags}",
       title_pos = "center",
       { win = "input", height = 1, border = "bottom" },
@@ -2206,7 +2339,7 @@ M.sidebar
 
 ```lua
 {
-  preview = false,
+  hidden = { "preview" },
   layout = {
     backdrop = false,
     width = 0.5,
@@ -2214,7 +2347,7 @@ M.sidebar
     height = 0.4,
     min_height = 3,
     box = "vertical",
-    border = "rounded",
+    border = true,
     title = "{title}",
     title_pos = "center",
     { win = "input", height = 1, border = "bottom" },
@@ -2240,7 +2373,7 @@ M.sidebar
     {
       win = "input",
       height = 1,
-      border = "rounded",
+      border = true,
       title = "{title} {live} {flags}",
       title_pos = "center",
     },
@@ -2263,14 +2396,14 @@ M.sidebar
     border = "none",
     {
       box = "vertical",
-      { win = "list", title = " Results ", title_pos = "center", border = "rounded" },
-      { win = "input", height = 1, border = "rounded", title = "{title} {live} {flags}", title_pos = "center" },
+      { win = "list", title = " Results ", title_pos = "center", border = true },
+      { win = "input", height = 1, border = true, title = "{title} {live} {flags}", title_pos = "center" },
     },
     {
       win = "preview",
       title = "{preview:Preview}",
       width = 0.45,
-      border = "rounded",
+      border = true,
       title_pos = "center",
     },
   },
@@ -2294,7 +2427,7 @@ M.sidebar
     height = 0.8,
     min_height = 30,
     box = "vertical",
-    border = "rounded",
+    border = true,
     title = "{title} {live} {flags}",
     title_pos = "center",
     { win = "input", height = 1, border = "bottom" },
@@ -2308,7 +2441,7 @@ M.sidebar
 
 ```lua
 {
-  preview = false,
+  hidden = { "preview" },
   layout = {
     backdrop = false,
     row = 1,
@@ -2317,9 +2450,9 @@ M.sidebar
     height = 0.4,
     border = "none",
     box = "vertical",
-    { win = "input", height = 1, border = "rounded", title = "{title} {live} {flags}", title_pos = "center" },
+    { win = "input", height = 1, border = true, title = "{title} {live} {flags}", title_pos = "center" },
     { win = "list", border = "hpad" },
-    { win = "preview", title = "{preview}", border = "rounded" },
+    { win = "preview", title = "{preview}", border = true },
   },
 }
 ```
@@ -2337,6 +2470,12 @@ local M = {}
 
 ```lua
 Snacks.picker.actions.bufdelete(picker)
+```
+
+### `Snacks.picker.actions.cancel()`
+
+```lua
+Snacks.picker.actions.cancel(picker)
 ```
 
 ### `Snacks.picker.actions.cd()`
@@ -2399,6 +2538,12 @@ Snacks.picker.actions.git_branch_del(picker, item)
 Snacks.picker.actions.git_checkout(picker, item)
 ```
 
+### `Snacks.picker.actions.git_restore()`
+
+```lua
+Snacks.picker.actions.git_restore(picker)
+```
+
 ### `Snacks.picker.actions.git_stage()`
 
 ```lua
@@ -2427,6 +2572,12 @@ Snacks.picker.actions.history_back(picker)
 
 ```lua
 Snacks.picker.actions.history_forward(picker)
+```
+
+### `Snacks.picker.actions.insert()`
+
+```lua
+Snacks.picker.actions.insert(picker, _, action)
 ```
 
 ### `Snacks.picker.actions.inspect()`
@@ -2529,6 +2680,12 @@ Send selected or all items to the location list.
 Snacks.picker.actions.loclist(picker)
 ```
 
+### `Snacks.picker.actions.paste()`
+
+```lua
+Snacks.picker.actions.paste(picker, item, action)
+```
+
 ### `Snacks.picker.actions.pick_win()`
 
 ```lua
@@ -2571,10 +2728,22 @@ Snacks.picker.actions.preview_scroll_right(picker)
 Snacks.picker.actions.preview_scroll_up(picker)
 ```
 
-### `Snacks.picker.actions.put()`
+### `Snacks.picker.actions.print_cwd()`
 
 ```lua
-Snacks.picker.actions.put(picker, item, action)
+Snacks.picker.actions.print_cwd(picker)
+```
+
+### `Snacks.picker.actions.print_dir()`
+
+```lua
+Snacks.picker.actions.print_dir(picker)
+```
+
+### `Snacks.picker.actions.print_path()`
+
+```lua
+Snacks.picker.actions.print_path(picker, item)
 ```
 
 ### `Snacks.picker.actions.qflist()`

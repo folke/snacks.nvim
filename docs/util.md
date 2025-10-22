@@ -32,7 +32,7 @@ Snacks.util.bo(buf, bo)
 ### `Snacks.util.color()`
 
 ```lua
----@param group string hl group to get color from
+---@param group string|string[] hl group to get color from
 ---@param prop? string property to get. Defaults to "fg"
 Snacks.util.color(group, prop)
 ```
@@ -65,6 +65,16 @@ Encodes a string to be used as a file name.
 Snacks.util.file_encode(str)
 ```
 
+### `Snacks.util.get_lang()`
+
+```lua
+---@param lang string|number|nil
+---@overload fun(buf:number):string?
+---@overload fun(ft:string):string?
+---@return string?
+Snacks.util.get_lang(lang)
+```
+
 ### `Snacks.util.icon()`
 
 Get an icon from `mini.icons` or `nvim-web-devicons`.
@@ -72,8 +82,9 @@ Get an icon from `mini.icons` or `nvim-web-devicons`.
 ```lua
 ---@param name string
 ---@param cat? string defaults to "file"
+---@param opts? { fallback?: {dir?:string, file?:string} }
 ---@return string, string?
-Snacks.util.icon(name, cat)
+Snacks.util.icon(name, cat, opts)
 ```
 
 ### `Snacks.util.is_float()`
@@ -125,6 +136,27 @@ Otherwise, it is called when the module is loaded.
 Snacks.util.on_module(modname, cb)
 ```
 
+### `Snacks.util.parse()`
+
+Parse async when available.
+
+```lua
+---@param parser vim.treesitter.LanguageTree
+---@param range boolean|Range|nil: Parse this range in the parser's source.
+---@param on_parse fun(err?: string, trees?: table<integer, TSTree>) Function invoked when parsing completes.
+Snacks.util.parse(parser, range, on_parse)
+```
+
+### `Snacks.util.path_type()`
+
+Better validation to check if path is a dir or a file
+
+```lua
+---@param path string
+---@return "directory"|"file"
+Snacks.util.path_type(path)
+```
+
 ### `Snacks.util.redraw()`
 
 Redraw the window.
@@ -164,6 +196,12 @@ Ensures the hl groups are always set, even after a colorscheme change.
 ---@param groups snacks.util.hl
 ---@param opts? { prefix?:string, default?:boolean, managed?:boolean }
 Snacks.util.set_hl(groups, opts)
+```
+
+### `Snacks.util.spinner()`
+
+```lua
+Snacks.util.spinner()
 ```
 
 ### `Snacks.util.throttle()`

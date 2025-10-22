@@ -80,7 +80,7 @@ function M.get(opts)
   if opts.cwd == true or opts.cwd == "" then
     opts.cwd = nil
   elseif opts.cwd then
-    opts.cwd = vim.fs.normalize(vim.fn.fnamemodify(opts.cwd, ":p"))
+    opts.cwd = svim.fs.normalize(vim.fn.fnamemodify(opts.cwd, ":p"))
   end
   for _, t in ipairs(todo) do
     if t.config then
@@ -102,8 +102,21 @@ function M.get(opts)
     end
   end
 
+  M.fix_old(opts)
+
   M.multi(opts)
   return opts
+end
+
+--- Fixes old config options
+---@param opts snacks.picker.Config
+function M.fix_old(opts)
+  if opts.previewers.diff.native ~= nil then
+    opts.previewers.diff.builtin = not opts.previewers.diff.native
+  end
+  if opts.previewers.git.native ~= nil then
+    opts.previewers.git.builtin = not opts.previewers.git.native
+  end
 end
 
 ---@param opts snacks.picker.Config
@@ -247,6 +260,10 @@ function M.layout(opts)
     else
       layout.preview = nil
     end
+  end
+
+  if layout.config then
+    layout = layout.config(layout) or layout
   end
 
   return layout

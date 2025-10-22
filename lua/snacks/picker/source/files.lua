@@ -133,7 +133,7 @@ local function get_cmd(opts, filter)
     vim.list_extend(dirs, Snacks.picker.util.rtp())
   end
   if #dirs > 0 then
-    dirs = vim.tbl_map(vim.fs.normalize, dirs) ---@type string[]
+    dirs = vim.tbl_map(svim.fs.normalize, dirs) ---@type string[]
     if is_fd and not pattern then
       args[#args + 1] = "."
     end
@@ -154,7 +154,7 @@ end
 ---@type snacks.picker.finder
 function M.files(opts, ctx)
   local cwd = not (opts.rtp or (opts.dirs and #opts.dirs > 0))
-      and vim.fs.normalize(opts and opts.cwd or uv.cwd() or ".")
+      and svim.fs.normalize(opts and opts.cwd or uv.cwd() or ".")
     or nil
   local cmd, args = get_cmd(opts, ctx.filter)
   if not cmd then

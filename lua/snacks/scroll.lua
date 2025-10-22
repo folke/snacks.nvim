@@ -87,13 +87,10 @@ local function get_state(win)
   local changedtick = vim.api.nvim_buf_get_changedtick(buf)
   local view = vim.api.nvim_win_call(win, vim.fn.winsaveview) ---@type vim.fn.winsaveview.ret
   if not (states[win] and states[win].buf == buf and states[win].changedtick == changedtick) then
-    -- go to target if we're still animating and resetting due to a change
-    if states[win] and states[win].anim and not states[win].anim.done and states[win].buf == buf then
+    -- new buffer, or buffer changed: cancel existing animation and reset state
+    if states[win] and states[win].anim then
       states[win].anim:stop()
       states[win].anim = nil
-      vim.api.nvim_win_call(win, function()
-        vim.fn.winrestview(states[win].target)
-      end)
       wo(win) -- restore window options
     end
     ---@diagnostic disable-next-line: missing-fields
@@ -227,6 +224,9 @@ local function scroll_lines(win, from, to)
   if to.topfill > 0 then
     offset = offset - to.topfill
   end
+  if not vim.api.nvim_win_text_height then
+    return end_row - start_row + offset
+  end
   return vim.api.nvim_win_text_height(win, { start_row = start_row, end_row = end_row }).all + offset - 1
 end
 
@@ -257,7 +257,7 @@ function M.check(win)
     stats.mousescroll = stats.mousescroll + 1
     state.current = vim.deepcopy(state.view)
     return
-  elseif math.abs(state.view.topline - state.current.topline) == 0 then
+  elseif math.abs(state.view.topline - state.current.topline) <= 1 then
     stats.skipped = stats.skipped + 1
     state.current = vim.deepcopy(state.view)
     return

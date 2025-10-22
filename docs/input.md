@@ -53,7 +53,7 @@ docs for more information on how to customize these styles
 {
   backdrop = false,
   position = "float",
-  border = "rounded",
+  border = true,
   title_pos = "center",
   height = 1,
   width = 60,
@@ -78,7 +78,7 @@ docs for more information on how to customize these styles
   keys = {
     n_esc = { "<esc>", { "cmp_close", "cancel" }, mode = "n", expr = true },
     i_esc = { "<esc>", { "cmp_close", "stopinsert" }, mode = "i", expr = true },
-    i_cr = { "<cr>", { "cmp_accept", "confirm" }, mode = "i", expr = true },
+    i_cr = { "<cr>", { "cmp_accept", "confirm" }, mode = { "i", "n" }, expr = true },
     i_tab = { "<tab>", { "cmp_select_next", "cmp" }, mode = "i", expr = true },
     i_ctrl_w = { "<c-w>", "<c-s-w>", mode = "i", expr = true },
     i_up = { "<up>", { "hist_up" }, mode = { "i", "n" } },
@@ -95,11 +95,15 @@ docs for more information on how to customize these styles
 ```
 
 ```lua
+---@alias snacks.input.Highlight {[1]:number, [2]:number, [3]:string}
+```
+
+```lua
 ---@class snacks.input.Opts: snacks.input.Config,{}
 ---@field prompt? string
 ---@field default? string
 ---@field completion? string
----@field highlight? fun()
+---@field highlight? fun(text: string): snacks.input.Highlight[]
 ```
 
 ## 📦 Module

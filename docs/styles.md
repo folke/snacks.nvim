@@ -35,7 +35,7 @@ You can customize them by adding your own styles to `opts.styles`.
 {
   width = 0.6,
   height = 0.6,
-  border = "rounded",
+  border = true,
   title = " Git Blame ",
   title_pos = "center",
   ft = "git",
@@ -112,7 +112,7 @@ The other options are used with `:lua Snacks.dashboard()`
 {
   backdrop = false,
   position = "float",
-  border = "rounded",
+  border = true,
   title_pos = "center",
   height = 1,
   width = 60,
@@ -137,7 +137,7 @@ The other options are used with `:lua Snacks.dashboard()`
   keys = {
     n_esc = { "<esc>", { "cmp_close", "cancel" }, mode = "n", expr = true },
     i_esc = { "<esc>", { "cmp_close", "stopinsert" }, mode = "i", expr = true },
-    i_cr = { "<cr>", { "cmp_accept", "confirm" }, mode = "i", expr = true },
+    i_cr = { "<cr>", { "cmp_accept", "confirm" }, mode = { "i", "n" }, expr = true },
     i_tab = { "<tab>", { "cmp_select_next", "cmp" }, mode = "i", expr = true },
     i_ctrl_w = { "<c-w>", "<c-s-w>", mode = "i", expr = true },
     i_up = { "<up>", { "hist_up" }, mode = { "i", "n" } },
@@ -181,7 +181,7 @@ The other options are used with `:lua Snacks.dashboard()`
 
 ```lua
 {
-  border = "rounded",
+  border = true,
   zindex = 100,
   ft = "markdown",
   wo = {
@@ -198,7 +198,7 @@ The other options are used with `:lua Snacks.dashboard()`
 
 ```lua
 {
-  border = "rounded",
+  border = true,
   zindex = 100,
   width = 0.6,
   height = 0.6,
@@ -224,9 +224,8 @@ The other options are used with `:lua Snacks.dashboard()`
   -- position = "right",
   zindex = 20,
   wo = { winhighlight = "NormalFloat:Normal" },
-  border = "rounded",
-  title_pos = "center",
-  footer_pos = "center",
+  footer_keys = true,
+  border = true,
 }
 ```
 
@@ -235,7 +234,7 @@ The other options are used with `:lua Snacks.dashboard()`
 ```lua
 {
   relative = "cursor",
-  border = "rounded",
+  border = true,
   focusable = false,
   backdrop = false,
   row = 1,
@@ -262,6 +261,7 @@ The other options are used with `:lua Snacks.dashboard()`
     filetype = "snacks_terminal",
   },
   wo = {},
+  stack = true, -- when enabled, multiple split windows with the same position will be stacked together (useful for terminals)
   keys = {
     q = "hide",
     gf = function(self)

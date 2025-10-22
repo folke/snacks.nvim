@@ -6,6 +6,8 @@ function M.update(cwd)
   local Tree = require("snacks.explorer.tree")
   local node = Tree:find(cwd)
 
+  local snapshot = Tree:snapshot(node, { "severity" })
+
   Tree:walk(node, function(n)
     n.severity = nil
   end, { all = true })
@@ -22,7 +24,7 @@ function M.update(cwd)
 
   for _, diag in ipairs(diags) do
     local path = diag.bufnr and vim.api.nvim_buf_get_name(diag.bufnr)
-    path = path and path ~= "" and vim.fs.normalize(path) or nil
+    path = path and path ~= "" and svim.fs.normalize(path) or nil
     if path then
       add(path, diag)
       add(cwd, diag)
@@ -31,6 +33,8 @@ function M.update(cwd)
       end
     end
   end
+
+  return Tree:changed(node, snapshot)
 end
 
 return M

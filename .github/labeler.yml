@@ -22,27 +22,51 @@ core:
           - "scripts/**"
 
 # Dynamic labels for each module under `lua/snacks/`
+animate:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/animate/**"
 bigfile:
   - changed-files:
       - any-glob-to-any-file: "lua/snacks/bigfile.lua"
 bufdelete:
   - changed-files:
       - any-glob-to-any-file: "lua/snacks/bufdelete.lua"
+compat:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/compat.lua"
 dashboard:
   - changed-files:
       - any-glob-to-any-file: "lua/snacks/dashboard.lua"
 debug:
   - changed-files:
       - any-glob-to-any-file: "lua/snacks/debug.lua"
+dim:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/dim.lua"
+explorer:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/explorer/**"
 git:
   - changed-files:
       - any-glob-to-any-file: "lua/snacks/git.lua"
 gitbrowse:
   - changed-files:
       - any-glob-to-any-file: "lua/snacks/gitbrowse.lua"
+image:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/image/**"
+indent:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/indent.lua"
 init:
   - changed-files:
       - any-glob-to-any-file: "lua/snacks/init.lua"
+input:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/input.lua"
+layout:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/layout.lua"
 lazygit:
   - changed-files:
       - any-glob-to-any-file: "lua/snacks/lazygit.lua"
@@ -52,12 +76,27 @@ notifier:
 notify:
   - changed-files:
       - any-glob-to-any-file: "lua/snacks/notify.lua"
+picker:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/picker/**"
+profiler:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/profiler/**"
 quickfile:
   - changed-files:
       - any-glob-to-any-file: "lua/snacks/quickfile.lua"
 rename:
   - changed-files:
       - any-glob-to-any-file: "lua/snacks/rename.lua"
+scope:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/scope.lua"
+scratch:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/scratch.lua"
+scroll:
+  - changed-files:
+      - any-glob-to-any-file: "lua/snacks/scroll.lua"
 statuscolumn:
   - changed-files:
       - any-glob-to-any-file: "lua/snacks/statuscolumn.lua"
@@ -73,6 +112,6 @@ win:
 words:
   - changed-files:
       - any-glob-to-any-file: "lua/snacks/words.lua"
-picker:
+zen:
   - changed-files:
-      - any-glob-to-any-file: "lua/snacks/picker/**"
+      - any-glob-to-any-file: "lua/snacks/zen.lua"

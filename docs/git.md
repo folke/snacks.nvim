@@ -13,7 +13,7 @@ docs for more information on how to customize these styles
 {
   width = 0.6,
   height = 0.6,
-  border = "rounded",
+  border = true,
   title = " Git Blame ",
   title_pos = "center",
   ft = "git",

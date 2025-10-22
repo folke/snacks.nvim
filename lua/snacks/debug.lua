@@ -10,6 +10,18 @@ M.meta = {
   desc = "Pretty inspect & backtraces for debugging",
 }
 
+---@class snacks.debug.cmd
+---@field cmd string|string[]
+---@field level? snacks.notifier.level
+---@field title? string
+---@field args? string[]
+---@field cwd? string
+---@field group? boolean
+---@field notify? boolean
+---@field footer? string
+---@field header? string
+---@field props? table<string, string>
+
 local uv = vim.uv or vim.loop
 
 local MAX_INSPECT_LINES = 2000
@@ -85,6 +97,21 @@ function M.run(opts)
     for _ = 1, from[1] - 1 do
       table.insert(lines, 1, "")
     end
+    vim.fn.feedkeys("gv", "nx")
+  elseif mode == "\22" then
+    -- Yank the visual selection to handle irregularly shaped blocks
+    local tmp = vim.fn.getreginfo("*")
+    vim.cmd('normal! "*y')
+    lines = vim.fn.getreginfo("*").regcontents
+    vim.fn.setreg("*", tmp.regcontents, tmp.regtype)
+
+    -- Insert empty lines to keep the line numbers
+    local from = vim.api.nvim_buf_get_mark(buf, "<")
+    for _ = 1, from[1] - 1 do
+      table.insert(lines, 1, "")
+    end
+
+    -- Restore the selection
     vim.fn.feedkeys("gv", "nx")
   else
     lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
@@ -343,6 +370,58 @@ function M.metrics()
   end
   lines[#lines + 1] = ("```lua\n%s\n```"):format(vim.inspect(uv.getrusage()))
   Snacks.notify.warn(lines, { title = "Metrics" })
+end
+
+---@param opts snacks.debug.cmd
+function M.cmd(opts)
+  local cmd = opts.cmd
+  local args = vim.deepcopy(opts.args or {})
+  if type(cmd) == "table" then
+    vim.list_extend(args, cmd, 2)
+    cmd = cmd[1]
+  end
+  args = vim.tbl_map(tostring, args)
+  ---@cast cmd string
+  local lines = { cmd } ---@type string[]
+  for _, arg in ipairs(args or {}) do
+    arg = arg:find("[%$%s%?]") and vim.fn.shellescape(arg) or arg
+    if #arg + #lines[#lines] > 40 then
+      lines[#lines] = lines[#lines] .. " \\"
+      table.insert(lines, "  " .. arg)
+    else
+      lines[#lines] = lines[#lines] .. " " .. arg
+    end
+  end
+  local props = vim.deepcopy(opts.props or {})
+  props.cwd = props.cwd or vim.fn.fnamemodify(opts.cwd or uv.cwd() or ".", ":~")
+  local prop_keys = vim.tbl_keys(props) ---@type string[]
+  table.sort(prop_keys)
+  local prop_lines = {} ---@type string[]
+  for _, key in ipairs(prop_keys) do
+    table.insert(prop_lines, ("- **%s**: %s"):format(key, props[key]))
+  end
+
+  local id = cmd
+  lines = {
+    opts.header or "",
+    table.concat(prop_lines, "\n"),
+    "```sh",
+    table.concat(lines, " \n"),
+    "```",
+    opts.footer or "",
+  }
+  if opts.title and not opts.notify then
+    table.insert(lines, 1, ("# %s\n"):format(opts.title))
+  end
+  local msg = vim.trim(table.concat(lines, "\n")):gsub("\n\n+", "\n\n")
+  if opts.notify ~= false then
+    Snacks.notify(msg, {
+      id = opts.group and ("snacks.debug.cmd." .. id) or nil,
+      level = opts.level or vim.log.levels.INFO,
+      title = opts.title or "Cmd Debug",
+    })
+  end
+  return msg
 end
 
 return M

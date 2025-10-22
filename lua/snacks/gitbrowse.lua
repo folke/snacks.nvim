@@ -27,6 +27,7 @@ local defaults = {
   end,
   ---@type "repo" | "branch" | "file" | "commit" | "permalink"
   what = "commit", -- what to open. not all remotes support all types
+  commit = nil, ---@type string?
   branch = nil, ---@type string?
   line_start = nil, ---@type number?
   line_end = nil, ---@type number?
@@ -56,8 +57,8 @@ local defaults = {
     },
     ["gitlab%.com"] = {
       branch = "/-/tree/{branch}",
-      file = "/-/blob/{branch}/{file}#L{line_start}-L{line_end}",
-      permalink = "/-/blob/{commit}/{file}#L{line_start}-L{line_end}",
+      file = "/-/blob/{branch}/{file}#L{line_start}-{line_end}",
+      permalink = "/-/blob/{commit}/{file}#L{line_start}-{line_end}",
       commit = "/-/commit/{commit}",
     },
     ["bitbucket%.org"] = {
@@ -65,6 +66,12 @@ local defaults = {
       file = "/src/{branch}/{file}#lines-{line_start}-L{line_end}",
       permalink = "/src/{commit}/{file}#lines-{line_start}-L{line_end}",
       commit = "/commits/{commit}",
+    },
+    ["git.sr.ht"] = {
+      branch = "/tree/{branch}",
+      file = "/tree/{branch}/item/{file}",
+      permalink = "/tree/{commit}/item/{file}#L{line_start}",
+      commit = "/commit/{commit}",
     },
   },
 }
@@ -143,7 +150,7 @@ end
 function M._open(opts)
   opts = Snacks.config.get("gitbrowse", defaults, opts)
   local file = vim.api.nvim_buf_get_name(0) ---@type string?
-  file = file and (uv.fs_stat(file) or {}).type == "file" and vim.fs.normalize(file) or nil
+  file = file and (uv.fs_stat(file) or {}).type == "file" and svim.fs.normalize(file) or nil
   local cwd = file and vim.fn.fnamemodify(file, ":h") or vim.fn.getcwd()
 
   ---@type snacks.gitbrowse.Fields
@@ -153,16 +160,19 @@ function M._open(opts)
     file = file and system({ "git", "-C", cwd, "ls-files", "--full-name", file }, "Failed to get git file path")[1],
     line_start = opts.line_start,
     line_end = opts.line_end,
+    commit = opts.commit,
   }
 
-  if opts.what == "permalink" then
-    fields.commit = system(
-      { "git", "-C", cwd, "log", "-n", "1", "--pretty=format:%H", "--", file },
-      "Failed to get latest commit of file"
-    )[1]
-  else
-    local word = vim.fn.expand("<cword>")
-    fields.commit = is_valid_commit_hash(word, cwd) and word or nil
+  if not fields.commit then
+    if opts.what == "permalink" then
+      fields.commit = system(
+        { "git", "-C", cwd, "log", "-n", "1", "--pretty=format:%H", "--", file },
+        "Failed to get latest commit of file"
+      )[1]
+    else
+      local word = vim.fn.expand("<cword>")
+      fields.commit = is_valid_commit_hash(word, cwd) and word or nil
+    end
   end
 
   -- Get visual selection range if in visual mode

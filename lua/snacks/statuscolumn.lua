@@ -13,11 +13,51 @@ M.meta = {
   needs_setup = true,
 }
 
--- Numbers in Neovim are weird
--- They show when either number or relativenumber is true
-local LINE_NR = "%=%{%(&number || &relativenumber) && v:virtnum == 0 ? ("
-  .. (vim.fn.has("nvim-0.11") == 1 and '"%l"' or 'v:relnum == 0 ? (&number ? "%l" : "%r") : (&relativenumber ? "%r" : "%l")')
-  .. ') : ""%} '
+---@class snacks.statuscolumn.FoldInfo
+---@field start number Line number where deepest fold starts
+---@field level number Fold level, when zero other fields are N/A
+---@field llevel number Lowest level that starts in v:lnum
+---@field lines number Number of lines from v:lnum to end of closed fold
+
+---@type ffi.namespace*
+local C
+
+local function _ffi()
+  if not C then
+    local ffi = require("ffi")
+    ffi.cdef([[
+      typedef struct {} Error;
+      typedef struct {} win_T;
+      typedef struct {
+        int start;  // line number where deepest fold starts
+        int level;  // fold level, when zero other fields are N/A
+        int llevel; // lowest level that starts in v:lnum
+        int lines;  // number of lines from v:lnum to end of closed fold
+      } foldinfo_T;
+      foldinfo_T fold_info(win_T* wp, int lnum);
+      win_T *find_window_by_handle(int Window, Error *err);
+    ]])
+    C = ffi.C
+  end
+  return C
+end
+
+-- Returns fold info for a given window and line number
+---@param win number
+---@param lnum number
+local function fold_info(win, lnum)
+  pcall(_ffi)
+  if not C then
+    return
+  end
+  local ffi = require("ffi")
+  local err = ffi.new("Error")
+  local wp = C.find_window_by_handle(win, err)
+  if wp == nil then
+    return
+  end
+  return C.fold_info(wp, lnum) ---@type snacks.statuscolumn.FoldInfo
+end
 
 ---@alias snacks.statuscolumn.Component "mark"|"sign"|"fold"|"git"
 ---@alias snacks.statuscolumn.Components snacks.statuscolumn.Component[]|fun(win:number,buf:number,lnum:number):snacks.statuscolumn.Component[]
@@ -150,8 +190,11 @@ function M.line_signs(win, buf, lnum)
   vim.api.nvim_win_call(win, function()
     if vim.fn.foldclosed(lnum) >= 0 then
       signs[#signs + 1] = { text = vim.opt.fillchars:get().foldclose or "", texthl = "Folded", type = "fold" }
-    elseif config.folds.open and tostring(vim.treesitter.foldexpr(vim.v.lnum)):sub(1, 1) == ">" then
-      signs[#signs + 1] = { text = vim.opt.fillchars:get().foldopen or "", type = "fold" }
+    elseif config.folds.open then
+      local info = fold_info(win, lnum)
+      if info and info.level > 0 and info.start == lnum then
+        signs[#signs + 1] = { text = vim.opt.fillchars:get().foldopen or "", type = "fold" }
+      end
     end
   end)
 
@@ -184,10 +227,24 @@ function M._get()
     M.setup()
   end
   local win = vim.g.statusline_winid
+  local nu = vim.wo[win].number
+  local rnu = vim.wo[win].relativenumber
   local show_signs = vim.v.virtnum == 0 and vim.wo[win].signcolumn ~= "no"
-  local components = { "", LINE_NR, "" } -- left, middle, right
-  if not show_signs and not (vim.wo[win].number or vim.wo[win].relativenumber) then
+  local components = { "", "", "" } -- left, middle, right
+  if not (show_signs or nu or rnu) then
     return ""
+  end
+
+  if (nu or rnu) and vim.v.virtnum == 0 then
+    local num ---@type number
+    if rnu and nu and vim.v.relnum == 0 then
+      num = vim.v.lnum
+    elseif rnu then
+      num = vim.v.relnum
+    else
+      num = vim.v.lnum
+    end
+    components[2] = "%=" .. num .. " "
   end
 
   if show_signs then
@@ -238,7 +295,7 @@ end
 function M.get()
   local win = vim.g.statusline_winid
   local buf = vim.api.nvim_win_get_buf(win)
-  local key = ("%d:%d:%d:%d"):format(win, buf, vim.v.lnum, vim.v.virtnum ~= 0 and 1 or 0)
+  local key = ("%d:%d:%d:%d:%d"):format(win, buf, vim.v.lnum, vim.v.virtnum ~= 0 and 1 or 0, vim.v.relnum)
   if cache[key] then
     return cache[key]
   end

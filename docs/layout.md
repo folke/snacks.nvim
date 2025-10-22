@@ -29,6 +29,7 @@
 ---@field fullscreen? boolean open in fullscreen
 ---@field hidden? string[] list of windows that will be excluded from the layout (but can be toggled)
 ---@field on_update? fun(layout: snacks.layout)
+---@field on_update_pre? fun(layout: snacks.layout)
 {
   layout = {
     width = 0.6,

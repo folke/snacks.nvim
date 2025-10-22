@@ -1,0 +1,211 @@
+*snacks-layout*        For Neovim        Last change: 2025 October 22
+
+==============================================================================
+Table of Contents                       *snacks.nvim-layout-table-of-contents*
+
+1. Setup                                            |snacks.nvim-layout-setup|
+2. Config                                          |snacks.nvim-layout-config|
+3. Types                                            |snacks.nvim-layout-types|
+4. Module                                          |snacks.nvim-layout-module|
+  - Snacks.layout.new()        |snacks.nvim-layout-module-snacks.layout.new()|
+  - layout:close()                  |snacks.nvim-layout-module-layout:close()|
+  - layout:each()                    |snacks.nvim-layout-module-layout:each()|
+  - layout:hide()                    |snacks.nvim-layout-module-layout:hide()|
+  - layout:is_enabled()        |snacks.nvim-layout-module-layout:is_enabled()|
+  - layout:is_hidden()          |snacks.nvim-layout-module-layout:is_hidden()|
+  - layout:maximize()            |snacks.nvim-layout-module-layout:maximize()|
+  - layout:needs_layout()    |snacks.nvim-layout-module-layout:needs_layout()|
+  - layout:show()                    |snacks.nvim-layout-module-layout:show()|
+  - layout:toggle()                |snacks.nvim-layout-module-layout:toggle()|
+  - layout:unhide()                |snacks.nvim-layout-module-layout:unhide()|
+  - layout:valid()                  |snacks.nvim-layout-module-layout:valid()|
+
+==============================================================================
+1. Setup                                            *snacks.nvim-layout-setup*
+
+>lua
+    -- lazy.nvim
+    {
+      "folke/snacks.nvim",
+      ---@type snacks.Config
+      opts = {
+        layout = {
+          -- your layout configuration comes here
+          -- or leave it empty to use the default settings
+          -- refer to the configuration section below
+        }
+      }
+    }
+<
+
+
+==============================================================================
+2. Config                                          *snacks.nvim-layout-config*
+
+>lua
+    ---@class snacks.layout.Config
+    ---@field show? boolean show the layout on creation (default: true)
+    ---@field wins table<string, snacks.win> windows to include in the layout
+    ---@field layout snacks.layout.Box layout definition
+    ---@field fullscreen? boolean open in fullscreen
+    ---@field hidden? string[] list of windows that will be excluded from the layout (but can be toggled)
+    ---@field on_update? fun(layout: snacks.layout)
+    ---@field on_update_pre? fun(layout: snacks.layout)
+    {
+      layout = {
+        width = 0.6,
+        height = 0.6,
+        zindex = 50,
+      },
+    }
+<
+
+
+==============================================================================
+3. Types                                            *snacks.nvim-layout-types*
+
+>lua
+    ---@class snacks.layout.Win: snacks.win.Config,{}
+    ---@field depth? number
+    ---@field win string layout window name
+<
+
+>lua
+    ---@class snacks.layout.Box: snacks.layout.Win,{}
+    ---@field box "horizontal" | "vertical"
+    ---@field id? number
+    ---@field [number] snacks.layout.Win | snacks.layout.Box children
+<
+
+>lua
+    ---@alias snacks.layout.Widget snacks.layout.Win | snacks.layout.Box
+<
+
+
+==============================================================================
+4. Module                                          *snacks.nvim-layout-module*
+
+>lua
+    ---@class snacks.layout
+    ---@field opts snacks.layout.Config
+    ---@field root snacks.win
+    ---@field wins table<string, snacks.win|{enabled?:boolean, layout?:boolean}>
+    ---@field box_wins snacks.win[]
+    ---@field win_opts table<string, snacks.win.Config>
+    ---@field closed? boolean
+    ---@field split? boolean
+    ---@field screenpos number[]?
+    Snacks.layout = {}
+<
+
+
+`Snacks.layout.new()`                                    *Snacks.layout.new()*
+
+>lua
+    ---@param opts snacks.layout.Config
+    Snacks.layout.new(opts)
+<
+
+
+LAYOUT:CLOSE()                      *snacks.nvim-layout-module-layout:close()*
+
+Close the layout
+
+>lua
+    ---@param opts? {wins?: boolean}
+    layout:close(opts)
+<
+
+
+LAYOUT:EACH()                        *snacks.nvim-layout-module-layout:each()*
+
+>lua
+    ---@param cb fun(widget: snacks.layout.Widget, parent?: snacks.layout.Box)
+    ---@param opts? {wins?:boolean, boxes?:boolean, box?:snacks.layout.Box}
+    layout:each(cb, opts)
+<
+
+
+LAYOUT:HIDE()                        *snacks.nvim-layout-module-layout:hide()*
+
+>lua
+    layout:hide()
+<
+
+
+LAYOUT:IS_ENABLED()            *snacks.nvim-layout-module-layout:is_enabled()*
+
+Check if the window has been used in the layout
+
+>lua
+    ---@param w string
+    layout:is_enabled(w)
+<
+
+
+LAYOUT:IS_HIDDEN()              *snacks.nvim-layout-module-layout:is_hidden()*
+
+Check if a window is hidden
+
+>lua
+    ---@param win string
+    layout:is_hidden(win)
+<
+
+
+LAYOUT:MAXIMIZE()                *snacks.nvim-layout-module-layout:maximize()*
+
+Toggle fullscreen
+
+>lua
+    layout:maximize()
+<
+
+
+LAYOUT:NEEDS_LAYOUT()        *snacks.nvim-layout-module-layout:needs_layout()*
+
+>lua
+    ---@param win string
+    layout:needs_layout(win)
+<
+
+
+LAYOUT:SHOW()                        *snacks.nvim-layout-module-layout:show()*
+
+Show the layout
+
+>lua
+    layout:show()
+<
+
+
+LAYOUT:TOGGLE()                    *snacks.nvim-layout-module-layout:toggle()*
+
+Toggle a window
+
+>lua
+    ---@param win string
+    ---@param enable? boolean
+    ---@param on_update? fun(enabled: boolean) called when the layout will be updated
+    layout:toggle(win, enable, on_update)
+<
+
+
+LAYOUT:UNHIDE()                    *snacks.nvim-layout-module-layout:unhide()*
+
+>lua
+    layout:unhide()
+<
+
+
+LAYOUT:VALID()                      *snacks.nvim-layout-module-layout:valid()*
+
+Check if layout is valid (visible)
+
+>lua
+    layout:valid()
+<
+
+Generated by panvimdoc <https://github.com/kdheepak/panvimdoc>
+
+vim:tw=78:ts=8:noet:ft=help:norl:

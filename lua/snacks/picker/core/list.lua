@@ -119,11 +119,16 @@ function M.new(picker)
   end)
 
   self.win:on("WinResized", function()
-    if vim.tbl_contains(vim.v.event.windows, self.win.win) then
-      self.state.height = vim.api.nvim_win_get_height(self.win.win)
-      self.dirty = true
-      self:update()
+    if not self.win:win_valid() then
+      return
     end
+    local height = vim.api.nvim_win_get_height(self.win.win)
+    if height == self.state.height then
+      return
+    end
+    self.state.height = height
+    self.dirty = true
+    self:update()
   end)
 
   -- reset topline. Only needed for Neovim < 0.11,
@@ -132,7 +137,7 @@ function M.new(picker)
     for win in pairs(vim.v.event) do
       if (tonumber(win) or -1) == self.win.win then
         vim.api.nvim_win_call(self.win.win, function()
-          vim.fn.winrestview({ topline = 1, leftcol = 0 })
+          vim.fn.winrestview({ topline = 1 })
         end)
       end
     end
@@ -226,7 +231,7 @@ function M:close()
 end
 
 function M:scrolloff()
-  local scrolloff = math.min(self.state.scrolloff, math.floor(self:height() / 2))
+  local scrolloff = math.min(self.state.scrolloff, math.floor((self:height() - 1) / 2))
   local offset = math.min(self.cursor, self:count() - self.cursor)
   return offset > scrolloff and scrolloff or 0
 end
@@ -297,14 +302,6 @@ function M:clear()
   self.topk:clear()
   self.top, self.cursor = 1, 1
   self.items = {}
-  if self._current then
-    vim.schedule(function()
-      if self.picker then
-        self.picker:show_preview()
-      end
-    end)
-  end
-  self._current = nil
   self.dirty = true
   if next(self.items) == nil then
     return
@@ -372,9 +369,6 @@ function M:update(opts)
     end)
   end
   if self.paused and #self.items < self.state.height then
-    return
-  end
-  if not self.win:valid() then
     return
   end
   self:render()
@@ -486,6 +480,9 @@ function M:format(item)
 
   -- Add the formatted item
   local line = self.picker.format(item, self.picker)
+
+  line = Snacks.picker.highlight.resolve(line, vim.api.nvim_win_get_width(self.win.win))
+
   while #line > 0 and type(line[#line][1]) == "string" and line[#line][1]:find("^%s*$") do
     table.remove(line)
   end
@@ -507,27 +504,17 @@ function M:format(item)
       }
       it[field] = text:sub(extmark.col + 1, extmark.end_col)
       local positions = self.matcher:positions(it)
-      for _, pos in ipairs(positions[field] or {}) do
-        table.insert(extmarks, {
-          col = pos - 1 + extmark.col,
-          end_col = pos + extmark.col,
-          hl_group = "SnacksPickerMatch",
-        })
-      end
+      Snacks.picker.highlight.matches(extmarks, positions[field] or {}, extmark.col)
     end
   end
 
   -- Highlight match positions for text
   local it = { text = text:gsub("%s*$", ""), idx = 1, score = 0, file = item.file }
   local positions = self.matcher:positions(it).text or {}
-  vim.list_extend(positions, self.matcher_regex:positions(it).text or {})
-  for _, pos in ipairs(positions) do
-    table.insert(extmarks, {
-      col = pos - 1,
-      end_col = pos,
-      hl_group = "SnacksPickerMatch",
-    })
+  if not item.positions then
+    vim.list_extend(positions, self.matcher_regex:positions(it).text or {})
   end
+  Snacks.picker.highlight.matches(extmarks, positions)
   return text, extmarks
 end
 
@@ -561,6 +548,9 @@ function M:update_cursorline()
 end
 
 function M:render()
+  if not self.win:valid() then
+    return
+  end
   stats.render = stats.render + 1
   if self.target then
     self:view(self.target.cursor, self.target.top, false)
@@ -620,6 +610,10 @@ function M:render()
   -- force redraw if list changed
   if redraw then
     self.win:redraw()
+  end
+
+  if self.target then
+    return
   end
 
   -- check if current item changed

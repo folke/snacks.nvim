@@ -74,7 +74,7 @@ function M.marks(opts)
     local file = mark.file or bufname
     local buf = mark.pos[1] and mark.pos[1] > 0 and mark.pos[1] or nil
     local line ---@type string?
-    if buf and mark.pos[2] > 0 and vim.api.nvim_buf_is_valid(mark.pos[2]) then
+    if buf and mark.pos[2] > 0 and vim.api.nvim_buf_is_valid(mark.pos[1]) then
       line = vim.api.nvim_buf_get_lines(buf, mark.pos[2] - 1, mark.pos[2], false)[1]
     end
     local label = mark.mark:sub(2, 2)
@@ -319,6 +319,56 @@ function M.spelling()
   return items
 end
 
+---@class snacks.picker.tags.Tag
+---@field name string
+---@field filename string
+---@field cmd string
+---@field kind? string
+---@field static? string
+
+---@param opts snacks.picker.tags.Config
+---@type snacks.picker.finder
+function M.tags(opts, ctx)
+  local buf = ctx.filter.current_buf
+  ---@type snacks.picker.tags.Tag[]
+  local tags = vim.fn.taglist(ctx.filter.search == "" and ".*" or ctx.filter.search, vim.api.nvim_buf_get_name(buf))
+  local ret = {} ---@type snacks.picker.finder.Item[]
+
+  local lsp_kinds = {
+    c = "Class",
+    d = "Constant",
+    e = "Enum",
+    f = "Function",
+    g = "EnumMember",
+    l = "Variable",
+    m = "Method",
+    s = "Struct",
+    t = "TypeParameter",
+    v = "Variable",
+    F = "Field",
+    M = "Module",
+    n = "Namespace",
+    P = "Property",
+    S = "Struct",
+    T = "TypeParameter",
+  }
+
+  for _, tag in ipairs(tags) do
+    ---@type snacks.picker.finder.Item
+    local item = {
+      text = tag.name,
+      name = tag.name,
+      file = tag.filename,
+      search = tag.cmd,
+      kind = tag.kind,
+      lsp_kind = lsp_kinds[tag.kind] or "Text",
+    }
+    ret[#ret + 1] = item
+  end
+
+  return ret
+end
+
 ---@param opts snacks.picker.undo.Config
 ---@type snacks.picker.finder
 function M.undo(opts, ctx)
@@ -385,10 +435,7 @@ function M.undo(opts, ctx)
     item.removed_lines = table.concat(removed_lines, "\n")
     item.added = #added_lines
     item.removed = #removed_lines
-    item.preview = {
-      text = diff,
-      ft = "diff",
-    }
+    item.diff = diff
   end
 
   ---@param entries? vim.fn.undotree.entry[]

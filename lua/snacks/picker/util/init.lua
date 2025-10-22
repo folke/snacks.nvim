@@ -10,17 +10,18 @@ function M.path(item)
     return
   end
   item._path = item._path
-    or vim.fs.normalize(item.cwd and item.cwd .. "/" .. item.file or item.file, { _fast = true, expand_env = false })
+    or svim.fs.normalize(item.cwd and item.cwd .. "/" .. item.file or item.file, { _fast = true, expand_env = false })
   return item._path
 end
 
 ---@param path string
----@param len? number
----@param opts? {cwd?: string}
+---@param len number
+---@param opts? {cwd?: string, kind?: "left" | "center" | "right"}
 function M.truncpath(path, len, opts)
-  local cwd = vim.fs.normalize(opts and opts.cwd or vim.fn.getcwd(), { _fast = true, expand_env = false })
-  local home = vim.fs.normalize("~")
-  path = vim.fs.normalize(path, { _fast = true, expand_env = false })
+  opts = opts or {}
+  local cwd = svim.fs.normalize(opts and opts.cwd or vim.fn.getcwd(), { _fast = true, expand_env = false })
+  local home = svim.fs.normalize("~")
+  path = svim.fs.normalize(path, { _fast = true, expand_env = false })
 
   if path:find(cwd .. "/", 1, true) == 1 and #path > #cwd then
     path = path:sub(#cwd + 2)
@@ -34,6 +35,12 @@ function M.truncpath(path, len, opts)
     end
   end
   path = path:gsub("/$", "")
+
+  if opts.kind == "left" then
+    return M.truncate(path, len, true)
+  elseif opts.kind == "right" then
+    return M.truncate(path, len, false)
+  end
 
   if vim.api.nvim_strwidth(path) <= len then
     return path
@@ -49,6 +56,9 @@ function M.truncpath(path, len, opts)
     first = "~/" .. table.remove(parts, 1)
   end
   local width = vim.api.nvim_strwidth(ret) + vim.api.nvim_strwidth(first) + 3
+  if width > len then
+    return first .. "/…/" .. M.truncate(ret, len - vim.api.nvim_strwidth(first) - 3, true)
+  end
   while width < len and #parts > 0 do
     local part = table.remove(parts) .. "/"
     local w = vim.api.nvim_strwidth(part)
@@ -135,9 +145,12 @@ end
 
 ---@param text string
 ---@param width number
-function M.truncate(text, width)
-  if vim.api.nvim_strwidth(text) > width then
-    return vim.fn.strcharpart(text, 0, width - 1) .. "…"
+---@param left? boolean
+function M.truncate(text, width, left)
+  local tw = vim.api.nvim_strwidth(text)
+  if tw > width then
+    return left and "…" .. vim.fn.strcharpart(text, tw - width + 1, width - 1)
+      or vim.fn.strcharpart(text, 0, width - 1) .. "…"
   end
   return text
 end
@@ -172,13 +185,15 @@ end
 
 ---@param str string
 ---@param data table<string, string>
-function M.tpl(str, data)
-  return (
+---@param opts? {prefix?: string, indent?: boolean, offset?: number[]}
+function M.tpl(str, data, opts)
+  opts = opts or {}
+  local ret = (
     str:gsub(
-      "(%b{})",
+      "(" .. vim.pesc(opts.prefix or "") .. "%b{}" .. ")",
       ---@param w string
       function(w)
-        local inner = w:sub(2, -2)
+        local inner = w:sub(2 + #(opts.prefix or ""), -2)
         local key, default = inner:match("^(.-):(.*)$")
         local ret = data[key or inner]
         if ret == "" and default then
@@ -188,6 +203,17 @@ function M.tpl(str, data)
       end
     )
   )
+  if opts.indent then
+    local lines = vim.split(ret:gsub("\t", "  "), "\n", { plain = true })
+    local indent = 1000
+    for _, line in ipairs(lines) do
+      indent = math.min(indent, line:find("%S") or 1000)
+    end
+    for l, line in ipairs(lines) do
+      lines[l] = line:sub(indent)
+    end
+  end
+  return ret
 end
 
 ---@param str string
@@ -440,15 +466,15 @@ end
 function M.dir(item)
   local path = type(item) == "table" and M.path(item) or item
   ---@cast path string
-  path = vim.fs.normalize(path)
-  return vim.fn.isdirectory(path) == 1 and path or vim.fs.dirname(path)
+  path = svim.fs.normalize(path)
+  return Snacks.util.path_type(path) == "directory" and path or vim.fs.dirname(path)
 end
 
 ---@param paths string[]
 ---@param dir string
 function M.copy(paths, dir)
-  dir = vim.fs.normalize(dir)
-  paths = vim.tbl_map(vim.fs.normalize, paths) ---@type string[]
+  dir = svim.fs.normalize(dir)
+  paths = vim.tbl_map(svim.fs.normalize, paths) ---@type string[]
   for _, path in ipairs(paths) do
     local name = vim.fn.fnamemodify(path, ":t")
     local to = dir .. "/" .. name
@@ -463,7 +489,7 @@ function M.copy_path(from, to)
     Snacks.notify.error(("File `%s` does not exist"):format(from))
     return
   end
-  if vim.fn.isdirectory(from) == 1 then
+  if Snacks.util.path_type(from) == "directory" then
     M.copy_dir(from, to)
   else
     M.copy_file(from, to)
@@ -539,7 +565,7 @@ function M.get_bins()
   local path = vim.split(os.getenv("PATH") or "", is_win and ";" or ":", { plain = true })
   local bins = {} ---@type table<string, string>
   for _, p in ipairs(path) do
-    p = vim.fs.normalize(p)
+    p = svim.fs.normalize(p)
     for file, t in vim.fs.dir(p) do
       if t ~= "directory" then
         local fpath = p .. "/" .. file

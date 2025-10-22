@@ -21,10 +21,12 @@
 ---@field exclude? string[] globs to exclude
 ---@field include? string[] globs to exclude
 
+---@alias snacks.picker.explorer.Snapshot {fields: string[], state:table<snacks.picker.explorer.Node, any[]>}
+
 local uv = vim.uv or vim.loop
 
 local function norm(path)
-  return vim.fs.normalize(path)
+  return svim.fs.normalize(path)
 end
 
 local function assert_dir(path)
@@ -139,6 +141,7 @@ function Tree:expand(node)
     if not name then
       break
     end
+    t = t or Snacks.util.path_type(node.path .. "/" .. name)
     found[name] = true
     local child = self:child(node, name, t)
     child.type = t
@@ -329,6 +332,44 @@ function Tree:next(cwd, filter, opts)
     return prev or last
   end
   return next or first
+end
+
+---@param node snacks.picker.explorer.Node
+---@param snapshot snacks.picker.explorer.Snapshot
+function Tree:changed(node, snapshot)
+  local old = snapshot.state
+  local current = self:snapshot(node, snapshot.fields).state
+  if vim.tbl_count(current) ~= vim.tbl_count(old) then
+    return true
+  end
+  for n, data in pairs(current) do
+    local prev = old[n]
+    if not prev then
+      return true
+    end
+    if not vim.deep_equal(prev, data) then
+      return true
+    end
+  end
+  return false
+end
+
+---@param node snacks.picker.explorer.Node
+---@param fields string[]
+function Tree:snapshot(node, fields)
+  ---@type snacks.picker.explorer.Snapshot
+  local ret = {
+    state = {},
+    fields = fields,
+  }
+  Tree:walk(node, function(n)
+    local data = {} ---@type any[]
+    for f, field in ipairs(fields) do
+      data[f] = n[field]
+    end
+    ret.state[n] = data
+  end, { all = true })
+  return ret
 end
 
 return Tree.new()

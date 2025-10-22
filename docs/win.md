@@ -45,6 +45,7 @@ Snacks.win({
 ---@class snacks.win.Config: vim.api.keyset.win_config
 ---@field style? string merges with config from `Snacks.config.styles[style]`
 ---@field show? boolean Show the window immediately (default: true)
+---@field footer_keys? boolean Show keys footer (default: false)
 ---@field height? number|fun(self:snacks.win):number Height of the window. Use <1 for relative height. 0 means full height. (default: 0.9)
 ---@field width? number|fun(self:snacks.win):number Width of the window. Use <1 for relative width. 0 means full width. (default: 0.9)
 ---@field min_height? number Minimum height of the window
@@ -54,8 +55,8 @@ Snacks.win({
 ---@field col? number|fun(self:snacks.win):number Column of the window. Use <1 for relative column. (default: center)
 ---@field row? number|fun(self:snacks.win):number Row of the window. Use <1 for relative row. (default: center)
 ---@field minimal? boolean Disable a bunch of options to make the window minimal (default: true)
----@field position? "float"|"bottom"|"top"|"left"|"right"
----@field border? "none"|"top"|"right"|"bottom"|"left"|"hpad"|"vpad"|"rounded"|"single"|"double"|"solid"|"shadow"|string[]|false
+---@field position? "float"|"bottom"|"top"|"left"|"right"|"current"
+---@field border? "none"|"top"|"right"|"bottom"|"left"|"hpad"|"vpad"|"rounded"|"single"|"double"|"solid"|"shadow"|"bold"|string[]|false|true
 ---@field buf? number If set, use this buffer instead of creating a new one
 ---@field file? string If set, use this file instead of creating a new buffer
 ---@field enter? boolean Enter the window after opening (default: false)
@@ -74,6 +75,7 @@ Snacks.win({
 ---@field text? string|string[]|fun():(string[]|string) Initial lines to set in the buffer
 ---@field actions? table<string, snacks.win.Action.spec> Actions that can be used in key mappings
 ---@field resize? boolean Automatically resize the window when the editor is resized
+---@field stack? boolean When enabled, multiple split windows with the same position will be stacked together (useful for terminals)
 {
   show = true,
   fixbuf = true,
@@ -81,12 +83,15 @@ Snacks.win({
   position = "float",
   minimal = true,
   wo = {
-    winhighlight = "Normal:SnacksNormal,NormalNC:SnacksNormalNC,WinBar:SnacksWinBar,WinBarNC:SnacksWinBarNC",
+    winhighlight = "Normal:SnacksNormal,NormalNC:SnacksNormalNC,WinBar:SnacksWinBar,WinBarNC:SnacksWinBarNC,FloatTitle:SnacksTitle,FloatFooter:SnacksFooter",
   },
   bo = {},
+  title_pos = "center",
   keys = {
     q = "close",
   },
+  footer_pos = "center",
+  footer_keys = false,
 }
 ```
 
@@ -220,6 +225,12 @@ Snacks.win = {}
 Snacks.win()
 ```
 
+### `Snacks.win.is_border()`
+
+```lua
+Snacks.win.is_border(border)
+```
+
 ### `Snacks.win.new()`
 
 ```lua
@@ -240,6 +251,12 @@ win:action(actions)
 
 ```lua
 win:add_padding()
+```
+
+### `win:border()`
+
+```lua
+win:border()
 ```
 
 ### `win:border_size()`
@@ -287,6 +304,12 @@ win:dim(parent)
 ```lua
 ---@param actions string|string[]
 win:execute(actions)
+```
+
+### `win:fixbuf()`
+
+```lua
+win:fixbuf()
 ```
 
 ### `win:focus()`
