@@ -158,7 +158,7 @@ Snacks.picker.pick({source = "files", ...})
       truncate = "center",
       min_width = 20, -- minimum length of the truncated path
       filename_only = false, -- only show the filename
-      dirname_only = false, -- show only immediate parent directory and filename
+      immediate_dir_only = false, -- show only immediate parent directory and filename
       icon_width = 2, -- width of the icon (in characters)
       git_status_hl = true, -- use the git status highlight group for the filename
     },
