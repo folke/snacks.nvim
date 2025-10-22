@@ -35,6 +35,8 @@
 ---@field lsp_declarations fun(opts?: snacks.picker.lsp.Config|{}): snacks.Picker
 ---@field lsp_definitions fun(opts?: snacks.picker.lsp.Config|{}): snacks.Picker
 ---@field lsp_implementations fun(opts?: snacks.picker.lsp.Config|{}): snacks.Picker
+---@field lsp_incoming_calls fun(opts?: snacks.picker.lsp.Config|{}): snacks.Picker
+---@field lsp_outgoing_calls fun(opts?: snacks.picker.lsp.Config|{}): snacks.Picker
 ---@field lsp_references fun(opts?: snacks.picker.lsp.references.Config|{}): snacks.Picker
 ---@field lsp_symbols fun(opts?: snacks.picker.lsp.symbols.Config|{}): snacks.Picker
 ---@field lsp_type_definitions fun(opts?: snacks.picker.lsp.Config|{}): snacks.Picker
@@ -55,6 +57,7 @@
 ---@field search_history fun(opts?: snacks.picker.history.Config|{}): snacks.Picker
 ---@field smart fun(opts?: snacks.picker.smart.Config|{}): snacks.Picker
 ---@field spelling fun(opts?: snacks.picker.Config|{}): snacks.Picker
+---@field tags fun(opts?: snacks.picker.tags.Config|{}): snacks.Picker
 ---@field treesitter fun(opts?: snacks.picker.treesitter.Config|{}): snacks.Picker
 ---@field undo fun(opts?: snacks.picker.undo.Config|{}): snacks.Picker
 ---@field zoxide fun(opts?: snacks.picker.Config|{}): snacks.Picker

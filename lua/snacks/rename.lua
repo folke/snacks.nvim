@@ -14,6 +14,8 @@ function M.rename_file(opts)
   local from = vim.fn.fnamemodify(opts.from or opts.file or vim.api.nvim_buf_get_name(0), ":p")
   local to = opts.to and vim.fn.fnamemodify(opts.to, ":p") or nil
 
+  from, to = svim.fs.normalize(from), to and svim.fs.normalize(to) or nil
+
   local function rename()
     assert(to, "to is required")
     M.on_rename_file(from, to, function()
@@ -28,10 +30,11 @@ function M.rename_file(opts)
     return rename()
   end
 
-  local root = vim.fn.getcwd()
+  local root = svim.fs.normalize(vim.fn.getcwd(0))
 
   if from:find(root, 1, true) ~= 1 then
-    root = vim.fn.fnamemodify(from, ":p:h")
+    -- file is outside cwd, use its parent dir as root
+    root = vim.fs.dirname(from)
   end
 
   local extra = from:sub(#root + 2)
@@ -56,6 +59,7 @@ end
 function M._rename(from, to)
   from = vim.fn.fnamemodify(from, ":p")
   to = vim.fn.fnamemodify(to, ":p")
+  vim.fn.mkdir(vim.fs.dirname(to), "p") -- ensure target directory exists
   -- rename the file
   local ret = vim.fn.rename(from, to)
   if ret ~= 0 then

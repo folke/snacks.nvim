@@ -38,6 +38,7 @@ local config = {
       "mkv",
       "webm",
       "pdf",
+      "icns",
     },
   },
 }

@@ -8,6 +8,8 @@ local Async = require("snacks.picker.util.async")
 ---@field regex? boolean used internally for positions of sources that use regex
 ---@field on_match? fun(matcher: snacks.picker.Matcher, item: snacks.picker.Item)
 ---@field on_done? fun(matcher: snacks.picker.Matcher)
+---@field keep_parents? boolean
+---@field sort? boolean
 
 ---@class snacks.picker.Matcher
 ---@field opts snacks.picker.matcher.Config
@@ -81,20 +83,63 @@ function M:close()
 end
 
 ---@param picker snacks.Picker
+---@param item snacks.picker.Item
+function M:on_match(picker, item)
+  if self.opts.on_match then
+    self.opts.on_match(self, item)
+  end
+
+  if not self.opts.keep_parents or item.score == 0 then
+    return
+  end
+
+  local parent = item.parent
+  item.child_match_only = false
+  while parent and not parent.root do
+    if parent.score == 0 or parent.match_tick ~= self.tick then
+      parent.score = 1
+      parent.child_match_only = true
+      parent.match_tick = self.tick
+      parent.match_topk = nil
+      picker.list:add(parent, self.sorting)
+    else
+      break
+    end
+    parent = parent.parent
+  end
+end
+
+---@param picker snacks.Picker
+function M:on_done(picker)
+  vim.schedule(function()
+    if self.opts.on_done then
+      self.opts.on_done(self)
+    end
+    if not self.opts.keep_parents or picker.closed then
+      return
+    end
+    for item, idx in picker:iter() do
+      if not item.child_match_only then
+        picker.list:view(idx)
+        return
+      end
+    end
+  end)
+end
+
+---@param picker snacks.Picker
 function M:run(picker)
   self.task:abort()
   picker.list:clear()
 
   self.cwd = svim.fs.normalize(picker.opts.cwd or (vim.uv or vim.loop).cwd() or ".")
-  self.sorting = not self:empty() or picker.opts.matcher.sort_empty
+  self.sorting = self.opts.sort ~= false and (not self:empty() or picker.opts.matcher.sort_empty)
 
   -- PERF: fast path for empty pattern
-  if not (self.sorting or picker.finder.task:running()) then
+  if not self.sorting and not picker.finder.task:running() and self:empty() then
     picker.list.items = picker.finder.items
     picker:update({ force = true })
-    if self.opts.on_done then
-      self.opts.on_done(self)
-    end
+    self:on_done(picker)
     return
   end
 
@@ -105,7 +150,7 @@ function M:run(picker)
     ---@async
     ---@param item snacks.picker.Item
     local function check(item)
-      if self:update(item) then
+      if self:update(picker, item) then
         picker.list:add(item, self.sorting)
       end
       yield()
@@ -161,11 +206,7 @@ function M:run(picker)
     until idx >= #picker.finder.items and not picker.finder.task:running()
 
     picker:update({ force = true })
-    if self.opts.on_done then
-      vim.schedule(function()
-        self.opts.on_done(self)
-      end)
-    end
+    self:on_done(picker)
   end)
 end
 
@@ -307,9 +348,10 @@ function M:_prepare(pattern)
   return mods
 end
 
+---@param picker snacks.Picker
 ---@param item snacks.picker.Item
 ---@return boolean matched
-function M:update(item)
+function M:update(picker, item)
   if item.match_pos then
     item.pos = nil
   end
@@ -339,9 +381,7 @@ function M:update(item)
       end
     end
     item.score = score
-    if self.opts.on_match then
-      self.opts.on_match(self, item)
-    end
+    self:on_match(picker, item)
   else
     item.score = 0
   end

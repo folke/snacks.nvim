@@ -82,6 +82,7 @@ docs for more information on how to customize these styles
     filetype = "snacks_terminal",
   },
   wo = {},
+  stack = true, -- when enabled, multiple split windows with the same position will be stacked together (useful for terminals)
   keys = {
     q = "hide",
     gf = function(self)

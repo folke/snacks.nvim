@@ -1,0 +1,167 @@
+*snacks-lazygit*        For Neovim       Last change: 2025 October 22
+
+==============================================================================
+Table of Contents                      *snacks.nvim-lazygit-table-of-contents*
+
+1. Setup                                           |snacks.nvim-lazygit-setup|
+2. Config                                         |snacks.nvim-lazygit-config|
+3. Styles                                         |snacks.nvim-lazygit-styles|
+  - lazygit                               |snacks.nvim-lazygit-styles-lazygit|
+4. Types                                           |snacks.nvim-lazygit-types|
+5. Module                                         |snacks.nvim-lazygit-module|
+  - Snacks.lazygit()             |snacks.nvim-lazygit-module-snacks.lazygit()|
+  - Snacks.lazygit.log()     |snacks.nvim-lazygit-module-snacks.lazygit.log()|
+  - Snacks.lazygit.log_file()|snacks.nvim-lazygit-module-snacks.lazygit.log_file()|
+  - Snacks.lazygit.open()   |snacks.nvim-lazygit-module-snacks.lazygit.open()|
+6. Links                                           |snacks.nvim-lazygit-links|
+Automatically configures lazygit with a theme generated based on your Neovim
+colorscheme and integrate edit with the current neovim instance.
+
+
+==============================================================================
+1. Setup                                           *snacks.nvim-lazygit-setup*
+
+>lua
+    -- lazy.nvim
+    {
+      "folke/snacks.nvim",
+      ---@type snacks.Config
+      opts = {
+        lazygit = {
+          -- your lazygit configuration comes here
+          -- or leave it empty to use the default settings
+          -- refer to the configuration section below
+        }
+      }
+    }
+<
+
+
+==============================================================================
+2. Config                                         *snacks.nvim-lazygit-config*
+
+>lua
+    ---@class snacks.lazygit.Config: snacks.terminal.Opts
+    ---@field args? string[]
+    ---@field theme? snacks.lazygit.Theme
+    {
+      -- automatically configure lazygit to use the current colorscheme
+      -- and integrate edit with the current neovim instance
+      configure = true,
+      -- extra configuration for lazygit that will be merged with the default
+      -- snacks does NOT have a full yaml parser, so if you need `"test"` to appear with the quotes
+      -- you need to double quote it: `"\"test\""`
+      config = {
+        os = { editPreset = "nvim-remote" },
+        gui = {
+          -- set to an empty string "" to disable icons
+          nerdFontsVersion = "3",
+        },
+      },
+      theme_path = svim.fs.normalize(vim.fn.stdpath("cache") .. "/lazygit-theme.yml"),
+      -- Theme for lazygit
+      theme = {
+        [241]                      = { fg = "Special" },
+        activeBorderColor          = { fg = "MatchParen", bold = true },
+        cherryPickedCommitBgColor  = { fg = "Identifier" },
+        cherryPickedCommitFgColor  = { fg = "Function" },
+        defaultFgColor             = { fg = "Normal" },
+        inactiveBorderColor        = { fg = "FloatBorder" },
+        optionsTextColor           = { fg = "Function" },
+        searchingActiveBorderColor = { fg = "MatchParen", bold = true },
+        selectedLineBgColor        = { bg = "Visual" }, -- set to `default` to have no background colour
+        unstagedChangesColor       = { fg = "DiagnosticError" },
+      },
+      win = {
+        style = "lazygit",
+      },
+    }
+<
+
+
+==============================================================================
+3. Styles                                         *snacks.nvim-lazygit-styles*
+
+Check the styles
+<https://github.com/folke/snacks.nvim/blob/main/docs/styles.md> docs for more
+information on how to customize these styles
+
+
+LAZYGIT                                   *snacks.nvim-lazygit-styles-lazygit*
+
+>lua
+    {}
+<
+
+
+==============================================================================
+4. Types                                           *snacks.nvim-lazygit-types*
+
+>lua
+    ---@alias snacks.lazygit.Color {fg?:string, bg?:string, bold?:boolean}
+<
+
+>lua
+    ---@class snacks.lazygit.Theme: table<number, snacks.lazygit.Color>
+    ---@field activeBorderColor snacks.lazygit.Color
+    ---@field cherryPickedCommitBgColor snacks.lazygit.Color
+    ---@field cherryPickedCommitFgColor snacks.lazygit.Color
+    ---@field defaultFgColor snacks.lazygit.Color
+    ---@field inactiveBorderColor snacks.lazygit.Color
+    ---@field optionsTextColor snacks.lazygit.Color
+    ---@field searchingActiveBorderColor snacks.lazygit.Color
+    ---@field selectedLineBgColor snacks.lazygit.Color
+    ---@field unstagedChangesColor snacks.lazygit.Color
+<
+
+
+==============================================================================
+5. Module                                         *snacks.nvim-lazygit-module*
+
+
+`Snacks.lazygit()`                                          *Snacks.lazygit()*
+
+>lua
+    ---@type fun(opts?: snacks.lazygit.Config): snacks.win
+    Snacks.lazygit()
+<
+
+
+`Snacks.lazygit.log()`                                  *Snacks.lazygit.log()*
+
+Opens lazygit with the log view
+
+>lua
+    ---@param opts? snacks.lazygit.Config
+    Snacks.lazygit.log(opts)
+<
+
+
+`Snacks.lazygit.log_file()`                         *Snacks.lazygit.log_file()*
+
+Opens lazygit with the log of the current file
+
+>lua
+    ---@param opts? snacks.lazygit.Config|{}
+    Snacks.lazygit.log_file(opts)
+<
+
+
+`Snacks.lazygit.open()`                                *Snacks.lazygit.open()*
+
+Opens lazygit, properly configured to use the current colorscheme and integrate
+with the current neovim instance
+
+>lua
+    ---@param opts? snacks.lazygit.Config
+    Snacks.lazygit.open(opts)
+<
+
+==============================================================================
+6. Links                                           *snacks.nvim-lazygit-links*
+
+1. *image*: https://github.com/user-attachments/assets/5e5ca232-af65-4ebc-b0ca-02bc9c33d23d
+
+Generated by panvimdoc <https://github.com/kdheepak/panvimdoc>
+
+vim:tw=78:ts=8:noet:ft=help:norl:

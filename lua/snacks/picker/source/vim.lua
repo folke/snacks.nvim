@@ -319,6 +319,56 @@ function M.spelling()
   return items
 end
 
+---@class snacks.picker.tags.Tag
+---@field name string
+---@field filename string
+---@field cmd string
+---@field kind? string
+---@field static? string
+
+---@param opts snacks.picker.tags.Config
+---@type snacks.picker.finder
+function M.tags(opts, ctx)
+  local buf = ctx.filter.current_buf
+  ---@type snacks.picker.tags.Tag[]
+  local tags = vim.fn.taglist(ctx.filter.search == "" and ".*" or ctx.filter.search, vim.api.nvim_buf_get_name(buf))
+  local ret = {} ---@type snacks.picker.finder.Item[]
+
+  local lsp_kinds = {
+    c = "Class",
+    d = "Constant",
+    e = "Enum",
+    f = "Function",
+    g = "EnumMember",
+    l = "Variable",
+    m = "Method",
+    s = "Struct",
+    t = "TypeParameter",
+    v = "Variable",
+    F = "Field",
+    M = "Module",
+    n = "Namespace",
+    P = "Property",
+    S = "Struct",
+    T = "TypeParameter",
+  }
+
+  for _, tag in ipairs(tags) do
+    ---@type snacks.picker.finder.Item
+    local item = {
+      text = tag.name,
+      name = tag.name,
+      file = tag.filename,
+      search = tag.cmd,
+      kind = tag.kind,
+      lsp_kind = lsp_kinds[tag.kind] or "Text",
+    }
+    ret[#ret + 1] = item
+  end
+
+  return ret
+end
+
 ---@param opts snacks.picker.undo.Config
 ---@type snacks.picker.finder
 function M.undo(opts, ctx)

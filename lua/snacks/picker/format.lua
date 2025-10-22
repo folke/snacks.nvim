@@ -39,22 +39,7 @@ function M.severity(item, picker)
   return ret
 end
 
----@param item snacks.picker.Item
 function M.filename(item, picker)
-  ---@type snacks.picker.Text[]
-  return {
-    {
-      "",
-      resolve = function(ctx)
-        return M._filename(ctx)
-      end,
-    },
-  }
-end
-
----@type snacks.picker.format.resolve
-function M._filename(ctx)
-  local picker, item = ctx.picker, ctx.item
   ---@type snacks.picker.Highlight[]
   local ret = {}
   if not item.file then
@@ -80,13 +65,6 @@ function M._filename(ctx)
     ret[#ret + 1] = { icon, hl, virtual = true }
   end
 
-  local truncate = picker.opts.formatters.file.truncate
-  path = Snacks.picker.util.truncpath(
-    path,
-    ctx.max_width - Snacks.picker.highlight.offset(ret),
-    { cwd = picker:cwd(), kind = truncate }
-  )
-
   local base_hl = item.dir and "SnacksPickerDirectory" or "SnacksPickerFile"
   local function is(prop)
     local it = item
@@ -100,10 +78,10 @@ function M._filename(ctx)
 
   if is("ignored") then
     base_hl = "SnacksPickerPathIgnored"
-  elseif is("hidden") then
-    base_hl = "SnacksPickerPathHidden"
   elseif item.filename_hl then
     base_hl = item.filename_hl
+  elseif is("hidden") then
+    base_hl = "SnacksPickerPathHidden"
   end
   local dir_hl = "SnacksPickerDir"
 
@@ -111,19 +89,31 @@ function M._filename(ctx)
     path = vim.fn.fnamemodify(item.file, ":t")
     ret[#ret + 1] = { path, base_hl, field = "file" }
   else
-    local dir, base = path:match("^(.*)/(.+)$")
-    if base and dir then
-      if picker.opts.formatters.file.filename_first then
-        ret[#ret + 1] = { base, base_hl, field = "file" }
-        ret[#ret + 1] = { " " }
-        ret[#ret + 1] = { dir, dir_hl, field = "file" }
-      else
-        ret[#ret + 1] = { dir .. "/", dir_hl, field = "file" }
-        ret[#ret + 1] = { base, base_hl, field = "file" }
-      end
-    else
-      ret[#ret + 1] = { path, base_hl, field = "file" }
-    end
+    ret[#ret + 1] = {
+      "",
+      resolve = function(max_width)
+        local truncpath = Snacks.picker.util.truncpath(
+          path,
+          math.max(max_width, picker.opts.formatters.file.min_width or 20),
+          { cwd = picker:cwd(), kind = picker.opts.formatters.file.truncate }
+        )
+        local dir, base = truncpath:match("^(.*)/(.+)$")
+        local resolved = {} ---@type snacks.picker.Highlight[]
+        if base and dir then
+          if picker.opts.formatters.file.filename_first then
+            resolved[#resolved + 1] = { base, base_hl, field = "file" }
+            resolved[#resolved + 1] = { " " }
+            resolved[#resolved + 1] = { dir, dir_hl, field = "file" }
+          else
+            resolved[#resolved + 1] = { dir .. "/", dir_hl, field = "file" }
+            resolved[#resolved + 1] = { base, base_hl, field = "file" }
+          end
+        else
+          resolved[#resolved + 1] = { truncpath, base_hl, field = "file" }
+        end
+        return resolved
+      end,
+    }
   end
   if item.pos and item.pos[1] > 0 then
     ret[#ret + 1] = { ":", "SnacksPickerDelim" }
@@ -177,6 +167,10 @@ function M.file(item, picker)
   end
 
   if item.line then
+    if item.positions then
+      local offset = Snacks.picker.highlight.offset(ret)
+      Snacks.picker.highlight.matches(ret, item.positions, offset)
+    end
     Snacks.picker.highlight.format(item, item.line, ret)
     table.insert(ret, { " " })
   end
@@ -218,6 +212,9 @@ function M.git_log(item, picker)
     msg = body
   end
   ret[#ret + 1] = { msg, msg_hl }
+  if item.author then
+    ret[#ret + 1] = { " <" .. item.author .. ">", "SnacksPickerGitAuthor" }
+  end
   Snacks.picker.highlight.markdown(ret)
   Snacks.picker.highlight.highlight(ret, {
     ["#%d+"] = "SnacksPickerGitIssue",
@@ -316,7 +313,8 @@ function M.lsp_symbol(item, picker)
   if item.tree and not opts.workspace then
     vim.list_extend(ret, M.tree(item, picker))
   end
-  local kind = item.kind or "Unknown" ---@type string
+  local kind = item.lsp_kind or item.kind or "Unknown" ---@type string
+  kind = picker.opts.icons.kinds[kind] and kind or "Unknown"
   local kind_hl = "SnacksPickerIcon" .. kind
   ret[#ret + 1] = { picker.opts.icons.kinds[kind], kind_hl }
   ret[#ret + 1] = { " " }

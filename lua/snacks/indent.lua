@@ -75,7 +75,9 @@ local defaults = {
     },
   },
   -- filter for buffers to enable indent guides
-  filter = function(buf)
+  ---@param buf number
+  ---@param win number
+  filter = function(buf, win)
     return vim.g.snacks_indent ~= false and vim.b[buf].snacks_indent ~= false and vim.bo[buf].buftype == ""
   end,
   debug = false,
@@ -497,7 +499,7 @@ function M.enable()
   -- setup decoration provider
   vim.api.nvim_set_decoration_provider(ns, {
     on_win = function(_, win, buf, top, bottom)
-      if M.enabled and config.filter(buf) then
+      if M.enabled and config.filter(buf, win) then
         M.on_win(win, buf, top + 1, bottom + 1)
       end
     end,

@@ -90,6 +90,7 @@ In case of issues, make sure to run `:checkhealth snacks`.
     "mkv",
     "webm",
     "pdf",
+    "icns",
   },
   force = false, -- try displaying the image, even if the terminal does not support it
   doc = {
@@ -223,6 +224,7 @@ docs for more information on how to customize these styles
 ---@class snacks.image.Env
 ---@field name string
 ---@field env table<string, string|true>
+---@field terminal? string
 ---@field supported? boolean default: false
 ---@field placeholders? boolean default: false
 ---@field setup? fun(): boolean?

@@ -90,6 +90,7 @@ function M.new(picker)
     main = {
       relative = "win",
       backdrop = false,
+      zindex = 40, -- Lower than default (50) so input/help windows stay on top
     },
     layout = {
       backdrop = win_opts.backdrop == true,
@@ -318,7 +319,16 @@ function M:loc()
 
   if self.item.pos and self.item.pos[1] > 0 and self.item.pos[1] <= line_count then
     show(self.item.pos)
-    if self.item.end_pos then
+    if self.item.positions then
+      for _, extmark in ipairs(Snacks.picker.highlight.matches({}, self.item.positions)) do
+        local col, row = extmark.col, self.item.pos[1]
+        extmark.col = nil
+        extmark.row = nil
+        extmark.field = nil
+        extmark.hl_group = "SnacksPickerSearch"
+        pcall(vim.api.nvim_buf_set_extmark, self.win.buf, ns_loc, row - 1, col, extmark)
+      end
+    elseif self.item.end_pos then
       vim.api.nvim_buf_set_extmark(self.win.buf, ns_loc, self.item.pos[1] - 1, self.item.pos[2], {
         end_row = self.item.end_pos[1] - 1,
         end_col = self.item.end_pos[2],
@@ -343,9 +353,9 @@ function M:loc()
     end
   elseif self.item.search then
     vim.api.nvim_win_call(self.win.win, function()
-      vim.cmd("keepjumps norm! gg")
-      if pcall(vim.cmd, self.item.search) then
-        vim.cmd("norm! zz")
+      if pcall(vim.cmd, ":0;" .. self.item.search) then
+        vim.fn.histdel("search", -1) -- remove from search history
+        vim.cmd("norm! zzze")
         self:wo({ cursorline = true })
       end
     end)

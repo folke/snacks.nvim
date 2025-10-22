@@ -23,6 +23,7 @@ local M = {}
 ---@field pos snacks.image.Pos
 ---@field src? string
 ---@field content? string
+---@field content_id? string
 ---@field ext? string
 ---@field range? Range4
 ---@field lang string
@@ -50,6 +51,22 @@ M.transforms = {
       header = M.get_header(ctx.buf),
       content = img.content,
     }, { indent = true, prefix = "$" })
+  end,
+  data_img = function(img, ctx)
+    if not vim.base64 then
+      return
+    end
+    if not img.src then
+      return
+    end
+    local ft, data = img.src:match("^data:(.-);base64,(.+)$")
+    if not (ft and data) then
+      return
+    end
+    img.content = vim.base64.decode(data)
+    img.content_id = data:sub(1, 20)
+    img.src = nil
+    img.ext = ft:match("^image/(%w+)$") or "png"
   end,
   latex = function(img, ctx)
     if not (img.content and img.ext == "math.tex") then
@@ -292,6 +309,9 @@ function M._img(ctx)
   assert(img.src or img.content, "no image src or content")
 
   local transform = M.transforms[ctx.lang]
+  if img.src and img.src:find("^data:%w+/%w+;base64,") then
+    transform = M.transforms["data_img"]
+  end
   if transform then
     transform(img, ctx)
   end
@@ -301,7 +321,11 @@ function M._img(ctx)
   if img.content and not img.src then
     local root = Snacks.image.config.cache
     vim.fn.mkdir(root, "p")
-    img.src = root .. "/" .. vim.fn.sha256(img.content):sub(1, 8) .. "-content." .. (img.ext or "png")
+    img.src = root
+      .. "/"
+      .. (img.content_id or vim.fn.sha256(img.content):sub(1, 8))
+      .. "-content."
+      .. (img.ext or "png")
     if vim.fn.filereadable(img.src) == 0 then
       local fd = assert(io.open(img.src, "w"), "failed to open " .. img.src)
       fd:write(img.content)
@@ -407,7 +431,7 @@ function M.hover()
 end
 
 ---@param buf number
-function M.attach(buf)
+function M._attach(buf)
   if vim.b[buf].snacks_image_attached then
     return
   end
@@ -430,6 +454,14 @@ function M.attach(buf)
     })
     vim.schedule(M.hover)
   end
+end
+
+---@param buf number
+function M.attach(buf)
+  local Terminal = require("snacks.image.terminal")
+  Terminal.detect(function()
+    M._attach(buf)
+  end)
 end
 
 return M

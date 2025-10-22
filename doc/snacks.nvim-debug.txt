@@ -1,0 +1,202 @@
+*snacks-debug*         For Neovim        Last change: 2025 October 22
+
+==============================================================================
+Table of Contents                        *snacks.nvim-debug-table-of-contents*
+
+1. Types                                             |snacks.nvim-debug-types|
+2. Module                                           |snacks.nvim-debug-module|
+  - Snacks.debug()                   |snacks.nvim-debug-module-snacks.debug()|
+  - Snacks.debug.backtrace()|snacks.nvim-debug-module-snacks.debug.backtrace()|
+  - Snacks.debug.cmd()           |snacks.nvim-debug-module-snacks.debug.cmd()|
+  - Snacks.debug.inspect()   |snacks.nvim-debug-module-snacks.debug.inspect()|
+  - Snacks.debug.log()           |snacks.nvim-debug-module-snacks.debug.log()|
+  - Snacks.debug.metrics()   |snacks.nvim-debug-module-snacks.debug.metrics()|
+  - Snacks.debug.profile()   |snacks.nvim-debug-module-snacks.debug.profile()|
+  - Snacks.debug.run()           |snacks.nvim-debug-module-snacks.debug.run()|
+  - Snacks.debug.size()         |snacks.nvim-debug-module-snacks.debug.size()|
+  - Snacks.debug.stats()       |snacks.nvim-debug-module-snacks.debug.stats()|
+  - Snacks.debug.trace()       |snacks.nvim-debug-module-snacks.debug.trace()|
+  - Snacks.debug.tracemod() |snacks.nvim-debug-module-snacks.debug.tracemod()|
+3. Links                                             |snacks.nvim-debug-links|
+Utility functions you can use in your code.
+
+Personally, I have the code below at the top of my `init.lua`:
+
+>lua
+    _G.dd = function(...)
+      Snacks.debug.inspect(...)
+    end
+    _G.bt = function()
+      Snacks.debug.backtrace()
+    end
+    if vim.fn.has("nvim-0.11") == 1 then
+      vim._print = function(_, ...)
+        dd(...)
+      end
+    else
+      vim.print = dd
+    end
+<
+
+What this does:
+
+- Add a global `dd(...)` you can use anywhere to quickly show a
+    notification with a pretty printed dump of the object(s)
+    with lua treesitter highlighting
+- Add a global `bt()` to show a notification with a pretty
+    backtrace.
+- Override Neovim’s `vim.print`, which is also used by `:= {something = 123}`
+
+
+==============================================================================
+1. Types                                             *snacks.nvim-debug-types*
+
+>lua
+    ---@class snacks.debug.cmd
+    ---@field cmd string|string[]
+    ---@field level? snacks.notifier.level
+    ---@field title? string
+    ---@field args? string[]
+    ---@field cwd? string
+    ---@field group? boolean
+    ---@field notify? boolean
+    ---@field footer? string
+    ---@field header? string
+    ---@field props? table<string, string>
+<
+
+>lua
+    ---@alias snacks.debug.Trace {name: string, time: number, [number]:snacks.debug.Trace}
+    ---@alias snacks.debug.Stat {name:string, time:number, count?:number, depth?:number}
+<
+
+
+==============================================================================
+2. Module                                           *snacks.nvim-debug-module*
+
+
+`Snacks.debug()`                                              *Snacks.debug()*
+
+>lua
+    ---@type fun(...)
+    Snacks.debug()
+<
+
+
+`Snacks.debug.backtrace()`                          *Snacks.debug.backtrace()*
+
+Show a notification with a pretty backtrace
+
+>lua
+    ---@param msg? string|string[]
+    ---@param opts? snacks.notify.Opts
+    Snacks.debug.backtrace(msg, opts)
+<
+
+
+`Snacks.debug.cmd()`                                      *Snacks.debug.cmd()*
+
+>lua
+    ---@param opts snacks.debug.cmd
+    Snacks.debug.cmd(opts)
+<
+
+
+`Snacks.debug.inspect()`                              *Snacks.debug.inspect()*
+
+Show a notification with a pretty printed dump of the object(s) with lua
+treesitter highlighting and the location of the caller
+
+>lua
+    Snacks.debug.inspect(...)
+<
+
+
+`Snacks.debug.log()`                                      *Snacks.debug.log()*
+
+Log a message to the file `./debug.log`. - a timestamp will be added to every
+message. - accepts multiple arguments and pretty prints them. - if the argument
+is not a string, it will be printed using `vim.inspect`. - if the message is
+smaller than 120 characters, it will be printed on a single line.
+
+>lua
+    Snacks.debug.log("Hello", { foo = "bar" }, 42)
+    -- 2024-11-08 08:56:52 Hello { foo = "bar" } 42
+<
+
+>lua
+    Snacks.debug.log(...)
+<
+
+
+`Snacks.debug.metrics()`                              *Snacks.debug.metrics()*
+
+>lua
+    Snacks.debug.metrics()
+<
+
+
+`Snacks.debug.profile()`                              *Snacks.debug.profile()*
+
+Very simple function to profile a lua function. **flush**: set to `true` to use
+`jit.flush` in every iteration. **count**: defaults to 100
+
+>lua
+    ---@param fn fun()
+    ---@param opts? {count?: number, flush?: boolean, title?: string}
+    Snacks.debug.profile(fn, opts)
+<
+
+
+`Snacks.debug.run()`                                      *Snacks.debug.run()*
+
+Run the current buffer or a range of lines. Shows the output of `print` inlined
+with the code. Any error will be shown as a diagnostic.
+
+>lua
+    ---@param opts? {name?:string, buf?:number, print?:boolean}
+    Snacks.debug.run(opts)
+<
+
+
+`Snacks.debug.size()`                                    *Snacks.debug.size()*
+
+>lua
+    Snacks.debug.size(bytes)
+<
+
+
+`Snacks.debug.stats()`                                  *Snacks.debug.stats()*
+
+>lua
+    ---@param opts? {min?: number, show?:boolean}
+    ---@return {summary:table<string, snacks.debug.Stat>, trace:snacks.debug.Stat[], traces:snacks.debug.Trace[]}
+    Snacks.debug.stats(opts)
+<
+
+
+`Snacks.debug.trace()`                                  *Snacks.debug.trace()*
+
+>lua
+    ---@param name string?
+    Snacks.debug.trace(name)
+<
+
+
+`Snacks.debug.tracemod()`                            *Snacks.debug.tracemod()*
+
+>lua
+    ---@param modname string
+    ---@param mod? table
+    ---@param suffix? string
+    Snacks.debug.tracemod(modname, mod, suffix)
+<
+
+==============================================================================
+3. Links                                             *snacks.nvim-debug-links*
+
+1. *image*: https://github.com/user-attachments/assets/0517aed7-fbd0-42ee-8058-c213410d80a7
+
+Generated by panvimdoc <https://github.com/kdheepak/panvimdoc>
+
+vim:tw=78:ts=8:noet:ft=help:norl:

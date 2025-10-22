@@ -2,6 +2,8 @@ local M = {}
 
 local uv = vim.uv or vim.loop
 
+local MATCH_SEP = "󰄊󱥳󱥰"
+
 ---@param opts snacks.picker.grep.Config
 ---@param filter snacks.picker.Filter
 local function get_cmd(opts, filter)
@@ -11,12 +13,15 @@ local function get_cmd(opts, filter)
     "--no-heading",
     "--with-filename",
     "--line-number",
+    "--replace",
+    ("%s${0}%s"):format(MATCH_SEP, MATCH_SEP),
     "--column",
     "--smart-case",
     "--max-columns=500",
     "--max-columns-preview",
     "--glob=!.bare",
     "--glob=!.git",
+    "-0",
   }
 
   args = vim.deepcopy(args)
@@ -116,17 +121,54 @@ function M.grep(opts, ctx)
       ---@param item snacks.picker.finder.Item
       transform = function(item)
         item.cwd = cwd
-        local file, line, col, text = item.text:match("^(.-):(%d+):(%d+):(.*)$")
-        if not file then
+        -- Split on NUL byte (which comes from rg's -0 flag)
+        local file_sep = item.text:find("\0")
+        if not file_sep then
           if not item.text:match("WARNING") then
             Snacks.notify.error("invalid grep output:\n" .. item.text)
           end
           return false
-        else
-          item.line = text
-          item.file = file
-          item.pos = { tonumber(line), tonumber(col) - 1 }
         end
+        local file = item.text:sub(1, file_sep - 1)
+        local rest = item.text:sub(file_sep + 1)
+        ---@type string?, string?, string?
+        local line, col, text = rest:match("^(%d+):(%d+):(.*)$")
+        if not (line and col and text) then
+          if not item.text:match("WARNING") then
+            Snacks.notify.error("invalid grep output:\n" .. item.text)
+          end
+          return false
+        end
+        item.text = file .. ":" .. rest:gsub(MATCH_SEP, "")
+
+        -- indices of matches
+        local from = tonumber(col)
+        item.pos = { tonumber(line), from - 1 }
+
+        item.resolve = function()
+          local positions = {} ---@type number[]
+          local offset = 0
+          local in_match = false
+          while from < #text do
+            local idx = text:find(MATCH_SEP, from, true)
+            if not idx then
+              break
+            end
+            if in_match then
+              for i = from, idx - 1 do
+                positions[#positions + 1] = i - offset
+              end
+              item.end_pos = item.end_pos or { item.pos[1], idx - offset - 1 }
+            end
+            in_match = not in_match
+            offset = offset + #MATCH_SEP
+            from = idx + #MATCH_SEP
+          end
+          item.positions = #positions > 0 and positions or nil
+          item.line = text:gsub(MATCH_SEP, "")
+        end
+
+        item.file = file
       end,
     },
   }, ctx)

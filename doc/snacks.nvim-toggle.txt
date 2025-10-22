@@ -1,0 +1,234 @@
+*snacks-toggle*        For Neovim        Last change: 2025 October 22
+
+==============================================================================
+Table of Contents                       *snacks.nvim-toggle-table-of-contents*
+
+1. Setup                                            |snacks.nvim-toggle-setup|
+2. Config                                          |snacks.nvim-toggle-config|
+3. Types                                            |snacks.nvim-toggle-types|
+4. Module                                          |snacks.nvim-toggle-module|
+  - Snacks.toggle()                |snacks.nvim-toggle-module-snacks.toggle()|
+  - Snacks.toggle.animate()|snacks.nvim-toggle-module-snacks.toggle.animate()|
+  - Snacks.toggle.diagnostics()|snacks.nvim-toggle-module-snacks.toggle.diagnostics()|
+  - Snacks.toggle.dim()        |snacks.nvim-toggle-module-snacks.toggle.dim()|
+  - Snacks.toggle.get()        |snacks.nvim-toggle-module-snacks.toggle.get()|
+  - Snacks.toggle.indent()  |snacks.nvim-toggle-module-snacks.toggle.indent()|
+  - Snacks.toggle.inlay_hints()|snacks.nvim-toggle-module-snacks.toggle.inlay_hints()|
+  - Snacks.toggle.line_number()|snacks.nvim-toggle-module-snacks.toggle.line_number()|
+  - Snacks.toggle.new()        |snacks.nvim-toggle-module-snacks.toggle.new()|
+  - Snacks.toggle.option()  |snacks.nvim-toggle-module-snacks.toggle.option()|
+  - Snacks.toggle.profiler()|snacks.nvim-toggle-module-snacks.toggle.profiler()|
+  - Snacks.toggle.profiler_highlights()|snacks.nvim-toggle-module-snacks.toggle.profiler_highlights()|
+  - Snacks.toggle.scroll()  |snacks.nvim-toggle-module-snacks.toggle.scroll()|
+  - Snacks.toggle.treesitter()|snacks.nvim-toggle-module-snacks.toggle.treesitter()|
+  - Snacks.toggle.words()    |snacks.nvim-toggle-module-snacks.toggle.words()|
+  - Snacks.toggle.zen()        |snacks.nvim-toggle-module-snacks.toggle.zen()|
+  - Snacks.toggle.zoom()      |snacks.nvim-toggle-module-snacks.toggle.zoom()|
+5. Links                                            |snacks.nvim-toggle-links|
+Toggle keymaps integrated with which-key icons / colors
+
+
+==============================================================================
+1. Setup                                            *snacks.nvim-toggle-setup*
+
+>lua
+    -- lazy.nvim
+    {
+      "folke/snacks.nvim",
+      ---@type snacks.Config
+      opts = {
+        toggle = {
+          -- your toggle configuration comes here
+          -- or leave it empty to use the default settings
+          -- refer to the configuration section below
+        }
+      }
+    }
+<
+
+
+==============================================================================
+2. Config                                          *snacks.nvim-toggle-config*
+
+>lua
+    ---@class snacks.toggle.Config
+    ---@field icon? string|{ enabled: string, disabled: string }
+    ---@field color? string|{ enabled: string, disabled: string }
+    ---@field wk_desc? string|{ enabled: string, disabled: string }
+    ---@field map? fun(mode: string|string[], lhs: string, rhs: string|fun(), opts?: vim.keymap.set.Opts)
+    ---@field which_key? boolean
+    ---@field notify? boolean|fun(state:boolean, opts: snacks.toggle.Opts)
+    {
+      map = vim.keymap.set, -- keymap.set function to use
+      which_key = true, -- integrate with which-key to show enabled/disabled icons and colors
+      notify = true, -- show a notification when toggling
+      -- icons for enabled/disabled states
+      icon = {
+        enabled = " ",
+        disabled = " ",
+      },
+      -- colors for enabled/disabled states
+      color = {
+        enabled = "green",
+        disabled = "yellow",
+      },
+      wk_desc = {
+        enabled = "Disable ",
+        disabled = "Enable ",
+      },
+    }
+<
+
+
+==============================================================================
+3. Types                                            *snacks.nvim-toggle-types*
+
+>lua
+    ---@class snacks.toggle.Opts: snacks.toggle.Config
+    ---@field id? string
+    ---@field name string
+    ---@field get fun():boolean
+    ---@field set fun(state:boolean)
+<
+
+
+==============================================================================
+4. Module                                          *snacks.nvim-toggle-module*
+
+
+`Snacks.toggle()`                                            *Snacks.toggle()*
+
+>lua
+    ---@type fun(... :snacks.toggle.Opts): snacks.toggle.Class
+    Snacks.toggle()
+<
+
+
+`Snacks.toggle.animate()`                            *Snacks.toggle.animate()*
+
+>lua
+    Snacks.toggle.animate()
+<
+
+
+`Snacks.toggle.diagnostics()`                        *Snacks.toggle.diagnostics()*
+
+>lua
+    ---@param opts? snacks.toggle.Config
+    Snacks.toggle.diagnostics(opts)
+<
+
+
+`Snacks.toggle.dim()`                                    *Snacks.toggle.dim()*
+
+>lua
+    Snacks.toggle.dim()
+<
+
+
+`Snacks.toggle.get()`                                    *Snacks.toggle.get()*
+
+>lua
+    ---@param id string
+    ---@return snacks.toggle.Class?
+    Snacks.toggle.get(id)
+<
+
+
+`Snacks.toggle.indent()`                              *Snacks.toggle.indent()*
+
+>lua
+    Snacks.toggle.indent()
+<
+
+
+`Snacks.toggle.inlay_hints()`                        *Snacks.toggle.inlay_hints()*
+
+>lua
+    ---@param opts? snacks.toggle.Config
+    Snacks.toggle.inlay_hints(opts)
+<
+
+
+`Snacks.toggle.line_number()`                        *Snacks.toggle.line_number()*
+
+>lua
+    ---@param opts? snacks.toggle.Config
+    Snacks.toggle.line_number(opts)
+<
+
+
+`Snacks.toggle.new()`                                    *Snacks.toggle.new()*
+
+>lua
+    ---@param ... snacks.toggle.Opts
+    Snacks.toggle.new(...)
+<
+
+
+`Snacks.toggle.option()`                              *Snacks.toggle.option()*
+
+>lua
+    ---@param option string
+    ---@param opts? snacks.toggle.Config | {on?: unknown, off?: unknown, global?: boolean}
+    Snacks.toggle.option(option, opts)
+<
+
+
+`Snacks.toggle.profiler()`                          *Snacks.toggle.profiler()*
+
+>lua
+    Snacks.toggle.profiler()
+<
+
+
+`Snacks.toggle.profiler_highlights()`                        *Snacks.toggle.profiler_highlights()*
+
+>lua
+    Snacks.toggle.profiler_highlights()
+<
+
+
+`Snacks.toggle.scroll()`                              *Snacks.toggle.scroll()*
+
+>lua
+    Snacks.toggle.scroll()
+<
+
+
+`Snacks.toggle.treesitter()`                        *Snacks.toggle.treesitter()*
+
+>lua
+    ---@param opts? snacks.toggle.Config
+    Snacks.toggle.treesitter(opts)
+<
+
+
+`Snacks.toggle.words()`                                *Snacks.toggle.words()*
+
+>lua
+    Snacks.toggle.words()
+<
+
+
+`Snacks.toggle.zen()`                                    *Snacks.toggle.zen()*
+
+>lua
+    Snacks.toggle.zen()
+<
+
+
+`Snacks.toggle.zoom()`                                  *Snacks.toggle.zoom()*
+
+>lua
+    Snacks.toggle.zoom()
+<
+
+==============================================================================
+5. Links                                            *snacks.nvim-toggle-links*
+
+1. *image*: https://github.com/user-attachments/assets/6d843acd-1ac1-44fd-b318-58b4c17de2d5
+
+Generated by panvimdoc <https://github.com/kdheepak/panvimdoc>
+
+vim:tw=78:ts=8:noet:ft=help:norl:
