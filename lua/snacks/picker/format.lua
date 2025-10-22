@@ -97,7 +97,12 @@ function M.filename(item, picker)
           math.max(max_width, picker.opts.formatters.file.min_width or 20),
           { cwd = picker:cwd(), kind = picker.opts.formatters.file.truncate }
         )
-        local dir, base = truncpath:match("^(.*)/(.+)$")
+        local dir, base
+        if picker.opts.formatters.file.dirname_only then
+          dir, base = truncpath:match("([^/]+)/([^/]+)$")
+        else
+          dir, base = truncpath:match("^(.*)/(.+)$")
+        end
         local resolved = {} ---@type snacks.picker.Highlight[]
         if base and dir then
           if picker.opts.formatters.file.filename_first then
@@ -131,7 +136,7 @@ function M.filename(item, picker)
     if real then
       ret[#ret + 1] = { "-> ", "SnacksPickerDelim" }
       ret[#ret + 1] =
-        { Snacks.picker.util.truncpath(real, 20), broken and "SnacksPickerLinkBroken" or "SnacksPickerLink" }
+      { Snacks.picker.util.truncpath(real, 20), broken and "SnacksPickerLinkBroken" or "SnacksPickerLink" }
       ret[#ret + 1] = { " " }
     end
   end
@@ -200,7 +205,7 @@ function M.git_log(item, picker)
     local dimmed = vim.tbl_contains({ "chore", "bot", "build", "ci", "style", "test" }, type)
     msg_hl = dimmed and "SnacksPickerDimmed" or "SnacksPickerGitMsg"
     ret[#ret + 1] =
-      { type, breaking ~= "" and "SnacksPickerGitBreaking" or dimmed and "SnacksPickerBold" or "SnacksPickerGitType" }
+    { type, breaking ~= "" and "SnacksPickerGitBreaking" or dimmed and "SnacksPickerBold" or "SnacksPickerGitType" }
     if scope and scope ~= "" then
       ret[#ret + 1] = { scope, "SnacksPickerGitScope" }
     end
