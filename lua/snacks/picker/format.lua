@@ -98,7 +98,7 @@ function M.filename(item, picker)
           { cwd = picker:cwd(), kind = picker.opts.formatters.file.truncate }
         )
         local dir, base
-        if picker.opts.formatters.file.dirname_only then
+        if picker.opts.formatters.file.immediate_dir_only then
           dir, base = truncpath:match("([^/]+)/([^/]+)$")
         else
           dir, base = truncpath:match("^(.*)/(.+)$")
