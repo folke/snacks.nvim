@@ -318,7 +318,8 @@ function M.lsp_symbol(item, picker)
   if item.tree and not opts.workspace then
     vim.list_extend(ret, M.tree(item, picker))
   end
-  local kind = item.kind or "Unknown" ---@type string
+  local kind = item.lsp_kind or item.kind or "Unknown" ---@type string
+  kind = picker.opts.icons.kinds[kind] and kind or "Unknown"
   local kind_hl = "SnacksPickerIcon" .. kind
   ret[#ret + 1] = { picker.opts.icons.kinds[kind], kind_hl }
   ret[#ret + 1] = { " " }

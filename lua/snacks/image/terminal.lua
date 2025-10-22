@@ -1,4 +1,5 @@
 ---@class snacks.image.terminal
+---@field transform? fun(data: string): string
 local M = {}
 
 local size ---@type snacks.image.terminal.Dim?
@@ -6,25 +7,19 @@ local size ---@type snacks.image.terminal.Dim?
 local environments = {
   {
     name = "kitty",
-    env = { TERM = "kitty", KITTY_PID = true },
+    terminal = "kitty",
     supported = true,
     placeholders = true,
   },
   {
     name = "ghostty",
-    env = { TERM = "ghostty", GHOSTTY_BIN_DIR = true },
+    terminal = "ghostty",
     supported = true,
     placeholders = true,
   },
   {
     name = "wezterm",
-    env = {
-      TERM = "wezterm",
-      WEZTERM_PANE = true,
-      WEZTERM_EXECUTABLE = true,
-      WEZTERM_CONFIG_FILE = true,
-      SNACKS_WEZTERM = true,
-    },
+    terminal = "wezterm",
     supported = true,
     placeholders = false,
   },
@@ -44,25 +39,14 @@ local environments = {
 
 M._env = nil ---@type snacks.image.Env?
 
+M._terminal = nil ---@type snacks.image.Terminal?
+
 vim.api.nvim_create_autocmd("VimResized", {
   group = vim.api.nvim_create_augroup("snacks.image.terminal", { clear = true }),
   callback = function()
     size = nil
   end,
 })
-
--- HACK: ghostty doesn't like it when sending images too fast,
--- after Neovim startup, so we delay the first image
-local queue = {} ---@type string[]?
-vim.defer_fn(
-  vim.schedule_wrap(function()
-    for _, data in ipairs(queue or {}) do
-      io.stdout:write(data)
-    end
-    queue = nil
-  end),
-  100
-)
 
 function M.size()
   if size then
@@ -136,11 +120,16 @@ function M.env()
     if override then
       e.detected = override ~= "0" and override ~= "false"
     else
-      for k, v in pairs(e.env) do
-        local val = os.getenv(k)
-        if val and (v == true or val:find(v)) then
-          e.detected = true
-          break
+      if e.terminal and M._terminal and M._terminal.terminal then
+        e.detected = M._terminal.terminal:lower():find(e.terminal:lower()) ~= nil
+      end
+      if not e.detected then
+        for k, v in pairs(e.env or {}) do
+          local val = os.getenv(k)
+          if val and (v == true or val:find(v)) then
+            e.detected = true
+            break
+          end
         end
       end
     end
@@ -165,7 +154,7 @@ end
 
 ---@param opts table<string, string|number>|{data?: string}
 function M.request(opts)
-  opts.q = opts.q or 2 -- silence all
+  opts.q = opts.q ~= false and (opts.q or 2) or nil -- silence all
   local msg = {} ---@type string[]
   for k, v in pairs(opts) do
     if k ~= "data" then
@@ -178,10 +167,6 @@ function M.request(opts)
     msg[#msg + 1] = tostring(opts.data)
   end
   local data = "\27_G" .. table.concat(msg) .. "\27\\"
-  local env = M.env()
-  if env.transform then
-    data = env.transform(data)
-  end
   if Snacks.image.config.debug.request and opts.m ~= 1 then
     Snacks.debug.inspect(opts)
   end
@@ -194,11 +179,118 @@ function M.set_cursor(pos)
 end
 
 function M.write(data)
-  if queue then
-    table.insert(queue, data)
+  data = M.transform and M.transform(data) or data
+  if vim.api.nvim_ui_send then
+    vim.api.nvim_ui_send(data)
   else
     io.stdout:write(data)
   end
 end
+
+---@param cb fun(term: snacks.image.Terminal)
+function M.detect(cb)
+  if M._terminal then
+    if M._terminal.pending then
+      table.insert(M._terminal.pending, cb)
+      return
+    end
+    return cb(M._terminal)
+  end
+
+  ---@class snacks.image.Terminal
+  ---@field terminal? string
+  ---@field version? string
+  ---@field supported? boolean
+  ---@field placeholders? boolean
+  local ret = {
+    terminal = "unknown",
+    version = "unknown",
+    pending = { cb }, ---@type fun(term: snacks.image.Terminal)[]
+  }
+  M._terminal = ret
+
+  local function on_done()
+    for _, c in ipairs(ret.pending or {}) do
+      c(ret)
+    end
+    ret.pending = nil
+  end
+
+  if vim.env.TMUX then
+    pcall(vim.fn.system, { "tmux", "set", "-p", "allow-passthrough", "all" })
+    M.transform = function(data)
+      return ("\027Ptmux;" .. data:gsub("\027", "\027\027")) .. "\027\\"
+    end
+  end
+
+  local timer = assert(vim.uv.new_timer())
+  local done = 0
+
+  local id = vim.api.nvim_create_autocmd("TermResponse", {
+    group = vim.api.nvim_create_augroup("image.terminal.detect", { clear = true }),
+    callback = function(ev)
+      local data = ev.data.sequence
+      if data:find("^\27P>|") then
+        local term, version = data:match("P>|(%S+)%s*(.*)")
+        if term and version then
+          ret.terminal = term
+          ret.version = version
+          done = done + 1
+        end
+      elseif data:find("^\27_G") then
+        local args, ok = data:match("\27_G(.*);(.*)")
+        if args then
+          local params = {}
+          for _, a in ipairs(vim.split(args, ",")) do
+            local k, v = a:match("(%S+)=(%S+)")
+            if k and v then
+              params[k] = v
+            end
+          end
+          if params["i"] == "31" and ok then
+            ret.supported = ok == "OK"
+            done = done + 1
+            -- elseif params["i"] == "32" and ok then
+            --   ret.placeholders = ok == "OK"
+            --   done = done + 1
+          end
+        end
+      end
+      if done < 2 then
+        return
+      end
+      if timer and not timer:is_closing() then
+        timer:stop()
+        timer:close()
+      end
+      vim.schedule(on_done)
+      return true -- delete autocmd
+    end,
+  })
+
+  timer:start(1000, 0, function()
+    timer:stop()
+    timer:close()
+    vim.schedule(function()
+      vim.api.nvim_del_autocmd(id)
+      on_done()
+    end)
+  end)
+
+  M.request({
+    i = 31,
+    s = 1,
+    v = 1,
+    a = "q",
+    t = "d",
+    f = 24,
+    q = false,
+    data = "AAAA",
+  })
+
+  M.write("\27[>q")
+end
+
+function M.setup() end
 
 return M

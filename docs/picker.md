@@ -74,6 +74,7 @@ Snacks.picker.pick({source = "files", ...})
 ---@field cwd? string current working directory
 ---@field live? boolean when true, typing will trigger live searches
 ---@field limit? number when set, the finder will stop after finding this number of items. useful for live searches
+---@field limit_live? number when set, the finder will stop after finding this number of items during live searches. useful for performance
 ---@field ui_select? boolean set `vim.ui.select` to a snacks picker
 --- Source definition
 ---@field items? snacks.picker.finder.Item[] items to show instead of using a finder
@@ -118,6 +119,7 @@ Snacks.picker.pick({source = "files", ...})
   sources = {},
   focus = "input",
   show_delay = 1000,
+  limit_live = 10000,
   layout = {
     cycle = true,
     --- Use the default layout or vertical if the window is too narrow
@@ -557,6 +559,8 @@ Snacks.picker.pick({source = "files", ...})
     { "gr", function() Snacks.picker.lsp_references() end, nowait = true, desc = "References" },
     { "gI", function() Snacks.picker.lsp_implementations() end, desc = "Goto Implementation" },
     { "gy", function() Snacks.picker.lsp_type_definitions() end, desc = "Goto T[y]pe Definition" },
+    { "gai", function() Snacks.picker.lsp_incoming_calls() end, desc = "C[a]lls Incoming" },
+    { "gao", function() Snacks.picker.lsp_outgoing_calls() end, desc = "C[a]lls Outgoing" },
     { "<leader>ss", function() Snacks.picker.lsp_symbols() end, desc = "LSP Symbols" },
     { "<leader>sS", function() Snacks.picker.lsp_workspace_symbols() end, desc = "LSP Workspace Symbols" },
   },
@@ -606,6 +610,13 @@ Snacks.picker.pick({source = "files", ...})
 ```
 
 ## 📚 Types
+
+```lua
+---@class snacks.picker.resume.Opts
+---@field source? string
+---@field include? string[]
+---@field exclude? string[]
+```
 
 ```lua
 ---@class snacks.picker.jump.Action: snacks.picker.Action
@@ -715,15 +726,6 @@ It's a previewer that shows a preview based on the item data.
 ```
 
 ```lua
----@class snacks.picker.Last
----@field cursor number
----@field topline number
----@field opts? snacks.picker.Config
----@field selected snacks.picker.Item[]
----@field filter snacks.picker.Filter
-```
-
-```lua
 ---@alias snacks.picker.history.Record {pattern: string, search: string, live?: boolean}
 ```
 
@@ -775,6 +777,15 @@ Create a new picker
 ---@param opts? snacks.picker.Config
 ---@overload fun(opts: snacks.picker.Config): snacks.Picker
 Snacks.picker.pick(source, opts)
+```
+
+### `Snacks.picker.resume()`
+
+```lua
+---@param opts? snacks.picker.resume.Opts
+---@overload fun(source:string):snacks.Picker?
+---@return snacks.Picker?
+Snacks.picker.resume(opts)
 ```
 
 ### `Snacks.picker.select()`
@@ -1158,6 +1169,7 @@ Grep in git files
 ---@field untracked? boolean search in untracked files
 ---@field submodules? boolean search in submodule files
 ---@field need_search? boolean require a search pattern
+---@field pathspec? string|string[] pathspec pattern(s)
 ---@field ignorecase? boolean ignore case
 {
   finder = "git_grep",
@@ -1604,6 +1616,46 @@ LSP implementations
 }
 ```
 
+### `lsp_incoming_calls`
+
+```vim
+:lua Snacks.picker.lsp_incoming_calls(opts?)
+```
+
+LSP incoming calls
+
+```lua
+---@type snacks.picker.lsp.Config
+{
+  finder = "lsp_incoming_calls",
+  format = "lsp_symbol",
+  include_current = false,
+  workspace = true, -- this ensures the file is included in the formatter
+  auto_confirm = true,
+  jump = { tagstack = true, reuse_win = true },
+}
+```
+
+### `lsp_outgoing_calls`
+
+```vim
+:lua Snacks.picker.lsp_outgoing_calls(opts?)
+```
+
+LSP outgoing calls
+
+```lua
+---@type snacks.picker.lsp.Config
+{
+  finder = "lsp_outgoing_calls",
+  format = "lsp_symbol",
+  include_current = false,
+  workspace = true, -- this ensures the file is included in the formatter
+  auto_confirm = true,
+  jump = { tagstack = true, reuse_win = true },
+}
+```
+
 ### `lsp_references`
 
 ```vim
@@ -1636,6 +1688,7 @@ LSP document symbols
 ```lua
 ---@class snacks.picker.lsp.symbols.Config: snacks.picker.Config
 ---@field tree? boolean show symbol tree
+---@field keep_parents? boolean keep parent symbols when filtering
 ---@field filter table<string, string[]|boolean>? symbol kind filter
 ---@field workspace? boolean show workspace symbols
 {
@@ -2059,6 +2112,23 @@ Not meant to be used directly.
   main = { current = true },
   layout = { preset = "vscode" },
   confirm = "item_action",
+}
+```
+
+### `tags`
+
+```vim
+:lua Snacks.picker.tags(opts?)
+```
+
+Search tags file
+
+```lua
+---@class snacks.picker.tags.Config: snacks.picker.Config
+{
+  workspace = true, -- search tags in the workspace
+  finder = "vim_tags",
+  format = "lsp_symbol",
 }
 ```
 

@@ -1,0 +1,573 @@
+*snacks-win*          For Neovim         Last change: 2025 October 22
+
+==============================================================================
+Table of Contents                          *snacks.nvim-win-table-of-contents*
+
+1. Usage                                               |snacks.nvim-win-usage|
+2. Setup                                               |snacks.nvim-win-setup|
+3. Config                                             |snacks.nvim-win-config|
+4. Styles                                             |snacks.nvim-win-styles|
+  - float                                       |snacks.nvim-win-styles-float|
+  - help                                         |snacks.nvim-win-styles-help|
+  - minimal                                   |snacks.nvim-win-styles-minimal|
+  - split                                       |snacks.nvim-win-styles-split|
+5. Types                                               |snacks.nvim-win-types|
+6. Module                                             |snacks.nvim-win-module|
+  - Snacks.win()                         |snacks.nvim-win-module-snacks.win()|
+  - Snacks.win.new()                 |snacks.nvim-win-module-snacks.win.new()|
+  - win:action()                         |snacks.nvim-win-module-win:action()|
+  - win:add_padding()               |snacks.nvim-win-module-win:add_padding()|
+  - win:border_size()               |snacks.nvim-win-module-win:border_size()|
+  - win:border_text_width()   |snacks.nvim-win-module-win:border_text_width()|
+  - win:buf_valid()                   |snacks.nvim-win-module-win:buf_valid()|
+  - win:close()                           |snacks.nvim-win-module-win:close()|
+  - win:destroy()                       |snacks.nvim-win-module-win:destroy()|
+  - win:dim()                               |snacks.nvim-win-module-win:dim()|
+  - win:execute()                       |snacks.nvim-win-module-win:execute()|
+  - win:fixbuf()                         |snacks.nvim-win-module-win:fixbuf()|
+  - win:focus()                           |snacks.nvim-win-module-win:focus()|
+  - win:has_border()                 |snacks.nvim-win-module-win:has_border()|
+  - win:hide()                             |snacks.nvim-win-module-win:hide()|
+  - win:hscroll()                       |snacks.nvim-win-module-win:hscroll()|
+  - win:is_floating()               |snacks.nvim-win-module-win:is_floating()|
+  - win:line()                             |snacks.nvim-win-module-win:line()|
+  - win:lines()                           |snacks.nvim-win-module-win:lines()|
+  - win:map()                               |snacks.nvim-win-module-win:map()|
+  - win:on()                                 |snacks.nvim-win-module-win:on()|
+  - win:on_current_tab()         |snacks.nvim-win-module-win:on_current_tab()|
+  - win:on_resize()                   |snacks.nvim-win-module-win:on_resize()|
+  - win:parent_size()               |snacks.nvim-win-module-win:parent_size()|
+  - win:redraw()                         |snacks.nvim-win-module-win:redraw()|
+  - win:scratch()                       |snacks.nvim-win-module-win:scratch()|
+  - win:scroll()                         |snacks.nvim-win-module-win:scroll()|
+  - win:set_buf()                       |snacks.nvim-win-module-win:set_buf()|
+  - win:set_title()                   |snacks.nvim-win-module-win:set_title()|
+  - win:show()                             |snacks.nvim-win-module-win:show()|
+  - win:size()                             |snacks.nvim-win-module-win:size()|
+  - win:text()                             |snacks.nvim-win-module-win:text()|
+  - win:toggle()                         |snacks.nvim-win-module-win:toggle()|
+  - win:toggle_help()               |snacks.nvim-win-module-win:toggle_help()|
+  - win:update()                         |snacks.nvim-win-module-win:update()|
+  - win:valid()                           |snacks.nvim-win-module-win:valid()|
+  - win:win_valid()                   |snacks.nvim-win-module-win:win_valid()|
+7. Links                                               |snacks.nvim-win-links|
+Easily create and manage floating windows or splits
+
+
+==============================================================================
+1. Usage                                               *snacks.nvim-win-usage*
+
+>lua
+    Snacks.win({
+      file = vim.api.nvim_get_runtime_file("doc/news.txt", false)[1],
+      width = 0.6,
+      height = 0.6,
+      wo = {
+        spell = false,
+        wrap = false,
+        signcolumn = "yes",
+        statuscolumn = " ",
+        conceallevel = 3,
+      },
+    })
+<
+
+
+==============================================================================
+2. Setup                                               *snacks.nvim-win-setup*
+
+>lua
+    -- lazy.nvim
+    {
+      "folke/snacks.nvim",
+      ---@type snacks.Config
+      opts = {
+        win = {
+          -- your win configuration comes here
+          -- or leave it empty to use the default settings
+          -- refer to the configuration section below
+        }
+      }
+    }
+<
+
+
+==============================================================================
+3. Config                                             *snacks.nvim-win-config*
+
+>lua
+    ---@class snacks.win.Config: vim.api.keyset.win_config
+    ---@field style? string merges with config from `Snacks.config.styles[style]`
+    ---@field show? boolean Show the window immediately (default: true)
+    ---@field height? number|fun(self:snacks.win):number Height of the window. Use <1 for relative height. 0 means full height. (default: 0.9)
+    ---@field width? number|fun(self:snacks.win):number Width of the window. Use <1 for relative width. 0 means full width. (default: 0.9)
+    ---@field min_height? number Minimum height of the window
+    ---@field max_height? number Maximum height of the window
+    ---@field min_width? number Minimum width of the window
+    ---@field max_width? number Maximum width of the window
+    ---@field col? number|fun(self:snacks.win):number Column of the window. Use <1 for relative column. (default: center)
+    ---@field row? number|fun(self:snacks.win):number Row of the window. Use <1 for relative row. (default: center)
+    ---@field minimal? boolean Disable a bunch of options to make the window minimal (default: true)
+    ---@field position? "float"|"bottom"|"top"|"left"|"right"|"current"
+    ---@field border? "none"|"top"|"right"|"bottom"|"left"|"hpad"|"vpad"|"rounded"|"single"|"double"|"solid"|"shadow"|string[]|false
+    ---@field buf? number If set, use this buffer instead of creating a new one
+    ---@field file? string If set, use this file instead of creating a new buffer
+    ---@field enter? boolean Enter the window after opening (default: false)
+    ---@field backdrop? number|false|snacks.win.Backdrop Opacity of the backdrop (default: 60)
+    ---@field wo? vim.wo|{} window options
+    ---@field bo? vim.bo|{} buffer options
+    ---@field b? table<string, any> buffer local variables
+    ---@field w? table<string, any> window local variables
+    ---@field ft? string filetype to use for treesitter/syntax highlighting. Won't override existing filetype
+    ---@field scratch_ft? string filetype to use for scratch buffers
+    ---@field keys? table<string, false|string|fun(self: snacks.win)|snacks.win.Keys> Key mappings
+    ---@field on_buf? fun(self: snacks.win) Callback after opening the buffer
+    ---@field on_win? fun(self: snacks.win) Callback after opening the window
+    ---@field on_close? fun(self: snacks.win) Callback after closing the window
+    ---@field fixbuf? boolean don't allow other buffers to be opened in this window
+    ---@field text? string|string[]|fun():(string[]|string) Initial lines to set in the buffer
+    ---@field actions? table<string, snacks.win.Action.spec> Actions that can be used in key mappings
+    ---@field resize? boolean Automatically resize the window when the editor is resized
+    ---@field stack? boolean When enabled, multiple split windows with the same position will be stacked together (useful for terminals)
+    {
+      show = true,
+      fixbuf = true,
+      relative = "editor",
+      position = "float",
+      minimal = true,
+      wo = {
+        winhighlight = "Normal:SnacksNormal,NormalNC:SnacksNormalNC,WinBar:SnacksWinBar,WinBarNC:SnacksWinBarNC",
+      },
+      bo = {},
+      keys = {
+        q = "close",
+      },
+    }
+<
+
+
+==============================================================================
+4. Styles                                             *snacks.nvim-win-styles*
+
+Check the styles
+<https://github.com/folke/snacks.nvim/blob/main/docs/styles.md> docs for more
+information on how to customize these styles
+
+
+FLOAT                                           *snacks.nvim-win-styles-float*
+
+>lua
+    {
+      position = "float",
+      backdrop = 60,
+      height = 0.9,
+      width = 0.9,
+      zindex = 50,
+    }
+<
+
+
+HELP                                             *snacks.nvim-win-styles-help*
+
+>lua
+    {
+      position = "float",
+      backdrop = false,
+      border = "top",
+      row = -1,
+      width = 0,
+      height = 0.3,
+    }
+<
+
+
+MINIMAL                                       *snacks.nvim-win-styles-minimal*
+
+>lua
+    {
+      wo = {
+        cursorcolumn = false,
+        cursorline = false,
+        cursorlineopt = "both",
+        colorcolumn = "",
+        fillchars = "eob: ,lastline:…",
+        list = false,
+        listchars = "extends:…,tab:  ",
+        number = false,
+        relativenumber = false,
+        signcolumn = "no",
+        spell = false,
+        winbar = "",
+        statuscolumn = "",
+        wrap = false,
+        sidescrolloff = 0,
+      },
+    }
+<
+
+
+SPLIT                                           *snacks.nvim-win-styles-split*
+
+>lua
+    {
+      position = "bottom",
+      height = 0.4,
+      width = 0.4,
+    }
+<
+
+
+==============================================================================
+5. Types                                               *snacks.nvim-win-types*
+
+>lua
+    ---@class snacks.win.Keys: vim.api.keyset.keymap
+    ---@field [1]? string
+    ---@field [2]? string|string[]|fun(self: snacks.win): string?
+    ---@field mode? string|string[]
+<
+
+>lua
+    ---@class snacks.win.Event: vim.api.keyset.create_autocmd
+    ---@field buf? true
+    ---@field win? true
+    ---@field callback? fun(self: snacks.win, ev:vim.api.keyset.create_autocmd.callback_args):boolean?
+<
+
+>lua
+    ---@class snacks.win.Backdrop
+    ---@field bg? string
+    ---@field blend? number
+    ---@field transparent? boolean defaults to true
+    ---@field win? snacks.win.Config overrides the backdrop window config
+<
+
+>lua
+    ---@class snacks.win.Dim
+    ---@field width number width of the window, without borders
+    ---@field height number height of the window, without borders
+    ---@field row number row of the window (0-indexed)
+    ---@field col number column of the window (0-indexed)
+    ---@field border? boolean whether the window has a border
+<
+
+>lua
+    ---@alias snacks.win.Action.fn fun(self: snacks.win):(boolean|string?)
+    ---@alias snacks.win.Action.spec snacks.win.Action|snacks.win.Action.fn
+    ---@class snacks.win.Action
+    ---@field action snacks.win.Action.fn
+    ---@field desc? string
+<
+
+
+==============================================================================
+6. Module                                             *snacks.nvim-win-module*
+
+>lua
+    ---@class snacks.win
+    ---@field id number
+    ---@field buf? number
+    ---@field scratch_buf? number
+    ---@field win? number
+    ---@field opts snacks.win.Config
+    ---@field augroup? number
+    ---@field backdrop? snacks.win
+    ---@field keys snacks.win.Keys[]
+    ---@field events (snacks.win.Event|{event:string|string[]})[]
+    ---@field meta table<string, any>
+    ---@field closed? boolean
+    Snacks.win = {}
+<
+
+
+`Snacks.win()`                                                  *Snacks.win()*
+
+>lua
+    ---@type fun(opts? :snacks.win.Config|{}): snacks.win
+    Snacks.win()
+<
+
+
+`Snacks.win.new()`                                          *Snacks.win.new()*
+
+>lua
+    ---@param opts? snacks.win.Config|{}
+    ---@return snacks.win
+    Snacks.win.new(opts)
+<
+
+
+WIN:ACTION()                             *snacks.nvim-win-module-win:action()*
+
+>lua
+    ---@param actions string|string[]
+    ---@return (fun(): boolean|string?) action, string? desc
+    win:action(actions)
+<
+
+
+WIN:ADD_PADDING()                   *snacks.nvim-win-module-win:add_padding()*
+
+>lua
+    win:add_padding()
+<
+
+
+WIN:BORDER_SIZE()                   *snacks.nvim-win-module-win:border_size()*
+
+Calculate the size of the border
+
+>lua
+    win:border_size()
+<
+
+
+WIN:BORDER_TEXT_WIDTH()       *snacks.nvim-win-module-win:border_text_width()*
+
+>lua
+    win:border_text_width()
+<
+
+
+WIN:BUF_VALID()                       *snacks.nvim-win-module-win:buf_valid()*
+
+>lua
+    win:buf_valid()
+<
+
+
+WIN:CLOSE()                               *snacks.nvim-win-module-win:close()*
+
+>lua
+    ---@param opts? { buf: boolean }
+    win:close(opts)
+<
+
+
+WIN:DESTROY()                           *snacks.nvim-win-module-win:destroy()*
+
+>lua
+    win:destroy()
+<
+
+
+WIN:DIM()                                   *snacks.nvim-win-module-win:dim()*
+
+>lua
+    ---@param parent? snacks.win.Dim
+    win:dim(parent)
+<
+
+
+WIN:EXECUTE()                           *snacks.nvim-win-module-win:execute()*
+
+>lua
+    ---@param actions string|string[]
+    win:execute(actions)
+<
+
+
+WIN:FIXBUF()                             *snacks.nvim-win-module-win:fixbuf()*
+
+>lua
+    win:fixbuf()
+<
+
+
+WIN:FOCUS()                               *snacks.nvim-win-module-win:focus()*
+
+>lua
+    win:focus()
+<
+
+
+WIN:HAS_BORDER()                     *snacks.nvim-win-module-win:has_border()*
+
+>lua
+    win:has_border()
+<
+
+
+WIN:HIDE()                                 *snacks.nvim-win-module-win:hide()*
+
+>lua
+    win:hide()
+<
+
+
+WIN:HSCROLL()                           *snacks.nvim-win-module-win:hscroll()*
+
+>lua
+    ---@param left? boolean
+    win:hscroll(left)
+<
+
+
+WIN:IS_FLOATING()                   *snacks.nvim-win-module-win:is_floating()*
+
+>lua
+    win:is_floating()
+<
+
+
+WIN:LINE()                                 *snacks.nvim-win-module-win:line()*
+
+>lua
+    win:line(line)
+<
+
+
+WIN:LINES()                               *snacks.nvim-win-module-win:lines()*
+
+>lua
+    ---@param from? number 1-indexed, inclusive
+    ---@param to? number 1-indexed, inclusive
+    win:lines(from, to)
+<
+
+
+WIN:MAP()                                   *snacks.nvim-win-module-win:map()*
+
+>lua
+    win:map()
+<
+
+
+WIN:ON()                                     *snacks.nvim-win-module-win:on()*
+
+>lua
+    ---@param event string|string[]
+    ---@param cb fun(self: snacks.win, ev:vim.api.keyset.create_autocmd.callback_args):boolean?
+    ---@param opts? snacks.win.Event
+    win:on(event, cb, opts)
+<
+
+
+WIN:ON_CURRENT_TAB()             *snacks.nvim-win-module-win:on_current_tab()*
+
+>lua
+    win:on_current_tab()
+<
+
+
+WIN:ON_RESIZE()                       *snacks.nvim-win-module-win:on_resize()*
+
+>lua
+    win:on_resize()
+<
+
+
+WIN:PARENT_SIZE()                   *snacks.nvim-win-module-win:parent_size()*
+
+>lua
+    ---@return { height: number, width: number }
+    win:parent_size()
+<
+
+
+WIN:REDRAW()                             *snacks.nvim-win-module-win:redraw()*
+
+>lua
+    win:redraw()
+<
+
+
+WIN:SCRATCH()                           *snacks.nvim-win-module-win:scratch()*
+
+>lua
+    win:scratch()
+<
+
+
+WIN:SCROLL()                             *snacks.nvim-win-module-win:scroll()*
+
+>lua
+    ---@param up? boolean
+    win:scroll(up)
+<
+
+
+WIN:SET_BUF()                           *snacks.nvim-win-module-win:set_buf()*
+
+>lua
+    ---@param buf number
+    win:set_buf(buf)
+<
+
+
+WIN:SET_TITLE()                       *snacks.nvim-win-module-win:set_title()*
+
+>lua
+    ---@param title string|{[1]:string, [2]:string}[]
+    ---@param pos? "center"|"left"|"right"
+    win:set_title(title, pos)
+<
+
+
+WIN:SHOW()                                 *snacks.nvim-win-module-win:show()*
+
+>lua
+    win:show()
+<
+
+
+WIN:SIZE()                                 *snacks.nvim-win-module-win:size()*
+
+>lua
+    ---@return { height: number, width: number }
+    win:size()
+<
+
+
+WIN:TEXT()                                 *snacks.nvim-win-module-win:text()*
+
+>lua
+    ---@param from? number 1-indexed, inclusive
+    ---@param to? number 1-indexed, inclusive
+    win:text(from, to)
+<
+
+
+WIN:TOGGLE()                             *snacks.nvim-win-module-win:toggle()*
+
+>lua
+    win:toggle()
+<
+
+
+WIN:TOGGLE_HELP()                   *snacks.nvim-win-module-win:toggle_help()*
+
+>lua
+    ---@param opts? {col_width?: number, key_width?: number, win?: snacks.win.Config}
+    win:toggle_help(opts)
+<
+
+
+WIN:UPDATE()                             *snacks.nvim-win-module-win:update()*
+
+>lua
+    win:update()
+<
+
+
+WIN:VALID()                               *snacks.nvim-win-module-win:valid()*
+
+>lua
+    win:valid()
+<
+
+
+WIN:WIN_VALID()                       *snacks.nvim-win-module-win:win_valid()*
+
+>lua
+    win:win_valid()
+<
+
+==============================================================================
+7. Links                                               *snacks.nvim-win-links*
+
+1. *image*: https://github.com/user-attachments/assets/250acfbd-a624-4f42-a36b-9aab316ebf64
+
+Generated by panvimdoc <https://github.com/kdheepak/panvimdoc>
+
+vim:tw=78:ts=8:noet:ft=help:norl:

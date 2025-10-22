@@ -1,0 +1,375 @@
+*snacks-styles*        For Neovim        Last change: 2025 October 22
+
+==============================================================================
+Table of Contents                       *snacks.nvim-styles-table-of-contents*
+
+1. Setup                                            |snacks.nvim-styles-setup|
+2. Styles                                          |snacks.nvim-styles-styles|
+  - blame_line                          |snacks.nvim-styles-styles-blame_line|
+  - dashboard                            |snacks.nvim-styles-styles-dashboard|
+  - float                                    |snacks.nvim-styles-styles-float|
+  - help                                      |snacks.nvim-styles-styles-help|
+  - input                                    |snacks.nvim-styles-styles-input|
+  - lazygit                                |snacks.nvim-styles-styles-lazygit|
+  - minimal                                |snacks.nvim-styles-styles-minimal|
+  - notification                      |snacks.nvim-styles-styles-notification|
+  - notification_history      |snacks.nvim-styles-styles-notification_history|
+  - scratch                                |snacks.nvim-styles-styles-scratch|
+  - snacks_image                      |snacks.nvim-styles-styles-snacks_image|
+  - split                                    |snacks.nvim-styles-styles-split|
+  - terminal                              |snacks.nvim-styles-styles-terminal|
+  - zen                                        |snacks.nvim-styles-styles-zen|
+  - zoom_indicator                  |snacks.nvim-styles-styles-zoom_indicator|
+Plugins provide window styles that can be customized with the `opts.styles`
+option of `snacks.nvim`.
+
+
+==============================================================================
+1. Setup                                            *snacks.nvim-styles-setup*
+
+>lua
+    -- lazy.nvim
+    {
+      "folke/snacks.nvim",
+      ---@type snacks.Config
+      opts = {
+        ---@type table<string, snacks.win.Config>
+        styles = {
+          -- your styles configuration comes here
+          -- or leave it empty to use the default settings
+          -- refer to the configuration section below
+        }
+      }
+    }
+<
+
+
+==============================================================================
+2. Styles                                          *snacks.nvim-styles-styles*
+
+These are the default styles that Snacks provides. You can customize them by
+adding your own styles to `opts.styles`.
+
+
+BLAME_LINE                              *snacks.nvim-styles-styles-blame_line*
+
+>lua
+    {
+      width = 0.6,
+      height = 0.6,
+      border = "rounded",
+      title = " Git Blame ",
+      title_pos = "center",
+      ft = "git",
+    }
+<
+
+
+DASHBOARD                                *snacks.nvim-styles-styles-dashboard*
+
+The default style for the dashboard. When opening the dashboard during startup,
+only the `bo` and `wo` options are used. The other options are used with `:lua
+Snacks.dashboard()`
+
+>lua
+    {
+      zindex = 10,
+      height = 0,
+      width = 0,
+      bo = {
+        bufhidden = "wipe",
+        buftype = "nofile",
+        buflisted = false,
+        filetype = "snacks_dashboard",
+        swapfile = false,
+        undofile = false,
+      },
+      wo = {
+        colorcolumn = "",
+        cursorcolumn = false,
+        cursorline = false,
+        foldmethod = "manual",
+        list = false,
+        number = false,
+        relativenumber = false,
+        sidescrolloff = 0,
+        signcolumn = "no",
+        spell = false,
+        statuscolumn = "",
+        statusline = "",
+        winbar = "",
+        winhighlight = "Normal:SnacksDashboardNormal,NormalFloat:SnacksDashboardNormal",
+        wrap = false,
+      },
+    }
+<
+
+
+FLOAT                                        *snacks.nvim-styles-styles-float*
+
+>lua
+    {
+      position = "float",
+      backdrop = 60,
+      height = 0.9,
+      width = 0.9,
+      zindex = 50,
+    }
+<
+
+
+HELP                                          *snacks.nvim-styles-styles-help*
+
+>lua
+    {
+      position = "float",
+      backdrop = false,
+      border = "top",
+      row = -1,
+      width = 0,
+      height = 0.3,
+    }
+<
+
+
+INPUT                                        *snacks.nvim-styles-styles-input*
+
+>lua
+    {
+      backdrop = false,
+      position = "float",
+      border = "rounded",
+      title_pos = "center",
+      height = 1,
+      width = 60,
+      relative = "editor",
+      noautocmd = true,
+      row = 2,
+      -- relative = "cursor",
+      -- row = -3,
+      -- col = 0,
+      wo = {
+        winhighlight = "NormalFloat:SnacksInputNormal,FloatBorder:SnacksInputBorder,FloatTitle:SnacksInputTitle",
+        cursorline = false,
+      },
+      bo = {
+        filetype = "snacks_input",
+        buftype = "prompt",
+      },
+      --- buffer local variables
+      b = {
+        completion = false, -- disable blink completions in input
+      },
+      keys = {
+        n_esc = { "<esc>", { "cmp_close", "cancel" }, mode = "n", expr = true },
+        i_esc = { "<esc>", { "cmp_close", "stopinsert" }, mode = "i", expr = true },
+        i_cr = { "<cr>", { "cmp_accept", "confirm" }, mode = { "i", "n" }, expr = true },
+        i_tab = { "<tab>", { "cmp_select_next", "cmp" }, mode = "i", expr = true },
+        i_ctrl_w = { "<c-w>", "<c-s-w>", mode = "i", expr = true },
+        i_up = { "<up>", { "hist_up" }, mode = { "i", "n" } },
+        i_down = { "<down>", { "hist_down" }, mode = { "i", "n" } },
+        q = "cancel",
+      },
+    }
+<
+
+
+LAZYGIT                                    *snacks.nvim-styles-styles-lazygit*
+
+>lua
+    {}
+<
+
+
+MINIMAL                                    *snacks.nvim-styles-styles-minimal*
+
+>lua
+    {
+      wo = {
+        cursorcolumn = false,
+        cursorline = false,
+        cursorlineopt = "both",
+        colorcolumn = "",
+        fillchars = "eob: ,lastline:…",
+        list = false,
+        listchars = "extends:…,tab:  ",
+        number = false,
+        relativenumber = false,
+        signcolumn = "no",
+        spell = false,
+        winbar = "",
+        statuscolumn = "",
+        wrap = false,
+        sidescrolloff = 0,
+      },
+    }
+<
+
+
+NOTIFICATION                          *snacks.nvim-styles-styles-notification*
+
+>lua
+    {
+      border = "rounded",
+      zindex = 100,
+      ft = "markdown",
+      wo = {
+        winblend = 5,
+        wrap = false,
+        conceallevel = 2,
+        colorcolumn = "",
+      },
+      bo = { filetype = "snacks_notif" },
+    }
+<
+
+
+NOTIFICATION_HISTORY          *snacks.nvim-styles-styles-notification_history*
+
+>lua
+    {
+      border = "rounded",
+      zindex = 100,
+      width = 0.6,
+      height = 0.6,
+      minimal = false,
+      title = " Notification History ",
+      title_pos = "center",
+      ft = "markdown",
+      bo = { filetype = "snacks_notif_history", modifiable = false },
+      wo = { winhighlight = "Normal:SnacksNotifierHistory" },
+      keys = { q = "close" },
+    }
+<
+
+
+SCRATCH                                    *snacks.nvim-styles-styles-scratch*
+
+>lua
+    {
+      width = 100,
+      height = 30,
+      bo = { buftype = "", buflisted = false, bufhidden = "hide", swapfile = false },
+      minimal = false,
+      noautocmd = false,
+      -- position = "right",
+      zindex = 20,
+      wo = { winhighlight = "NormalFloat:Normal" },
+      border = "rounded",
+      title_pos = "center",
+      footer_pos = "center",
+    }
+<
+
+
+SNACKS_IMAGE                          *snacks.nvim-styles-styles-snacks_image*
+
+>lua
+    {
+      relative = "cursor",
+      border = "rounded",
+      focusable = false,
+      backdrop = false,
+      row = 1,
+      col = 1,
+      -- width/height are automatically set by the image size unless specified below
+    }
+<
+
+
+SPLIT                                        *snacks.nvim-styles-styles-split*
+
+>lua
+    {
+      position = "bottom",
+      height = 0.4,
+      width = 0.4,
+    }
+<
+
+
+TERMINAL                                  *snacks.nvim-styles-styles-terminal*
+
+>lua
+    {
+      bo = {
+        filetype = "snacks_terminal",
+      },
+      wo = {},
+      stack = true, -- when enabled, multiple split windows with the same position will be stacked together (useful for terminals)
+      keys = {
+        q = "hide",
+        gf = function(self)
+          local f = vim.fn.findfile(vim.fn.expand("<cfile>"), "**")
+          if f == "" then
+            Snacks.notify.warn("No file under cursor")
+          else
+            self:hide()
+            vim.schedule(function()
+              vim.cmd("e " .. f)
+            end)
+          end
+        end,
+        term_normal = {
+          "<esc>",
+          function(self)
+            self.esc_timer = self.esc_timer or (vim.uv or vim.loop).new_timer()
+            if self.esc_timer:is_active() then
+              self.esc_timer:stop()
+              vim.cmd("stopinsert")
+            else
+              self.esc_timer:start(200, 0, function() end)
+              return "<esc>"
+            end
+          end,
+          mode = "t",
+          expr = true,
+          desc = "Double escape to normal mode",
+        },
+      },
+    }
+<
+
+
+ZEN                                            *snacks.nvim-styles-styles-zen*
+
+>lua
+    {
+      enter = true,
+      fixbuf = false,
+      minimal = false,
+      width = 120,
+      height = 0,
+      backdrop = { transparent = true, blend = 40 },
+      keys = { q = false },
+      zindex = 40,
+      wo = {
+        winhighlight = "NormalFloat:Normal",
+      },
+      w = {
+        snacks_main = true,
+      },
+    }
+<
+
+
+ZOOM_INDICATOR                      *snacks.nvim-styles-styles-zoom_indicator*
+
+fullscreen indicator only shown when the window is maximized
+
+>lua
+    {
+      text = "▍ zoom  󰊓  ",
+      minimal = true,
+      enter = false,
+      focusable = false,
+      height = 1,
+      row = 0,
+      col = -1,
+      backdrop = false,
+    }
+<
+
+Generated by panvimdoc <https://github.com/kdheepak/panvimdoc>
+
+vim:tw=78:ts=8:noet:ft=help:norl:

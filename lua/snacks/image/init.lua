@@ -30,6 +30,7 @@ M.meta = {
 ---@class snacks.image.Env
 ---@field name string
 ---@field env table<string, string|true>
+---@field terminal? string
 ---@field supported? boolean default: false
 ---@field placeholders? boolean default: false
 ---@field setup? fun(): boolean?
@@ -230,7 +231,6 @@ function M.langs()
     return q:match("queries/(.-)/images%.scm")
   end, queries)
 end
-
 ---@private
 ---@param ev? vim.api.keyset.create_autocmd.callback_args
 function M.setup(ev)
@@ -238,6 +238,7 @@ function M.setup(ev)
     return
   end
   did_setup = true
+
   local group = vim.api.nvim_create_augroup("snacks.image", { clear = true })
 
   vim.api.nvim_create_autocmd({ "BufWipeout", "BufDelete" }, {

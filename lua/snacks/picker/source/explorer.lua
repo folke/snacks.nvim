@@ -143,7 +143,6 @@ end
 ---@param opts snacks.picker.explorer.Config
 function M.setup(opts)
   local searching = false
-  local ref ---@type snacks.Picker.ref
   return Snacks.config.merge(opts, {
     actions = {
       confirm = Actions.actions.confirm,
@@ -153,52 +152,11 @@ function M.setup(opts)
       ---@param picker snacks.Picker
       ---@param filter snacks.picker.Filter
       transform = function(picker, filter)
-        ref = picker:ref()
         local s = not filter:is_empty()
         if searching ~= s then
           searching = s
           filter.meta.searching = searching
           return true
-        end
-      end,
-    },
-    matcher = {
-      --- Add parent dirs to matching items
-      ---@param matcher snacks.picker.Matcher
-      ---@param item snacks.picker.explorer.Item
-      on_match = function(matcher, item)
-        if not searching then
-          return
-        end
-        local picker = ref.value
-        if picker and item.score > 0 then
-          local parent = item.parent
-          while parent do
-            if parent.score == 0 or parent.match_tick ~= matcher.tick then
-              parent.score = 1
-              parent.match_tick = matcher.tick
-              parent.match_topk = nil
-              picker.list:add(parent)
-            else
-              break
-            end
-            parent = parent.parent
-          end
-        end
-      end,
-      on_done = function()
-        if not searching then
-          return
-        end
-        local picker = ref.value
-        if not picker or picker.closed then
-          return
-        end
-        for item, idx in picker:iter() do
-          if not item.dir then
-            picker.list:view(idx)
-            return
-          end
         end
       end,
     },
@@ -223,7 +181,9 @@ end
 function M.explorer(opts, ctx)
   local state = M.get_state(ctx.picker)
 
+  ctx.picker.matcher.opts.keep_parents = false
   if state:setup(ctx) then
+    ctx.picker.matcher.opts.keep_parents = true
     return M.search(opts, ctx)
   end
 

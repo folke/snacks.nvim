@@ -6,7 +6,6 @@ local Async = require("snacks.picker.util.async")
 local M = {}
 
 ---@alias lsp.Symbol lsp.SymbolInformation|lsp.DocumentSymbol
----@alias lsp.Loc lsp.Location|lsp.LocationLink
 
 ---@class snacks.picker.lsp.Loc: lsp.Location
 ---@field encoding string
@@ -96,50 +95,83 @@ function M.get_clients(buf, method)
   end, clients)
 end
 
----@param buf number
+---@class snacks.picker.lsp.Requester
+---@field async snacks.picker.Async
+---@field requests {client_id:number, request_id:number}[]
+---@field completed number
+local R = {}
+R.__index = R
+
+function R.new()
+  local self = setmetatable({}, R)
+  self.async = Async.running()
+  self.requests = {}
+  self.completed = 0
+  self.async:on(
+    "abort",
+    vim.schedule_wrap(function()
+      self:cancel()
+    end)
+  )
+  return self
+end
+
+function R:cancel()
+  while #self.requests > 0 do
+    local req = table.remove(self.requests)
+    local client = vim.lsp.get_client_by_id(req.client_id)
+    if client then
+      client:cancel_request(req.request_id)
+    end
+  end
+end
+
+---@param buf number|vim.lsp.Client
 ---@param method string
 ---@param params fun(client:vim.lsp.Client):table
 ---@param cb fun(client:vim.lsp.Client, result:table, params:table)
 ---@async
-function M.request(buf, method, params, cb)
-  local async = Async.running()
-  local cancel = {} ---@type fun()[]
+function R:request(buf, method, params, cb)
+  local clients = type(buf) == "number" and M.get_clients(buf, method) or {
+    wrap(buf --[[@as vim.lsp.Client]]),
+  }
+  if vim.tbl_isempty(clients) then
+    return self.async:resume()
+  end
 
-  async:on(
-    "abort",
-    vim.schedule_wrap(function()
-      vim.tbl_map(pcall, cancel)
-      cancel = {}
-    end)
-  )
   vim.schedule(function()
-    local clients = M.get_clients(buf, method)
-    if vim.tbl_isempty(clients) then
-      return async:resume()
-    end
-    local remaining = #clients
     for _, client in ipairs(clients) do
       local p = params(client)
       local status, request_id = client:request(method, p, function(_, result)
         if result then
           cb(client, result, p)
         end
-        remaining = remaining - 1
-        if remaining == 0 then
-          async:resume()
-        end
+        self.completed = self.completed + 1
+        self.async:resume()
       end)
       if status and request_id then
-        table.insert(cancel, function()
-          client:cancel_request(request_id)
-        end)
+        table.insert(self.requests, { client_id = client.id, request_id = request_id })
       end
     end
+    self.async:resume()
   end)
+  self.async:suspend()
+  return self
+end
 
-  async:suspend()
-  cancel = {}
-  async = Async.nop()
+function R:wait()
+  while self.completed < #self.requests do
+    self.async:suspend()
+  end
+end
+
+---@param buf number
+---@param method string
+---@param params fun(client:vim.lsp.Client):table
+---@param cb fun(client:vim.lsp.Client, result:table, params:table)
+---@async
+function M.request(buf, method, params, cb)
+  R.new():request(buf, method, params, cb):wait()
 end
 
 -- Support for older versions of neovim
@@ -258,7 +290,7 @@ function M.results_to_items(client, results, opts)
       detail = result.detail,
       name = result.name,
       text = "",
-      range = result.range,
+      range = result.range or result.selectionRange,
       item = result,
     }
     local uri = result.location and result.location.uri or result.uri or opts.default_uri
@@ -283,7 +315,7 @@ function M.results_to_items(client, results, opts)
     result.children = nil
   end
 
-  local root = { text = "" } ---@type snacks.picker.finder.Item
+  local root = { text = "", root = true } ---@type snacks.picker.finder.Item
   ---@type snacks.picker.finder.Item
   for _, result in ipairs(results) do
     add(result, root)
@@ -298,6 +330,10 @@ end
 ---@param opts snacks.picker.lsp.symbols.Config
 ---@type snacks.picker.finder
 function M.symbols(opts, ctx)
+  if opts.keep_parents then
+    ctx.picker.matcher.opts.keep_parents = true
+    ctx.picker.matcher.opts.sort = false
+  end
   local buf = ctx.filter.current_buf
   -- For unloaded buffers, load the buffer and
   -- refresh the picker on every LspAttach event
@@ -389,6 +425,51 @@ function M.symbols(opts, ctx)
   end
 end
 
+---@param opts snacks.picker.lsp.Config
+---@param filter snacks.picker.Filter
+---@param incoming? boolean
+function M.call_hierarchy(opts, filter, incoming)
+  local method = ("callHierarchy/%sCalls"):format(incoming and "incoming" or "outgoing")
+  local buf = filter.current_buf
+  local win = filter.current_win
+
+  ---@async
+  ---@param cb async fun(item: snacks.picker.finder.Item)
+  return function(cb)
+    local requester = R.new()
+    requester:request(buf, "textDocument/prepareCallHierarchy", function(client)
+      return vim.lsp.util.make_position_params(win, client.offset_encoding)
+    end, function(client, result)
+      ---@cast result lsp.CallHierarchyItem[]
+      for _, res in ipairs(result or {}) do
+        requester:request(client, method, function()
+          return { item = res }
+        end, function(_, calls)
+          ---@cast calls (lsp.CallHierarchyIncomingCall|lsp.CallHierarchyOutgoingCall)[]
+
+          local call_items = {} ---@type lsp.CallHierarchyItem[]
+          ---@param call lsp.CallHierarchyIncomingCall|lsp.CallHierarchyOutgoingCall
+          for _, call in ipairs(calls) do
+            if incoming then
+              for _, range in ipairs(call.fromRanges or {}) do
+                local from = vim.deepcopy(call.from)
+                from.selectionRange = range or from.selectionRange
+                table.insert(call_items, from)
+              end
+            else
+              table.insert(call_items, call.to)
+            end
+          end
+
+          local items = M.results_to_items(client, call_items, { default_uri = res.uri })
+          vim.tbl_map(cb, items)
+        end)
+      end
+    end)
+    requester:wait()
+  end
+end
+
 ---@param opts snacks.picker.lsp.references.Config
 ---@type snacks.picker.finder
 function M.references(opts, ctx)
@@ -400,6 +481,18 @@ function M.references(opts, ctx)
     }),
     ctx.filter
   )
+end
+
+---@param opts snacks.picker.lsp.Config
+---@type snacks.picker.finder
+function M.incoming_calls(opts, ctx)
+  return M.call_hierarchy(opts, ctx.filter, true)
+end
+
+---@param opts snacks.picker.lsp.Config
+---@type snacks.picker.finder
+function M.outgoing_calls(opts, ctx)
+  return M.call_hierarchy(opts, ctx.filter, false)
 end
 
 ---@param opts snacks.picker.lsp.Config

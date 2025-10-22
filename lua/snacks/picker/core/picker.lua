@@ -38,16 +38,6 @@ M._pickers = setmetatable({}, { __mode = "k" })
 ---@type table<snacks.Picker,boolean>
 M._active = {}
 
----@class snacks.picker.Last
----@field cursor number
----@field topline number
----@field opts? snacks.picker.Config
----@field selected snacks.picker.Item[]
----@field filter snacks.picker.Filter
-
----@type snacks.picker.Last?
-M.last = nil
-
 ---@alias snacks.picker.history.Record {pattern: string, search: string, live?: boolean}
 
 function M:__index(key)
@@ -94,9 +84,6 @@ function M.new(opts)
   self.id = _id
   self.init_opts = opts
   self.opts = Snacks.picker.config.get(opts)
-  if self.opts.source == "resume" then
-    return M.resume()
-  end
 
   self.history = require("snacks.picker.util.history").new("picker_" .. (self.opts.source or "custom"), {
     ---@param hist snacks.picker.history.Record
@@ -150,7 +137,9 @@ function M.new(opts)
     end
   end, { ms = 60, name = "preview" })
 
-  self:find()
+  if not (opts and opts.find == false) then
+    self:find()
+  end
   return self
 end
 
@@ -451,33 +440,6 @@ function M:update_titles()
   end
 end
 
---- Resume the last picker
----@private
-function M.resume()
-  local last = M.last
-  if not last then
-    Snacks.notify.error("No picker to resume")
-    return M.new({ source = "pickers" })
-  end
-  last.opts.pattern = last.filter.pattern
-  last.opts.search = last.filter.search
-  local ret = M.new(last.opts)
-  ret:show()
-  ret.list:set_selected(last.selected)
-  ret.list:update()
-  ret.input:update()
-  ret.matcher.task:on(
-    "done",
-    vim.schedule_wrap(function()
-      if ret.closed then
-        return
-      end
-      ret.list:view(last.cursor, last.topline)
-    end)
-  )
-  return ret
-end
-
 --- Actual preview code
 ---@hide
 function M:_show_preview()
@@ -676,14 +638,8 @@ function M:close()
   for toggle in pairs(self.opts.toggles) do
     self.init_opts[toggle] = self.opts[toggle]
   end
-  M.last = {
-    opts = self.init_opts or {},
-    selected = self:selected({ fallback = false }),
-    cursor = self.list.cursor,
-    topline = self.list.top,
-    filter = self.input.filter,
-  }
-  M.last.opts.live = self.opts.live
+
+  require("snacks.picker.resume").add(self)
 
   local current = vim.api.nvim_get_current_win()
   local is_picker_win = vim.tbl_contains({ self.input.win.win, self.list.win.win, self.preview.win.win }, current)

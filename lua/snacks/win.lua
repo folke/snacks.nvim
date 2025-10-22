@@ -1059,9 +1059,15 @@ end
 
 ---@return { height: number, width: number }
 function M:parent_size()
+  if self.opts.relative == "win" and vim.api.nvim_win_is_valid(self.opts.win) then
+    return {
+      height = vim.api.nvim_win_get_height(self.opts.win),
+      width = vim.api.nvim_win_get_width(self.opts.win),
+    }
+  end
   return {
-    height = self.opts.relative == "win" and vim.api.nvim_win_get_height(self.opts.win) or vim.o.lines,
-    width = self.opts.relative == "win" and vim.api.nvim_win_get_width(self.opts.win) or vim.o.columns,
+    height = vim.o.lines,
+    width = vim.o.columns,
   }
 end
 

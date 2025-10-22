@@ -431,7 +431,7 @@ function M.hover()
 end
 
 ---@param buf number
-function M.attach(buf)
+function M._attach(buf)
   if vim.b[buf].snacks_image_attached then
     return
   end
@@ -454,6 +454,14 @@ function M.attach(buf)
     })
     vim.schedule(M.hover)
   end
+end
+
+---@param buf number
+function M.attach(buf)
+  local Terminal = require("snacks.image.terminal")
+  Terminal.detect(function()
+    M._attach(buf)
+  end)
 end
 
 return M

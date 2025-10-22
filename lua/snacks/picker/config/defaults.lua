@@ -73,6 +73,7 @@ local M = {}
 ---@field cwd? string current working directory
 ---@field live? boolean when true, typing will trigger live searches
 ---@field limit? number when set, the finder will stop after finding this number of items. useful for live searches
+---@field limit_live? number when set, the finder will stop after finding this number of items during live searches. useful for performance
 ---@field ui_select? boolean set `vim.ui.select` to a snacks picker
 --- Source definition
 ---@field items? snacks.picker.finder.Item[] items to show instead of using a finder
@@ -117,6 +118,7 @@ local defaults = {
   sources = {},
   focus = "input",
   show_delay = 1000,
+  limit_live = 10000,
   layout = {
     cycle = true,
     --- Use the default layout or vertical if the window is too narrow
