@@ -1,4 +1,4 @@
-*snacks-picker*        For Neovim        Last change: 2025 October 22
+*snacks-picker*        For Neovim        Last change: 2025 October 23
 
 ==============================================================================
 Table of Contents                       *snacks.nvim-picker-table-of-contents*
@@ -838,6 +838,14 @@ TROUBLE                                  *snacks.nvim-picker-examples-trouble*
 <
 
 >lua
+    ---@alias snacks.Picker.ref (fun():snacks.Picker?)|{value?: snacks.Picker}
+<
+
+>lua
+    ---@alias snacks.picker.history.Record {pattern: string, search: string, live?: boolean}
+<
+
+>lua
     ---@alias snacks.picker.format.resolve fun(max_width:number):snacks.picker.Highlight[]
     ---@alias snacks.picker.Extmark vim.api.keyset.set_extmark|{col:number, row?:number, field?:string}
     ---@alias snacks.picker.Text {[1]:string, [2]:string?, virtual?:boolean, field?:string, resolve?:snacks.picker.format.resolve}
@@ -916,14 +924,6 @@ that shows a preview based on the item data.
     ---@field input? snacks.win.Config|{} input window config
     ---@field list? snacks.win.Config|{} result list window config
     ---@field preview? snacks.win.Config|{} preview window config
-<
-
->lua
-    ---@alias snacks.Picker.ref (fun():snacks.Picker?)|{value?: snacks.Picker}
-<
-
->lua
-    ---@alias snacks.picker.history.Record {pattern: string, search: string, live?: boolean}
 <
 
 

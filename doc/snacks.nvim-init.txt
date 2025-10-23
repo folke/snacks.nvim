@@ -1,4 +1,4 @@
-*snacks-init*         For Neovim         Last change: 2025 October 22
+*snacks-init*         For Neovim         Last change: 2025 October 23
 
 ==============================================================================
 Table of Contents                         *snacks.nvim-init-table-of-contents*
