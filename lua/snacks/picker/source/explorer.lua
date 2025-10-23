@@ -4,6 +4,8 @@ local Tree = require("snacks.explorer.tree")
 
 local M = {}
 
+M.actions = Actions.actions
+
 ---@type table<snacks.Picker, snacks.picker.explorer.State>
 M._state = setmetatable({}, { __mode = "k" })
 local uv = vim.uv or vim.loop

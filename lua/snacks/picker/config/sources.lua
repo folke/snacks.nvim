@@ -806,6 +806,21 @@ M.registers = {
 -- Special picker that resumes the last picker
 M.resume = {}
 
+-- Open or create scratch buffers
+M.scratch = {
+  finder = "scratch",
+  format = "scratch_format",
+  confirm = "scratch_open",
+  win = {
+    input = {
+      keys = {
+        ["<c-x>"] = { "scratch_delete", mode = { "n", "i" } },
+        ["<c-n>"] = { "scratch_new", mode = { "n", "i" } },
+      },
+    },
+  },
+}
+
 -- Neovim search history
 ---@type snacks.picker.history.Config
 M.search_history = {
@@ -920,92 +935,6 @@ M.zoxide = {
     preview = {
       minimal = true,
     },
-  },
-}
-
-M.scratch = {
-  finder = "files_scratch",
-  format = function(item, picker)
-    local file = item.item
-    local ret = {} ---@type snacks.picker.Highlight[]
-    local a = Snacks.picker.util.align
-    local icon, icon_hl = file.icon, nil
-    if not icon then
-      icon, icon_hl = Snacks.util.icon(file.ft, "filetype")
-    end
-    ret[#ret + 1] = { a(icon, 3), icon_hl }
-    ret[#ret + 1] = { a(file.name, 20, { truncate = true }) }
-    ret[#ret + 1] = { " " }
-    ret[#ret + 1] = { a(item.branch, 20, { truncate = true }), "Number" }
-    ret[#ret + 1] = { " " }
-    ---@diagnostic disable-next-line: missing-fields
-    vim.list_extend(ret, Snacks.picker.format.filename({ text = "", dir = true, file = file.cwd }, picker))
-    return ret
-  end,
-  win = {
-    preview = { wo = { number = false, relativenumber = false, signcolumn = "no" } },
-    input = {
-      keys = {
-        ["<CR>"] = { "scratch_open", mode = { "n", "i" } },
-        ["<c-x>"] = { "scratch_delete", mode = { "n", "i" } },
-        ["<c-s-n>"] = { "scratch_new", mode = { "n", "i" } },
-        ["<c-g>"] = { "scratch_grep", mode = { "n", "i" } },
-      },
-    },
-  },
-  actions = {
-    scratch_open = function(picker)
-      local current = picker:current().file
-      picker:close()
-      Snacks.scratch.open({ file = current })
-    end,
-    scratch_delete = function(picker, item)
-      local current = item.file
-      local index = item.idx
-      os.remove(current)
-      picker:find({
-        on_done = function()
-          if picker:count() == 0 then
-            picker:close()
-          else
-            local numberofitems = #picker:items()
-            if picker.layout.opts.reverse then
-              picker.list:view(math.max(numberofitems - index + 1, 1))
-            else
-              picker.list:view(math.min(index, numberofitems))
-            end
-          end
-        end,
-      })
-    end,
-    scratch_new = function(picker)
-      picker:close()
-      Snacks.scratch.open()
-    end,
-    scratch_grep = function(picker)
-      picker:close()
-      Snacks.picker.grep({
-        cwd = vim.fn.stdpath("data") .. "/scratch",
-        win = {
-          input = {
-            keys = {
-              ["<CR>"] = {
-                "open_scratch",
-                desc = "Open Scratch",
-                mode = { "n", "i" },
-              },
-            },
-          },
-        },
-        actions = {
-          ["open_scratch"] = function(picker)
-            local current = picker:current()._path
-            picker:close()
-            Snacks.scratch.open({ file = current })
-          end,
-        },
-      })
-    end,
   },
 }
 

@@ -300,6 +300,19 @@ function M.finder(finder)
   return M.field(finder) or nop
 end
 
+---@param picker snacks.Picker
+---@param action string
+function M.action(picker, action)
+  local ret = (picker.opts.actions or {})[action] or require("snacks.picker.actions")[action]
+  if ret then
+    return ret
+  end
+  local source = action:match("^(.-)_")
+  if source then -- source specific action
+    return (M.field(("%s_actions"):format(source)) or {})[action]
+  end
+end
+
 --- Resolves a module field
 ---@param spec string
 function M.field(spec)
