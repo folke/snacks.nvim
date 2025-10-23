@@ -89,6 +89,7 @@ function M.jump(picker, _, action)
       drop[#drop + 1] = vim.fn.fnameescape(path)
     end
     vim.cmd(cmd .. " " .. table.concat(drop, " "))
+    win = vim.api.nvim_get_current_win()
   else
     for i, item in ipairs(items) do
       -- load the buffer
