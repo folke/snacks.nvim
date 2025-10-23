@@ -140,6 +140,9 @@ function R:request(buf, method, params, cb)
     for _, client in ipairs(clients) do
       local p = params(client)
       local status, request_id = client:request(method, p, function(_, result)
+        if self.async._aborted then
+          return
+        end
         if result then
           cb(client, result, p)
         end

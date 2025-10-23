@@ -333,7 +333,8 @@ M.git_status = {
   },
 }
 
----@type snacks.picker.git.Config
+---@class snacks.picker.git.diff.Config: snacks.picker.git.Config
+---@field base? string base commit/branch/tag to diff against (default: HEAD)
 M.git_diff = {
   finder = "git_diff",
   format = "file",
@@ -805,6 +806,21 @@ M.registers = {
 
 -- Special picker that resumes the last picker
 M.resume = {}
+
+-- Open or create scratch buffers
+M.scratch = {
+  finder = "scratch",
+  format = "scratch_format",
+  confirm = "scratch_open",
+  win = {
+    input = {
+      keys = {
+        ["<c-x>"] = { "scratch_delete", mode = { "n", "i" } },
+        ["<c-n>"] = { "scratch_new", mode = { "n", "i" } },
+      },
+    },
+  },
+}
 
 -- Neovim search history
 ---@type snacks.picker.history.Config

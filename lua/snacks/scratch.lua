@@ -119,32 +119,7 @@ end
 
 --- Select a scratch buffer from a list of scratch buffers.
 function M.select()
-  local widths = { 0, 0, 0, 0 }
-  local items = M.list()
-  for _, item in ipairs(items) do
-    item.icon = item.icon or Snacks.util.icon(item.ft, "filetype")
-    item.branch = item.branch and ("branch:%s"):format(item.branch) or ""
-    item.cwd = item.cwd and vim.fn.fnamemodify(item.cwd, ":p:~") or ""
-    widths[1] = math.max(widths[1], vim.api.nvim_strwidth(item.cwd))
-    widths[2] = math.max(widths[2], vim.api.nvim_strwidth(item.icon))
-    widths[3] = math.max(widths[3], vim.api.nvim_strwidth(item.name))
-    widths[4] = math.max(widths[4], vim.api.nvim_strwidth(item.branch))
-  end
-  vim.ui.select(items, {
-    prompt = "Select Scratch Buffer",
-    ---@param item snacks.scratch.File
-    format_item = function(item)
-      local parts = { item.cwd, item.icon, item.name, item.branch }
-      for i, part in ipairs(parts) do
-        parts[i] = part .. string.rep(" ", widths[i] - vim.api.nvim_strwidth(part))
-      end
-      return table.concat(parts, " ")
-    end,
-  }, function(selected)
-    if selected then
-      M.open({ icon = selected.icon, file = selected.file, name = selected.name, ft = selected.ft })
-    end
-  end)
+  return Snacks.picker.scratch()
 end
 
 --- Open a scratch buffer with the given options.

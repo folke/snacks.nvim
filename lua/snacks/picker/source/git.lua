@@ -253,11 +253,14 @@ function M.status(opts, ctx)
   }, ctx)
 end
 
----@param opts snacks.picker.git.Config
+---@param opts snacks.picker.git.diff.Config
 ---@type snacks.picker.finder
 function M.diff(opts, ctx)
   local args =
     M.git("diff", "--no-color", "--no-ext-diff", { args = { "-c", "diff.noprefix=false", "--no-pager" } }, opts)
+  if opts.base then
+    vim.list_extend(args, { "--merge-base", opts.base })
+  end
   local file, line ---@type string?, number?
   local header, hunk = {}, {} ---@type string[], string[]
   local header_len = 4

@@ -81,16 +81,8 @@ function M.resolve(action, picker, name, stack)
       end
     end
     stack[#stack + 1] = action
-    return M.resolve(
-      (picker.opts.actions or {})[action]
-        or require("snacks.picker.actions")[action]
-        or require("snacks.explorer.actions").actions[action],
-      picker,
-      action,
-      stack
-    )
+    return M.resolve(Snacks.picker.config.action(picker, action), picker, action, stack)
   elseif type(action) == "table" and svim.islist(action) then
-    ---@type snacks.picker.Action[]
     local actions = vim.tbl_map(function(a)
       return M.resolve(a, picker, nil, stack)
     end, action)

@@ -1126,7 +1126,8 @@ Neovim commands
 ```
 
 ```lua
----@type snacks.picker.git.Config
+---@class snacks.picker.git.diff.Config: snacks.picker.git.Config
+---@field base? string base commit/branch/tag to diff against (default: HEAD)
 {
   finder = "git_diff",
   format = "file",
@@ -2035,6 +2036,30 @@ Special picker that resumes the last picker
 
 ```lua
 {}
+```
+
+### `scratch`
+
+```vim
+:lua Snacks.picker.scratch(opts?)
+```
+
+Open or create scratch buffers
+
+```lua
+{
+  finder = "scratch",
+  format = "scratch_format",
+  confirm = "scratch_open",
+  win = {
+    input = {
+      keys = {
+        ["<c-x>"] = { "scratch_delete", mode = { "n", "i" } },
+        ["<c-n>"] = { "scratch_new", mode = { "n", "i" } },
+      },
+    },
+  },
+}
 ```
 
 ### `search_history`

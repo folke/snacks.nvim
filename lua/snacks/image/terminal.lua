@@ -209,11 +209,20 @@ function M.detect(cb)
   }
   M._terminal = ret
 
+  local timer = assert(vim.uv.new_timer())
+
   local function on_done()
-    for _, c in ipairs(ret.pending or {}) do
-      c(ret)
+    if timer and not timer:is_closing() then
+      timer:stop()
+      timer:close()
     end
-    ret.pending = nil
+    vim.schedule(function()
+      local todo = ret.pending or {}
+      ret.pending = nil
+      for _, c in ipairs(todo) do
+        c(ret)
+      end
+    end)
   end
 
   if vim.env.TMUX then
@@ -223,74 +232,29 @@ function M.detect(cb)
     end
   end
 
-  local timer = assert(vim.uv.new_timer())
-  local done = 0
-
   local id = vim.api.nvim_create_autocmd("TermResponse", {
     group = vim.api.nvim_create_augroup("image.terminal.detect", { clear = true }),
     callback = function(ev)
-      local data = ev.data.sequence
-      if data:find("^\27P>|") then
-        local term, version = data:match("P>|(%S+)%s*(.*)")
-        if term and version then
-          ret.terminal = term
-          ret.version = version
-          done = done + 1
-        end
-      elseif data:find("^\27_G") then
-        local args, ok = data:match("\27_G(.*);(.*)")
-        if args then
-          local params = {}
-          for _, a in ipairs(vim.split(args, ",")) do
-            local k, v = a:match("(%S+)=(%S+)")
-            if k and v then
-              params[k] = v
-            end
-          end
-          if params["i"] == "31" and ok then
-            ret.supported = ok == "OK"
-            done = done + 1
-            -- elseif params["i"] == "32" and ok then
-            --   ret.placeholders = ok == "OK"
-            --   done = done + 1
-          end
-        end
-      end
-      if done < 2 then
+      local data = ev.data.sequence ---@type string
+      local term, version = data:match("P>|(%S+)%s*(.*)")
+      if not (term and version) then
         return
       end
-      if timer and not timer:is_closing() then
-        timer:stop()
-        timer:close()
-      end
+      ret.terminal = term
+      ret.version = version
       vim.schedule(on_done)
       return true -- delete autocmd
     end,
   })
 
-  timer:start(1000, 0, function()
-    timer:stop()
-    timer:close()
+  timer:start(200, 0, function()
     vim.schedule(function()
-      vim.api.nvim_del_autocmd(id)
-      on_done()
+      pcall(vim.api.nvim_del_autocmd, id)
     end)
+    on_done()
   end)
-
-  M.request({
-    i = 31,
-    s = 1,
-    v = 1,
-    a = "q",
-    t = "d",
-    f = 24,
-    q = false,
-    data = "AAAA",
-  })
 
   M.write("\27[>q")
 end
-
-function M.setup() end
 
 return M

@@ -1,4 +1,4 @@
-*snacks-lazygit*        For Neovim       Last change: 2025 October 22
+*snacks-lazygit*        For Neovim       Last change: 2025 October 23
 
 ==============================================================================
 Table of Contents                      *snacks.nvim-lazygit-table-of-contents*

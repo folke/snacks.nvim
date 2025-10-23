@@ -1,4 +1,4 @@
-*snacks-explorer*       For Neovim       Last change: 2025 October 22
+*snacks-explorer*       For Neovim       Last change: 2025 October 23
 
 ==============================================================================
 Table of Contents                     *snacks.nvim-explorer-table-of-contents*
