@@ -128,12 +128,15 @@ function M.get_packages(buf)
   return M._cache(buf, "packages", function()
     local ret = {} ---@type string[]
     for _, line in ipairs(vim.api.nvim_buf_get_lines(buf, 0, -1, false)) do
+      line = line:match("(.-)%%") or line
       if line:find("\\usepackage", 1, true) then
-        for _, p in ipairs(vim.split(line:match("{(.-)}") or "", ",%s*")) do
+        for _, p in ipairs(vim.split(line:match("\\usepackage.-{(.-)}") or "", ",%s*")) do
           if not vim.tbl_contains(ret, p) then
             ret[#ret + 1] = p
           end
         end
+      elseif line:find("\\begin{document}", 1, true) then
+        break
       end
     end
     return ret
