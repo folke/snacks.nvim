@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.25.0](https://github.com/folke/snacks.nvim/compare/v2.24.0...v2.25.0) (2025-10-23)
+
+
+### Features
+
+* **notifier:** added `gap` option. Closes [#2331](https://github.com/folke/snacks.nvim/issues/2331) ([b1acbb0](https://github.com/folke/snacks.nvim/commit/b1acbb0fcce9ed1ead3fd511eb934eeefe238b69))
+* **select:** allow configuring options for specific vim.ui.select kinds ([bca5b05](https://github.com/folke/snacks.nvim/commit/bca5b058388fb381f6d04c3624a541f7c0637382))
+* **snacks:** added `Snacks.version`. auto updated by the release workflow ([a283beb](https://github.com/folke/snacks.nvim/commit/a283beb6dc94f7a17c48dcb6878e0dd3493bf370))
+
+
+### Bug Fixes
+
+* **dashboard:** fix issue with opening file at location due to splitkeep and restoring laststatus/showtabline ([1a2b34d](https://github.com/folke/snacks.nvim/commit/1a2b34dffd524b0f7373c5868dbb7597360e1a8c))
+* **scroll:** stop animations when buf/changedtick changes ([a42b376](https://github.com/folke/snacks.nvim/commit/a42b3761f702e770d745709682dfe3d7e3ef1bb6))
+
 ## [2.24.0](https://github.com/folke/snacks.nvim/compare/v2.23.0...v2.24.0) (2025-10-23)
 
 
