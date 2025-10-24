@@ -2,18 +2,21 @@
 local M = {}
 
 M.langs = {} ---@type table<string, boolean>
-M._scratch_buf = nil ---@type number?
+M._scratch = {} ---@type table<string, number>
 
 ---@param source string
-function M.scratch_buf(source)
-  if not (M._scratch_buf and vim.api.nvim_buf_is_valid(M._scratch_buf)) then
-    M._scratch_buf = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_set_name(M._scratch_buf, "snacks://picker/highlight")
+---@param lang string
+function M.scratch_buf(source, lang)
+  local buf = M._scratch[lang]
+  if not (buf and vim.api.nvim_buf_is_valid(buf)) then
+    buf = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_set_name(buf, "snacks://picker/highlight/" .. lang)
+    M._scratch[lang] = buf
   end
-  vim.bo[M._scratch_buf].fixeol = false
-  vim.bo[M._scratch_buf].eol = false
-  vim.api.nvim_buf_set_lines(M._scratch_buf, 0, -1, false, vim.split(source, "\n", { plain = true }))
-  return M._scratch_buf
+  vim.bo[buf].fixeol = false
+  vim.bo[buf].eol = false
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(source, "\n", { plain = true }))
+  return buf
 end
 
 ---@param opts? {buf?:number, code?:string, ft?:string, lang?:string, file?:string, extmarks?:boolean}
@@ -21,8 +24,6 @@ function M.get_highlights(opts)
   opts = opts or {}
   assert(opts.buf or opts.code, "buf or code is required")
   assert(not (opts.buf and opts.code), "only one of buf or code is allowed")
-
-  local buf = opts.buf or M.scratch_buf(opts.code)
 
   local ret = {} ---@type table<number, snacks.picker.Extmark[]>
 
@@ -32,14 +33,16 @@ function M.get_highlights(opts)
     or vim.bo.filetype
   local lang = Snacks.util.get_lang(opts.lang or ft)
   lang = lang and lang:lower() or nil
-  local parser ---@type vim.treesitter.LanguageTree?
+  local parser, buf ---@type vim.treesitter.LanguageTree?, number?
+
   if lang then
     local ok = false
+    buf = opts.buf or M.scratch_buf(opts.code, lang)
     ok, parser = pcall(vim.treesitter.get_parser, buf, lang)
     parser = ok and parser or nil
   end
 
-  if parser then
+  if parser and buf then
     parser:parse(true)
     parser:for_each_tree(function(tstree, tree)
       if not tstree then
