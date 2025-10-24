@@ -209,6 +209,7 @@ Snacks.util.set_hl({
   WinKey = "Keyword",
   WinKeySep = "NonText",
   WinKeyDesc = "Function",
+  WinSeparator = "WinSeparator",
 }, { prefix = "Snacks", default = true })
 
 local id = 0
