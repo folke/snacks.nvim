@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.27.0](https://github.com/folke/snacks.nvim/compare/v2.26.0...v2.27.0) (2025-10-25)
+
+
+### Features
+
+* **util.lsp:** added overload for `Snacks.util.lsp.on(cb)` ([f33aa20](https://github.com/folke/snacks.nvim/commit/f33aa2017a2671fb4a0e71316f385c8010c8b81b))
+
+
+### Bug Fixes
+
+* **explorer:** refresh git status on all tabs when needed. Closes [#2348](https://github.com/folke/snacks.nvim/issues/2348) ([1472211](https://github.com/folke/snacks.nvim/commit/1472211f9ccd171f69ec7f33764620dd935b5ccf))
+* **explorer:** windows path fixes ([e1dc6b3](https://github.com/folke/snacks.nvim/commit/e1dc6b3bddd0d16d0faa5d6802a975f7a7165b2a))
+
 ## [2.26.0](https://github.com/folke/snacks.nvim/compare/v2.25.0...v2.26.0) (2025-10-25)
 
 
