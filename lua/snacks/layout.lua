@@ -251,13 +251,9 @@ function M:update()
     top = (vim.o.showtabline == 2 or (vim.o.showtabline == 1 and #vim.api.nvim_list_tabpages() > 1)) and 1 or 0
   end
 
-  local parent_width = layout.relative == "win"
-    and vim.api.nvim_win_get_width(self.root.opts.win or 0)
-    or vim.o.columns;
-
-  local parent_height = layout.relative == "win"
-    and vim.api.nvim_win_get_height(self.root.opts.win or 0)
-    or vim.o.lines - top - bottom;
+  local parent_width = layout.relative == "win" and vim.api.nvim_win_get_width(self.root.opts.win or 0) or vim.o.columns
+  local parent_height = layout.relative == "win" and vim.api.nvim_win_get_height(self.root.opts.win or 0)
+    or vim.o.lines - top - bottom
 
   self:update_box(layout, {
     col = 0,
