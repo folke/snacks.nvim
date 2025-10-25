@@ -1,5 +1,39 @@
 # Changelog
 
+## [2.26.0](https://github.com/folke/snacks.nvim/compare/v2.25.0...v2.26.0) (2025-10-25)
+
+
+### Features
+
+* **explorer:** add cross-platform trash support ([ed08ef1](https://github.com/folke/snacks.nvim/commit/ed08ef1a630508ebab098aa6e8814b89084f8c03))
+* **keymap:** add filetype and LSP-aware keymap management ([0bf34af](https://github.com/folke/snacks.nvim/commit/0bf34afe34ee297430f23d2aba0b104c5379dc15))
+* **util:** add LSP utility module with dynamic capability handlers ([7a63ba5](https://github.com/folke/snacks.nvim/commit/7a63ba5d374acaa7317833b6e03d2603e90e0983))
+* **win:** add `SnacksWinSeparator` to default `win.wo.winhighlight` ([#2340](https://github.com/folke/snacks.nvim/issues/2340)) ([869709d](https://github.com/folke/snacks.nvim/commit/869709dd658b53ea5706f086f93a50e89a429a5d)), closes [#2336](https://github.com/folke/snacks.nvim/issues/2336)
+* **win:** add default *Snacks* prefixed `WinSeparator` ([#2338](https://github.com/folke/snacks.nvim/issues/2338)) ([381265b](https://github.com/folke/snacks.nvim/commit/381265b5430c991f4343a2f4530bc2de37abac18)), closes [#2336](https://github.com/folke/snacks.nvim/issues/2336)
+
+
+### Bug Fixes
+
+* **dahboard:** do full terminal reset when receiving first output and displayed cached contents ([c952834](https://github.com/folke/snacks.nvim/commit/c9528341a6ef9dc9cb404b1c901b1276af331ccf))
+* **dashboard:** don't write to closed terminal buffer ([f75eaf1](https://github.com/folke/snacks.nvim/commit/f75eaf1e18cea03605e626eca2a1b9c4345071d4))
+* **dashboard:** work-around for jobstart+pty issue where not all output is processed before exit. Closes [#1706](https://github.com/folke/snacks.nvim/issues/1706) ([4d776bd](https://github.com/folke/snacks.nvim/commit/4d776bdd1d6d7998f2c7c7f08c2e964419eb74be))
+* **explorer:** macos has `trash` pre-installed, so no need to try `osascript` and move to first. Closes [#2349](https://github.com/folke/snacks.nvim/issues/2349) ([d569072](https://github.com/folke/snacks.nvim/commit/d569072b2e39e0078b55ea56b133fb9a30d78bad))
+* **image:** detach image when reloading image file. Closes [#2343](https://github.com/folke/snacks.nvim/issues/2343) ([7bf4175](https://github.com/folke/snacks.nvim/commit/7bf4175588a784bbf7463b68351833ed64f5c6cc))
+* **image:** increase timeout for querying the terminal. Closes [#2344](https://github.com/folke/snacks.nvim/issues/2344) ([4122143](https://github.com/folke/snacks.nvim/commit/4122143240fb7f43b27dddec670b844404cb08db))
+* **image:** let healthcheck wait till terminal detection is done ([b029511](https://github.com/folke/snacks.nvim/commit/b029511abb1359da28de45faeeec400f419d7ee7))
+* **image:** only attach to a buffer once. Closes [#2343](https://github.com/folke/snacks.nvim/issues/2343) ([6f72643](https://github.com/folke/snacks.nvim/commit/6f726433232422d26157adfd0df3dd464341222b))
+* **image:** work around tmux extended-keys breaking TermResponse. Closes [#2332](https://github.com/folke/snacks.nvim/issues/2332) ([e93dcfd](https://github.com/folke/snacks.nvim/commit/e93dcfdf394ef16732f06021d941146be912043c))
+* **layout:** provide parent win width/height when relative to win ([#2346](https://github.com/folke/snacks.nvim/issues/2346)) ([602393a](https://github.com/folke/snacks.nvim/commit/602393aed2dd8059e74afff6712a423b6f048cfe))
+* **picker:** fix race condition causing "Finder yielded after done" error. Closes [#2327](https://github.com/folke/snacks.nvim/issues/2327) ([c9ccbe5](https://github.com/folke/snacks.nvim/commit/c9ccbe56179f1d4adb06fea47f4eea0c57736c2d))
+* **picker:** set min file width to 40 ([69417ac](https://github.com/folke/snacks.nvim/commit/69417ac68152bc08d0ea0640e211f2a3eb48bac6))
+* **win:** use `sbuffer` instead of `split` for split windows ([bbd6d42](https://github.com/folke/snacks.nvim/commit/bbd6d42a9738c3a4c7c35f5ebde91a5ede8bec3a))
+
+
+### Performance Improvements
+
+* **picker:** don't use treesitter string parser, since a change in nightly creates thousands of unlisted buffers in that case ([ad6c0a5](https://github.com/folke/snacks.nvim/commit/ad6c0a5e542b6b47b4ac5e2ebcbdd663b8a7e908))
+* **picker:** re-use existing string parsers per language to prevent needing to create new parsers ([efa304a](https://github.com/folke/snacks.nvim/commit/efa304a078993198e6fa088845fe8925708abb4e))
+
 ## [2.25.0](https://github.com/folke/snacks.nvim/compare/v2.24.0...v2.25.0) (2025-10-23)
 
 
