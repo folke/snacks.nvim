@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.27.0](https://github.com/folke/snacks.nvim/compare/v2.26.0...v2.27.0) (2025-10-26)
+
+
+### Features
+
+* **keymap:** added new `enabled` option ([b0f21fa](https://github.com/folke/snacks.nvim/commit/b0f21fa745953ac6bb096a4811cb32e42d7ca714))
+* **picker.proc:** finder to process json ([5294c4f](https://github.com/folke/snacks.nvim/commit/5294c4f39ed9bdc0f2c483885d9a1834a4df4d21))
+* **util.job:** simple wrapper around jobstart to work with terminals (used in dashboards and pickers) ([de05631](https://github.com/folke/snacks.nvim/commit/de05631e6a656a88d1eebf078c44e5e4b9747742))
+* **util.lsp:** added overload for `Snacks.util.lsp.on(cb)` ([f33aa20](https://github.com/folke/snacks.nvim/commit/f33aa2017a2671fb4a0e71316f385c8010c8b81b))
+
+
+### Bug Fixes
+
+* **dashboard:** don't add sleep in nushell. Closes [#1706](https://github.com/folke/snacks.nvim/issues/1706) ([44f71d2](https://github.com/folke/snacks.nvim/commit/44f71d2113866c0a6f16a8fa70af8933c1d87919))
+* **explorer:** refresh git status on all tabs when needed. Closes [#2348](https://github.com/folke/snacks.nvim/issues/2348) ([1472211](https://github.com/folke/snacks.nvim/commit/1472211f9ccd171f69ec7f33764620dd935b5ccf))
+* **explorer:** windows path fixes ([e1dc6b3](https://github.com/folke/snacks.nvim/commit/e1dc6b3bddd0d16d0faa5d6802a975f7a7165b2a))
+
 ## [2.26.0](https://github.com/folke/snacks.nvim/compare/v2.25.0...v2.26.0) (2025-10-25)
 
 
