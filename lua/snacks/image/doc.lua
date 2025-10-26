@@ -370,6 +370,8 @@ function M.hover()
   local current_win = vim.api.nvim_get_current_win()
   local current_buf = vim.api.nvim_get_current_buf()
 
+  local float = Snacks.image.config.doc.float
+
   if hover and hover.win.win == current_win and hover.win:valid() then
     return
   end
@@ -424,8 +426,14 @@ function M.hover()
         if not hover then
           return true
         end
-        M.hover()
-        if not hover then
+
+        if float then
+          M.hover()
+          if not hover then
+            return true
+          end
+        else
+          M.hover_close()
           return true
         end
       end,
