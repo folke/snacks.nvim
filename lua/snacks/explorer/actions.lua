@@ -25,7 +25,9 @@ function M.get_trash_cmds(path)
       "-Command",
       (
         "Add-Type -AssemblyName Microsoft.VisualBasic; "
-        .. "[Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile('%s','OnlyErrorDialogs', 'SendToRecycleBin')"
+        .. "[Microsoft.VisualBasic.FileIO.FileSystem]::"
+        .. (vim.fn.isdirectory(path) == 0 and "DeleteFile" or "DeleteDirectory")
+        .. "('%s','OnlyErrorDialogs', 'SendToRecycleBin')"
       ):format(path:gsub("\\", "\\\\"):gsub("'", "''")),
     }
   end
