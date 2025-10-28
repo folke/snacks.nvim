@@ -256,14 +256,13 @@ end
 ---@param opts snacks.picker.git.diff.Config
 ---@type snacks.picker.finder
 function M.diff(opts, ctx)
-  local args =
-    M.git("diff", "--no-color", "--no-ext-diff", { args = { "-c", "diff.noprefix=false", "--no-pager" } }, opts)
+  local args = M.git("diff", "--no-color", "--no-ext-diff", "--default-prefix", { args = { "--no-pager" } }, opts)
   if opts.base then
     vim.list_extend(args, { "--merge-base", opts.base })
   end
   local file, line ---@type string?, number?
   local header, hunk = {}, {} ---@type string[], string[]
-  local header_len = 4
+  local header_len = 0
 
   local cwd = svim.fs.normalize(opts and opts.cwd or uv.cwd() or ".") or nil
   cwd = Snacks.git.get_root(cwd) or cwd
@@ -291,19 +290,25 @@ function M.diff(opts, ctx)
       local text = proc_item.text
       if text:find("diff", 1, true) == 1 then
         add()
-        file = text:match("^diff .* a/(.*) b/.*$")
         header = { text }
-        header_len = 4
-      elseif file and #header < header_len then
-        if text:find("^deleted file") then
-          header_len = 5
-        end
+        header_len = #header + 1
+      elseif #header < header_len then
         header[#header + 1] = text
+        if text:find("+++", 1, true) ~= 1 then
+          header_len = #header + 1
+          file = text:match("^%-%-%- a/(.*)$")
+        end
       elseif text:find("@", 1, true) == 1 then
         add()
-        -- Hunk header
-        -- @example "@@ -157,20 +157,6 @@ some content"
-        line = tonumber(string.match(text, "@@ %-.*,.* %+(.*),.* @@"))
+        if text:find("@@@", 1, true) == 1 then
+          -- combined diff
+          -- @example "@@@ -491,15 -407,47 +491,52 @@@ some content"
+          line = tonumber(text:match("^@@@ %-%d+,?%d* %-%d+,?%d* %+(%d+),?%d* @@@"))
+        else
+          -- hunk header
+          -- @example "@@ -157,20 +157,6 @@ some content"
+          line = tonumber(text:match("^@@ %-%d+,?%d* %+(%d+),?%d* @@"))
+        end
         hunk = { text }
       elseif #hunk > 0 then
         hunk[#hunk + 1] = text
