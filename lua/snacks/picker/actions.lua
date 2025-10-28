@@ -53,6 +53,7 @@ function M.jump(picker, _, action)
   local win = vim.api.nvim_get_current_win()
 
   local current_buf = vim.api.nvim_get_current_buf()
+  local current_fname = nil
   local current_empty = vim.bo[current_buf].buftype == ""
     and vim.bo[current_buf].filetype == ""
     and vim.api.nvim_buf_line_count(current_buf) == 1
@@ -60,6 +61,9 @@ function M.jump(picker, _, action)
     and vim.api.nvim_buf_get_name(current_buf) == ""
 
   if not current_empty then
+    -- get the abspath for accurate path comparison
+    current_fname = vim.fs.abspath(vim.api.nvim_buf_get_name(current_buf))
+
     -- save position in jump list
     if picker.opts.jump.jumplist then
       vim.api.nvim_win_call(win, function()
@@ -86,10 +90,17 @@ function M.jump(picker, _, action)
         Snacks.notify.error("Either item.buf or item.file is required", { title = "Snacks Picker" })
         return
       end
-      drop[#drop + 1] = vim.fn.fnameescape(path)
+      if current_empty or (current_fname ~= vim.fs.abspath(path)) then
+        -- only add to drop if it's not the current window/buffer
+        drop[#drop + 1] = vim.fn.fnameescape(path)
+      end
     end
-    vim.cmd(cmd .. " " .. table.concat(drop, " "))
-    win = vim.api.nvim_get_current_win()
+    if #drop > 0 then
+      -- skip the drop when there's only 1 selected item and it's in the same file as the current buffer
+      -- this avoids reloading the buffer
+      vim.cmd(cmd .. " " .. table.concat(drop, " "))
+      win = vim.api.nvim_get_current_win()
+    end
   else
     for i, item in ipairs(items) do
       -- load the buffer
