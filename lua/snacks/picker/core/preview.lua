@@ -416,7 +416,6 @@ function M:notify(msg, level, opts)
 end
 
     return
-  end
 end
 
 function M:markdown()
