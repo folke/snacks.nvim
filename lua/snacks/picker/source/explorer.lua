@@ -193,7 +193,7 @@ function M.explorer(opts, ctx)
   local state = M.get_state(ctx.picker)
 
   ctx.picker.matcher.opts.keep_parents = false
-  if state:setup(ctx) then
+  if state:setup(ctx) or opts.matcher.sort_empty then
     ctx.picker.matcher.opts.keep_parents = true
     return M.search(opts, ctx)
   end
