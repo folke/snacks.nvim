@@ -401,7 +401,7 @@ function M.cmd(opts)
     table.insert(prop_lines, ("- **%s**: %s"):format(key, props[key]))
   end
 
-  local id = cmd
+  local id = cmd or "cmd"
   lines = {
     opts.header or "",
     table.concat(prop_lines, "\n"),

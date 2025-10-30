@@ -73,7 +73,7 @@ end
 ---@return T opts, string[]? fts, vim.lsp.get_clients.Filter? lsp, fun(buf?:number) enabled
 local function get_opts(...)
   ---@type snacks.keymap.set.Opts|snacks.keymap.del.Opts
-  local opts = Snacks.config.merge(...)
+  local opts = Snacks.config.merge({}, ...)
   opts.silent = opts.silent ~= false
   opts.buffer = (opts.buffer == 0 or opts.buffer == true) and vim.api.nvim_get_current_buf() or opts.buffer
   local fts = opts.ft and (type(opts.ft) == "table" and opts.ft or { opts.ft }) or nil --[[@as string[] ]]

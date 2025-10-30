@@ -17,12 +17,36 @@ M.__index = M
 local Ctx = {}
 Ctx.__index = Ctx
 
+---@param picker snacks.Picker
+---@param filter snacks.picker.Filter
+function Ctx.new(picker, filter)
+  local notified = false
+  local self = setmetatable({}, Ctx)
+  self.picker = picker
+  self.filter = filter
+  self.meta = {}
+  self.async = setmetatable({}, {
+    __index = function()
+      if not notified then
+        notified = true
+        Snacks.notify.warn("You can only use the `async` object in async functions")
+      end
+    end,
+  })
+  return self
+end
+
+---@param opts? snacks.picker.Config
+---@return snacks.picker.finder.ctx
+function Ctx:clone(opts)
+  return setmetatable({ _opts = opts }, { __index = self })
+end
+
 ---@generic T: snacks.picker.Config
 ---@param opts T
 ---@return T
 function Ctx:opts(opts)
-  self._opts = self._opts or vim.deepcopy(self.picker.opts)
-  self._opts = Snacks.config.merge(self._opts, opts)
+  self._opts = setmetatable(opts or {}, { __index = self._opts or self.picker.opts })
   return self._opts
 end
 
@@ -72,20 +96,7 @@ end
 
 ---@param picker snacks.Picker
 function M:ctx(picker)
-  local notified = false
-  local ret = setmetatable({}, Ctx)
-  ret.picker = picker
-  ret.filter = self.filter
-  ret.meta = {}
-  ret.async = setmetatable({}, {
-    __index = function()
-      if not notified then
-        notified = true
-        Snacks.notify.warn("You can only use the `async` object in async functions")
-      end
-    end,
-  })
-  return ret
+  return Ctx.new(picker, self.filter)
 end
 
 ---@param filter snacks.picker.Filter

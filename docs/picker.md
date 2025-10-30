@@ -76,6 +76,7 @@ Snacks.picker.pick({source = "files", ...})
 ---@field limit? number when set, the finder will stop after finding this number of items. useful for live searches
 ---@field limit_live? number when set, the finder will stop after finding this number of items during live searches. useful for performance
 ---@field ui_select? boolean set `vim.ui.select` to a snacks picker
+---@field filter? snacks.picker.filter.Config generic filter used by some finders
 --- Source definition
 ---@field items? snacks.picker.finder.Item[] items to show instead of using a finder
 ---@field format? string|snacks.picker.format|string format function or preset
@@ -652,7 +653,7 @@ Snacks.picker.pick({source = "files", ...})
 ---@alias snacks.picker.toggle {icon?:string, enabled?:boolean, value?:boolean}
 ```
 
-Generic filter used by finders to pre-filter items
+Generic filter used by some finders to pre-filter items
 
 ```lua
 ---@class snacks.picker.filter.Config
@@ -1128,6 +1129,7 @@ Neovim commands
 ```lua
 ---@class snacks.picker.git.diff.Config: snacks.picker.git.Config
 ---@field group? boolean group changes by file (when false, show individual hunks)
+---@field staged? boolean show staged changes
 ---@field base? string base commit/branch/tag to diff against (default: HEAD)
 {
   group = false,

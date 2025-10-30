@@ -256,9 +256,12 @@ end
 ---@type snacks.picker.finder
 function M.diff(opts, ctx)
   opts = opts or {}
-  local args = M.git("diff", "--no-color", "--no-ext-diff", "--default-prefix", { args = { "--no-pager" } }, opts)
+  local args = M.git("diff", "--no-color", "--no-ext-diff", { args = { "--no-pager" } }, opts)
   if opts.base then
     vim.list_extend(args, { "--merge-base", opts.base })
+  end
+  if opts.staged then
+    table.insert(args, "--cached")
   end
   return require("snacks.picker.source.diff").diff(
     ctx:opts({

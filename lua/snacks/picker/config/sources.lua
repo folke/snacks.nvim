@@ -335,6 +335,7 @@ M.git_status = {
 
 ---@class snacks.picker.git.diff.Config: snacks.picker.git.Config
 ---@field group? boolean group changes by file (when false, show individual hunks)
+---@field staged? boolean show staged changes
 ---@field base? string base commit/branch/tag to diff against (default: HEAD)
 M.git_diff = {
   group = false,

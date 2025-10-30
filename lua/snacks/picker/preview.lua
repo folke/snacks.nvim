@@ -87,6 +87,8 @@ function M.file(ctx)
     return
   end
 
+  local title = ctx.item.preview_title or ctx.item.title
+
   -- used by some LSP servers that load buffers with custom URIs
   if ctx.item.buf and vim.uri_from_bufnr(ctx.item.buf):sub(1, 4) ~= "file" then
     vim.fn.bufload(ctx.item.buf)
@@ -96,9 +98,11 @@ function M.file(ctx)
   end
 
   if ctx.item.buf and vim.api.nvim_buf_is_loaded(ctx.item.buf) then
-    local name = vim.api.nvim_buf_get_name(ctx.item.buf)
-    name = uv.fs_stat(name) and vim.fn.fnamemodify(name, ":t") or name
-    ctx.preview:set_title(name)
+    if not title then
+      local name = vim.api.nvim_buf_get_name(ctx.item.buf)
+      title = uv.fs_stat(name) and vim.fn.fnamemodify(name, ":t") or name
+    end
+    ctx.preview:set_title(title)
     ctx.preview:set_buf(ctx.item.buf)
   else
     local path = Snacks.picker.util.path(ctx.item)
@@ -116,8 +120,8 @@ function M.file(ctx)
       ctx.preview:reset()
       vim.bo[ctx.buf].buftype = ""
 
-      local name = vim.fn.fnamemodify(path, ":t")
-      ctx.preview:set_title(ctx.item.title or name)
+      title = title or vim.fn.fnamemodify(path, ":t")
+      ctx.preview:set_title(title)
 
       local stat = uv.fs_stat(path)
       if not stat then

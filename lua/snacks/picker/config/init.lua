@@ -146,10 +146,10 @@ function M.multi(opts)
     end
     local finder = M.finder(source.finder)
     finders[#finders + 1] = function(fopts, ctx)
-      fopts = Snacks.config.merge({}, vim.deepcopy(source), fopts)
+      fopts = Snacks.config.merge(vim.deepcopy(source), fopts)
+      ctx = ctx:clone(fopts)
       -- Update source filter when needed
       if not vim.tbl_isempty(fopts.filter or {}) then
-        ctx = setmetatable({}, { __index = ctx })
         ctx.filter = ctx.filter:clone():init(fopts)
       end
       return finder(fopts, ctx)

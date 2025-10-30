@@ -26,7 +26,7 @@
 local uv = vim.uv or vim.loop
 
 local function norm(path)
-  return svim.fs.normalize(path):gsub("/$", "")
+  return svim.fs.normalize(path):gsub("/$", ""):gsub("^$", "/")
 end
 
 local function assert_dir(path)

@@ -516,7 +516,9 @@ function M:scroll(up)
 end
 
 function M:destroy()
-  self:close()
+  pcall(function()
+    self:close()
+  end)
   self.events = {}
   self.keys = {}
   self.meta = {}
@@ -542,6 +544,7 @@ function M:close(opts)
   end
 
   local close = function()
+    local errors = {} ---@type string[]
     if win and vim.api.nvim_win_is_valid(win) then
       local ok, err = pcall(vim.api.nvim_win_close, win, true)
       if not ok and (err and err:find("E444")) then
@@ -549,18 +552,23 @@ function M:close(opts)
         vim.cmd("silent! vsplit")
         pcall(vim.api.nvim_win_close, win, true)
       elseif not ok then
-        error(err)
+        errors[#errors + 1] = err
       end
     end
     if buf and vim.api.nvim_buf_is_valid(buf) then
-      vim.api.nvim_buf_delete(buf, { force = true })
+      local ok, err = pcall(vim.api.nvim_buf_delete, buf, { force = true })
+      errors[#errors + 1] = not ok and err or nil
     end
     if scratch_buf and vim.api.nvim_buf_is_valid(scratch_buf) then
-      vim.api.nvim_buf_delete(scratch_buf, { force = true })
+      local ok, err = pcall(vim.api.nvim_buf_delete, scratch_buf, { force = true })
+      errors[#errors + 1] = not ok and err or nil
     end
     if self.augroup then
       pcall(vim.api.nvim_del_augroup_by_id, self.augroup)
       self.augroup = nil
+    end
+    if #errors > 0 then
+      error(table.concat(errors, "\n"))
     end
   end
   local retries = 0
@@ -897,6 +905,13 @@ function M:fixbuf()
     self.buf = buf
     -- update window options
     Snacks.util.wo(self.win, self.opts.wo)
+    return
+  end
+
+  if vim.api.nvim_win_get_config(self.win).zindex then
+    vim.schedule(function()
+      self:close()
+    end)
     return
   end
 

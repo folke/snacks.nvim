@@ -18,7 +18,7 @@ local M = {}
 
 ---@enum (key) snacks.picker.EditCmd
 local edit_cmd = {
-  edit = "buffer",
+  edit = "buffer!",
   split = "sbuffer",
   vsplit = "vert sbuffer",
   tab = "tab sbuffer",
@@ -80,7 +80,7 @@ function M.jump(picker, _, action)
     end
   end
 
-  local cmd = edit_cmd[action.cmd] or "buffer"
+  local cmd = edit_cmd[action.cmd] or edit_cmd.edit
 
   if cmd:find("drop") then
     local drop = {} ---@type string[]

@@ -435,6 +435,9 @@ end
 
 ---@param buf number
 function M._attach(buf)
+  if not vim.api.nvim_buf_is_valid(buf) then
+    return
+  end
   if vim.b[buf].snacks_image_attached then
     return
   end

@@ -66,6 +66,9 @@ function M.refresh()
             picker.list:set_target()
           end
           vim.schedule(function()
+            if not picker or picker.closed then
+              return
+            end
             picker:find()
           end)
         end

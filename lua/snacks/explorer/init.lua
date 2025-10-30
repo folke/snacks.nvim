@@ -83,18 +83,27 @@ function M.reveal(opts)
   local Tree = require("snacks.explorer.tree")
   opts = opts or {}
   local file = svim.fs.normalize(opts.file or vim.api.nvim_buf_get_name(opts.buf or 0))
-  local explorer = Snacks.picker.get({ source = "explorer" })[1] or M.open()
-  local cwd = explorer:cwd()
-  if not Tree:in_cwd(cwd, file) then
-    for parent in vim.fs.parents(file) do
-      if Tree:in_cwd(parent, cwd) then
-        explorer:set_cwd(parent)
-        break
+  local explorer = Snacks.picker.get({ source = "explorer" })[1]
+
+  local function reveal()
+    local cwd = explorer:cwd()
+    if not Tree:in_cwd(cwd, file) then
+      for parent in vim.fs.parents(file) do
+        if Tree:in_cwd(parent, cwd) then
+          explorer:set_cwd(parent)
+          break
+        end
       end
     end
+    Tree:open(file)
+    Actions.update(explorer, { target = file, refresh = true })
   end
-  Tree:open(file)
-  Actions.update(explorer, { target = file, refresh = true })
+
+  if explorer then
+    reveal()
+  else
+    explorer = M.open({ on_show = reveal })
+  end
   return explorer
 end
 

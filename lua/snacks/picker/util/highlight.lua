@@ -366,4 +366,81 @@ function M.set(buf, ns, row, hl)
   end
 end
 
+---@alias snacks.picker.badge.color string|{ fg:string, bg:string }
+local badge_cache = {} ---@type table<string, {hl:string, color:snacks.picker.badge.color}>
+
+---@param color snacks.picker.badge.color
+local function badge_hl(color)
+  local key = type(color) == "string" and color or ("%s:%s"):format(color.fg or "", color.bg or "")
+  if badge_cache[key] then
+    return badge_cache[key].hl
+  end
+
+  local fg, bg ---@type string, string
+  if type(color) == "string" then
+    if color:sub(1, 1) == "#" then
+      bg = color
+    else
+      fg, bg = Snacks.util.color(color, "fg"), Snacks.util.color(color, "bg")
+    end
+  else
+    fg, bg = color.fg, color.bg
+  end
+
+  if not fg and not bg then -- default to inverse of Normal
+    fg = Snacks.util.color("Normal", "bg") or "#ffffff"
+    bg = Snacks.util.color("Normal", "fg") or "#000000"
+  elseif fg and not bg then -- set bg to a blended version of fg and Normal bg
+    bg = bg or Snacks.util.color("Normal", "bg") or "#000000"
+    bg = Snacks.util.blend(fg, bg, 0.1)
+  elseif bg and not fg then -- calculate fg based on bg brightness
+    local light, dark = "#ffffff", "#000000"
+    do
+      local normal_fg = Snacks.util.color("Normal", "fg")
+      local normal_bg = Snacks.util.color("Normal", "bg")
+      if vim.o.background == "light" then
+        normal_fg, normal_bg = normal_bg, normal_fg
+      end
+      light = normal_fg or light
+      dark = normal_bg or dark
+    end
+    local r, g, b = bg:match("#?(%x%x)(%x%x)(%x%x)")
+    r, g, b = tonumber(r, 16), tonumber(g, 16), tonumber(b, 16)
+    local yiq = (r * 299 + g * 587 + b * 114) / 1000
+    fg = yiq >= 128 and dark or light
+  end
+
+  local hl_group = ("SnacksBadge_%s_%s"):format(fg:sub(2), bg:sub(2))
+  vim.api.nvim_set_hl(0, hl_group, { fg = fg, bg = bg })
+  vim.api.nvim_set_hl(0, hl_group .. "Inv", { fg = bg })
+  badge_cache[key] = { hl = hl_group, color = color }
+  return hl_group
+end
+
+--- Renders a badge
+---@param text string
+---@param color snacks.picker.badge.color
+function M.badge(text, color)
+  local left_sep, right_sep = "", ""
+
+  local hl_group = badge_hl(color)
+  ---@type snacks.picker.Highlight[]
+  return {
+    { left_sep, hl_group .. "Inv", virtual = true },
+    { text, hl_group },
+    { right_sep, hl_group .. "Inv", virtual = true },
+  }
+end
+
+vim.api.nvim_create_autocmd("ColorScheme", {
+  group = vim.api.nvim_create_augroup("snacks.picker.highlight,badges", { clear = true }),
+  callback = function(ev)
+    local badges = badge_cache
+    badge_cache = {}
+    for _, v in pairs(badges) do
+      badge_hl(v.color)
+    end
+  end,
+})
+
 return M

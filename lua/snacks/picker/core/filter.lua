@@ -14,8 +14,6 @@
 local M = {}
 M.__index = M
 
-local uv = vim.uv or vim.loop
-
 ---@param picker snacks.Picker
 function M.new(picker)
   local opts = picker.opts ---@type snacks.picker.Config|{filter?:snacks.picker.filter.Config}

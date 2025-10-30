@@ -99,10 +99,12 @@ function M.parse(lines)
     end
   end
 
+  local with_diff_header = vim.trim(table.concat(lines, "\n")):find("^diff") ~= nil
+
   for _, text in ipairs(lines) do
     if not block and text:find("^%s*$") then
       -- Ignore empty lines before a diff block
-    elseif text:find("^diff") or (text:find("^%-%-%- ") and (not block or hunk)) then
+    elseif text:find("^diff") or (not with_diff_header and text:find("^%-%-%- ") and (not block or hunk)) then
       emit()
       local file ---@type string?
       if text:find("^diff") then

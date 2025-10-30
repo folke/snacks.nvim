@@ -198,6 +198,12 @@ function M.explorer(opts, ctx)
     return M.search(opts, ctx)
   end
 
+  -- initial on_find (typically for follow_file), has to be done both for:
+  -- * regular explorer view
+  -- * when git status refreshes the view
+  local on_find = state.on_find
+  state.on_find = nil
+
   if opts.git_status then
     require("snacks.explorer.git").update(ctx.filter.cwd, {
       untracked = opts.git_untracked,
@@ -206,7 +212,7 @@ function M.explorer(opts, ctx)
           return
         end
         ctx.picker.list:set_target()
-        ctx.picker:find()
+        ctx.picker:find({ on_done = on_find })
       end,
     })
   end
@@ -216,9 +222,9 @@ function M.explorer(opts, ctx)
   end
 
   return function(cb)
-    if state.on_find then
-      ctx.picker.matcher.task:on("done", vim.schedule_wrap(state.on_find))
-      state.on_find = nil
+    if on_find then
+      assert(ctx.picker.matcher.task:running())
+      ctx.picker.matcher.task:on("done", vim.schedule_wrap(on_find))
     end
     local items = {} ---@type table<string, snacks.picker.explorer.Item>
     local top = Tree:find(ctx.filter.cwd)

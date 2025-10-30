@@ -54,6 +54,7 @@
 ```lua
 ---@alias snacks.statuscolumn.Component "mark"|"sign"|"fold"|"git"
 ---@alias snacks.statuscolumn.Components snacks.statuscolumn.Component[]|fun(win:number,buf:number,lnum:number):snacks.statuscolumn.Component[]
+---@alias snacks.statuscolumn.Wanted table<snacks.statuscolumn.Component, boolean>
 ```
 
 ## 📦 Module
