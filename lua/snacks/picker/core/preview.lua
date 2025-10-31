@@ -103,6 +103,21 @@ function M.new(picker)
 
   self.win:on("WinClosed", function()
     self:clear(self.win.buf)
+    vim.schedule(function()
+      local ei = vim.o.eventignore
+      vim.o.eventignore = "all"
+      for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        if
+          vim.api.nvim_buf_is_loaded(buf)
+          and vim.b[buf].snacks_picker_loaded
+          and not vim.bo[buf].buflisted
+          and #vim.fn.win_findbuf(buf) == 0
+        then
+          vim.api.nvim_buf_delete(buf, { force = true })
+        end
+      end
+      vim.o.eventignore = ei
+    end)
   end, { win = true })
 
   self.preview = Snacks.picker.config.preview(opts)
