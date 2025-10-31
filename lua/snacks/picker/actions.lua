@@ -175,8 +175,7 @@ end
 
 function M.cancel(picker)
   picker:norm(function()
-    local main = require("snacks.picker.core.main").new({ float = false, file = false })
-    vim.api.nvim_set_current_win(main:get())
+    picker.main = picker:filter().current_win
     picker:close()
   end)
 end
