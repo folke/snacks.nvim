@@ -282,7 +282,6 @@ function M:highlight(opts)
       filename = opts.file,
     })
   end
-  self:check_big()
   local lang = Snacks.util.get_lang(opts.lang or ft)
   if lang == "markdown" then
     return self:markdown()
@@ -370,23 +369,6 @@ function M:loc()
       end
     end)
   end
-end
-
-function M:check_big()
-  local big = self:is_big()
-  vim.b[self.win.buf].snacks_scroll = not big
-end
-
-function M:is_big()
-  local lines = vim.api.nvim_buf_line_count(self.win.buf)
-  if lines > 2000 then
-    return true
-  end
-  local path = self.item and self.item.file and Snacks.picker.util.path(self.item)
-  if path and vim.fn.getfsize(path) > 1.5 * 1024 * 1024 then
-    return true
-  end
-  return false
 end
 
 ---@param lines string[]
