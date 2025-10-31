@@ -9,6 +9,7 @@ local uv = vim.uv or vim.loop
 ---@field timeout? number
 ---@field run? boolean
 ---@field debug? boolean
+---@field input? string
 ---@field on_stdout? fun(proc: snacks.spawn.Proc, data: string)
 ---@field on_stderr? fun(proc: snacks.spawn.Proc, data: string)
 ---@field on_exit? fun(proc: snacks.spawn.Proc, err: boolean)
@@ -22,6 +23,7 @@ local uv = vim.uv or vim.loop
 ---@field handle? uv.uv_process_t
 ---@field stdout uv.uv_pipe_t
 ---@field stderr uv.uv_pipe_t
+---@field stdin? uv.uv_pipe_t
 ---@field code? number
 ---@field signal? number
 ---@field timer? uv.uv_timer_t
@@ -107,6 +109,7 @@ function Proc:run()
   end
   self.stdout = assert(uv.new_pipe())
   self.stderr = assert(uv.new_pipe())
+  self.stdin = self.opts.input and assert(uv.new_pipe()) or nil
   self.data = { [self.stdout] = {}, [self.stderr] = {} }
   if self.opts.debug then
     vim.schedule(function()
@@ -114,7 +117,7 @@ function Proc:run()
     end)
   end
   local opts = vim.tbl_deep_extend("force", self.opts, {
-    stdio = { nil, self.stdout, self.stderr },
+    stdio = { self.stdin, self.stdout, self.stderr },
     hide = true,
     args = vim.tbl_map(tostring, self.opts.args or {}),
   })
@@ -130,6 +133,13 @@ function Proc:run()
     close(self.stderr)
     return self:on_exit()
   end
+
+  if self.stdin and self.opts.input then
+    self.stdin:write(self.opts.input)
+    self.stdin:shutdown()
+    self.stdin:close()
+  end
+
   if self.opts.timeout then
     self.timer = assert(uv.new_timer())
     self.timer:start(self.opts.timeout, 0, function()
