@@ -309,6 +309,8 @@ function M._get()
       components[3] = "  "
     end
   end
+  components[1] = vim.b[buf].snacks_statuscolumn_left ~= false and components[1] or ""
+  components[3] = vim.b[buf].snacks_statuscolumn_right ~= false and components[3] or ""
 
   local ret = table.concat(components, "")
   return "%@v:lua.require'snacks.statuscolumn'.click_fold@" .. ret .. "%T"
