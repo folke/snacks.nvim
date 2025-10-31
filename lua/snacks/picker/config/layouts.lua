@@ -147,6 +147,7 @@ M.select = {
     backdrop = false,
     width = 0.5,
     min_width = 80,
+    max_width = 100,
     height = 0.4,
     min_height = 3,
     box = "vertical",
