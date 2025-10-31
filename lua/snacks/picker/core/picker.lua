@@ -803,6 +803,14 @@ function M:hist(forward)
   self.input:set(hist.pattern, hist.search)
 end
 
+--- Clears the selection, set the target to the current item,
+--- and refresh the finder and matcher.
+function M:refresh()
+  self.list:set_selected()
+  self.list:set_target()
+  self:find({ refresh = true })
+end
+
 --- Check if the finder and/or matcher need to run,
 --- based on the current pattern and search string.
 ---@param opts? { on_done?: fun(), refresh?: boolean }

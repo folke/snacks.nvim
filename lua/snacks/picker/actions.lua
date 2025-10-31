@@ -334,9 +334,7 @@ function M.bufdelete(picker)
   if non_buf_delete_requested then
     Snacks.notify.warn("Only open buffers can be deleted", { title = "Snacks Picker" })
   end
-  picker.list:set_selected()
-  picker.list:set_target()
-  picker:find()
+  picker:refresh()
 end
 
 function M.git_stage(picker)
@@ -353,9 +351,7 @@ function M.git_stage(picker)
     Snacks.picker.util.cmd(cmd, function()
       done = done + 1
       if done == #items then
-        picker.list:set_selected()
-        picker.list:set_target()
-        picker:find()
+        picker:refresh()
       end
     end, opts)
   end
@@ -394,9 +390,7 @@ function M.git_restore(picker)
         done = done + 1
         if done == #items then
           vim.schedule(function()
-            picker.list:set_selected()
-            picker.list:set_target()
-            picker:find()
+            picker:refresh()
             vim.cmd.startinsert()
             vim.cmd.checktime()
           end)
@@ -480,9 +474,7 @@ function M.git_branch_del(picker, item)
       Snacks.picker.util.cmd({ "git", "branch", "-D", branch }, function(_, code)
         Snacks.notify("Deleted Branch `" .. branch .. "`", { title = "Snacks Picker" })
         vim.cmd.checktime()
-        picker.list:set_selected()
-        picker.list:set_target()
-        picker:find()
+        picker:refresh()
       end, { cwd = picker:cwd() })
     end)
   end, { cwd = picker:cwd() })
