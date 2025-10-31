@@ -59,9 +59,8 @@ end
 function Proc:kill(signal)
   close(self.stdout)
   close(self.stderr)
-  if not self.handle then
+  if self:running() then
     self.aborted = true
-  elseif self:running() then
     self.handle:kill(signal or "sigterm")
   end
 end
