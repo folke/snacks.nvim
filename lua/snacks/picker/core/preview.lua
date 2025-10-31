@@ -221,6 +221,9 @@ end
 function M:set_buf(buf)
   vim.b[buf].snacks_previewed = true
   self.win:set_buf(buf)
+  if self.item and self.item.wo and self.win:win_valid() then
+    Snacks.util.wo(self.win.win, self.item.wo)
+  end
 end
 
 function M:reset()
