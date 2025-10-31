@@ -186,7 +186,7 @@ function M:show(picker, opts)
       })
     )
     if not ok then
-      self:notify(err, "error")
+      self:notify(err --[[@as string]], "error")
     end
     if self.win.buf ~= buf then
       self:clear(buf)
