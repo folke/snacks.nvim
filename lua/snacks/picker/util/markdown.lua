@@ -37,6 +37,7 @@ function M.render(buf, opts)
   end
 
   if opts.images ~= false then
+    vim.b[buf].snacks_image_conceal = true
     Snacks.image.doc.attach(buf)
   end
 

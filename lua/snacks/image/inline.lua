@@ -113,7 +113,7 @@ function M:update()
             pos = i.pos,
             range = i.range,
             inline = true,
-            conceal = conceal(i.lang, i.type),
+            conceal = vim.b[self.buf].snacks_image_conceal or conceal(i.lang, i.type),
             type = i.type,
             ---@param p snacks.image.Placement
             on_update = function(p)
