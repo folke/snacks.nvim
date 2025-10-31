@@ -8,6 +8,7 @@ local M = {}
 ---@field action snacks.picker.Action.fn
 ---@field desc? string
 ---@field name? string
+---@field [string] any additional fields
 
 ---@param picker snacks.Picker
 function M.get(picker)
