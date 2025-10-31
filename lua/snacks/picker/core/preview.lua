@@ -368,6 +368,8 @@ function M:loc()
         self:wo({ cursorline = true })
       end
     end)
+  else -- no position info, go to top
+    vim.api.nvim_win_set_cursor(self.win.win, { 1, 0 })
   end
 end
 
