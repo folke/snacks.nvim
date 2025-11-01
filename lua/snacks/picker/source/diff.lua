@@ -91,6 +91,9 @@ function M.parse(lines)
       hunk = nil
     end
     if block then
+      if block.file:sub(1, 1) == '"' then
+        block.file = block.file:sub(2):sub(1, -2)
+      end
       table.sort(block.hunks, function(a, b)
         return a.line < b.line
       end)
@@ -99,29 +102,46 @@ function M.parse(lines)
     end
   end
 
-  local with_diff_header = vim.trim(table.concat(lines, "\n")):find("^diff") ~= nil
-
   for _, text in ipairs(lines) do
     if not block and text:find("^%s*$") then
       -- Ignore empty lines before a diff block
-    elseif text:find("^diff") or (not with_diff_header and text:find("^%-%-%- ") and (not block or hunk)) then
+    elseif text:find("^diff ") then
       emit()
       local file ---@type string?
-      if text:find("^diff") then
-        file = text:gsub("^diff%s*", ""):gsub("^%-%S+%s*", "")
-        file = file:match('^"%a/(.-)"') or file:match("^%a/(.-) %a/") or file:match("^%a/(.*)$") or file
-      elseif text:find("^%-%-%-") then
-        file = text:match("^%-%-%- %a/([^\t]+)") or text:match("^%-%-%- ([^\t]+)")
+      if text:find("^diff %-%-cc ") then
+        file = text:gsub("^diff %-%-cc ", "")
+      else
+        local name = text:gsub("^[^/]-/", "")
+        local sep = name:find("%s")
+        while sep do
+          local second = name:sub(sep + 1):gsub("^[^/]-/", "")
+          if name:sub(1, sep - 1) == second then
+            name = second
+            break
+          end
+          sep = name:find("%s", sep + 1)
+        end
+        if sep then
+          file = (name:sub(#name) == '"' and '"' or "") .. name
+        end
       end
       block = {
         file = file or "unknown",
         header = { text },
         hunks = {},
       }
-    elseif text:find("@@", 1, true) == 1 and block then
+    elseif text:find("^%-%-%- ") and (not block or hunk) then
+      emit()
+      block = {
+        file = text:match("^%-%-%- [^/]-/([^\t]+)") or text:match("^%-%-%- ([^\t]+)") or "unknown",
+        header = { text },
+        hunks = {},
+      }
+      block.file = (block.file:sub(#block.file) == '"' and '"' or "") .. block.file
+    elseif text:find("^@@") and block then
       -- Hunk header
       local line = 1
-      if text:find("@@@", 1, true) == 1 then
+      if text:find("^@@@ ") then
         line = tonumber(text:match("^@@@ %-%d+,?%d* %-%d+,?%d* %+(%d+),?%d* @@@")) or 1
       else
         line = tonumber(text:match("^@@ %-%d+,?%d* %+(%d+),?%d* @@")) or 1
@@ -137,6 +157,16 @@ function M.parse(lines)
     elseif block then
       -- File header
       block.header[#block.header + 1] = text
+      for _, hdr in ipairs({
+        "^copy to ",
+        "^rename new ",
+        "^rename to ",
+      }) do
+        if text:find(hdr) then
+          block.file = text:gsub(hdr, "")
+          break
+        end
+      end
     else
       Snacks.notify.error("unexpected line: " .. text, { title = "Snacks Picker Diff" })
     end

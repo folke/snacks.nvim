@@ -41,6 +41,36 @@ describe("picker.diff", function()
       assert.equals(1, blocks[1].hunks[1].line)
     end)
 
+    it("parses plain diff format (recursive)", function()
+      local lines = {
+        "diff -Naur old/file1.txt new/file1.txt",
+        "--- old/file1.txt	2025-01-01 13:00:00.000000000 +0100",
+        "+++ new/file1.txt	1970-01-01 01:00:00.000000000 +0100",
+        "@@ -1,3 +0,0 @@",
+        "-context1",
+        "-old content",
+        "-context3",
+        "diff -Naur old/file2.txt new/file2.txt",
+        "--- old/file2.txt	1970-01-01 01:00:00.000000000 +0100",
+        "+++ new/file2.txt	2025-01-01 13:00:00.000000000 +0100",
+        "@@ -0,0 +1,3 @@",
+        "+context1",
+        "+new line",
+        "+context3",
+      }
+
+      local blocks = diff.parse(lines)
+      assert.equals(2, #blocks)
+      assert.equals(3, #blocks[1].header)
+      assert.equals("file1.txt", blocks[1].file)
+      assert.equals(1, #blocks[1].hunks)
+      assert.equals(0, blocks[1].hunks[1].line)
+      assert.equals(3, #blocks[2].header)
+      assert.equals("file2.txt", blocks[2].file)
+      assert.equals(1, #blocks[2].hunks)
+      assert.equals(1, blocks[2].hunks[1].line)
+    end)
+
     it("parses combined diff format (merge commits)", function()
       local lines = {
         "diff --cc file.txt",
@@ -144,9 +174,31 @@ describe("picker.diff", function()
 
       local blocks = diff.parse(lines)
       assert.equals(1, #blocks)
-      assert.equals("old.txt", blocks[1].file)
+      assert.equals("new.txt", blocks[1].file)
       assert.equals(4, #blocks[1].header)
       assert.equals(0, #blocks[1].hunks)
+    end)
+
+    it("handles renames with a diff", function()
+      local lines = {
+        "diff --git a/old.txt b/new.txt",
+        "similarity index 66%",
+        "rename from old.txt",
+        "rename to new.txt",
+        "--- a/old.text",
+        "+++ b/new.txt",
+        "@@ -1,3 +1,3 @@",
+        "-line0",
+        " line1",
+        " line2",
+        "+line3",
+      }
+
+      local blocks = diff.parse(lines)
+      assert.equals(1, #blocks)
+      assert.equals("new.txt", blocks[1].file)
+      assert.equals(6, #blocks[1].header)
+      assert.equals(1, #blocks[1].hunks)
     end)
 
     it("handles mode changes", function()
@@ -222,9 +274,9 @@ describe("picker.diff", function()
 
     it("handles files with spaces in name", function()
       local lines = {
-        'diff --git "a/my file.txt" b/my file.txt',
-        "--- a/my file.txt",
-        "+++ b/my file.txt",
+        "diff --git a/dir c/my file.txt b/dir c/my file.txt",
+        "--- a/dir c/my file.txt",
+        "+++ b/dir c/my file.txt",
         "@@ -1,1 +1,1 @@",
         "-old",
         "+new",
@@ -232,14 +284,14 @@ describe("picker.diff", function()
 
       local blocks = diff.parse(lines)
       assert.equals(1, #blocks)
-      assert.equals("my file.txt", blocks[1].file)
+      assert.equals("dir c/my file.txt", blocks[1].file)
     end)
 
-    it("handles files with spaces in name without quotes", function()
+    it("handles quoted filenames", function()
       local lines = {
-        "diff --git a/my file.txt b/my file.txt",
-        "--- a/my file.txt",
-        "+++ b/my file.txt",
+        'diff --git "a/my file.txt" "b/my file.txt"',
+        '--- "a/my file.txt"',
+        '+++ "b/my file.txt"',
         "@@ -1,1 +1,1 @@",
         "-old",
         "+new",
@@ -409,12 +461,25 @@ describe("picker.diff", function()
         "@@ -1,1 +1,1 @@",
         "-old",
         "+new",
+        "--- plain2.txt",
+        "+++ plain2.txt",
+        "@@ -1,1 +1,1 @@",
+        "-old",
+        "+new",
+        "diff --git a/git2.txt b/git2.txt",
+        "--- a/git2.txt",
+        "+++ b/git2.txt",
+        "@@ -1,1 +1,1 @@",
+        "-old",
+        "+new",
       }
 
       local blocks = diff.parse(lines)
-      assert.equals(2, #blocks)
+      assert.equals(4, #blocks)
       assert.equals("plain1.txt", blocks[1].file)
       assert.equals("git1.txt", blocks[2].file)
+      assert.equals("plain2.txt", blocks[3].file)
+      assert.equals("git2.txt", blocks[4].file)
     end)
 
     it("handles symlink changes", function()
