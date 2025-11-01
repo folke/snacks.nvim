@@ -204,10 +204,25 @@ function M.visual()
 end
 
 ---@param str string
----@param data table<string, string>
+---@param data table<string, string|boolean|number>|table<string, string|boolean|number>[]
 ---@param opts? {prefix?: string, indent?: boolean, offset?: number[]}
 function M.tpl(str, data, opts)
   opts = opts or {}
+
+  local function get(key)
+    if not vim.tbl_isempty(data) and svim.islist(data) and not getmetatable(data) then
+      for _, d in ipairs(data) do
+        if d[key] ~= nil then
+          return d[key]
+        end
+      end
+    else
+      if data[key] ~= nil then
+        return data[key]
+      end
+    end
+  end
+
   local ret = (
     str:gsub(
       "(" .. vim.pesc(opts.prefix or "") .. "%b{}" .. ")",
@@ -215,7 +230,7 @@ function M.tpl(str, data, opts)
       function(w)
         local inner = w:sub(2 + #(opts.prefix or ""), -2)
         local key, default = inner:match("^(.-):(.*)$")
-        local ret = data[key or inner]
+        local ret = get(key or inner)
         if ret == "" and default then
           return default
         end
