@@ -1,3 +1,5 @@
+local Async = require("snacks.picker.util.async")
+
 ---@class snacks.spawn
 local M = {}
 
@@ -29,6 +31,8 @@ local uv = vim.uv or vim.loop
 ---@field timer? uv.uv_timer_t
 ---@field aborted? boolean
 ---@field data table<uv.uv_pipe_t, string[]>
+---@field async? snacks.picker.Async
+---@field did_exit? boolean
 local Proc = {}
 Proc.__index = Proc
 
@@ -101,11 +105,30 @@ function Proc:debug(opts)
   return Snacks.debug.cmd(opts)
 end
 
+---@async
+function Proc:wait()
+  assert(self.async, "Not in an async context")
+  assert(self.async == Async.running(), "Not in the current async context")
+  while not self.did_exit or self:running() do
+    self.async:suspend()
+  end
+end
+
 function Proc:run()
   assert(not self.handle, "already running")
   if self.aborted then
     return self:on_exit()
   end
+
+  self.async = Async.running()
+  if self.async then
+    self.async:on("abort", function()
+      if self:running() then
+        self:kill()
+      end
+    end)
+  end
+
   self.stdout = assert(uv.new_pipe())
   self.stderr = assert(uv.new_pipe())
   self.stdin = self.opts.input and assert(uv.new_pipe()) or nil
@@ -200,6 +223,10 @@ function Proc:on_exit()
     close(self.stderr)
     if self.opts.on_exit then
       self.opts.on_exit(self, self.code ~= 0 or self.signal ~= 0 or self.aborted or false)
+      self.did_exit = true
+      if self.async then
+        self.async:resume()
+      end
     end
   end)
 end
