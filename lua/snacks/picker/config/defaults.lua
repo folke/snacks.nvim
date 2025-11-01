@@ -263,7 +263,7 @@ local defaults = {
         ["gg"] = "list_top",
         ["j"] = "list_down",
         ["k"] = "list_up",
-        ["q"] = "close",
+        ["q"] = "cancel",
       },
       b = {
         minipairs_disable = true,
@@ -312,7 +312,7 @@ local defaults = {
         ["i"] = "focus_input",
         ["j"] = "list_down",
         ["k"] = "list_up",
-        ["q"] = "close",
+        ["q"] = "cancel",
         ["zb"] = "list_scroll_bottom",
         ["zt"] = "list_scroll_top",
         ["zz"] = "list_scroll_center",
@@ -326,7 +326,7 @@ local defaults = {
     preview = {
       keys = {
         ["<Esc>"] = "cancel",
-        ["q"] = "close",
+        ["q"] = "cancel",
         ["i"] = "focus_input",
         ["<a-w>"] = "cycle_win",
       },
