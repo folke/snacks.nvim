@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.28.1](https://github.com/folke/snacks.nvim/compare/v2.28.0...v2.28.1) (2025-11-01)
+
+
+### Bug Fixes
+
+* **gh.render:** added support for older `StatusContext` checks. Closes [#2407](https://github.com/folke/snacks.nvim/issues/2407) ([74864a7](https://github.com/folke/snacks.nvim/commit/74864a7bb8390684a5132e4025a77a1de92865e8))
+* **gh.render:** use check name. See [#2407](https://github.com/folke/snacks.nvim/issues/2407) ([6f60105](https://github.com/folke/snacks.nvim/commit/6f60105302fcae45524a5b6232beb52829e93e3f))
+
 ## [2.28.0](https://github.com/folke/snacks.nvim/compare/v2.27.0...v2.28.0) (2025-11-01)
 
 
