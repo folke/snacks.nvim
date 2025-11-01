@@ -203,6 +203,15 @@ function M.setup(opts)
     })
   end
 
+  vim.api.nvim_create_autocmd("BufReadCmd", {
+    once = true,
+    pattern = "gh://*",
+    group = group,
+    callback = function(e)
+      require("snacks.gh").setup(e)
+    end,
+  })
+
   if M.config.statuscolumn.enabled then
     vim.o.statuscolumn = [[%!v:lua.require'snacks.statuscolumn'.get()]]
   end
