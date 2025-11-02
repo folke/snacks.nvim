@@ -424,6 +424,17 @@ M.cli_actions = {
       return item.state == "open"
     end,
   },
+  gh_update_branch = {
+    cmd = "update-branch",
+    icon = "󰚰 ",
+    title = "Update branch of PR #{number}",
+    confirm = "Are you sure you want to update the branch of PR #{number} with latest changes of the base branch?",
+    success = "Branch of PR #{number} updated",
+    type = "pr",
+    enabled = function(item)
+      return item.state == "open"
+    end,
+  }
 }
 
 ---@param opts snacks.gh.cli.Action
