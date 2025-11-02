@@ -426,6 +426,7 @@ M.cli_actions = {
   },
   gh_update_branch = {
     cmd = "update-branch",
+    args = { "--rebase" },
     icon = "󰚰 ",
     title = "Update branch of PR #{number}",
     confirm = "Are you sure you want to update the branch of PR #{number} with latest changes of the base branch?",
