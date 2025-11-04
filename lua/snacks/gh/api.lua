@@ -169,10 +169,19 @@ function M.cmd(cb, opts)
     end)
   end
 
+  -- Setup spawn options
+  local spawn_opts = {
+    cmd = "gh",
+    args = args,
+    input = opts.input,
+    timeout = 10000,
+    -- debug = true,
+  }
+
   -- Setup environment variables for custom GitHub hosts
   -- NOTE: get_host() uses os.getenv (safe everywhere) and Host.get() caches the value
   -- to avoid repeated git calls, even when called from spawn callbacks.
-  local env = {}
+  -- Only set env when using a custom host - otherwise inherit parent's environment
   local host = get_host()
   if host ~= "github.com" then
     -- Get full environment and add GH_HOST
@@ -184,39 +193,34 @@ function M.cmd(cb, opts)
 
     -- Convert to array format required by uv.spawn: ["KEY=value", ...]
     -- This format is required by libuv's spawn function
-    env = {}
+    local env = {}
     for k, v in pairs(env_table) do
       table.insert(env, k .. "=" .. v)
     end
+    spawn_opts.env = env
   end
 
-  ret = Spawn.new({
-    cmd = "gh",
-    args = args,
-    input = opts.input,
-    timeout = 10000,
-    env = env,
-    -- debug = true,
-    on_exit = function(proc, err)
-      if err then
-        vim.schedule(function()
-          if not proc.aborted then
-            Snacks.debug.cmd({
-              header = "GH Error",
-              cmd = { "gh", unpack(args) },
-              footer = proc:err(),
-              level = vim.log.levels.ERROR,
-            })
-            if opts.on_error then
-              opts.on_error(proc, proc:err())
-            end
+  spawn_opts.on_exit = function(proc, err)
+    if err then
+      vim.schedule(function()
+        if not proc.aborted then
+          Snacks.debug.cmd({
+            header = "GH Error",
+            cmd = { "gh", unpack(args) },
+            footer = proc:err(),
+            level = vim.log.levels.ERROR,
+          })
+          if opts.on_error then
+            opts.on_error(proc, proc:err())
           end
-        end)
-        return
-      end
-      return cb(proc, not err and proc:out() or nil)
-    end,
-  })
+        end
+      end)
+      return
+    end
+    return cb(proc, not err and proc:out() or nil)
+  end
+
+  ret = Spawn.new(spawn_opts)
   return ret
 end
 M.cmd_sync = wrap_sync(M.cmd)
