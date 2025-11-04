@@ -42,6 +42,9 @@ end
 ---@param buf number
 ---@param opts? snacks.image.Opts|{src?: string}
 function M.attach(buf, opts)
+  if Snacks.image.config.enabled == false then
+    return
+  end
   local Terminal = require("snacks.image.terminal")
   Terminal.detect(function()
     M._attach(buf, opts)

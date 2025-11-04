@@ -339,14 +339,24 @@ end
 
 function M.git_stage(picker)
   local items = picker:selected({ fallback = true })
+  local first = items[1]
+  if not first or not (first.status or (first.diff and first.staged ~= nil)) then
+    Snacks.notify.error("Can't stage/unstage this change", { title = "Snacks Picker" })
+    return
+  end
+
   local done = 0
   for _, item in ipairs(items) do
     local opts = { cwd = item.cwd } ---@type snacks.picker.util.cmd.Opts
-
-    local cmd = item.status:sub(2) == " " and { "git", "restore", "--staged", item.file } or { "git", "add", item.file }
-    if item.diff then
+    local cmd ---@type string[]
+    if item.diff and item.staged ~= nil then
       opts.input = item.diff
       cmd = { "git", "apply", "--cached", item.staged and "--reverse" or nil }
+    elseif item.status then
+      cmd = item.status:sub(2) == " " and { "git", "restore", "--staged", item.file } or { "git", "add", item.file }
+    else
+      Snacks.notify.error("Can't stage/unstage this change", { title = "Snacks Picker" })
+      return
     end
     Snacks.picker.util.cmd(cmd, function()
       done = done + 1
@@ -363,6 +373,12 @@ function M.git_restore(picker)
     return
   end
 
+  local first = items[1]
+  if not first or not (first.status or (first.diff and first.staged ~= nil)) then
+    Snacks.notify.warn("Can't restore this change", { title = "Snacks Picker" })
+    return
+  end
+
   -- Confirm before discarding changes
   ---@param item snacks.picker.Item
   local files = vim.tbl_map(function(item)
@@ -374,16 +390,21 @@ function M.git_restore(picker)
   Snacks.picker.util.confirm(msg, function()
     local done = 0
     for _, item in ipairs(items) do
-      local cmd = { "git", "restore", item.file }
+      local cmd ---@type string[]
       local opts = { cwd = item.cwd }
 
-      if item.diff then
+      if item.diff and item.staged ~= nil then
         opts.input = item.diff
         if item.staged then
           cmd = { "git", "apply", "--reverse", "--cached" }
         else
           cmd = { "git", "apply", "--reverse" }
         end
+      elseif item.status then
+        cmd = { "git", "restore", item.file }
+      else
+        Snacks.notify.error("Can't restore this change", { title = "Snacks Picker" })
+        return
       end
 
       Snacks.picker.util.cmd(cmd, function()

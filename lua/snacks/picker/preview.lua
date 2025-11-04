@@ -115,7 +115,7 @@ function M.file(ctx)
       return
     end
 
-    if Snacks.image.supports_file(path) then
+    if Snacks.image.supports_file(path) and Snacks.image.config.enabled ~= false then
       return M.image(ctx)
     end
 
@@ -249,14 +249,12 @@ function M.git_log(ctx)
     "--no-patch",
     ctx.item.commit
   )
-  local row = 0
   M.cmd(cmd, ctx, {
     ft = "git",
     ---@param text string
     on_line = function(_, text)
       local commit, msg, date, author = text:match("^(%S+) (.*) %((.*)%) <(.*)>$")
       if commit then
-        row = row + 1
         local hl = Snacks.picker.format.git_log({
           idx = 1,
           score = 0,
@@ -266,7 +264,7 @@ function M.git_log(ctx)
           date = date,
           author = author,
         }, ctx.picker)
-        Snacks.picker.highlight.set(ctx.buf, ns, row, hl)
+        Snacks.picker.highlight.render(ctx.buf, ns, { hl }, { append = true })
       end
     end,
   })

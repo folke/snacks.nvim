@@ -2,7 +2,7 @@ local M = {}
 
 ---@alias snacks.picker.format.resolve fun(max_width:number):snacks.picker.Highlight[]
 ---@alias snacks.picker.Extmark vim.api.keyset.set_extmark|{col:number, row?:number, field?:string}
----@alias snacks.picker.Text {[1]:string, [2]:(string|string[])?, virtual?:boolean, field?:string, resolve?:snacks.picker.format.resolve}
+---@alias snacks.picker.Text {[1]:string, [2]:(string|string[])?, virtual?:boolean, field?:string, resolve?:snacks.picker.format.resolve, meta?:table<string, any>}
 ---@alias snacks.picker.Highlight snacks.picker.Text|snacks.picker.Extmark
 ---@alias snacks.picker.format fun(item:snacks.picker.Item, picker:snacks.Picker):snacks.picker.Highlight[]
 ---@alias snacks.picker.preview fun(ctx: snacks.picker.preview.ctx):boolean?

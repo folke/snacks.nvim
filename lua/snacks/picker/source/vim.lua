@@ -382,6 +382,7 @@ function M.undo(opts, ctx)
   local buf = vim.api.nvim_get_current_buf()
   local file = vim.api.nvim_buf_get_name(buf)
   local items = {} ---@type snacks.picker.finder.Item[]
+  local diff_fn = vim.text and vim.text.diff or vim.diff
 
   -- Copy the current buffer to a temporary file and load the undo history.
   -- This is done to prevent the current buffer from being modified,
@@ -417,7 +418,7 @@ function M.undo(opts, ctx)
     end)
     vim.o.eventignore = ei
 
-    local diff = vim.diff(table.concat(before, "\n") .. "\n", table.concat(after, "\n") .. "\n", opts.diff) --[[@as string]]
+    local diff = diff_fn(table.concat(before, "\n") .. "\n", table.concat(after, "\n") .. "\n", opts.diff) --[[@as string]]
     local changes = {} ---@type string[]
     local added_lines = {} ---@type string[]
     local removed_lines = {} ---@type string[]
@@ -479,8 +480,20 @@ function M.undo(opts, ctx)
   ---@param cb async fun(item: snacks.picker.finder.Item)
   ---@async
   return function(cb)
+    ctx.async:on("done", function()
+      vim.schedule(function()
+        -- Clean up the temporary files
+        vim.api.nvim_buf_delete(tmpbuf, { force = true })
+        vim.fn.delete(tmp_file)
+        vim.fn.delete(tmp_undo)
+      end)
+    end)
     for i = #items, 1, -1 do
-      cb(items[i])
+      local item = items[i]
+      cb(item)
+      if item.current then
+        ctx.picker.list:set_target(#items - i + 1)
+      end
     end
 
     while #items > 0 do
@@ -495,9 +508,6 @@ function M.undo(opts, ctx)
       end)
       ctx.async:suspend()
     end
-    vim.schedule(function()
-      vim.api.nvim_buf_delete(tmpbuf, { force = true })
-    end)
   end
 end
 

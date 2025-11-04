@@ -124,6 +124,7 @@ function Proc:wait()
   while not self.did_exit or self:running() do
     self.async:suspend()
   end
+  return self
 end
 
 function Proc:run()
@@ -228,10 +229,10 @@ function Proc:on_exit()
     close(self.stderr)
     if self.opts.on_exit then
       self.opts.on_exit(self, self.code ~= 0 or self.signal ~= 0 or self.aborted or false)
-      self.did_exit = true
-      if self.async then
-        self.async:resume()
-      end
+    end
+    self.did_exit = true
+    if self.async then
+      self.async:resume()
     end
   end)
 end
@@ -284,5 +285,18 @@ function M.multi(procs, opts)
 end
 
 M.new = Proc.new
+
+---@param cmd string[]
+---@async
+function M.exec(cmd)
+  return vim.trim(M.new({
+    cmd = cmd[1],
+    args = vim.list_slice(cmd, 2),
+    stdout_buffered = true,
+    stderr_buffered = true,
+  })
+    :wait()
+    :out())
+end
 
 return M

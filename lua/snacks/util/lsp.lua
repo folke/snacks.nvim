@@ -69,7 +69,9 @@ local function setup()
   vim.api.nvim_create_autocmd("LspAttach", {
     group = vim.api.nvim_create_augroup("snacks.lsp.on_attach", { clear = true }),
     callback = function(ev)
-      _handle({ id = ev.data.client_id, buffer = ev.buf })
+      vim.schedule(function()
+        _handle({ id = ev.data.client_id, buffer = ev.buf })
+      end)
     end,
   })
 end

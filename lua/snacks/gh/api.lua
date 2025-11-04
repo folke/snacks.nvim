@@ -1,6 +1,7 @@
 local Async = require("snacks.picker.util.async")
 local Host = require("snacks.gh.host")
 local Item = require("snacks.gh.item")
+local Proc = require("snacks.util.spawn")
 
 ---@class snacks.gh.api
 local M = {}
@@ -153,6 +154,7 @@ end
 ---@param cb fun(proc: snacks.spawn.Proc, data?: string)
 ---@param opts snacks.gh.api.Cmd
 function M.cmd(cb, opts)
+  opts = opts or {}
   local args = vim.deepcopy(opts.args)
   if opts.repo then
     vim.list_extend(args, { "--repo", opts.repo })
@@ -204,12 +206,14 @@ function M.cmd(cb, opts)
     if err then
       vim.schedule(function()
         if not proc.aborted then
-          Snacks.debug.cmd({
-            header = "GH Error",
-            cmd = { "gh", unpack(args) },
-            footer = proc:err(),
-            level = vim.log.levels.ERROR,
-          })
+          if opts.notify ~= false then
+            Snacks.debug.cmd({
+              header = "GH Error",
+              cmd = { "gh", unpack(args) },
+              footer = proc:err(),
+              level = vim.log.levels.ERROR,
+            })
+          end
           if opts.on_error then
             opts.on_error(proc, proc:err())
           end
@@ -235,6 +239,7 @@ function M.fetch(cb, opts)
   end, {
     args = args,
     repo = opts.repo,
+    notify = opts.notify,
   })
 end
 M.fetch_sync = wrap_sync(M.fetch)
@@ -260,7 +265,7 @@ function M.request(cb, opts)
     cb(proc, data and data:find("%S") and proc:json() or nil)
   end, {
     args = args,
-    input = opts.input,
+    input = opts.input and vim.json.encode(opts.input) or nil,
     on_error = opts.on_error,
   })
 end
@@ -338,7 +343,7 @@ function M.list(what, cb, opts)
 end
 
 ---@param cb fun(item?: snacks.picker.gh.Item, updated?: boolean)
----@param item snacks.gh.api.View
+---@param item snacks.gh.api.View|{number?: number}
 ---@param opts? { fields?: string[], force?: boolean }
 function M.view(cb, item, opts)
   opts = opts or {}
@@ -449,6 +454,7 @@ function M.comments(item, cb)
                 comments(first: 50) {
                   nodes {
                     id
+                    databaseId
                     body
                     path
                     diffHunk
@@ -459,7 +465,7 @@ function M.comments(item, cb)
                     createdAt
                     subjectType
                     author { login }
-                    replyTo { id }
+                    replyTo { id databaseId }
                     reactionGroups {
                       content
                       users { totalCount }
@@ -471,6 +477,7 @@ function M.comments(item, cb)
             comments(first: 100) {
               nodes {
                 id
+                databaseId
                 body
                 author { login }
                 authorAssociation
@@ -488,90 +495,60 @@ function M.comments(item, cb)
   })
 end
 
-function M.get_branch()
-  local branch = vim.fn.system({ "git", "branch", "--show-current" }):gsub("\n", "")
-
-  -- Get all config in one call
-  local git_config = vim.fn
-    .system({
-      "git",
-      "config",
-      "--get-regexp",
-      ("^(branch\\.%s\\.|remote\\.)"):format(branch),
-    })
-    :gsub("\n$", "")
-
-  local cfg = {} ---@type table<string, string>
-  for _, line in ipairs(vim.split(git_config, "\n")) do
-    local key, value = line:match("^([^%s]+)%s+(.+)$")
-    if key then
-      cfg[key] = value
-    end
+---@async
+function M.current_pr()
+  local root = Snacks.git.get_root(vim.uv.cwd() or ".")
+  if not root then
+    return
   end
+  ---@type snacks.picker.gh.Item?
+  local pr
+  local branch = Proc.exec({ "git", "branch", "--show-current" })
 
-  -- Extract values
-  local remote = cfg[("branch.%s.remote"):format(branch)] or ""
-  local merge = cfg[("branch.%s.merge"):format(branch)] or ""
-  local origin_url = cfg["remote.origin.url"] or ""
-
-  -- Get fork URL (either named remote or direct URL)
-  local url = (remote:match("^https://") or remote:match("^git@")) and remote
-    or cfg[("remote.%s.url"):format(remote)]
-    or remote
-
-  -- Parse author from fork URL
-  local author ---@type string?
-  if url ~= "" then
-    ---@type string?
-    local host_pattern = escape_pattern(get_host())
-    local owner_repo = url:match(host_pattern .. "[:/](.+/.+)%.git") or url:match(host_pattern .. "[:/](.+/.+)$")
-    author = owner_repo and owner_repo:match("^([^/]+)/") or nil
-  end
-
-  -- Parse repo from origin
-  local host_pattern = escape_pattern(get_host())
-  local repo = origin_url:match(host_pattern .. "[:/](.+/.+)%.git") or origin_url:match(host_pattern .. "[:/](.+/.+)$")
-
-  -- Fallback: try without host restriction for non-standard URLs
-  if not repo then
-    repo = origin_url:match("[:/](.+/.+)%.git") or origin_url:match("[:/](.+/.+)$")
-  end
-
-  -- Parse head from merge ref
-  local head = merge:match("^refs/heads/(.+)$") or branch
-
-  -- Get base branch (default branch from origin)
-  local base = vim.fn.system({ "git", "symbolic-ref", "refs/remotes/origin/HEAD" }):gsub("\n", "")
-  base = base:match("refs/remotes/origin/(.+)") or "main"
-
-  ---@type snacks.gh.api.Branch
-  return {
-    url = url,
-    author = author,
-    repo = repo,
-    branch = branch,
-    head = head,
-    base = base,
-  }
-end
-
----@param cb fun(item?: snacks.picker.gh.Item)
-function M.current_pr(cb)
-  local branch = M.get_branch()
-  local key = string.format("%s:%s/%s->%s", branch.author or "", branch.repo or "", branch.head, branch.base)
+  local key = root .. "::" .. branch
   if pr_cache[key] then
-    return cb(pr_cache[key])
+    return pr_cache[key]
   end
-  return M.list("pr", function(items)
-    pr_cache[key] = items and items[1] or nil
-    cb(pr_cache[key])
-  end, {
-    author = branch.author,
-    head = branch.head,
-    base = branch.base,
-    repo = branch.repo,
-    limit = 1,
+
+  -- try with `pr view` first
+  local api_opts = get_opts("pr", "list")
+  pr = M.fetch_sync({
+    args = { "pr", "view" },
+    fields = api_opts.fields,
+    notify = false,
   })
+  pr = pr and cache_set(Item.new(pr, api_opts)) or nil
+  if pr then
+    pr_cache[key] = pr
+    return pr
+  end
+
+  -- assume this is the main branch of a fork
+  local author, main = branch:match("^(.-)/(.+)$")
+  if not author or not main then
+    return
+  end
+  local repo = M.cmd_sync({
+    args = { "repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner" },
+    notify = false,
+  })
+  if not repo then
+    return
+  end
+  repo = vim.trim(repo)
+
+  M.list("pr", function(items)
+    pr_cache[key] = items and items[1] or nil
+    pr = pr_cache[key]
+  end, {
+    author = author,
+    head = main,
+    base = main,
+    repo = repo,
+    limit = 1,
+    notify = false,
+  }):wait()
+  return pr
 end
 
 return M

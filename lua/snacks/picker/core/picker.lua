@@ -529,6 +529,9 @@ function M:toggle(win, opts)
   self.layout:toggle(win, opts.enable, function(enabled)
     -- called if changed and before updating the layout
     local focus = opts.focus == true and win or opts.focus or self:current_win() --[[@as string]]
+    if not focus then
+      return
+    end
     if not enabled then
       -- make sure we don't lose focus when toggling off
       self:focus(focus)

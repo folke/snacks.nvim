@@ -561,9 +561,17 @@ function M.keymap(item, picker)
 end
 
 function M.git_status(item, picker)
+  local status = item.status
+  if not status and item.block then
+    local block = item.block ---@type snacks.picker.diff.Block
+    status = block.new and "A" or block.delete and "D" or block.rename and "R" or block.copy and "C" or "M"
+    status = block.unmerged and (status .. status) or item.staged and (status .. " ") or (" " .. status)
+  elseif not status then
+    return M.filename(item, picker)
+  end
   local ret = {} ---@type snacks.picker.Highlight[]
   local a = Snacks.picker.util.align
-  local s = vim.trim(item.status):sub(1, 1)
+  local s = vim.trim(status):sub(1, 1)
   local hls = {
     ["A"] = "SnacksPickerGitStatusAdded",
     ["M"] = "SnacksPickerGitStatusModified",
@@ -573,8 +581,8 @@ function M.git_status(item, picker)
     ["?"] = "SnacksPickerGitStatusUntracked",
   }
   local hl = hls[s] or "SnacksPickerGitStatus"
-  hl = item.status:sub(1, 1) == "M" and "SnacksPickerGitStatusStaged" or hl
-  ret[#ret + 1] = { a(item.status, 2, { align = "right" }), hl }
+  hl = status:sub(1, 1) == "M" and "SnacksPickerGitStatusStaged" or hl
+  ret[#ret + 1] = { a(status, 2, { align = "right" }), hl }
   ret[#ret + 1] = { " " }
   if item.rename then
     local file = item.file

@@ -302,36 +302,39 @@ end
 ---@param line snacks.picker.Highlight[]
 ---@param max_width number
 function M.resolve(line, max_width)
-  local ret = {} ---@type snacks.picker.Highlight[]
   local offset = 0
   local width = 0
   local resolve ---@type number?
 
-  for t, text in ipairs(line) do
-    local w = M.offset({ text }, { char_idx = true })
-    if not resolve and type(text) == "table" and text.resolve then
-      ---@cast text snacks.picker.Text
-      resolve = t
-    elseif resolve then
-      width = width + w
+  while true do
+    for t, text in ipairs(line) do
+      local w = M.offset({ text }, { char_idx = true })
+      if not resolve and type(text) == "table" and text.resolve then
+        ---@cast text snacks.picker.Text
+        resolve = t
+      elseif resolve then
+        width = width + w
+      else
+        width = width + w
+        offset = offset + w
+      end
+    end
+
+    if resolve then
+      local ret = {} ---@type snacks.picker.Highlight[]
+      vim.list_extend(ret, line, 1, resolve - 1)
+      offset = M.offset(ret)
+      vim.list_extend(ret, line[resolve].resolve(max_width - width))
+      local diff = M.offset(ret) - offset
+      vim.list_extend(ret, line, resolve + 1)
+      M.fix_offset(ret, diff, resolve + 1)
+      line = ret
+      ret = {}
+      resolve = nil
     else
-      width = width + w
-      offset = offset + w
+      return line
     end
   end
-
-  if resolve then
-    vim.list_extend(ret, line, 1, resolve - 1)
-    offset = M.offset(ret)
-    vim.list_extend(ret, line[resolve].resolve(max_width - width))
-    local diff = M.offset(ret) - offset
-    vim.list_extend(ret, line, resolve + 1)
-    M.fix_offset(ret, diff, resolve + 1)
-  else
-    return line
-  end
-
-  return ret
 end
 
 ---@param line snacks.picker.Highlight[]
@@ -405,33 +408,49 @@ end
 
 ---@param buf number
 ---@param ns number
----@param row number
----@param hl snacks.picker.Highlight[]
-function M.set(buf, ns, row, hl)
-  while #hl > 0 and type(hl[#hl][1]) == "string" and hl[#hl][1]:find("^%s*$") do
-    table.remove(hl)
-  end
-  local line_text, extmarks = Snacks.picker.highlight.to_text(hl)
-  local modifiable = vim.bo[buf].modifiable
+---@param lines snacks.picker.Highlight[][]
+---@param opts? {append?:boolean}
+function M.render(buf, ns, lines, opts)
+  opts = opts or {}
+  local old_lines = opts.append and {} or vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+
   vim.bo[buf].modifiable = true
-  vim.api.nvim_buf_set_lines(buf, row - 1, row, false, { line_text })
-  vim.bo[buf].modifiable = modifiable
-  for _, extmark in ipairs(extmarks) do
-    local col = extmark.col
-    extmark.col = nil
-    extmark.row = nil
-    extmark.field = nil
-    local ok, err = pcall(vim.api.nvim_buf_set_extmark, buf, ns, row - 1, col, extmark)
-    if not ok then
-      Snacks.notify.error(
-        "Failed to set extmark. This should not happen. Please report.\n"
-          .. err
-          .. "\n```lua\n"
-          .. vim.inspect(extmark)
-          .. "\n```"
-      )
+  if not opts.append then
+    vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
+  end
+
+  local changed = #lines ~= #old_lines
+  local offset = opts.append and vim.api.nvim_buf_line_count(buf) or 0
+  offset = offset == 1 and (vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] or ""):find("^%s*$") and 0 or offset
+  for l, line in ipairs(lines) do
+    local line_text, extmarks = Snacks.picker.highlight.to_text(line)
+    if line_text ~= old_lines[l] then
+      vim.api.nvim_buf_set_lines(buf, offset + l - 1, offset + l, false, { line_text })
+      changed = true
+    end
+    for _, extmark in ipairs(extmarks) do
+      local e = vim.deepcopy(extmark)
+      e.col, e.row, e.field = nil, nil, nil
+      local ok, err = pcall(vim.api.nvim_buf_set_extmark, buf, ns, offset + l - 1, extmark.col, e)
+      if not ok then
+        Snacks.notify.error(
+          "Failed to set extmark. This should not happen. Please report.\n"
+            .. err
+            .. "\n```lua\n"
+            .. vim.inspect(extmark)
+            .. "\n```"
+        )
+      end
     end
   end
+
+  if not opts.append and #lines < #old_lines then
+    vim.api.nvim_buf_set_lines(buf, #lines, -1, false, {})
+  end
+
+  vim.bo[buf].modified = false
+  vim.bo[buf].modifiable = false
+  return changed
 end
 
 ---@alias snacks.picker.badge.color string|{ fg:string, bg:string }

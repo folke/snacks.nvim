@@ -961,7 +961,6 @@ function M.sections.terminal(opts)
     local height, width = opts.height or 10, opts.width or (self.opts.width - (opts.indent or 0))
     local hl = opts.hl and hl_groups[opts.hl] or opts.hl or "SnacksDashboardTerminal"
     local cache_buf, term_buf, win ---@type integer?, integer?, integer?
-    local term_ready = false
 
     local cache_parts = {
       table.concat(type(cmd) == "table" and cmd or { cmd }, " "),
@@ -974,7 +973,7 @@ function M.sections.terminal(opts)
     local has_cache = stat and stat.type == "file" and stat.size > 0
     local is_expired = has_cache and stat and os.time() - stat.mtime.sec >= ttl
 
-    if has_cache and not cache_buf and stat then
+    if has_cache and stat then -- show cached output
       cache_buf = vim.api.nvim_create_buf(false, true)
       vim.bo[cache_buf].buftype = "nofile"
       local fin = assert(uv.fs_open(cache_file, "r", 438))
@@ -985,13 +984,9 @@ function M.sections.terminal(opts)
       vim.bo[cache_buf].scrollback = 9998
     end
 
-    local function get_buf()
-      return assert(term_ready and term_buf or cache_buf, "No terminal or cache buffer available")
-    end
-
-    local function set_buf()
+    ---@param buf integer
+    local function show(buf)
       if win and vim.api.nvim_win_is_valid(win) then
-        local buf = assert(term_ready and term_buf or cache_buf, "No terminal or cache buffer available")
         vim.api.nvim_win_set_buf(win, buf)
         Snacks.util.wo(win, { winhighlight = "TermCursorNC:" .. hl .. ",NormalFloat:" .. hl })
         Snacks.util.bo(buf, { filetype = Snacks.config.styles.dashboard.bo.filetype })
@@ -1000,34 +995,13 @@ function M.sections.terminal(opts)
 
     local job ---@type snacks.Job?
     if not has_cache or is_expired then
-      term_ready, term_buf = not has_cache, vim.api.nvim_create_buf(false, true)
+      term_buf = vim.api.nvim_create_buf(false, true)
+      local term_ready = false
       local output = {} ---@type string[]
-      local timer = assert(uv.new_timer())
-
-      ---@param force boolean?
-      local function show(force)
-        if
-          not force
-          and vim.api.nvim_buf_is_valid(term_buf)
-          and #vim.tbl_filter(function(line)
-              return line:match("%S")
-            end, vim.api.nvim_buf_get_lines(term_buf, 0, -1, false))
-            < 3
-        then
-          return
-        end
-        if timer:is_active() then
-          timer:stop()
-          timer:close()
-        end
-        term_ready = true
-        set_buf()
-      end
-      timer:start(30, 30, vim.schedule_wrap(show))
 
       local recording = vim.defer_fn(function()
         output = {}
-        show(true)
+        show(term_buf)
       end, 5000) --[[@as uv.uv_timer_t]]
 
       local Job = require("snacks.util.job")
@@ -1035,6 +1009,7 @@ function M.sections.terminal(opts)
         term_buf,
         cmd,
         Snacks.config.merge({}, {
+          start = false,
           term = true,
           width = width,
           height = height,
@@ -1042,12 +1017,21 @@ function M.sections.terminal(opts)
             if recording:is_active() then
               table.insert(output, table.concat(data, "\n"))
             end
+            if not term_ready and job then
+              local non_empty = #vim.tbl_filter(function(line)
+                return line:match("%S")
+              end, job.lines)
+              if non_empty >= 3 then
+                term_ready = true
+                show(term_buf)
+              end
+            end
           end,
           on_exit = function(_, code)
             if job and job.killed then
               return
             end
-            show(true)
+            show(term_buf)
             if recording:is_active() and code == 0 and ttl > 0 then -- save the output
               vim.fn.mkdir(cache_dir, "p")
               local fout = assert(uv.fs_open(cache_file, "w", 438))
@@ -1065,7 +1049,9 @@ function M.sections.terminal(opts)
       label = not opts.title and opts.label or nil,
       render = function(_, pos)
         self:trace("terminal.render")
-        win = vim.api.nvim_open_win(get_buf(), false, {
+        -- open the window with the terminal buffer if available.
+        -- This is to ensure it starts with the correct window size.
+        win = vim.api.nvim_open_win(assert(term_buf or cache_buf), false, {
           bufpos = { pos[1] - 1, pos[2] + 1 },
           col = opts.indent or 0,
           focusable = false,
@@ -1079,7 +1065,10 @@ function M.sections.terminal(opts)
           win = self.win,
           border = "none",
         })
-        set_buf()
+        if job then -- start the job if needed
+          job:start()
+        end
+        show(assert(cache_buf or term_buf)) -- set the correct buffer
         local close = vim.schedule_wrap(function()
           if job then
             job:stop()

@@ -8,11 +8,26 @@ local M = {}
 ---@class snacks.picker.diff.Hunk
 ---@field diff string[]
 ---@field line number
+---@field context? string
+---@field left { line: number, count: number } old (normal) /ours (merge)
+---@field right { line: number, count: number } new (normal) /working (merge)
+---@field parents? { line: number, count: number }[] theirs (merge)
 
 ---@class snacks.picker.diff.Block
+---@field unmerged? boolean
 ---@field file string
+---@field left? string
+---@field right? string
 ---@field header string[]
 ---@field hunks snacks.picker.diff.Hunk[]
+---@field mode? {from:string, to:string}
+---@field copy? {from:string, to:string}
+---@field rename? {from:string, to:string}
+---@field delete? string (mode of deleted file)
+---@field new? string (mode of new file)
+---@field similarity? number
+---@field dissimilarity? number
+---@field index? {from:string, to:string, mode:string}
 
 ---@param opts? snacks.picker.diff.Config
 ---@type snacks.picker.finder
@@ -51,13 +66,16 @@ function M.diff(opts, ctx)
     ---@param file string
     ---@param line? number
     ---@param diff string[]
-    local function add(file, line, diff)
+    ---@param block snacks.picker.diff.Block
+    local function add(file, line, diff, block)
       line = line or 1
       cb({
         text = file .. ":" .. line,
         diff = table.concat(diff, "\n"),
         file = file,
         cwd = cwd,
+        rename = block.rename and block.rename.from or nil,
+        block = block,
         pos = { line, 0 },
       })
     end
@@ -69,12 +87,12 @@ function M.diff(opts, ctx)
         if opts.group then
           vim.list_extend(diff, h.diff)
         else
-          add(block.file, h.line, vim.list_extend(vim.deepcopy(block.header), h.diff))
+          add(block.file, h.line, vim.list_extend(vim.deepcopy(block.header), h.diff), block)
         end
       end
       if opts.group or #block.hunks == 0 then
         local line = block.hunks[1] and block.hunks[1].line or 1
-        add(block.file, line, vim.list_extend(vim.deepcopy(block.header), diff))
+        add(block.file, line, vim.list_extend(vim.deepcopy(block.header), diff), block)
       end
     end
   end
@@ -86,17 +104,109 @@ function M.parse(lines)
   local block ---@type snacks.picker.diff.Block?
   local ret = {} ---@type snacks.picker.diff.Block[]
 
+  ---@param file? string
+  ---@param strip_prefix? boolean
+  ---@return string?
+  local function norm(file, strip_prefix)
+    if file then
+      file = file:gsub("\t.*$", "") -- remove tab and after
+      file = file:gsub('^"(.-)"$', "%1") -- remove quotes
+      if file == "/dev/null" then -- no file
+        return
+      end
+      if strip_prefix == false then
+        return file
+      end
+      local prefix = { "a", "b", "i", "w", "c", "o", "old", "new" }
+      for _, s in ipairs(prefix) do -- remove prefixes
+        if file:sub(1, #s + 1) == s .. "/" then
+          return file:sub(#s + 2)
+        end
+      end
+      return file
+    end
+  end
+
   local function emit()
     if block and hunk then
       hunk = nil
+    elseif not block then
+      return
     end
-    if block then
-      table.sort(block.hunks, function(a, b)
-        return a.line < b.line
-      end)
-      ret[#ret + 1] = block
-      block = nil
+    for _, line in ipairs(block.header) do
+      if line:find("^%-%-%- ") then
+        block.left = norm(line:sub(5))
+      elseif line:find("^%+%+%+ ") then
+        block.right = norm(line:sub(5))
+      elseif line:find("^rename from") then
+        block.rename = block.rename or {}
+        block.left = norm(line:match("^rename from (.*)"), false)
+        block.rename.from = block.left
+      elseif line:find("^rename to") then
+        block.rename = block.rename or {}
+        block.right = norm(line:match("^rename to (.*)"), false)
+        block.rename.to = block.right
+      elseif line:find("^copy from") then
+        block.copy = block.copy or {}
+        block.left = norm(line:match("^copy from (.*)"), false)
+        block.copy.from = block.left
+      elseif line:find("^copy to") then
+        block.copy = block.copy or {}
+        block.right = norm(line:match("^copy to (.*)"), false)
+        block.copy.to = block.right
+      elseif line:find("^new file mode") then
+        block.new = line:match("^new file mode (.*)")
+      elseif line:find("^deleted file mode") then
+        block.delete = line:match("^deleted file mode (.*)")
+      elseif line:find("^old mode") then
+        block.mode = block.mode or {}
+        block.mode.from = line:match("^old mode (.*)")
+      elseif line:find("^new mode") then
+        block.mode = block.mode or {}
+        block.mode.to = line:match("^new mode (.*)")
+      elseif line:find("^similarity index") then
+        local sim = line:match("^similarity index (%d+)%%")
+        block.similarity = tonumber(sim) or 0
+      elseif line:find("^dissimilarity index") then
+        local dis = line:match("^dissimilarity index (%d+)%%")
+        block.dissimilarity = tonumber(dis) or 0
+      elseif line:find("^index ") then
+        local from, to, mode = line:match("^index (%S+)%.%.(%S+)%s*(%d*)$")
+        block.index = { from = from, to = to, mode = mode ~= "" and mode or nil }
+      end
     end
+    local first = block.header[1] or ""
+    if not block.right and not block.left and first:find("^diff") then
+      -- no left/right so for sure no rename.
+      -- this means the diff header is for the same file
+      if first:find("^diff %-%-cc") then
+        block.left = norm(first:match("^diff %-%-cc (.+)$"))
+        block.right = block.left
+      else
+        first = first:gsub("^diff ", ""):gsub("^%s*%-%S+%s*", "") --[[@as string]]
+        local idx = 1
+        while idx <= #first do
+          local s = first:find(" ", idx, true)
+          if not s then
+            break
+          end
+          idx = s + 1
+          local l = norm(first:sub(1, s - 1))
+          local r = norm(first:sub(s + 1))
+          if l == r then
+            block.left = l
+            block.right = r
+            break
+          end
+        end
+      end
+    end
+    block.file = block.right or block.left or block.file
+    table.sort(block.hunks, function(a, b)
+      return a.line < b.line
+    end)
+    ret[#ret + 1] = block
+    block = nil
   end
 
   local with_diff_header = vim.trim(table.concat(lines, "\n")):find("^diff") ~= nil
@@ -106,43 +216,60 @@ function M.parse(lines)
       -- Ignore empty lines before a diff block
     elseif text:find("^diff") or (not with_diff_header and text:find("^%-%-%- ") and (not block or hunk)) then
       emit()
-      local file ---@type string?
-      if text:find("^diff") then
-        file = text:gsub("^diff%s*", ""):gsub("^%-%S+%s*", "")
-        file = file:match('^"%a/(.-)"') or file:match("^%a/(.-) %a/") or file:match("^%a/(.*)$") or file
-      elseif text:find("^%-%-%-") then
-        file = text:match("^%-%-%- %a/([^\t]+)") or text:match("^%-%-%- ([^\t]+)")
-      end
       block = {
-        file = file or "unknown",
+        file = "", --file or "unknown",
         header = { text },
         hunks = {},
       }
     elseif text:find("@@", 1, true) == 1 and block then
       -- Hunk header
-      local line = 1
-      if text:find("@@@", 1, true) == 1 then
-        line = tonumber(text:match("^@@@ %-%d+,?%d* %-%d+,?%d* %+(%d+),?%d* @@@")) or 1
+      hunk = M.parse_hunk_header(text)
+      if hunk then
+        block.unmerged = block.unmerged or (hunk.parents ~= nil) or nil
+        block.hunks[#block.hunks + 1] = hunk
       else
-        line = tonumber(text:match("^@@ %-%d+,?%d* %+(%d+),?%d* @@")) or 1
+        Snacks.notify.error("Invalid hunk header: " .. text, { title = "Snacks Picker Diff" })
       end
-      hunk = {
-        line = line,
-        diff = { text },
-      }
-      block.hunks[#block.hunks + 1] = hunk
     elseif hunk then
       -- Hunk body
       hunk.diff[#hunk.diff + 1] = text
     elseif block then
-      -- File header
       block.header[#block.header + 1] = text
     else
-      Snacks.notify.error("unexpected line: " .. text, { title = "Snacks Picker Diff" })
+      Snacks.notify.error("Unexpected line: " .. text, { title = "Snacks Picker Diff" })
     end
   end
   emit()
   return ret
+end
+
+---@param line string
+function M.parse_hunk_header(line)
+  local count_start, inner, count_end, context = line:match("^(@+)%s*(.-)%s*(@+)%s*(.*)$")
+  if not count_start or not count_end or count_start ~= count_end or #count_start < 2 then
+    return
+  end
+  local ret = {} ---@type {line:number, count:number}[]
+  for _, part in ipairs(vim.split(inner, "%s+")) do
+    local l, c = part:match("^[%-+](%d+),?(%d*)$")
+    if not l then
+      return
+    end
+    ret[#ret + 1] = { line = tonumber(l) or 1, count = tonumber(c) or 1 }
+  end
+  if #ret ~= #count_start then
+    return
+  end
+  local right = table.remove(ret)
+  ---@type snacks.picker.diff.Hunk
+  return {
+    diff = { line },
+    line = right and right.line or 1,
+    left = table.remove(ret, 1),
+    right = right,
+    parents = #ret > 0 and ret or nil,
+    context = context ~= "" and context or nil,
+  }
 end
 
 return M

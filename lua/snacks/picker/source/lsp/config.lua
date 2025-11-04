@@ -273,13 +273,40 @@ function M.preview(ctx)
       -- buffers
       lines[#lines + 1] = "- **buffers**: " .. list(vim.tbl_keys(client.attached_buffers))
 
+      -- server capabilities
+      local methods = vim.tbl_keys(vim.lsp.protocol._request_name_to_server_capability) --[[@as string[] ]]
+      table.sort(methods)
+      if #methods > 0 then
+        lines[#lines + 1] = "- **server capabilities**:"
+        for _, method in ipairs(methods) do
+          local cap = vim.lsp.protocol._request_name_to_server_capability[method]
+          if vim.tbl_get(client.server_capabilities, unpack(cap)) then
+            lines[#lines + 1] = ("  *  **%s**: `%s`"):format(method, true)
+          end
+        end
+      end
+
+      -- dynamic capabilities
+      methods = vim.tbl_keys(vim.tbl_get(client, "dynamic_capabilities", "capabilities") or {}) --[[@as string[] ]]
+      table.sort(methods)
+      if #methods > 0 then
+        lines[#lines + 1] = "- **dynamic capabilities**:"
+        for _, method in ipairs(methods) do
+          if client.dynamic_capabilities.capabilities[method] then
+            lines[#lines + 1] = ("  *  **%s**: `%s`"):format(method, true)
+          end
+        end
+      end
+
       -- settings
       local settings = vim.inspect(client.settings)
-      lines[#lines + 1] = "- **settings**:"
-      lines[#lines + 1] = "```lua\n" .. settings .. "\n```"
+      if not vim.tbl_isempty(client.settings) then
+        lines[#lines + 1] = "- **settings**:"
+        lines[#lines + 1] = "```lua\n" .. settings .. "\n```"
+      end
 
       -- init options
-      if client.config.init_options then
+      if not vim.tbl_isempty(client.config.init_options or {}) then
         local init_options = vim.inspect(client.config.init_options)
         lines[#lines + 1] = "- **init options**:"
         lines[#lines + 1] = "```lua\n" .. init_options .. "\n```"

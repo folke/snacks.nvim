@@ -889,6 +889,10 @@ function M:fixbuf()
     return true
   end
 
+  if not self:buf_valid() then
+    return
+  end
+
   if not self:on_current_tab() then
     return
   end
@@ -905,13 +909,6 @@ function M:fixbuf()
     self.buf = buf
     -- update window options
     Snacks.util.wo(self.win, self.opts.wo)
-    return
-  end
-
-  if vim.api.nvim_win_get_config(self.win).zindex then
-    vim.schedule(function()
-      self:close()
-    end)
     return
   end
 

@@ -70,18 +70,12 @@ end
 ---@type snacks.picker.finder
 function M.get_actions(opts, ctx)
   opts = opts or {}
-  local proc ---@type snacks.spawn.Proc?
-  if not opts.item and not opts.number then
-    proc = Api.current_pr(function(pr)
-      opts.item = pr
-    end)
-  end
   ---@async
   return function(cb)
-    if proc then
-      proc:wait()
-    end
     local item = opts.item
+    if not opts.item and not opts.number then
+      item = Api.current_pr()
+    end
 
     if not item then
       local required = { "type", "repo", "number" }
@@ -98,7 +92,7 @@ function M.get_actions(opts, ctx)
         return
       end
       item = Api.get({ type = opts.type or "pr", repo = opts.repo, number = opts.number })
-      proc = Api.view(function(it)
+      local proc = Api.view(function(it)
         item = it
       end, item)
 

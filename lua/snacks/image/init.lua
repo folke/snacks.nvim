@@ -120,7 +120,7 @@ local defaults = {
   },
   ---@class snacks.image.convert.Config
   convert = {
-    notify = true, -- show a notification on error
+    notify = false, -- show a notification on error
     ---@type snacks.image.args
     mermaid = function()
       local theme = vim.o.background == "light" and "neutral" or "dark"
@@ -231,6 +231,7 @@ function M.langs()
     return q:match("queries/(.-)/images%.scm")
   end, queries)
 end
+
 ---@private
 ---@param ev? vim.api.keyset.create_autocmd.callback_args
 function M.setup(ev)

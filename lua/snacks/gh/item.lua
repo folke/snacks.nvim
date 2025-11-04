@@ -1,12 +1,6 @@
-local Host = require("snacks.gh.host")
-
 ---@class snacks.picker.gh.Item
 ---@field opts snacks.gh.api.Config
 local M = {}
-
--- Convenience aliases for the Host module
-local get_host = Host.get
-local escape_pattern = Host.escape_pattern
 
 local time_fields = {
   created = "createdAt",
@@ -95,8 +89,7 @@ function M:update(data, fields)
     self.fields[field] = true
   end
   if not self.repo and item.url then
-    local host_pattern = escape_pattern(get_host())
-    local repo = item.url:match(host_pattern .. "/([^/]+/[^/]+)/")
+    local repo = M.get_repo(item.url)
     if repo then
       self.repo = repo
     end
@@ -155,6 +148,12 @@ function M.to_uri(item)
     return item.uri
   end
   return ("gh://%s/%s/%s"):format(item.repo or "", assert(item.type), tostring(assert(item.number)))
+end
+
+---@param url string
+function M.get_repo(url)
+  local path = url:find("^http") and url:gsub("^https?://[^/]+/", "") or url:gsub("^[^/]+/", "")
+  return path:match("([^/]+/[^/]+)") --[[@as string?]]
 end
 
 return M

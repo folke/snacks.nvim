@@ -11,6 +11,7 @@ local extend = Snacks.picker.highlight.extend
 ---@field item snacks.picker.gh.Item
 ---@field opts snacks.gh.Config
 ---@field comment_skip table<string, boolean>
+---@field is_review? boolean
 
 ---@param field string
 local function time_prop(field)
@@ -296,52 +297,38 @@ function M.render(buf, item, opts)
   if #threads > 0 then
     lines[#lines + 1] = { { "" } } -- empty line
     lines[#lines + 1] = { { "---", "@punctuation.special.markdown" } }
+    lines[#lines + 1] = {} -- empty line
 
     for _, thread in ipairs(threads) do
-      lines[#lines + 1] = {} -- empty line
+      local c = #lines
 
       if thread.submitted then
         ---@cast thread snacks.gh.Review
+        ctx.is_review = true
         vim.list_extend(lines, M.review(thread, 1, ctx))
       else
         ---@cast thread snacks.gh.Comment
+        ctx.is_review = false
         vim.list_extend(lines, M.comment(thread, 1, ctx))
       end
-    end
-  end
 
-  local buf_lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-
-  vim.bo[buf].modifiable = true
-  vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
-
-  local changed = #lines ~= #buf_lines
-  for l, line in ipairs(lines) do
-    local line_text, extmarks = Snacks.picker.highlight.to_text(line)
-    if line_text ~= buf_lines[l] then
-      vim.api.nvim_buf_set_lines(buf, l - 1, l, false, { line_text })
-      changed = true
-    end
-    for _, extmark in ipairs(extmarks) do
-      local e = vim.deepcopy(extmark)
-      e.col = nil
-      e.row = nil
-      e.field = nil
-      local ok, err = pcall(vim.api.nvim_buf_set_extmark, buf, ns, l - 1, extmark.col, e)
-      if not ok then
-        Snacks.notify.error(
-          "Failed to set extmark. This should not happen. Please report.\n"
-            .. err
-            .. "\n```lua\n"
-            .. vim.inspect(extmark)
-            .. "\n```"
-        )
+      if #lines > c then -- only add separator if there were comments added
+        lines[#lines + 1] = {} -- empty line
       end
     end
   end
-  if #lines < #buf_lines then
-    vim.api.nvim_buf_set_lines(buf, #lines, -1, false, {})
+
+  local comments = {} ---@type {line:number, id:number}[]
+  for l, line in ipairs(lines) do
+    for _, segment in ipairs(line) do
+      if segment.meta and segment.meta.reply then
+        comments[#comments + 1] = { line = l, id = segment.meta.reply }
+      end
+    end
   end
+
+  vim.b[buf].snacks_gh_comments = comments
+  local changed = Snacks.picker.highlight.render(buf, ns, lines)
 
   if changed then
     Markdown.render(buf)
@@ -356,9 +343,6 @@ function M.render(buf, item, opts)
       end)
     end
   end)
-
-  vim.bo[buf].modified = false
-  vim.bo[buf].modifiable = false
 end
 
 ---@param item snacks.picker.gh.Item
@@ -489,6 +473,14 @@ function M.comment(comment, level, ctx)
     ret[#ret + 1] = { M.indent(level) } -- empty line between comment and reply
     vim.list_extend(ret, M.comment(reply, level, ctx))
     ctx.comment_skip[reply.id] = true
+  end
+  if ctx.is_review then
+    for _, line in ipairs(ret) do
+      local reply_id = comment.replyTo and comment.replyTo.databaseId or comment.databaseId
+      if reply_id then
+        line[#line + 1] = { "", meta = { reply = reply_id } }
+      end
+    end
   end
   return ret
 end

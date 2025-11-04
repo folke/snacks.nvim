@@ -464,6 +464,9 @@ end
 
 ---@param buf number
 function M.attach(buf)
+  if Snacks.image.config.enabled == false then
+    return
+  end
   local Terminal = require("snacks.image.terminal")
   Terminal.detect(function()
     M._attach(buf)

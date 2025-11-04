@@ -23,6 +23,7 @@ local defaults = {
     -- diagnostics = false,
     -- inlay_hints = false,
   },
+  center = true, -- center the window
   show = {
     statusline = false, -- can only be shown when using the global statusline
     tabline = false,
@@ -39,6 +40,7 @@ local defaults = {
   ---@type snacks.zen.Config
   zoom = {
     toggles = {},
+    center = false,
     show = { statusline = true, tabline = true },
     win = {
       backdrop = false,
@@ -145,8 +147,13 @@ function M.zen(opts)
 
   -- create window
   local win = Snacks.win(win_opts)
-  if vim.bo[buf].buftype ~= "terminal" then
+  if opts.center and vim.bo[buf].buftype ~= "terminal" then
     vim.cmd([[norm! zz]])
+  else
+    local view = vim.api.nvim_win_call(parent_win, vim.fn.winsaveview)
+    vim.api.nvim_win_call(win.win, function()
+      vim.fn.winrestview(view)
+    end)
   end
   M.win = win
 
