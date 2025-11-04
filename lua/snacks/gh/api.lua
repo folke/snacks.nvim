@@ -1,4 +1,5 @@
 local Async = require("snacks.picker.util.async")
+local Host = require("snacks.gh.host")
 local Item = require("snacks.gh.item")
 
 ---@class snacks.gh.api
@@ -7,6 +8,10 @@ local M = {}
 ---@type table<string, snacks.picker.gh.Item>
 local cache = setmetatable({}, { __mode = "v" })
 local pr_cache = {} ---@type table<string, snacks.picker.gh.Item>
+
+-- Convenience aliases for the Host module
+local get_host = Host.get
+local escape_pattern = Host.escape_pattern
 
 ---@type table<string, snacks.gh.api.Config|{}>
 local config = {
@@ -163,11 +168,34 @@ function M.cmd(cb, opts)
       end
     end)
   end
+
+  -- Setup environment variables for custom GitHub hosts
+  -- NOTE: get_host() uses os.getenv (safe everywhere) and Host.get() caches the value
+  -- to avoid repeated git calls, even when called from spawn callbacks.
+  local env = {}
+  local host = get_host()
+  if host ~= "github.com" then
+    -- Get full environment and add GH_HOST
+    -- Safe to use vim.uv.os_environ() here since M.cmd is called from main execution,
+    -- not from fast event contexts. The spawned process callbacks will use the cached host.
+    local uv = vim.uv or vim.loop
+    local env_table = uv.os_environ() or {}
+    env_table.GH_HOST = host
+
+    -- Convert to array format required by uv.spawn: ["KEY=value", ...]
+    -- This format is required by libuv's spawn function
+    env = {}
+    for k, v in pairs(env_table) do
+      table.insert(env, k .. "=" .. v)
+    end
+  end
+
   ret = Spawn.new({
     cmd = "gh",
     args = args,
     input = opts.input,
     timeout = 10000,
+    env = env,
     -- debug = true,
     on_exit = function(proc, err)
       if err then
@@ -491,12 +519,19 @@ function M.get_branch()
   local author ---@type string?
   if url ~= "" then
     ---@type string?
-    local owner_repo = url:match("github%.com[:/](.+/.+)%.git") or url:match("github%.com[:/](.+/.+)$")
+    local host_pattern = escape_pattern(get_host())
+    local owner_repo = url:match(host_pattern .. "[:/](.+/.+)%.git") or url:match(host_pattern .. "[:/](.+/.+)$")
     author = owner_repo and owner_repo:match("^([^/]+)/") or nil
   end
 
   -- Parse repo from origin
-  local repo = origin_url:match("github%.com[:/](.+/.+)%.git") or origin_url:match("github%.com[:/](.+/.+)$")
+  local host_pattern = escape_pattern(get_host())
+  local repo = origin_url:match(host_pattern .. "[:/](.+/.+)%.git") or origin_url:match(host_pattern .. "[:/](.+/.+)$")
+
+  -- Fallback: try without host restriction for non-standard URLs
+  if not repo then
+    repo = origin_url:match("[:/](.+/.+)%.git") or origin_url:match("[:/](.+/.+)$")
+  end
 
   -- Parse head from merge ref
   local head = merge:match("^refs/heads/(.+)$") or branch

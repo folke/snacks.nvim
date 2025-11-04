@@ -23,8 +23,58 @@ A modern GitHub CLI integration for Neovim that brings GitHub issues and pull re
 
 ## ⚡️ Requirements
 
-- [GitHub CLI (`gh`)](https://cli.github.com/) - must be installed and authenticated
-- Snacks [picker](https://github.com/folke/snacks.nvim/blob/main/docs/picker.md) enabled
+- [GitHub CLI (`gh`)](https://cli.github.com/) - must be installed and
+  authenticated
+- Snacks [picker](https://github.com/folke/snacks.nvim/blob/main/docs/picker.md)
+  enabled
+
+### Enterprise GitHub Support
+
+The plugin supports GitHub Enterprise and on-premise GitHub instances.
+
+**Auto-detection:** The host is automatically detected from your git remote URL
+(e.g., `git@github.company.com:org/repo.git`), so most users won't need any
+configuration.
+
+**Manual configuration:** If needed, you can explicitly set the host:
+
+```lua
+{
+  "folke/snacks.nvim",
+  opts = {
+    gh = {
+      host = "github.company.com", -- your enterprise GitHub host
+    },
+  },
+}
+```
+
+**⚠️ Warning:** Setting `host` in your global config (or `GH_HOST` environment
+variable) will override auto-detection for **all** repositories. If you work
+with multiple GitHub instances (e.g., github.com and an enterprise instance),
+don't set these globally - rely on auto-detection instead, which detects the
+correct host per-repository from git remotes. For per-project overrides, use
+directory-local config.
+
+**Custom ports:** If your enterprise GitHub uses a non-standard port:
+
+```lua
+{
+  "folke/snacks.nvim",
+  opts = {
+    gh = {
+      host = "github.company.com:8443", -- host with custom port
+    },
+  },
+}
+```
+
+**Priority order:**
+
+1. Explicit `host` config option (highest priority)
+1. Auto-detected from git remote URL
+1. `GH_HOST` environment variable (GitHub CLI standard)
+1. `github.com` (default fallback)
 
 ## 🚀 Recommended Setup
 
@@ -160,6 +210,9 @@ See the [config section](#%EF%B8%8F-config) to customize these keymaps.
 ```lua
 ---@class snacks.gh.Config
 {
+  --- GitHub host (for enterprise). Defaults to github.com
+  ---@type string?
+  host = nil,
   --- Keymaps for GitHub buffers
   ---@type table<string, snacks.gh.Keymap|false>?
   keys = {

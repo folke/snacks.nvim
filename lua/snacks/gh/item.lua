@@ -1,6 +1,12 @@
+local Host = require("snacks.gh.host")
+
 ---@class snacks.picker.gh.Item
 ---@field opts snacks.gh.api.Config
 local M = {}
+
+-- Convenience aliases for the Host module
+local get_host = Host.get
+local escape_pattern = Host.escape_pattern
 
 local time_fields = {
   created = "createdAt",
@@ -89,7 +95,8 @@ function M:update(data, fields)
     self.fields[field] = true
   end
   if not self.repo and item.url then
-    local repo = item.url:match("github%.com/([^/]+/[^/]+)/")
+    local host_pattern = escape_pattern(get_host())
+    local repo = item.url:match(host_pattern .. "/([^/]+/[^/]+)/")
     if repo then
       self.repo = repo
     end

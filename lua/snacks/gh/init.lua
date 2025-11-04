@@ -24,6 +24,9 @@ M.meta = {
 
 ---@class snacks.gh.Config
 local defaults = {
+  --- GitHub host (for enterprise). Defaults to github.com
+  ---@type string?
+  host = nil,
   --- Keymaps for GitHub buffers
   ---@type table<string, snacks.gh.Keymap|false>?
   -- stylua: ignore
@@ -190,8 +193,14 @@ function M.pr(opts)
 end
 
 ---@private
+---@return snacks.gh.Config
 function M.config()
-  M._config = M._config or Snacks.config.get("gh", defaults)
+  if not M._config then
+    M._config = Snacks.config.get("gh", defaults) --[[@as snacks.gh.Config]]
+    -- Clear host cache when config is first loaded/reloaded
+    local Host = require("snacks.gh.host")
+    Host.clear_cache()
+  end
   return M._config
 end
 
