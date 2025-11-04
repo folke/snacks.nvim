@@ -333,8 +333,8 @@ M.actions.gh_view_workflows_status = {
           text = text .. icon .. "\n"
           text = text .. "(" .. value.status
 
-          if value.conclusion ~= nil then
-            text = text .. ", " .. value.conclusion .. ")\n"
+          if value.conclusion ~= vim.NIL then
+            text = text .. ", " .. tostring(value.conclusion) .. ")\n"
           else
             text = text .. ")\n"
           end
