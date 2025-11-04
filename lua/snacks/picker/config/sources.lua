@@ -1028,7 +1028,7 @@ M.treesitter = {
 }
 
 ---@class snacks.picker.undo.Config: snacks.picker.Config
----@field diff? vim.diff.Opts
+---@field diff? vim.text.diff.Opts
 M.undo = {
   finder = "vim_undo",
   format = "undo",
