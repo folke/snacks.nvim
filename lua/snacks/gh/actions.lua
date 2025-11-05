@@ -123,15 +123,18 @@ M.actions.gh_perform_action = {
   end,
 }
 
+local function unwrap(it)
+  return it and (it.number and it or it.item) or nil
+end
+
 M.actions.gh_browse = {
   desc = "Open in web browser",
   title = "Open {type} #{number} in web browser",
   icon = " ",
   action = function(item, ctx)
-    -- Normalize items: in list pickers ctx.items are GH items; in actions picker they are wrappers.
     local items = (ctx.items and #ctx.items > 0) and ctx.items or { item }
     for _, it in ipairs(items) do
-      local gh = it.number and it or it.item -- unwrap if needed
+      local gh = unwrap(it)
       if gh and gh.number then
         Api.cmd(function()
           Snacks.notify.info(("Opened #%s in web browser"):format(gh.number))
@@ -142,7 +145,7 @@ M.actions.gh_browse = {
       end
     end
     if ctx.picker then
-      ctx.picker.list:set_selected() -- clear selection
+      ctx.picker.list:set_selected()
     end
   end,
 }
@@ -228,16 +231,24 @@ M.actions.gh_yank = {
     if vim.fn.mode():find("^[vV]") and ctx.picker then
       ctx.picker.list:select()
     end
-    ---@param it snacks.picker.gh.Item
-    local urls = vim.tbl_map(function(it)
-      return it.url
-    end, ctx.items)
-    if ctx.picker then
-      ctx.picker.list:set_selected() -- clear selection
+    local items = (ctx.items and #ctx.items > 0) and ctx.items or {}
+    local urls = {}
+    for _, it in ipairs(items) do
+      local gh = unwrap(it)
+      if gh and gh.url then
+        urls[#urls + 1] = gh.url
+      end
     end
-    local value = table.concat(urls, "\n")
-    vim.fn.setreg(vim.v.register or "+", value, "l")
-    Snacks.notify.info("Yanked " .. #urls .. " URL(s)")
+    if ctx.picker then
+      ctx.picker.list:set_selected()
+    end
+    if #urls > 0 then
+      local value = table.concat(urls, "\n")
+      vim.fn.setreg(vim.v.register or "+", value, "l")
+      Snacks.notify.info("Yanked " .. #urls .. " URL(s)")
+    else
+      Snacks.notify.warn("No URL(s) to yank")
+    end
   end,
 }
 
