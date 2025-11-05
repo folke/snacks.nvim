@@ -10,6 +10,7 @@ M.meta = {
 ---@field buf? number
 ---@field pos? {[1]:number, [2]:number} -- (1,0) indexed
 ---@field end_pos? {[1]:number, [2]:number} -- (1,0) indexed
+---@field async? boolean run scope detection asynchronously (defaults to true)
 
 ---@class snacks.scope.TextObject: snacks.scope.Opts
 ---@field linewise? boolean if nil, use visual mode. Defaults to `false` when not in visual mode
@@ -396,7 +397,12 @@ function TSScope:init(cb, opts)
   if not parser then
     return cb()
   end
-  Snacks.util.parse(parser, opts.treesitter.injections, cb)
+  if opts.async == false then
+    parser:parse()
+    cb()
+  else
+    Snacks.util.parse(parser, opts.treesitter.injections, cb)
+  end
 end
 
 ---@param opts snacks.scope.Opts
@@ -731,6 +737,7 @@ function M.textobject(opts)
   end
   local inner = not opts.edge
   opts.edge = true -- always include the edge of the scope to make inner work
+  opts.async = false -- run synchronously
 
   M.get(function(scope)
     if not scope then

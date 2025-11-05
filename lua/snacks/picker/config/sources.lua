@@ -505,6 +505,7 @@ M.grep_buffers = {
 M.grep_word = {
   finder = "grep",
   regex = false,
+  args = { "--word-regexp" },
   format = "file",
   search = function(picker)
     return picker:word()

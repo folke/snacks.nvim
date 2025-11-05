@@ -187,9 +187,6 @@ end
 local function fancy_diff(diff, ft, ctx)
   require("snacks.picker.util.diff").render(ctx.preview:scratch(), ns, diff, { ft = ft })
   Snacks.util.wo(ctx.win, ctx.picker.opts.previewers.diff.wo or {})
-  if ft ~= "diff" then
-    ctx.preview:highlight({ ft = ft })
-  end
 end
 
 ---@param cmd string[]

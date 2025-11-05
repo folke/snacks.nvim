@@ -18,6 +18,7 @@ local function diff_linenr(...)
 end
 
 local CONFLICT_MARKERS = { "<<<<<<<", "=======", ">>>>>>>", "|||||||" }
+require("snacks.picker") -- ensure picker hl groups are available
 
 Snacks.util.set_hl({
   DiffHeader = "DiagnosticVirtualTextInfo",
@@ -27,6 +28,7 @@ Snacks.util.set_hl({
   DiffContext = "DiffChange",
   DiffConflict = "DiagnosticVirtualTextWarn",
   DiffAddLineNr = diff_linenr("DiffAdd"),
+  DiffLabel = "@property",
   DiffDeleteLineNr = diff_linenr("DiffDelete"),
   DiffContextLineNr = diff_linenr("DiffChange"),
   DiffConflictLineNr = diff_linenr("DiagnosticVirtualTextWarn"),
@@ -73,12 +75,62 @@ function M.format_header(diff, opts)
   if #(diff.header or {}) == 0 then
     return {}
   end
+  local popts = Snacks.picker.config.get({})
+  local a = Snacks.picker.util.align
   opts = opts or {}
   local ret = {} ---@type snacks.picker.Highlight[][]
+  local msg = {} ---@type string[]
   for _, line in ipairs(diff.header or {}) do
-    ret[#ret + 1] = { { line } }
+    local hash = line:match("^commit%s+(%S+)$")
+    if hash then
+      ret[#ret + 1] = {
+        { "Commit", "SnacksDiffLabel" },
+        { ": ", "SnacksPickerDelim" },
+        { popts.icons.git.commit, "SnacksPickerGitCommit" },
+        { hash:sub(1, 8), "SnacksPickerGitCommit" },
+      }
+    else
+      local label, value = line:match("^(%S+):%s*(.-)%s*$")
+      if label and value then
+        ret[#ret + 1] = {
+          { label, "SnacksDiffLabel" },
+          { ": ", "SnacksPickerDelim" },
+          { value, "SnacksPickerGit" .. label },
+        }
+      elseif line:match("^    ") then
+        msg[#msg + 1] = line:match("^    (.-)%s*$")
+      else
+        ret[#ret + 1] = { { line } }
+      end
+    end
   end
-  ret[#ret + 1] = {}
+  local subject = table.remove(msg, 1) or ""
+  if subject then
+    ret[#ret + 1] = {}
+    ret[#ret + 1] = Snacks.picker.format.commit_message({ msg = subject }, {})
+  end
+  if #msg > 0 then
+    ret[#ret + 1] = {
+      {
+        col = 0,
+        virt_text_win_col = 0,
+        virt_text = { { string.rep("-", vim.go.columns), "@punctuation.special.markdown" } },
+        priority = 100,
+      },
+    }
+    local virt_lines = Snacks.picker.highlight.get_virtual_lines(table.concat(msg, "\n"), { ft = "markdown" })
+    for _, vl in ipairs(virt_lines) do
+      ret[#ret + 1] = vl
+    end
+  end
+  ret[#ret + 1] = {
+    {
+      col = 0,
+      virt_text_win_col = 0,
+      virt_text = { { string.rep("-", vim.go.columns), "@punctuation.special.markdown" } },
+      priority = 100,
+    },
+  }
   return ret
 end
 
@@ -111,7 +163,7 @@ function M.format_block_header(block, opts)
 
   if block.rename then
     file[#file + 1] = { block.rename.from }
-    file[#file + 1] = { " -> ", "SnacksDelim" }
+    file[#file + 1] = { " -> ", "SnacksPickerDelim" }
     file[#file + 1] = { block.rename.to }
   else
     file[#file + 1] = { block.file }
