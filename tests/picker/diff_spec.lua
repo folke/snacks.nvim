@@ -14,7 +14,7 @@ describe("picker.diff", function()
         "+new line",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(1, #blocks)
       assert.equals("file.txt", blocks[1].file)
       assert.equals(4, #blocks[1].header)
@@ -41,7 +41,7 @@ describe("picker.diff", function()
         "    end)",
         "",
       }
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(1, #blocks)
       assert.equals("lua/todo-comments/config.lua", blocks[1].file)
     end)
@@ -56,7 +56,7 @@ describe("picker.diff", function()
         "+new line",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(1, #blocks)
       assert.equals("file2.txt", blocks[1].file)
       assert.equals(2, #blocks[1].header)
@@ -82,7 +82,7 @@ describe("picker.diff", function()
         "+context3",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(2, #blocks)
       assert.equals(3, #blocks[1].header)
       assert.equals("file1.txt", blocks[1].file)
@@ -107,7 +107,7 @@ describe("picker.diff", function()
         "++added in merge",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(1, #blocks)
       assert.equals("file.txt", blocks[1].file)
       assert.equals(1, #blocks[1].hunks)
@@ -130,7 +130,7 @@ describe("picker.diff", function()
         "+new2",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(2, #blocks)
       assert.equals("file1.txt", blocks[1].file)
       assert.equals("file2.txt", blocks[2].file)
@@ -149,7 +149,7 @@ describe("picker.diff", function()
         "+new2",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(1, #blocks)
       assert.equals(2, #blocks[1].hunks)
       assert.equals(1, blocks[1].hunks[1].line)
@@ -167,7 +167,7 @@ describe("picker.diff", function()
         "-old1",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(2, #blocks[1].hunks)
       assert.equals(10, blocks[1].hunks[1].line) -- sorted
       assert.equals(50, blocks[1].hunks[2].line)
@@ -180,7 +180,7 @@ describe("picker.diff", function()
         "Binary files a/image.png and b/image.png differ",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(1, #blocks)
       assert.equals("image.png", blocks[1].file)
       assert.equals(3, #blocks[1].header) -- diff line + binary notice
@@ -194,7 +194,7 @@ describe("picker.diff", function()
         "Binary files a/image.png and b/image.png differ",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(1, #blocks)
       assert.equals(" b/image.png", blocks[1].file)
       assert.equals(3, #blocks[1].header) -- diff line + binary notice
@@ -209,7 +209,7 @@ describe("picker.diff", function()
         "rename to new.txt",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(1, #blocks)
       assert.equals("new.txt", blocks[1].file)
       assert.equals(4, #blocks[1].header)
@@ -231,7 +231,7 @@ describe("picker.diff", function()
         "+line3",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(1, #blocks)
       assert.equals("new.txt", blocks[1].file)
       assert.equals(6, #blocks[1].header)
@@ -245,7 +245,7 @@ describe("picker.diff", function()
         "new mode 100755",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(1, #blocks)
       assert.equals("script.sh", blocks[1].file)
       assert.equals(3, #blocks[1].header)
@@ -265,7 +265,7 @@ describe("picker.diff", function()
         "-line3",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(1, #blocks)
       assert.equals("deleted.txt", blocks[1].file)
       assert.equals(1, #blocks[1].hunks)
@@ -285,7 +285,7 @@ describe("picker.diff", function()
         "+line3",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(1, #blocks)
       assert.equals("new.txt", blocks[1].file)
       assert.equals(1, #blocks[1].hunks)
@@ -304,7 +304,7 @@ describe("picker.diff", function()
         "+new",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(1, #blocks)
       assert.equals("file.txt", blocks[1].file)
     end)
@@ -319,7 +319,7 @@ describe("picker.diff", function()
         "+new",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(1, #blocks)
       assert.equals("dir c/my file.txt", blocks[1].file)
     end)
@@ -334,7 +334,7 @@ describe("picker.diff", function()
         "+new",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(1, #blocks)
       assert.equals("my file.txt", blocks[1].file)
     end)
@@ -349,7 +349,7 @@ describe("picker.diff", function()
         "+new",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(1, #blocks)
       assert.equals("path/to/file.txt", blocks[1].file)
     end)
@@ -364,7 +364,7 @@ describe("picker.diff", function()
         "+new",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(1, #blocks)
       assert.equals(1, #blocks[1].hunks)
       assert.equals(5, blocks[1].hunks[1].line)
@@ -381,7 +381,7 @@ describe("picker.diff", function()
         "+added",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       local hunk_diff = blocks[1].hunks[1].diff
       assert.equals("@@ -1,3 +1,3 @@", hunk_diff[1])
       assert.equals(" context", hunk_diff[2])
@@ -399,7 +399,7 @@ describe("picker.diff", function()
         "-old",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(1, #blocks)
       assert.equals(2, #blocks[1].hunks)
       assert.equals(1, #blocks[1].hunks[1].diff) -- just the @@ line
@@ -417,7 +417,7 @@ describe("picker.diff", function()
         " context line 3",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(1, #blocks)
       assert.equals(1, #blocks[1].hunks)
       assert.equals(4, #blocks[1].hunks[1].diff)
@@ -433,7 +433,7 @@ describe("picker.diff", function()
         "+line2",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(1, blocks[1].hunks[1].line)
     end)
 
@@ -448,7 +448,7 @@ describe("picker.diff", function()
         "+new",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(1, #blocks)
       assert.equals(long_path, blocks[1].file)
     end)
@@ -463,7 +463,7 @@ describe("picker.diff", function()
         "+new",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(1, #blocks)
       assert.equals("文件.txt", blocks[1].file)
     end)
@@ -480,26 +480,16 @@ describe("picker.diff", function()
       }
 
       -- Should not crash
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(1, #blocks)
       assert.equals(1, #blocks[1].hunks)
     end)
 
-    it("handles mixed plain and git diffs", function()
+    it("handles multiple git diffs", function()
       local lines = {
-        "--- plain1.txt",
-        "+++ plain1.txt",
-        "@@ -1,1 +1,1 @@",
-        "-old",
-        "+new",
         "diff --git a/git1.txt b/git1.txt",
         "--- a/git1.txt",
         "+++ b/git1.txt",
-        "@@ -1,1 +1,1 @@",
-        "-old",
-        "+new",
-        "--- plain2.txt",
-        "+++ plain2.txt",
         "@@ -1,1 +1,1 @@",
         "-old",
         "+new",
@@ -509,14 +499,19 @@ describe("picker.diff", function()
         "@@ -1,1 +1,1 @@",
         "-old",
         "+new",
+        "diff --git a/git3.txt b/git3.txt",
+        "--- a/git3.txt",
+        "+++ b/git3.txt",
+        "@@ -1,1 +1,1 @@",
+        "-old",
+        "+new",
       }
 
-      local blocks = diff.parse(lines)
-      assert.equals(4, #blocks)
-      assert.equals("plain1.txt", blocks[1].file)
-      assert.equals("git1.txt", blocks[2].file)
-      assert.equals("plain2.txt", blocks[3].file)
-      assert.equals("git2.txt", blocks[4].file)
+      local blocks = diff.parse(lines).blocks
+      assert.equals(3, #blocks)
+      assert.equals("git1.txt", blocks[1].file)
+      assert.equals("git2.txt", blocks[2].file)
+      assert.equals("git3.txt", blocks[3].file)
     end)
 
     it("handles symlink changes", function()
@@ -529,7 +524,7 @@ describe("picker.diff", function()
         "-target.txt",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(1, #blocks)
       assert.equals("link.txt", blocks[1].file)
     end)
@@ -545,7 +540,7 @@ describe("picker.diff", function()
         "+line",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(1, #blocks)
       assert.equals(1, #blocks[1].hunks)
       -- Should include the "No newline" marker
@@ -560,7 +555,7 @@ describe("picker.diff", function()
         "+++ b/file.txt",
       }
 
-      local blocks = diff.parse(lines)
+      local blocks = diff.parse(lines).blocks
       assert.equals(1, #blocks)
       assert.equals(0, #blocks[1].hunks) -- no hunks = no changes
     end)

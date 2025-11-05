@@ -140,8 +140,25 @@ function M.new(opts)
     if not vim.deep_equal(sp, self.screenpos) then
       self.screenpos = sp
       return self:update()
-    elseif vim.tbl_contains(vim.v.event.windows, self.root.win) then
-      return self:update()
+    else
+      if vim.tbl_contains(vim.v.event.windows, self.root.win) then
+        return self:update()
+      end
+      for _, win in pairs(self.wins) do
+        if win:win_valid() and vim.tbl_contains(vim.v.event.windows, win.win) then
+          local width_diff = vim.api.nvim_win_get_width(win.win) - win.opts.width
+          local height_diff = vim.api.nvim_win_get_height(win.win) - win.opts.height
+          if width_diff ~= 0 then
+            vim.api.nvim_win_set_width(self.root.win, vim.api.nvim_win_get_width(self.root.win) + width_diff)
+          end
+          if height_diff ~= 0 then
+            vim.api.nvim_win_set_height(self.root.win, vim.api.nvim_win_get_height(self.root.win) + height_diff)
+          end
+          if width_diff ~= 0 or height_diff ~= 0 then
+            return self:update()
+          end
+        end
+      end
     end
   end)
 

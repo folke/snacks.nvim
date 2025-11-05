@@ -51,7 +51,13 @@ function M.new(picker)
 
   self.win:on("BufEnter", function()
     vim.bo[self.win.buf].buftype = "prompt"
-    vim.cmd("startinsert!")
+    if vim.fn.mode() == "t" then
+      vim.schedule(function()
+        vim.cmd("startinsert!")
+      end)
+    else
+      vim.cmd("startinsert!")
+    end
   end, { buf = true })
 
   local ref = Snacks.util.ref(self)

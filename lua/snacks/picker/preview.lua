@@ -181,6 +181,17 @@ function M.file(ctx)
   ctx.preview:loc()
 end
 
+---@param diff string|string[]|snacks.picker.diff.Block[]
+---@param ft "diff"|"git"
+---@param ctx snacks.picker.preview.ctx
+local function fancy_diff(diff, ft, ctx)
+  require("snacks.picker.util.diff").render(ctx.preview:scratch(), ns, diff, { ft = ft })
+  Snacks.util.wo(ctx.win, ctx.picker.opts.previewers.diff.wo or {})
+  if ft ~= "diff" then
+    ctx.preview:highlight({ ft = ft })
+  end
+end
+
 ---@param cmd string[]
 ---@param ctx snacks.picker.preview.ctx
 ---@param opts? snacks.job.Opts|{ft?: string}
@@ -190,48 +201,55 @@ function M.cmd(cmd, ctx, opts)
   local buf = ctx.preview:scratch()
   vim.bo[buf].buftype = "nofile"
 
-  local job = Job.new(
-    buf,
-    cmd,
-    Snacks.config.merge(opts, {
-      debug = ctx.picker.opts.debug.proc,
-      term = opts.term ~= false and not opts.ft and opts.pty ~= false,
-      width = vim.api.nvim_win_get_width(ctx.win),
-      height = vim.api.nvim_win_get_height(ctx.win),
-      cwd = ctx.item.cwd or ctx.picker.opts.cwd,
-      env = {
-        PAGER = "cat",
-        DELTA_PAGER = "cat",
-      },
-    })
-  )
+  opts = Snacks.config.merge(opts, {
+    debug = ctx.picker.opts.debug.proc,
+    term = opts.term ~= false and not opts.ft and opts.pty ~= false,
+    width = vim.api.nvim_win_get_width(ctx.win),
+    height = vim.api.nvim_win_get_height(ctx.win),
+    cwd = ctx.item.cwd or ctx.picker.opts.cwd,
+    env = {
+      PAGER = "cat",
+      DELTA_PAGER = "cat",
+    },
+  })
 
-  if opts.ft then
+  local style = ctx.picker.opts.previewers.diff.style
+  if style == "fancy" and vim.tbl_contains({ "diff", "git" }, opts.ft) then
+    opts.on_line = function() end or nil -- disable default line handler
+    opts.on_lines = function(_, lines)
+      fancy_diff(lines, opts.ft, ctx)
+    end
+  end
+
+  local job = Job.new(buf, cmd, opts)
+
+  if opts.ft and style ~= "fancy" then
     ctx.preview:highlight({ ft = opts.ft })
   end
   return job
 end
 
 ---@param ctx snacks.picker.preview.ctx
+---@return string[], boolean terminal
 local function git(ctx, ...)
-  local builtin = ctx.picker.opts.previewers.git.builtin
-  local ret = { "git", "-c", "delta." .. vim.o.background .. "=true" }
-  vim.list_extend(ret, builtin and { "--no-pager" } or {})
+  local terminal = ctx.picker.opts.previewers.diff.style == "terminal"
+  local ret = { "git" }
+  vim.list_extend(ret, not terminal and { "--no-pager" } or {})
   vim.list_extend(ret, ctx.picker.opts.previewers.git.args or {})
   vim.list_extend(ret, { ... })
-  return ret, builtin
+  return ret, terminal
 end
 
 ---@param ctx snacks.picker.preview.ctx
 function M.git_show(ctx)
-  local cmd, builtin = git(ctx, "show", ctx.item.commit)
+  local cmd, terminal = git(ctx, "show", ctx.item.commit)
   local pathspec = ctx.item.files or ctx.item.file
   pathspec = type(pathspec) == "table" and pathspec or { pathspec }
   if #pathspec > 0 then
     cmd[#cmd + 1] = "--"
     vim.list_extend(cmd, pathspec)
   end
-  M.cmd(cmd, ctx, { ft = builtin and "git" or nil })
+  M.cmd(cmd, ctx, { ft = not terminal and "git" or nil })
 end
 
 ---@param ctx snacks.picker.preview.ctx
@@ -265,6 +283,7 @@ function M.git_log(ctx)
           author = author,
         }, ctx.picker)
         Snacks.picker.highlight.render(ctx.buf, ns, { hl }, { append = true })
+        Snacks.util.wo(ctx.win, { breakindent = true, wrap = true, linebreak = true })
       end
     end,
   })
@@ -272,13 +291,16 @@ end
 
 ---@param ctx snacks.picker.preview.ctx
 function M.diff(ctx)
-  local builtin = ctx.picker.opts.previewers.diff.builtin
-  if builtin then
+  local style = ctx.picker.opts.previewers.diff.style
+  local cmd = vim.deepcopy(ctx.picker.opts.previewers.diff.cmd)
+  style = style == "terminal" and vim.fn.executable(cmd[1]) == 0 and "fancy" or style
+  if style == "syntax" then
     ctx.item.preview = { text = ctx.item.diff, ft = "diff", loc = false }
     return M.preview(ctx)
+  elseif style ~= "terminal" then
+    return fancy_diff(ctx.item.diff, "diff", ctx)
   end
-  local cmd = vim.deepcopy(ctx.picker.opts.previewers.diff.cmd)
-  if cmd[1] == "delta" then
+  if cmd[1] == "delta" and not vim.tbl_contains(cmd, "--dark") and not vim.tbl_contains(cmd, "--light") then
     table.insert(cmd, 2, "--" .. vim.o.background)
   end
   M.cmd(cmd, ctx, {
@@ -288,17 +310,26 @@ end
 
 ---@param ctx snacks.picker.preview.ctx
 function M.git_diff(ctx)
-  local cmd, builtin = git(ctx, "diff", "HEAD")
+  local cmd, terminal = git(ctx, "diff", "--no-ext-diff")
+  if not ctx.item.status then
+    cmd[#cmd + 1] = "HEAD" -- generic diff against HEAD
+  elseif ctx.item.status:find("[UAD][UAD]") then
+    cmd[#cmd + 1] = "--cc" -- combined diff for conflicts
+  elseif ctx.item.status:sub(1, 1) ~= " " then
+    cmd[#cmd + 1] = "--cached" -- staged changes
+  end
   if ctx.item.file then
     vim.list_extend(cmd, { "--", ctx.item.file })
   end
-  M.cmd(cmd, ctx, { ft = builtin and "diff" or nil })
+  M.cmd(cmd, ctx, {
+    ft = not terminal and "diff" or nil,
+  })
 end
 
 ---@param ctx snacks.picker.preview.ctx
 function M.git_stash(ctx)
-  local cmd, builtin = git(ctx, "stash", "show", "--patch", ctx.item.stash)
-  M.cmd(cmd, ctx, { ft = builtin and "diff" or nil })
+  local cmd, terminal = git(ctx, "stash", "show", "--patch", ctx.item.stash)
+  M.cmd(cmd, ctx, { ft = not terminal and "diff" or nil })
 end
 
 ---@param ctx snacks.picker.preview.ctx

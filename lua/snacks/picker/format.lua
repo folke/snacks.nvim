@@ -46,15 +46,13 @@ function M.filename(item, picker)
     return ret
   end
   local path = Snacks.picker.util.path(item) or item.file
-  local name, cat = path, "file"
-  if item.buf and vim.api.nvim_buf_is_loaded(item.buf) then
-    name = vim.bo[item.buf].filetype
-    cat = "filetype"
-  elseif item.dir then
-    cat = "directory"
-  end
 
   if picker.opts.icons.files.enabled ~= false then
+    local name, cat = path, (item.dir and "directory" or "file")
+    if item.buf and vim.api.nvim_buf_is_loaded(item.buf) and vim.bo[item.buf].buftype ~= "" then
+      name = vim.bo[item.buf].filetype
+      cat = "filetype"
+    end
     local icon, hl = Snacks.util.icon(name, cat, {
       fallback = picker.opts.icons.files,
     })

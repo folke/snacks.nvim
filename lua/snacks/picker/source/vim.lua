@@ -58,18 +58,20 @@ function M.history(opts)
 end
 
 ---@param opts snacks.picker.marks.Config
-function M.marks(opts)
+---@type snacks.picker.finder
+function M.marks(opts, ctx)
   local marks = {} ---@type vim.fn.getmarklist.ret.item[]
+  local current_buf = ctx.filter.current_buf
   if opts.global then
     vim.list_extend(marks, vim.fn.getmarklist())
   end
   if opts["local"] then
-    vim.list_extend(marks, vim.fn.getmarklist(vim.api.nvim_get_current_buf()))
+    vim.list_extend(marks, vim.fn.getmarklist(current_buf))
   end
 
   ---@type snacks.picker.finder.Item[]
   local items = {}
-  local bufname = vim.api.nvim_buf_get_name(0)
+  local bufname = vim.api.nvim_buf_get_name(current_buf)
   for _, mark in ipairs(marks) do
     local file = mark.file or bufname
     local buf = mark.pos[1] and mark.pos[1] > 0 and mark.pos[1] or nil

@@ -159,17 +159,11 @@ function M.option(option, opts)
     id = option,
     name = option,
     get = function()
-      if opts.global then
-        return vim.opt[option]:get() == on
-      end
-      return vim.opt_local[option]:get() == on
+      return vim.api.nvim_get_option_value(option, { scope = opts.global and "global" or "local" }) == on
     end,
     set = function(state)
-      if opts.global then
-        vim.opt[option] = state and on or off
-        return
-      end
-      vim.opt_local[option] = state and on or off
+      local value = state and on or off
+      vim.api.nvim_set_option_value(option, value, { scope = opts.global and "global" or "local" })
     end,
   }, opts)
 end

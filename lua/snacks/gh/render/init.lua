@@ -95,7 +95,7 @@ M.props = {
       for _, label in ipairs(item.item.labels or {}) do
         local color = label.color or "888888"
         local badge = Snacks.picker.highlight.badge(label.name, "#" .. color)
-        vim.list_extend(ret, badge)
+        extend(ret, badge)
         ret[#ret + 1] = { " " }
       end
       return ret
@@ -368,16 +368,18 @@ function M.comment_header(comment, opts, ctx)
   opts = opts or {}
   local ret = {} ---@type snacks.picker.Highlight[]
   local is_bot = comment.author.login == "github-actions"
+  local badge ---@type snacks.picker.Highlight[]
   if is_bot then
-    extend(ret, Snacks.picker.highlight.badge(ctx.opts.icons.logo .. " " .. comment.author.login, "SnacksGhBotBadge"))
+    badge = Snacks.picker.highlight.badge(ctx.opts.icons.logo .. " " .. comment.author.login, "SnacksGhBotBadge")
   else
-    extend(ret, Snacks.picker.highlight.badge(ctx.opts.icons.user .. " " .. comment.author.login, "SnacksGhUserBadge"))
+    badge = Snacks.picker.highlight.badge(ctx.opts.icons.user .. " " .. comment.author.login, "SnacksGhUserBadge")
   end
+  extend(ret, badge)
+
   if opts.text then
-    ret[#ret + 1] = { " " }
     ret[#ret + 1] = { opts.text, "SnacksGhCommentAction" }
+    ret[#ret + 1] = { " " }
   end
-  ret[#ret + 1] = { " " }
   ret[#ret + 1] = { Snacks.picker.util.reltime(comment.created), "SnacksPickerGitDate" }
   local assoc = comment.authorAssociation
   assoc = assoc and assoc ~= "NONE" and Snacks.picker.util.title(assoc:lower()) or nil
@@ -404,39 +406,54 @@ function M.comment_header(comment, opts, ctx)
 end
 
 ---@param body string
----@param level number
 ---@param ctx snacks.gh.render.ctx
-function M.comment_body(body, level, ctx)
+function M.comment_body(body, ctx)
   if body:match("^%s*$") then
     return {}
   end
   local ret = {} ---@type snacks.picker.Highlight[][]
-  local indent = M.indent(level)
   for _, l in ipairs(vim.split(body, "\n", { plain = true })) do
-    ret[#ret + 1] = {
-      indent,
-      { l },
-    }
+    ret[#ret + 1] = { { l } }
   end
   return ret
 end
 
----@param level number
-function M.indent(level)
-  local indent = {} ---@type string[][]
-  for i = 1, level do
-    indent[#indent + 1] = { " " }
-    indent[#indent + 1] = { "┃", "@punctuation.definition.blockquote.markdown" }
-    indent[#indent + 1] = { " " }
-  end
-  ---@type snacks.picker.Extmark
-  return {
+---@param lines snacks.picker.Highlight[][]
+function M.indent(lines)
+  local indent = {} ---@type snacks.picker.Highlight[]
+  -- virtual overlay showing indent guides
+  indent[#indent + 1] = {
     col = 0,
-    virt_text = indent,
-    virt_text_pos = "inline",
+    virt_text = {
+      { " ", "Normal" },
+      { "┃", { "Normal", "@punctuation.definition.blockquote.markdown" } },
+      { " ", "Normal" },
+    },
+    virt_text_pos = "overlay",
     hl_mode = "combine",
     virt_text_repeat_linebreak = true,
   }
+  -- actual indent space
+  local first = vim.deepcopy(indent)
+  first = {
+    {
+      col = 0,
+      end_col = 3,
+      conceal = "",
+      priority = 1000,
+    },
+    { " * ", "Normal" },
+  }
+  local other = vim.deepcopy(indent)
+  table.insert(other, 1, { "   ", "Normal" })
+
+  local ret = {} ---@type snacks.picker.Highlight[][]
+  for l, line in ipairs(lines) do
+    local new = vim.deepcopy(l == 1 and first or other)
+    extend(new, line)
+    ret[l] = new
+  end
+  return ret
 end
 
 ---@param comment snacks.gh.Comment
@@ -446,7 +463,21 @@ function M.comment_diff(comment, level, ctx)
   if not comment.path or not comment.diffHunk then
     return {}
   end
-  return require("snacks.gh.render.diff").new(comment, level, ctx.opts):format()
+  local count = 1
+  local originalLine = comment.originalLine or comment.line or 1
+  if comment.originalStartLine then
+    count = originalLine - comment.originalStartLine + 1
+  end
+  count = math.max(ctx.opts.diff.min, math.abs(count))
+  local Diff = require("snacks.picker.util.diff")
+  local diff = ("diff --git a/%s b/%s\n%s"):format(comment.path, comment.path, comment.diffHunk)
+  local ret = Diff.format(diff, {
+    max_hunk_lines = count,
+    hunk_header = false,
+  })
+  table.insert(ret, 1, { { "```" } })
+  table.insert(ret, { { "```" } })
+  return ret
 end
 
 ---@param comment snacks.gh.Comment
@@ -455,22 +486,23 @@ end
 function M.comment(comment, level, ctx)
   local ret = {} ---@type snacks.picker.Highlight[][]
 
-  local header = { M.indent(level - 1) }
+  local header = {} ---@type snacks.picker.Highlight[]
   extend(header, M.comment_header(comment, {}, ctx))
   ret[#ret + 1] = header
 
   if not comment.replyTo then
     -- add diff hunk for top-level comments
-    vim.list_extend(ret, M.comment_diff(comment, level, ctx))
-    if #ret > 0 then
-      ret[#ret + 1] = { M.indent(level) } -- empty line between diff and body
+    local diff = M.comment_diff(comment, level, ctx)
+    if #diff > 0 then
+      vim.list_extend(ret, diff)
+      ret[#ret + 1] = {} -- empty line between diff and body
     end
   end
 
-  vim.list_extend(ret, M.comment_body(comment.body or "", level, ctx))
+  vim.list_extend(ret, M.comment_body(comment.body or "", ctx))
   local replies = M.find_reply(comment.id, ctx)
   for _, reply in ipairs(replies) do
-    ret[#ret + 1] = { M.indent(level) } -- empty line between comment and reply
+    ret[#ret + 1] = {} -- empty line between comment and reply
     vim.list_extend(ret, M.comment(reply, level, ctx))
     ctx.comment_skip[reply.id] = true
   end
@@ -482,7 +514,7 @@ function M.comment(comment, level, ctx)
       end
     end
   end
-  return ret
+  return M.indent(ret)
 end
 
 ---@param id string
@@ -510,11 +542,11 @@ function M.review(review, level, ctx)
     return not ctx.comment_skip[c.id]
   end, review.comments or {})
 
-  if #comments == 0 and (not review.body or review.body:match("^%s*$")) then
+  if #comments == 0 and review.state == "COMMENTED" and (not review.body or review.body:match("^%s*$")) then
     return ret
   end
 
-  local header = { M.indent(level - 1) }
+  local header = {} ---@type snacks.picker.Highlight[]
   local state_icon = ctx.opts.icons.review[review.state:lower()] or ctx.opts.icons.pr.open
   extend(
     header,
@@ -532,12 +564,12 @@ function M.review(review, level, ctx)
   local text = texts[review.state] or review.state:lower():gsub("_", " ")
   extend(header, M.comment_header(review, { text = text }, ctx))
   ret[#ret + 1] = header
-  vim.list_extend(ret, M.comment_body(review.body or "", level, ctx))
+  vim.list_extend(ret, M.comment_body(review.body or "", ctx))
   for _, comment in ipairs(comments) do
-    ret[#ret + 1] = { M.indent(level) } -- empty line between review and comments
+    ret[#ret + 1] = {} -- empty line between review and comments
     vim.list_extend(ret, M.comment(comment, level + 1, ctx))
   end
-  return ret
+  return M.indent(ret)
 end
 
 return M

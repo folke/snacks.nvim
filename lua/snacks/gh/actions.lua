@@ -118,7 +118,8 @@ M.actions.gh_perform_action = {
     if not item then
       return
     end
-    item.action.action(item.item, ctx)
+    -- pass a new context, since we're doing the action on a single item
+    item.action.action(item.item, { items = { item.item } })
     ctx.picker:close()
   end,
 }

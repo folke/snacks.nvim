@@ -12,7 +12,7 @@ setmetatable(M, {
 _G.Snacks = M
 _G.svim = vim.fn.has("nvim-0.11") == 1 and vim or require("snacks.compat")
 
-M.version = "2.28.0" -- x-release-please-version
+M.version = "2.29.0" -- x-release-please-version
 
 ---@class snacks.Config.base
 ---@field example? string

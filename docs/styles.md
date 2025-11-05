@@ -163,6 +163,7 @@ The other options are used with `:lua Snacks.dashboard()`
     cursorlineopt = "both",
     colorcolumn = "",
     fillchars = "eob: ,lastline:…",
+    foldcolumn = "0",
     list = false,
     listchars = "extends:…,tab:  ",
     number = false,

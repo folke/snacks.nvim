@@ -135,6 +135,7 @@ docs for more information on how to customize these styles
     cursorlineopt = "both",
     colorcolumn = "",
     fillchars = "eob: ,lastline:…",
+    foldcolumn = "0",
     list = false,
     listchars = "extends:…,tab:  ",
     number = false,

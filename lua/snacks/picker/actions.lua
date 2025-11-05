@@ -337,6 +337,20 @@ function M.bufdelete(picker)
   picker:refresh()
 end
 
+function M.mark_delete(picker)
+  local selected = picker:selected({ fallback = true })
+  for _, item in ipairs(selected) do
+    if item.label then
+      if item.buf then
+        vim.api.nvim_buf_del_mark(item.buf, item.label)
+      else
+        vim.api.nvim_del_mark(item.label)
+      end
+    end
+  end
+  picker:refresh()
+end
+
 function M.git_stage(picker)
   local items = picker:selected({ fallback = true })
   local first = items[1]

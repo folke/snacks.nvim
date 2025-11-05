@@ -5,13 +5,21 @@ local M = {}
 ---@field group? boolean Group hunks by file
 ---@field diff? string|number diff string or buffer number
 
+---@class snacks.picker.diff.hunk.Pos
+---@field line number
+---@field count number
+
+---@class snacks.picker.Diff
+---@field header string[]
+---@field blocks snacks.picker.diff.Block[]
+
 ---@class snacks.picker.diff.Hunk
 ---@field diff string[]
 ---@field line number
 ---@field context? string
----@field left { line: number, count: number } old (normal) /ours (merge)
----@field right { line: number, count: number } new (normal) /working (merge)
----@field parents? { line: number, count: number }[] theirs (merge)
+---@field left snacks.picker.diff.hunk.Pos old (normal) /ours (merge)
+---@field right snacks.picker.diff.hunk.Pos new (normal) /working (merge)
+---@field parents? snacks.picker.diff.hunk.Pos[] theirs (merge)
 
 ---@class snacks.picker.diff.Block
 ---@field unmerged? boolean
@@ -80,19 +88,19 @@ function M.diff(opts, ctx)
       })
     end
 
-    local blocks = M.parse(lines)
-    for _, block in ipairs(blocks) do
-      local diff = {} ---@type string[]
+    local diff = M.parse(lines)
+    for _, block in ipairs(diff.blocks) do
+      local diffs = {} ---@type string[]
       for _, h in ipairs(block.hunks) do
         if opts.group then
-          vim.list_extend(diff, h.diff)
+          vim.list_extend(diffs, h.diff)
         else
           add(block.file, h.line, vim.list_extend(vim.deepcopy(block.header), h.diff), block)
         end
       end
       if opts.group or #block.hunks == 0 then
         local line = block.hunks[1] and block.hunks[1].line or 1
-        add(block.file, line, vim.list_extend(vim.deepcopy(block.header), diff), block)
+        add(block.file, line, vim.list_extend(vim.deepcopy(block.header), diffs), block)
       end
     end
   end
@@ -103,6 +111,7 @@ function M.parse(lines)
   local hunk ---@type snacks.picker.diff.Hunk?
   local block ---@type snacks.picker.diff.Block?
   local ret = {} ---@type snacks.picker.diff.Block[]
+  local header = {} ---@type string[]
 
   ---@param file? string
   ---@param strip_prefix? boolean
@@ -209,12 +218,13 @@ function M.parse(lines)
     block = nil
   end
 
-  local with_diff_header = vim.trim(table.concat(lines, "\n")):find("^diff") ~= nil
+  local with_diff_header = false
 
   for _, text in ipairs(lines) do
     if not block and text:find("^%s*$") then
       -- Ignore empty lines before a diff block
     elseif text:find("^diff") or (not with_diff_header and text:find("^%-%-%- ") and (not block or hunk)) then
+      with_diff_header = with_diff_header or text:find("^diff") == 1
       emit()
       block = {
         file = "", --file or "unknown",
@@ -235,12 +245,15 @@ function M.parse(lines)
       hunk.diff[#hunk.diff + 1] = text
     elseif block then
       block.header[#block.header + 1] = text
+    elseif #ret == 0 then
+      header[#header + 1] = text
     else
       Snacks.notify.error("Unexpected line: " .. text, { title = "Snacks Picker Diff" })
     end
   end
   emit()
-  return ret
+  ---@type snacks.picker.Diff
+  return { blocks = ret, header = header }
 end
 
 ---@param line string

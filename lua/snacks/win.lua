@@ -133,6 +133,7 @@ Snacks.config.style("minimal", {
     cursorlineopt = "both",
     colorcolumn = "",
     fillchars = "eob: ,lastline:…",
+    foldcolumn = "0",
     list = false,
     listchars = "extends:…,tab:  ",
     number = false,

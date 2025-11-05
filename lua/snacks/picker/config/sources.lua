@@ -807,6 +807,13 @@ M.marks = {
   format = "file",
   global = true,
   ["local"] = true,
+  win = {
+    input = {
+      keys = {
+        ["<c-x>"] = { "mark_delete", mode = { "n", "i" } },
+      },
+    },
+  },
 }
 
 ---@class snacks.picker.notifications.Config: snacks.picker.Config

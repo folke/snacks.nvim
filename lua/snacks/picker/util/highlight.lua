@@ -177,7 +177,7 @@ function M.offset(line, opts)
   opts = opts or {}
   local offset = 0
   for _, t in ipairs(line) do
-    if type(t[1]) == "string" then
+    if type(t[1]) == "string" and not t.inline then
       if t.virtual then
         offset = offset + vim.api.nvim_strwidth(t[1])
       elseif opts.char_idx then
@@ -185,7 +185,7 @@ function M.offset(line, opts)
       else
         offset = offset + #t[1]
       end
-    elseif t.virt_text_pos == "inline" and t.virt_text then
+    elseif t.virt_text_pos == "inline" and t.virt_text and opts.char_idx then
       offset = offset + M.offset(t.virt_text) + (t.col or 0)
     end
   end
@@ -338,6 +338,46 @@ function M.resolve(line, max_width)
 end
 
 ---@param line snacks.picker.Highlight[]
+---@param hl_group string
+function M.insert_hl(line, hl_group)
+  for _, t in ipairs(line) do
+    if type(t[1]) == "string" then
+      if t[2] == nil then
+        t[2] = hl_group
+      elseif type(t[2]) == "string" then
+        t[2] = { hl_group, t[2] }
+      elseif type(t[2]) == "table" then
+        table.insert(t[2], 1, hl_group)
+      end
+    end
+  end
+  return line
+end
+
+---@param line snacks.picker.Highlight[]
+---@param indent number
+---@param hl_group? string|string[]
+function M.indent(line, indent, hl_group)
+  local ret = {} ---@type snacks.picker.Highlight[]
+  ret[#ret + 1] = { string.rep(" ", indent), hl_group }
+  M.extend(ret, line)
+  return ret
+end
+
+---@param line snacks.picker.Highlight[]
+---@param hl_group string
+function M.add_eol(line, hl_group)
+  line[#line + 1] = {
+    col = M.offset(line),
+    virt_text = { { string.rep(" ", 1000), hl_group } },
+    virt_text_pos = "overlay",
+    hl_mode = "replace",
+    virt_text_repeat_linebreak = true,
+  }
+  return line
+end
+
+---@param line snacks.picker.Highlight[]
 ---@param opts? {offset?:number}
 function M.to_text(line, opts)
   local offset = opts and opts.offset or 0
@@ -358,6 +398,14 @@ function M.to_text(line, opts)
           hl_mode = "combine",
         })
         parts[#parts + 1] = string.rep(" ", vim.api.nvim_strwidth(text[1]))
+      elseif text.inline then
+        table.insert(ret, {
+          col = col,
+          virt_text = { { text[1], text[2] } },
+          virt_text_pos = "inline",
+          hl_mode = "replace",
+        })
+        parts[#parts + 1] = ""
       else
         table.insert(ret, {
           col = col,
@@ -370,6 +418,12 @@ function M.to_text(line, opts)
       col = col + #parts[#parts]
     else
       text = vim.deepcopy(text)
+      if text.col < 0 then
+        text.col = col + text.col
+      end
+      if text.end_col and text.end_col < 0 then
+        text.end_col = col + text.end_col
+      end
       ---@cast text snacks.picker.Extmark
       -- fix extmark col and end_col
       text.col = text.col + offset
@@ -387,10 +441,10 @@ end
 function M.fix_offset(hl, offset, start_idx)
   for i, t in ipairs(hl) do
     if start_idx == nil or i >= start_idx then
-      if t.col then
+      if t.col and t.col >= 0 then
         t.col = t.col + offset
       end
-      if t.end_col then
+      if t.end_col and t.end_col >= 0 then
         t.end_col = t.end_col + offset
       end
     end
@@ -507,15 +561,17 @@ end
 --- Renders a badge
 ---@param text string
 ---@param color snacks.picker.badge.color
-function M.badge(text, color)
+---@param opts? {virtual?:boolean}
+function M.badge(text, color, opts)
   local left_sep, right_sep = "", ""
 
   local hl_group = badge_hl(color)
   ---@type snacks.picker.Highlight[]
   return {
-    { left_sep, hl_group .. "Inv", virtual = true },
+    { left_sep, hl_group .. "Inv", inline = true },
     { text, hl_group },
-    { right_sep, hl_group .. "Inv", virtual = true },
+    { right_sep, hl_group .. "Inv", inline = true },
+    { " " },
   }
 end
 
