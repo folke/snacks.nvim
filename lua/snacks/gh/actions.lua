@@ -127,14 +127,19 @@ M.actions.gh_browse = {
   desc = "Open in web browser",
   title = "Open {type} #{number} in web browser",
   icon = " ",
-  action = function(_, ctx)
-    for _, item in ipairs(ctx.items) do
-      Api.cmd(function()
-        Snacks.notify.info(("Opened #%s in web browser"):format(item.number))
-      end, {
-        args = { item.type, "view", tostring(item.number), "--web" },
-        repo = item.repo,
-      })
+  action = function(item, ctx)
+    -- Normalize items: in list pickers ctx.items are GH items; in actions picker they are wrappers.
+    local items = (ctx.items and #ctx.items > 0) and ctx.items or { item }
+    for _, it in ipairs(items) do
+      local gh = it.number and it or it.item -- unwrap if needed
+      if gh and gh.number then
+        Api.cmd(function()
+          Snacks.notify.info(("Opened #%s in web browser"):format(gh.number))
+        end, {
+          args = { gh.type, "view", tostring(gh.number), "--web" },
+          repo = gh.repo,
+        })
+      end
     end
     if ctx.picker then
       ctx.picker.list:set_selected() -- clear selection
