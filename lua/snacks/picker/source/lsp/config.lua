@@ -274,7 +274,7 @@ function M.preview(ctx)
       lines[#lines + 1] = "- **buffers**: " .. list(vim.tbl_keys(client.attached_buffers))
 
       -- server capabilities
-      local methods = vim.tbl_keys(vim.lsp.protocol._request_name_to_server_capability) --[[@as string[] ]]
+      local methods = vim.tbl_keys(vim.lsp.protocol._request_name_to_server_capability or {}) --[[@as string[] ]]
       table.sort(methods)
       if #methods > 0 then
         lines[#lines + 1] = "- **server capabilities**:"
