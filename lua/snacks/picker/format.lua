@@ -709,7 +709,8 @@ function M.icon(item, picker)
   ---@cast item snacks.picker.Icon
   local ret = {} ---@type snacks.picker.Highlight[]
 
-  ret[#ret + 1] = { a(item.icon, 2), "SnacksPickerIcon" }
+  local icon_width = vim.api.nvim_strwidth(item.icon)
+  ret[#ret + 1] = { a(item.icon, icon_width > 3 and 15 or 3), "SnacksPickerIcon" }
   ret[#ret + 1] = { " " }
   ret[#ret + 1] = { a(item.source, 10), "SnacksPickerIconSource" }
   ret[#ret + 1] = { " " }

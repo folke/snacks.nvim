@@ -1,5 +1,6 @@
 ---@class snacks.picker.input
 ---@field win snacks.win
+---@field mode? string
 ---@field totals string
 ---@field picker snacks.Picker
 ---@field filter snacks.picker.Filter
@@ -15,6 +16,7 @@ function M.new(picker)
   self.totals = ""
   self.picker = picker
   self.filter = require("snacks.picker.core.filter").new(picker)
+  self.mode = vim.fn.mode()
   picker.matcher:init(self.filter.pattern)
 
   self.win = Snacks.win(Snacks.win.resolve(picker.opts.win.input, {

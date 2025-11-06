@@ -1827,9 +1827,14 @@ ICONS                                       *snacks.nvim-picker-sources-icons*
 
 >lua
     ---@class snacks.picker.icons.Config: snacks.picker.Config
-    ---@field icon_sources? string[]
+    ---@field icon_sources? string[] list of sources to use
+    --- Custom icon sources can be added here. The key is the source name,
+    --- and the value is the file path or URL to load icons from.
+    --- The file should be a JSON array of:
+    --- `{[1]:string, [2]:string}|{icon:string, name:string, category:string}`
+    --- The format is compatible with https://github.com/nvim-telescope/telescope-symbols.nvim
+    ---@field custom_sources? table<string,string> additional icon sources `table<source,file|url>`
     {
-      icon_sources = { "nerd_fonts", "emoji" },
       main = { current = true },
       finder = "icons",
       format = "icon",

@@ -585,6 +585,11 @@ function M.paste(picker, item, action)
   if item then
     local value = item[action.field] or item.data or item.text
     vim.api.nvim_paste(value, true, -1)
+    if picker.input.mode == "i" then
+      vim.schedule(function()
+        vim.cmd.startinsert({ bang = true })
+      end)
+    end
   end
 end
 M.put = M.paste

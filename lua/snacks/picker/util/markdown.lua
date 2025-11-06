@@ -76,7 +76,7 @@ function M.render_fallback(buf)
     elseif line:find("^%-%-%-+%s*$") then
       vim.api.nvim_buf_set_extmark(buf, ns, l - 1, 0, {
         virt_text_win_col = 0,
-        virt_text = { { string.rep("-", vim.go.columns), "@punctuation.special.markdown" } },
+        virt_text = { { string.rep("-", vim.go.columns), "SnacksPickerRule" } },
         priority = 100,
       })
     end

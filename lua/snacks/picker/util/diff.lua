@@ -76,7 +76,6 @@ function M.format_header(diff, opts)
     return {}
   end
   local popts = Snacks.picker.config.get({})
-  local a = Snacks.picker.util.align
   opts = opts or {}
   local ret = {} ---@type snacks.picker.Highlight[][]
   local msg = {} ---@type string[]
@@ -107,30 +106,17 @@ function M.format_header(diff, opts)
   local subject = table.remove(msg, 1) or ""
   if subject then
     ret[#ret + 1] = {}
+    ---@diagnostic disable-next-line: missing-fields
     ret[#ret + 1] = Snacks.picker.format.commit_message({ msg = subject }, {})
   end
   if #msg > 0 then
-    ret[#ret + 1] = {
-      {
-        col = 0,
-        virt_text_win_col = 0,
-        virt_text = { { string.rep("-", vim.go.columns), "@punctuation.special.markdown" } },
-        priority = 100,
-      },
-    }
+    ret[#ret + 1] = Snacks.picker.highlight.rule()
     local virt_lines = Snacks.picker.highlight.get_virtual_lines(table.concat(msg, "\n"), { ft = "markdown" })
     for _, vl in ipairs(virt_lines) do
       ret[#ret + 1] = vl
     end
   end
-  ret[#ret + 1] = {
-    {
-      col = 0,
-      virt_text_win_col = 0,
-      virt_text = { { string.rep("-", vim.go.columns), "@punctuation.special.markdown" } },
-      priority = 100,
-    },
-  }
+  ret[#ret + 1] = Snacks.picker.highlight.rule()
   return ret
 end
 

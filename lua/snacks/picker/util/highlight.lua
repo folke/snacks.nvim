@@ -192,6 +192,18 @@ function M.offset(line, opts)
   return offset
 end
 
+function M.rule()
+  ---@type snacks.picker.Highlight[]
+  return {
+    {
+      col = 0,
+      virt_text_win_col = 0,
+      virt_text = { { string.rep("-", math.max(vim.o.columns, 500)), "SnacksPickerRule" } },
+      priority = 100,
+    },
+  }
+end
+
 ---@param line snacks.picker.Highlight[]
 ---@param positions number[]
 ---@param offset? number

@@ -111,6 +111,9 @@ function M.env()
   if M._env then
     return M._env
   end
+  if not M._terminal then
+    M.detect()
+  end
   M._env = {
     name = "",
     env = {},
@@ -187,8 +190,26 @@ function M.write(data)
   end
 end
 
----@param cb fun(term: snacks.image.Terminal)
+--- Detect terminal capabilities
+--- Will call the callback when detection is complete,
+--- or block until detection is complete if no callback is provided.
+---@param cb? fun(term: snacks.image.Terminal)
 function M.detect(cb)
+  if cb then -- async
+    return M._detect(cb)
+  end
+  -- sync
+  local detected = false
+  M.detect(function()
+    detected = true
+  end)
+  vim.wait(1500, function()
+    return detected
+  end, 10)
+end
+
+---@param cb fun(term: snacks.image.Terminal)
+function M._detect(cb)
   if M._terminal then
     if M._terminal.pending then
       table.insert(M._terminal.pending, cb)

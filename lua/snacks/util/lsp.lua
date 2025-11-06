@@ -66,12 +66,22 @@ local function setup()
     end)
     return ret
   end
+  local group = vim.api.nvim_create_augroup("snacks.lsp.on_attach", { clear = true })
   vim.api.nvim_create_autocmd("LspAttach", {
-    group = vim.api.nvim_create_augroup("snacks.lsp.on_attach", { clear = true }),
+    group = group,
     callback = function(ev)
       vim.schedule(function()
         _handle({ id = ev.data.client_id, buffer = ev.buf })
       end)
+    end,
+  })
+  vim.api.nvim_create_autocmd("LspDetach", {
+    group = group,
+    callback = function(ev)
+      local key = ("%d:%d"):format(ev.data.client_id, ev.buf)
+      for _, state in ipairs(_handlers) do
+        state.done[key] = nil
+      end
     end,
   })
 end
