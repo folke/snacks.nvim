@@ -657,8 +657,9 @@ Snacks.picker.pick({source = "files", ...})
 ```lua
 ---@alias snacks.picker.format.resolve fun(max_width:number):snacks.picker.Highlight[]
 ---@alias snacks.picker.Extmark vim.api.keyset.set_extmark|{col:number, row?:number, field?:string}
----@alias snacks.picker.Text {[1]:string, [2]:(string|string[])?, virtual?:boolean, field?:string, resolve?:snacks.picker.format.resolve, meta?:table<string, any>, inline?:boolean}
----@alias snacks.picker.Highlight snacks.picker.Text|snacks.picker.Extmark
+---@alias snacks.picker.Meta {[string]:any}
+---@alias snacks.picker.Text {[1]:string, [2]:(string|string[])?, virtual?:boolean, field?:string, resolve?:snacks.picker.format.resolve, inline?:boolean}
+---@alias snacks.picker.Highlight snacks.picker.Text|snacks.picker.Extmark|{meta?:snacks.picker.Meta}
 ---@alias snacks.picker.format fun(item:snacks.picker.Item, picker:snacks.Picker):snacks.picker.Highlight[]
 ---@alias snacks.picker.preview fun(ctx: snacks.picker.preview.ctx):boolean?
 ---@alias snacks.picker.sort fun(a:snacks.picker.Item, b:snacks.picker.Item):boolean
@@ -1136,7 +1137,15 @@ Neovim commands
   group = true,
   finder = "gh_diff",
   format = "git_status",
-  preview = "diff",
+  preview = "gh_preview_diff",
+  win = {
+    preview = {
+      keys = {
+        ["a"] = { "gh_comment", mode = { "n", "x" } },
+        ["<cr>"] = { "gh_actions", mode = { "n", "x" } },
+      },
+    },
+  },
 }
 ```
 
@@ -2567,7 +2576,7 @@ M.sidebar
     min_width = 80,
     max_width = 100,
     height = 0.4,
-    min_height = 3,
+    min_height = 2,
     box = "vertical",
     border = true,
     title = "{title}",

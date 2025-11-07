@@ -1,12 +1,7 @@
 local M = {}
 
----@class vim.ui.select.Opts
----@field prompt? string
----@field format_item? fun(item: any): string
----@field kind? string
-
 ---@alias vim.ui.select.on_choice fun(item?: any, idx?: number)
----@alias snacks.picker.ui_select fun(items: any[], opts?: vim.ui.select.Opts, on_choice: vim.ui.select.on_choice)
+---@alias snacks.picker.ui_select fun(items: any[], opts?: snacks.picker.ui_select.Opts, on_choice: vim.ui.select.on_choice)
 
 ---@class snacks.picker.ui_select.Opts: vim.ui.select.Opts
 ---@field format_item? fun(item: any, supports_chunks: boolean):(string|snacks.picker.Highlight[])
@@ -48,7 +43,7 @@ function M.select(items, opts, on_choice)
         -- Fit list height to number of items, up to 10
         for _, box in ipairs(layout.layout) do
           if box.win == "list" and not box.height then
-            box.height = math.max(math.min(#items, vim.o.lines * 0.8 - 10), 3)
+            box.height = math.max(math.min(#items, vim.o.lines * 0.8 - 10), 2)
           end
         end
       end,

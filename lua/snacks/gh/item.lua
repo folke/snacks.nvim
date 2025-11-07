@@ -11,23 +11,38 @@ local time_fields = {
 }
 
 ---@param s? string
+---@return number?
 local function ts(s)
-  return (s and vim.fn.strptime("%Y-%m-%dT%H:%M:%SZ", s)) or nil
+  if not s then
+    return nil
+  end
+  local year, month, day, hour, min, sec = s:match("^(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)Z$")
+  if not year then
+    return
+  end
+  local t = os.time({
+    year = assert(tonumber(year), "invalid year in timestamp: " .. s),
+    month = assert(tonumber(month), "invalid month in timestamp: " .. s),
+    day = assert(tonumber(day), "invalid day in timestamp: " .. s),
+    hour = assert(tonumber(hour), "invalid hour in timestamp: " .. s),
+    min = assert(tonumber(min), "invalid minute in timestamp: " .. s),
+    sec = assert(tonumber(sec), "invalid second in timestamp: " .. s),
+    isdst = false,
+  })
+  -- Calculate UTC offset
+  local now = os.time()
+  local utc_date = os.date("!*t", now) --[[@as osdate]]
+  utc_date.isdst = false
+  return t + os.difftime(now, os.time(utc_date))
 end
 
----@generic T: table
----@param obj T
----@return T
-local function wrap_ts(obj)
-  return setmetatable(obj, {
-    __index = function(tbl, key)
-      if time_fields[key] then
-        local field = time_fields[key]
-        local value = tbl[field] or tbl[field:gsub("At", "_at")]
-        return ts(value)
-      end
-    end,
-  })
+---@param obj {body?:string}
+local function fix(obj)
+  obj.body = obj.body and obj.body:gsub("\r\n", "\n") or nil
+  for key, field in pairs(time_fields) do
+    ---@diagnostic disable-next-line: no-unknown, assign-type-mismatch
+    obj[key] = obj[key] or ts(obj[field] or obj[field:gsub("At", "_at")])
+  end
 end
 
 ---@param item snacks.gh.Item
@@ -114,17 +129,14 @@ function M:update(data, fields)
       )
     or nil
   self.body = item.body and item.body:gsub("\r\n", "\n") or nil
-  for _, comment in ipairs(item.comments or {}) do
-    comment.body = comment.body and comment.body:gsub("\r\n", "\n") or nil
-    wrap_ts(comment)
-  end
+  vim.tbl_map(fix, item.comments or {})
+  self.pendingReview = nil
   for _, review in ipairs(item.reviews or {}) do
-    review.body = review.body and review.body:gsub("\r\n", "\n") or nil
-    wrap_ts(review)
-    for _, comment in ipairs(review.comments or {}) do
-      comment.body = comment.body and comment.body:gsub("\r\n", "\n") or nil
-      wrap_ts(comment)
+    fix(review)
+    if review.state == "PENDING" and review.viewerDidAuthor then
+      self.pendingReview = review
     end
+    vim.tbl_map(fix, review.comments or {})
   end
 
   if item.reactionGroups then

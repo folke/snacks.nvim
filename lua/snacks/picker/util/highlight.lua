@@ -1,6 +1,9 @@
 ---@class snacks.picker.highlight
 local M = {}
 
+---@class (private) vim.var_accessor
+---@field snacks_meta? table<number,snacks.picker.Meta>
+
 M.langs = {} ---@type table<string, boolean>
 M._scratch = {} ---@type table<string, number>
 
@@ -314,11 +317,10 @@ end
 ---@param line snacks.picker.Highlight[]
 ---@param max_width number
 function M.resolve(line, max_width)
-  local offset = 0
-  local width = 0
-  local resolve ---@type number?
-
   while true do
+    local offset = 0
+    local width = 0
+    local resolve ---@type number?
     for t, text in ipairs(line) do
       local w = M.offset({ text }, { char_idx = true })
       if not resolve and type(text) == "table" and text.resolve then
@@ -336,13 +338,11 @@ function M.resolve(line, max_width)
       local ret = {} ---@type snacks.picker.Highlight[]
       vim.list_extend(ret, line, 1, resolve - 1)
       offset = M.offset(ret)
-      vim.list_extend(ret, line[resolve].resolve(max_width - width))
+      vim.list_extend(ret, line[resolve].resolve(math.max(max_width - width, 1)))
       local diff = M.offset(ret) - offset
       vim.list_extend(ret, line, resolve + 1)
       M.fix_offset(ret, diff, resolve + 1)
       line = ret
-      ret = {}
-      resolve = nil
     else
       return line
     end
@@ -378,12 +378,14 @@ end
 
 ---@param line snacks.picker.Highlight[]
 ---@param hl_group string
-function M.add_eol(line, hl_group)
+---@param offset? number
+function M.add_eol(line, hl_group, offset)
   line[#line + 1] = {
     col = M.offset(line),
     virt_text = { { string.rep(" ", 1000), hl_group } },
     virt_text_pos = "overlay",
     hl_mode = "replace",
+    virt_text_win_col = offset,
     virt_text_repeat_linebreak = true,
   }
   return line
@@ -394,13 +396,17 @@ end
 function M.to_text(line, opts)
   local offset = opts and opts.offset or 0
   local ret = {} ---@type snacks.picker.Extmark[]
+  local meta = {} ---@type snacks.picker.Meta
   local col = offset
   local parts = {} ---@type string[]
   for _, text in ipairs(line) do
     if (type(text[2]) == "string" and text[1] == nil) or vim.tbl_isempty(text) then
       text[1] = ""
     end
-    if type(text[1]) == "string" then
+    for k, v in pairs(text.meta or {}) do
+      meta[k] = v
+    end
+    if type(text[1]) == "string" and #text[1] > 0 then
       ---@cast text snacks.picker.Text
       if text.virtual then
         table.insert(ret, {
@@ -428,8 +434,9 @@ function M.to_text(line, opts)
         parts[#parts + 1] = text[1]
       end
       col = col + #parts[#parts]
-    else
+    elseif type(text[1]) ~= "string" then
       text = vim.deepcopy(text)
+      text.col = text.col or 0
       if text.col < 0 then
         text.col = col + text.col
       end
@@ -445,7 +452,7 @@ function M.to_text(line, opts)
       table.insert(ret, text)
     end
   end
-  return table.concat(parts), ret
+  return table.concat(parts), ret, not vim.tbl_isempty(meta) and meta or nil
 end
 
 ---@param hl snacks.picker.Highlight[]
@@ -462,6 +469,19 @@ function M.fix_offset(hl, offset, start_idx)
     end
   end
   return hl
+end
+
+--- tables with number as keys are stored in vim.b as an array,
+--- so we need to filter out vim.NIL
+---@param buf number
+function M.meta(buf)
+  local ret = {} ---@type table<number, snacks.picker.Meta>
+  for k, v in pairs(vim.b[buf].snacks_meta or {}) do
+    if v ~= vim.NIL then
+      ret[k] = v
+    end
+  end
+  return not vim.tbl_isempty(ret) and ret or nil
 end
 
 ---@param dst snacks.picker.Highlight[]
@@ -485,14 +505,19 @@ function M.render(buf, ns, lines, opts)
     vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
   end
 
+  local meta = {} ---@type table<number, snacks.picker.Meta>
+
   local changed = #lines ~= #old_lines
   local offset = opts.append and vim.api.nvim_buf_line_count(buf) or 0
   offset = offset == 1 and (vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] or ""):find("^%s*$") and 0 or offset
   for l, line in ipairs(lines) do
-    local line_text, extmarks = Snacks.picker.highlight.to_text(line)
+    local line_text, extmarks, line_meta = Snacks.picker.highlight.to_text(line)
     if line_text ~= old_lines[l] then
       vim.api.nvim_buf_set_lines(buf, offset + l - 1, offset + l, false, { line_text })
       changed = true
+    end
+    if line_meta then
+      meta[offset + l] = line_meta
     end
     for _, extmark in ipairs(extmarks) do
       local e = vim.deepcopy(extmark)
@@ -512,6 +537,10 @@ function M.render(buf, ns, lines, opts)
 
   if not opts.append and #lines < #old_lines then
     vim.api.nvim_buf_set_lines(buf, #lines, -1, false, {})
+  end
+
+  if not vim.tbl_isempty(meta) then
+    vim.b[buf].snacks_meta = meta
   end
 
   vim.bo[buf].modified = false

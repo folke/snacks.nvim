@@ -32,7 +32,7 @@ function M.new(buf, item)
   vim.b[buf].snacks_gh = {
     repo = item.repo,
     type = item.type,
-    number = item.number,
+    number = tonumber(item.number) or item.number,
   }
   self:bo()
   self:wo()
@@ -52,7 +52,7 @@ function M:update()
 end
 
 function M:keys()
-  local actions = Actions.get_actions(self.item)
+  local actions = Actions.get_actions(self.item, { items = { self.item } })
 
   ---@param name string
   local function wrap(name)
@@ -92,7 +92,7 @@ function M:render(opts)
     return
   end
   opts = opts or {}
-  self.item = Api.get(self.item)
+  self.item = Api.get_cached(self.item)
 
   self:bo()
   self:wo()

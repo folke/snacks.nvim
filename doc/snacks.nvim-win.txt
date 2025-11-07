@@ -16,6 +16,7 @@ Table of Contents                          *snacks.nvim-win-table-of-contents*
   - Snacks.win()                         |snacks.nvim-win-module-snacks.win()|
   - Snacks.win.is_border()     |snacks.nvim-win-module-snacks.win.is_border()|
   - Snacks.win.new()                 |snacks.nvim-win-module-snacks.win.new()|
+  - Snacks.win.zindex()           |snacks.nvim-win-module-snacks.win.zindex()|
   - win:action()                         |snacks.nvim-win-module-win:action()|
   - win:add_padding()               |snacks.nvim-win-module-win:add_padding()|
   - win:border()                         |snacks.nvim-win-module-win:border()|
@@ -308,6 +309,18 @@ SPLIT                                           *snacks.nvim-win-styles-split*
     ---@param opts? snacks.win.Config|{}
     ---@return snacks.win
     Snacks.win.new(opts)
+<
+
+
+`Snacks.win.zindex()`                                    *Snacks.win.zindex()*
+
+Calculate the next available zindex for snacks windows. New windows open on top
+of existing ones.
+
+>lua
+    ---@param opts? { zindex?: number, tab?: number|boolean, all?: boolean, max?: number }
+    ---@overload fun(zindex: number): number
+    Snacks.win.zindex(opts)
 <
 
 

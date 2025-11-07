@@ -59,6 +59,9 @@ function M.jump(picker, _, action)
     and vim.api.nvim_buf_line_count(current_buf) == 1
     and vim.api.nvim_buf_get_lines(current_buf, 0, -1, false)[1] == ""
     and vim.api.nvim_buf_get_name(current_buf) == ""
+  local current_tab_windows = #vim.tbl_filter(function(w)
+    return not Snacks.util.is_float(w)
+  end, vim.api.nvim_tabpage_list_wins(current_tab))
 
   if not current_empty then
     -- save position in jump list
@@ -119,6 +122,11 @@ function M.jump(picker, _, action)
     end
   elseif cmd == "buffer" and #items == 1 and picker.opts.jump.reuse_win then
     find_win(true)
+  end
+
+  -- Don't open a new tab if current buffer is empty
+  if cmd == "tab sbuffer" and current_empty and current_tab_windows == 1 then
+    cmd = "buffer"
   end
 
   -- open the first buffer

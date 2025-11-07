@@ -76,7 +76,16 @@ end
 ---@param prompt string
 ---@param fn fun()
 function M.confirm(prompt, fn)
-  Snacks.picker.select({ "No", "Yes" }, { prompt = prompt }, function(_, idx)
+  Snacks.picker.select({ "No", "Yes" }, {
+    prompt = prompt,
+    snacks = {
+      layout = {
+        layout = {
+          max_width = 60,
+        },
+      },
+    },
+  }, function(_, idx)
     if idx == 2 then
       fn()
     end
@@ -196,6 +205,7 @@ function M.visual()
   local text = table.concat(lines, "\n")
   ---@class snacks.picker.Visual
   local ret = {
+    buf = vim.api.nvim_get_current_buf(),
     pos = pos,
     end_pos = end_pos,
     text = text,

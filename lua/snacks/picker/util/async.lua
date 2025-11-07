@@ -20,6 +20,9 @@ end
 
 ---@alias snacks.picker.AsyncEvent "done" | "error" | "yield" | "ok" | "abort"
 
+---@class snacks.picker.Waitable
+---@field wait async fun()
+
 ---@class snacks.picker.Async
 ---@field _co? thread
 ---@field _fn fun()
@@ -44,7 +47,9 @@ function Async:init(fn)
   self._on = {}
   self._start = uv.hrtime()
   self._co = coroutine.create(function()
-    local ok, err = pcall(self._fn)
+    local ok, err = xpcall(self._fn, function(err)
+      return debug.traceback(err, 2)
+    end)
     if not ok then
       if self._aborted then
         self:_emit("abort")

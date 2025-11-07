@@ -15,10 +15,15 @@ M.actions = setmetatable({}, {
     local action = {
       desc = Actions.actions[k].desc,
       action = function(picker, item, action)
+        local items = picker:selected({ fallback = true })
+        if item.gh_item then
+          item = item.gh_item
+          items = { item }
+        end
         ---@diagnostic disable-next-line: param-type-mismatch
         return Actions.actions[k].action(item, {
           picker = picker,
-          items = picker:selected({ fallback = true }),
+          items = items,
           action = action,
         })
       end,
@@ -92,20 +97,18 @@ function M.get_actions(opts, ctx)
         return
       end
       item = Api.get({ type = opts.type or "pr", repo = opts.repo, number = opts.number })
-      local proc = Api.view(function(it)
-        item = it
-      end, item)
-
-      if proc then
-        proc:wait()
-      end
       if not item then
         Snacks.notify.error("snacks.picker.gh.get_actions: Failed to get item")
         return
       end
     end
 
-    local actions = Actions.get_actions(item)
+    local actions = ctx.async:schedule(function()
+      return Actions.get_actions(item, {
+        picker = ctx.picker,
+        items = { item },
+      })
+    end)
     actions.gh_actions = nil -- remove this action
     actions.gh_perform_action = nil -- remove this action
     local items = {} ---@type snacks.picker.finder.Item[]
@@ -148,14 +151,33 @@ function M.diff(opts, ctx)
   if opts.repo then
     vim.list_extend(args, { "--repo", opts.repo })
   end
-  return require("snacks.picker.source.diff").diff(
-    ctx:opts({
-      cmd = "gh",
-      args = args,
-      cwd = cwd,
-    }),
-    ctx
-  )
+
+  opts.previewers.diff.style = "fancy" -- only fancy style support inline review comments
+
+  local Render = require("snacks.gh.render")
+  local Diff = require("snacks.picker.source.diff")
+  ---@async
+  return function(cb)
+    local item = Api.get({ type = "pr", repo = opts.repo, number = opts.pr })
+
+    -- fetch on the main thread since rendering uses non-fast APIs
+    local annotations = ctx.async:schedule(function()
+      return Render.annotations(item)
+    end)
+
+    Diff.diff(
+      ctx:opts({
+        cmd = "gh",
+        args = args,
+        cwd = cwd,
+        annotations = annotations,
+      }),
+      ctx
+    )(function(it)
+      it.gh_item = item
+      cb(it)
+    end)
+  end
 end
 
 ---@param opts snacks.picker.gh.reactions.Config
@@ -220,7 +242,7 @@ function M.labels(opts, ctx)
       fields = { "labels" },
       args = { "repo", "view", opts.repo },
     })
-    local item = Api.get(opts)
+    local item = Api.get_cached(opts)
     assert(item, "Failed to get item for labels")
     local added = {} ---@type table<string, boolean>
     for _, label in ipairs(item.labels or {}) do
@@ -293,6 +315,19 @@ function M.format(item, picker)
   end
 
   return ret
+end
+
+---@param ctx snacks.picker.preview.ctx
+function M.preview_diff(ctx)
+  Snacks.picker.preview.diff(ctx)
+  local item = ctx.item.gh_item ---@type snacks.picker.gh.Item?
+  if item then
+    vim.b[ctx.buf].snacks_gh = {
+      repo = item.repo,
+      type = item.type,
+      number = item.number,
+    }
+  end
 end
 
 ---@param ctx snacks.picker.preview.ctx

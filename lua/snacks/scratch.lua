@@ -184,23 +184,17 @@ function M.open(opts)
   local is_new = not uv.fs_stat(scratch.file)
   local buf = vim.fn.bufadd(scratch.file)
 
-  local closed = false
-  local zindex = opts.win.zindex or 20
-  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-    zindex = math.max(zindex, (vim.api.nvim_win_get_config(win).zindex or 0) + 1)
-    if vim.api.nvim_win_get_buf(win) == buf then
-      vim.schedule(function()
-        vim.api.nvim_win_call(win, function()
-          vim.cmd([[close]])
-        end)
+  local win = vim.fn.bufwinid(buf)
+  if win ~= -1 then
+    vim.schedule(function()
+      vim.api.nvim_win_call(win, function()
+        vim.cmd([[close]])
       end)
-      closed = true
-    end
-  end
-  if closed then
+    end)
     return
   end
-  opts.win.zindex = zindex
+
+  opts.win.zindex = Snacks.win.zindex(opts.win.zindex or 20)
   is_new = is_new
     and vim.api.nvim_buf_line_count(buf) == 0
     and #(vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] or "") == 0

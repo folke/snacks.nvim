@@ -9,11 +9,13 @@ local util = Snacks.picker.util
 -- 1. As top-level review.comments
 -- 2. As replies in the thread tree
 ---@class snacks.gh.render.ctx
----@field buf number
 ---@field item snacks.picker.gh.Item
 ---@field opts snacks.gh.Config
 ---@field comment_skip table<string, boolean>
 ---@field is_review? boolean
+---@field diff? boolean render diffs (defaults to true)
+---@field markdown? boolean render in a markdown buffer (defaults to true)
+---@field annotations? snacks.diff.Annotation[]
 
 ---@param field string
 local function time_prop(field)
@@ -250,7 +252,6 @@ function M.render(buf, item, opts)
 
   ---@type snacks.gh.render.ctx
   local ctx = {
-    buf = buf,
     item = item,
     opts = opts,
     comment_skip = {},
@@ -301,13 +302,12 @@ function M.render(buf, item, opts)
     for _, thread in ipairs(threads) do
       local c = #lines
 
-      if thread.submitted then
+      ctx.is_review = thread.state ~= nil
+      if ctx.is_review then
         ---@cast thread snacks.gh.Review
-        ctx.is_review = true
         vim.list_extend(lines, M.review(thread, ctx))
       else
         ---@cast thread snacks.gh.Comment
-        ctx.is_review = false
         vim.list_extend(lines, M.comment(thread, ctx))
       end
 
@@ -317,16 +317,6 @@ function M.render(buf, item, opts)
     end
   end
 
-  local comments = {} ---@type {line:number, id:number}[]
-  for l, line in ipairs(lines) do
-    for _, segment in ipairs(line) do
-      if segment.meta and segment.meta.reply then
-        comments[#comments + 1] = { line = l, id = segment.meta.reply }
-      end
-    end
-  end
-
-  vim.b[buf].snacks_gh_comments = comments
   local changed = h.render(buf, ns, lines)
 
   if changed then
@@ -348,12 +338,7 @@ end
 function M.get_threads(item)
   local ret = {} ---@type snacks.gh.Thread[]
   vim.list_extend(ret, item.comments or {})
-  for _, review in ipairs(item.reviews or {}) do
-    local thread = setmetatable({
-      created = review.submitted,
-    }, { __index = review }) --[[@as snacks.gh.Thread]]
-    ret[#ret + 1] = thread
-  end
+  vim.list_extend(ret, item.reviews or {})
   table.sort(ret, function(a, b)
     return a.created < b.created
   end)
@@ -404,23 +389,31 @@ function M.comment_header(comment, opts, ctx)
   return ret
 end
 
----@param body string
+---@param item snacks.gh.Comment|snacks.gh.Review
 ---@param ctx snacks.gh.render.ctx
-function M.comment_body(body, ctx)
+function M.comment_body(item, ctx)
+  local body = item.body or ""
   if body:match("^%s*$") then
     return {}
   end
   local ret = {} ---@type snacks.picker.Highlight[][]
   for _, l in ipairs(vim.split(body, "\n", { plain = true })) do
+    if l:find("^```suggestion$") then
+      local ft = item.path and vim.filetype.match({ filename = item.path }) or ""
+      l = "```" .. ft
+      ret[#ret + 1] = h.badge("Suggested change", "SnacksGhSuggestionBadge")
+    end
     ret[#ret + 1] = { { l } }
   end
   return ret
 end
 
 ---@param lines snacks.picker.Highlight[][]
-function M.indent(lines)
+---@param ctx snacks.gh.render.ctx
+function M.indent(lines, ctx)
+  -- indent guides for lines after the first
   local indent = {} ---@type snacks.picker.Highlight[]
-  -- virtual overlay showing indent guides
+  indent[#indent + 1] = { "   ", "Normal" }
   indent[#indent + 1] = {
     col = 0,
     virt_text = {
@@ -432,23 +425,24 @@ function M.indent(lines)
     hl_mode = "combine",
     virt_text_repeat_linebreak = true,
   }
-  -- actual indent space
-  local first = vim.deepcopy(indent)
-  first = {
-    {
-      col = 0,
-      end_col = 3,
-      conceal = "",
-      priority = 1000,
-    },
-    { " * ", "Normal" },
-  }
-  local other = vim.deepcopy(indent)
-  table.insert(other, 1, { "   ", "Normal" })
+
+  --- first indent. In a markdown buffer, we need proper structure,
+  --- so we conceal the list marker
+  ---@type snacks.picker.Highlight[]
+  local first = ctx.markdown == false and {}
+    or {
+      {
+        col = 0,
+        end_col = 3,
+        conceal = "",
+        priority = 1000,
+      },
+      { " * ", "Normal" },
+    }
 
   local ret = {} ---@type snacks.picker.Highlight[][]
   for l, line in ipairs(lines) do
-    local new = vim.deepcopy(l == 1 and first or other)
+    local new = vim.deepcopy(l == 1 and first or indent)
     extend(new, line)
     ret[l] = new
   end
@@ -467,6 +461,7 @@ function M.comment_diff(comment, ctx)
     count = originalLine - comment.originalStartLine + 1
   end
   count = math.max(ctx.opts.diff.min, math.abs(count))
+
   local Diff = require("snacks.picker.util.diff")
   local diff = ("diff --git a/%s b/%s\n%s"):format(comment.path, comment.path, comment.diffHunk)
   local ret = Diff.format(diff, {
@@ -480,6 +475,33 @@ end
 
 ---@param comment snacks.gh.Comment
 ---@param ctx snacks.gh.render.ctx
+function M.annotate(comment, ctx)
+  if not comment.path or not comment.diffHunk then
+    return
+  end
+  local side = "right"
+  for _, thread in ipairs(ctx.item.reviewThreads or {}) do
+    for _, c in ipairs(thread.comments or {}) do
+      if c.id == comment.id then
+        side = (thread.diffSide or "RIGHT"):lower()
+        break
+      end
+    end
+  end
+  ---@type snacks.diff.Annotation
+  local ret = {
+    side = side,
+    file = comment.path,
+    line = comment.line or comment.originalLine or 1,
+    text = {},
+  }
+  ctx.annotations = ctx.annotations or {}
+  table.insert(ctx.annotations, ret)
+  return ret
+end
+
+---@param comment snacks.gh.Comment
+---@param ctx snacks.gh.render.ctx
 function M.comment(comment, ctx)
   local ret = {} ---@type snacks.picker.Highlight[][]
 
@@ -487,16 +509,20 @@ function M.comment(comment, ctx)
   extend(header, M.comment_header(comment, {}, ctx))
   ret[#ret + 1] = header
 
+  local annotation ---@type snacks.diff.Annotation?
   if not comment.replyTo then
-    -- add diff hunk for top-level comments
-    local diff = M.comment_diff(comment, ctx)
-    if #diff > 0 then
-      vim.list_extend(ret, diff)
-      ret[#ret + 1] = {} -- empty line between diff and body
+    annotation = M.annotate(comment, ctx)
+    if ctx.diff ~= false then
+      -- add diff hunk for top-level comments
+      local diff = M.comment_diff(comment, ctx)
+      if #diff > 0 then
+        vim.list_extend(ret, diff)
+        ret[#ret + 1] = {} -- empty line between diff and body
+      end
     end
   end
 
-  vim.list_extend(ret, M.comment_body(comment.body or "", ctx))
+  vim.list_extend(ret, M.comment_body(comment, ctx))
   local replies = M.find_reply(comment.id, ctx)
   for _, reply in ipairs(replies) do
     ret[#ret + 1] = {} -- empty line between comment and reply
@@ -507,11 +533,15 @@ function M.comment(comment, ctx)
     for _, line in ipairs(ret) do
       local reply_id = comment.replyTo and comment.replyTo.databaseId or comment.databaseId
       if reply_id then
-        line[#line + 1] = { "", meta = { reply = reply_id } }
+        line[#line + 1] = { "", meta = { comment_id = reply_id } }
       end
     end
   end
-  return M.indent(ret)
+  ret = M.indent(ret, ctx)
+  if annotation then
+    annotation.text = vim.deepcopy(ret)
+  end
+  return ret
 end
 
 ---@param id string
@@ -554,12 +584,29 @@ function M.review(review, ctx)
   local text = texts[review.state] or review.state:lower():gsub("_", " ")
   extend(header, M.comment_header(review, { text = text }, ctx))
   ret[#ret + 1] = header
-  vim.list_extend(ret, M.comment_body(review.body or "", ctx))
+  vim.list_extend(ret, M.comment_body(review, ctx))
   for _, comment in ipairs(comments) do
     ret[#ret + 1] = {} -- empty line between review and comments
     vim.list_extend(ret, M.comment(comment, ctx))
   end
-  return M.indent(ret)
+  return M.indent(ret, ctx)
+end
+
+---@param pr snacks.picker.gh.Item
+function M.annotations(pr)
+  ---@type snacks.gh.render.ctx
+  local ctx = {
+    item = pr,
+    opts = Snacks.gh.config(),
+    comment_skip = {},
+    is_review = true,
+    diff = false,
+    markdown = false,
+  }
+  for _, review in ipairs(pr.reviews or {}) do
+    M.review(review, ctx)
+  end
+  return ctx.annotations
 end
 
 return M

@@ -240,6 +240,17 @@ Snacks.win.is_border(border)
 Snacks.win.new(opts)
 ```
 
+### `Snacks.win.zindex()`
+
+Calculate the next available zindex for snacks windows.
+New windows open on top of existing ones.
+
+```lua
+---@param opts? { zindex?: number, tab?: number|boolean, all?: boolean, max?: number }
+---@overload fun(zindex: number): number
+Snacks.win.zindex(opts)
+```
+
 ### `win:action()`
 
 ```lua

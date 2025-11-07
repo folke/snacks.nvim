@@ -56,10 +56,11 @@
 ---@field desc? string -- description to show in the scratch buffer
 ---@field icon? string -- icon to show in the scratch buffer
 ---@field type? "issue" | "pr" -- action for items of this type (nil means both)
----@field enabled? fun(item: snacks.picker.gh.Item): boolean -- whether the action is enabled for the item
+---@field enabled? fun(item: snacks.picker.gh.Item, ctx: snacks.gh.action.ctx): boolean -- whether the action is enabled for the item
 ---@field success? string -- success message to show after the action
 ---@field confirm? string -- confirmation message to show before performing the action
 ---@field refresh? boolean -- whether to refresh the item after performing the action (default: true)
+---@field on_submit? fun(body: string, ctx: snacks.gh.cli.Action.ctx): string?
 
 ---@class snacks.gh.api.Fetch: snacks.gh.api.Cmd
 ---@field fields string[]
@@ -90,19 +91,28 @@
 ---@field context? string
 ---@field state? "SUCCESS" | "FAILURE" | "PENDING"
 
+---@class snacks.gh.review.Thread
+---@field id string
+---@field diffSide "LEFT" | "RIGHT"
+---@field comments {id: string}[]
+
 ---@class snacks.gh.Review
 ---@field id string
+---@field databaseId number
 ---@field author snacks.gh.User
 ---@field authorAssociation string
 ---@field body string
+---@field createdAt string
 ---@field submittedAt string
 ---@field submitted number
+---@field created number
 ---@field reactionGroups? snacks.gh.Reaction[]
 ---@field state "APPROVED" | "CHANGES_REQUESTED" | "COMMENTED" | "DISMISSED" | "PENDING"
 ---@field commit? {oid: string}
 ---@field comments? snacks.gh.Comment[]
+---@field viewerDidAuthor? boolean -- whether the viewer authored the review
 
----@alias snacks.gh.Thread snacks.gh.Comment|snacks.gh.Review|{created: number}
+---@alias snacks.gh.Thread snacks.gh.Comment|snacks.gh.Review
 
 ---@class snacks.gh.Item
 ---@field number number
@@ -126,8 +136,11 @@
 ---@field statusCheckRollup? snacks.gh.Check[]
 ---@field baseRefName? string
 ---@field headRefName? string
+---@field headRefOid? string
 ---@field isDraft? boolean
 ---@field reviews? snacks.gh.Review[]
+---@field reviewThreads? snacks.gh.review.Thread[]
+---@field pendingReview? snacks.gh.Review
 
 ---@class snacks.gh.Commit
 ---@field oid string

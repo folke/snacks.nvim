@@ -4,6 +4,7 @@ local M = {}
 ---@field cmd? string optional since diff can be passed as string
 ---@field group? boolean Group hunks by file
 ---@field diff? string|number diff string or buffer number
+---@field annotations? snacks.diff.Annotation[]
 
 ---@class snacks.picker.diff.hunk.Pos
 ---@field line number
@@ -83,6 +84,7 @@ function M.diff(opts, ctx)
         file = file,
         cwd = cwd,
         rename = block.rename and block.rename.from or nil,
+        annotations = opts.annotations,
         block = block,
         pos = { line, 0 },
       })

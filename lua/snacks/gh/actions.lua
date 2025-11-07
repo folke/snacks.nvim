@@ -26,7 +26,38 @@ local M = {}
 ---@field priority? number
 ---@field title? string -- for items
 ---@field type? "pr" | "issue"
----@field enabled? fun(item: snacks.picker.gh.Item): boolean
+---@field enabled? fun(item: snacks.picker.gh.Item, ctx: snacks.gh.action.ctx): boolean
+
+---@param item snacks.picker.gh.Item
+---@param ctx snacks.gh.action.ctx
+local function update_main(item, ctx)
+  local gh = { repo = item.repo, number = item.number, type = item.type }
+  if ctx.main and vim.api.nvim_win_is_valid(ctx.main) then
+    local buf = vim.api.nvim_win_get_buf(ctx.main)
+    if vim.deep_equal(vim.b[buf].snacks_gh or {}, gh) then
+      return ctx.main, buf
+    end
+  end
+  local win = vim.api.nvim_get_current_win()
+  local buf = vim.api.nvim_win_get_buf(win)
+  if vim.deep_equal(vim.b[buf].snacks_gh or {}, gh) then
+    ctx.main = win
+    return ctx.main, buf
+  end
+end
+
+---@param item snacks.picker.gh.Item
+---@param ctx snacks.gh.action.ctx
+local function get_meta(item, ctx)
+  local win, buf = update_main(item, ctx)
+  if not win or not buf then
+    return
+  end
+  local meta = Snacks.picker.highlight.meta(buf)
+  ---@type {comment_id?: number, diff?: snacks.diff.Meta}?
+  local m = meta and meta[vim.api.nvim_win_get_cursor(win)[1]] or nil
+  return m, meta, buf, win
+end
 
 ---@class snacks.gh.actions: {[string]:snacks.gh.Action}
 M.actions = setmetatable({}, {
@@ -80,8 +111,8 @@ M.actions.gh_actions = {
     if ctx.action and ctx.action.cmd then
       return Snacks.picker.actions.jump(ctx.picker, item, ctx.action)
     end
-    ctx.main = ctx.main or ctx.picker and ctx.picker.main or nil
-    local actions = M.get_actions(item)
+    update_main(item, ctx)
+    local actions = M.get_actions(item, ctx)
     actions.gh_actions = nil -- remove this action
     actions.gh_perform_action = nil -- remove this action
     Snacks.picker.gh_actions({
@@ -103,9 +134,10 @@ M.actions.gh_actions = {
         end
         ctx.action = action
         if ctx.picker then
+          ctx.picker.visual = ctx.picker.visual or picker.visual or nil
           ctx.picker:focus()
         end
-        ctx.main = ctx.main or picker and picker.main or nil
+        update_main(item, ctx)
         it.action.action(item, ctx)
         picker:close()
       end,
@@ -237,32 +269,141 @@ M.actions.gh_yank = {
   end,
 }
 
+M.actions.gh_reply_to_comment = {
+  desc = "Reply to comment",
+  title = "Reply to comment on {type} #{number}",
+  priority = 150,
+  icon = " ",
+  enabled = function(item, ctx)
+    local m = get_meta(item, ctx)
+    return m and m.comment_id ~= nil or false
+  end,
+  action = function(item, ctx)
+    local action = vim.deepcopy(M.cli_actions.gh_comment)
+    local m = get_meta(item, ctx)
+    if not (m and m.comment_id) then
+      Snacks.notify.error("No comment found to reply to")
+      return
+    end
+    action.title = "Reply to comment on {type} #{number}"
+    action.api = {
+      endpoint = "/repos/{repo}/pulls/{number}/comments",
+      input = { in_reply_to = m.comment_id },
+    }
+    M.run(item, action, ctx)
+  end,
+}
+
+M.actions.gh_diff_comment = {
+  desc = "Add diff comment",
+  title = "Comment on diff in {type} #{number}",
+  priority = 150,
+  icon = " ",
+  action = function(item, ctx)
+    local m, meta, buf = get_meta(item, ctx)
+    if not (meta and buf and m and m.diff) then
+      Snacks.notify.error("No diff hunk found to comment on")
+      return
+    end
+
+    local action = vim.deepcopy(M.cli_actions.gh_comment)
+    local visual = ctx.picker and ctx.picker.visual or Snacks.picker.util.visual()
+    visual = visual and visual.buf == buf and visual or nil
+    local line = m.diff.line ---@type number
+    local start_line ---@type number?
+    if visual then
+      local from, to = math.min(visual.pos[1], visual.end_pos[1]), math.max(visual.pos[1], visual.end_pos[1])
+      local line_diff = vim.tbl_get(meta, to, "diff") or m.diff --[[@as snacks.diff.Meta]]
+      local start_diff = vim.tbl_get(meta, from, "diff") or m.diff --[[@as snacks.diff.Meta]]
+      if line_diff.file ~= start_diff.file then
+        Snacks.notify.error("Cannot add comment: visual selection spans multiple files")
+        return
+      end
+      local code = {} ---@type string[]
+      for i = from, to do
+        code[#code + 1] = vim.tbl_get(meta, i, "diff", "code") or ""
+      end
+      line, start_line = line_diff.line, start_diff.line
+      local ft = vim.filetype.match({ filename = m.diff.file }) or ""
+      local code_header = "```" .. (ft == "" and "" or (ft .. " ")) .. "suggestion\n"
+      action.template = ("\n%s%s\n```\n"):format(code_header, table.concat(code, "\n"))
+      action.on_submit = function(body)
+        local s, e = body:find(action.template, 1, true)
+        if s and e then -- suggestion not edited, so remove it
+          body = body:sub(1, s - 1) .. body:sub(e + 1)
+        end
+        body = body:gsub(code_header, "```suggestion\n") -- remove ft from suggestion
+        return body
+      end
+    end
+    start_line = start_line ~= line and start_line or nil
+    if start_line then
+      action.title = ("Comment on lines %s%d to %s%d"):format(
+        m.diff.side:sub(1, 1):upper(),
+        start_line or line,
+        m.diff.side:sub(1, 1):upper(),
+        line
+      )
+    else
+      action.title = ("Comment on line %s%d"):format(m.diff.side:sub(1, 1):upper(), line)
+    end
+    action.api = {
+      endpoint = "/repos/{repo}/pulls/{number}/comments",
+      input = {
+        commit_id = item.headRefOid,
+        path = m.diff.file,
+        side = m.diff.side:upper(), -- "RIGHT" or "LEFT" (uppercase)
+        line = line,
+        start_line = start_line,
+      },
+    }
+    if item.pendingReview then
+      action.api = {
+        endpoint = "graphql",
+        input = {
+          -- inject: graphql
+          query = [[
+            mutation($reviewId: ID!, $body: String!, $path: String!, $line: Int!, $side: DiffSide!, $startLine: Int, $startSide: DiffSide) {
+              addPullRequestReviewThread(input: {
+                pullRequestReviewId: $reviewId
+                body: $body
+                path: $path
+                line: $line
+                side: $side
+                startLine: $startLine
+                startSide: $startSide
+              }) {
+                thread { id }
+              }
+            }
+          ]],
+          variables = {
+            reviewId = item.pendingReview.id,
+            path = m.diff.file,
+            side = m.diff.side:upper(), -- "RIGHT" or "LEFT"
+            line = line,
+            startLine = start_line,
+            startSide = start_line and m.diff.side:upper() or nil,
+          },
+        },
+      }
+    end
+    M.run(item, action, ctx)
+  end,
+}
+
 M.actions.gh_comment = {
   desc = "Add comment",
   title = "Comment on {type} #{number}",
   icon = " ",
   action = function(item, ctx)
-    local win = ctx.main or vim.api.nvim_get_current_win()
-    local buf = vim.api.nvim_win_get_buf(win)
-
-    local action = vim.deepcopy(M.cli_actions.gh_comment)
-    if item.uri == vim.api.nvim_buf_get_name(buf) then
-      local lino = vim.api.nvim_win_get_cursor(win)[1]
-      ---@type {line:number, id:number}[]
-      local comments = vim.b[buf].snacks_gh_comments or {}
-      for _, c in ipairs(comments) do
-        if c.line == lino then
-          action.title = "Reply to comment on {type} #{number}"
-          action.api = {
-            endpoint = "/repos/{repo}/pulls/{number}/comments",
-            input = {
-              in_reply_to = c.id,
-            },
-          }
-          break
-        end
-      end
+    local m = get_meta(item, ctx)
+    if m and m.comment_id then
+      return M.actions.gh_reply_to_comment.action(item, ctx)
+    elseif m and m.diff then
+      return M.actions.gh_diff_comment.action(item, ctx)
     end
+    local action = vim.deepcopy(M.cli_actions.gh_comment)
     M.run(item, action, ctx)
   end,
 }
@@ -372,6 +513,61 @@ M.actions.gh_view_workflows_status = {
       repo = item.repo,
       jq = ".workflow_runs | unique_by(.workflow_id) | map({id, name, status, conclusion})",
     })
+  end,
+}
+
+-- Start a new review
+M.actions.gh_start_review = {
+  desc = "Start a review",
+  type = "pr",
+  icon = " ",
+  priority = 100,
+  enabled = function(item)
+    return item.pendingReview == nil
+  end,
+  action = function(item, ctx)
+    M.run(item, {
+      api = {
+        endpoint = "/repos/{repo}/pulls/{number}/reviews",
+        input = { commit_id = item.headRefOid },
+      },
+      success = "Started pending review for PR #{number}",
+    }, ctx)
+  end,
+}
+
+-- Submit pending review
+M.actions.gh_submit_review = {
+  desc = "Submit pending review",
+  type = "pr",
+  icon = " ",
+  priority = 200,
+  enabled = function(item)
+    return item.pendingReview ~= nil
+  end,
+  action = function(item, ctx)
+    local review_id = item.pendingReview.databaseId
+
+    -- Ask user: APPROVE, REQUEST_CHANGES, or COMMENT
+    Snacks.picker.select(
+      { "Approve", "Request Changes", "Comment" },
+      { title = "Submit review for PR #" .. item.number },
+      function(choice, idx)
+        if not choice then
+          return
+        end
+        local events = { "APPROVE", "REQUEST_CHANGES", "COMMENT" }
+        M.run(item, {
+          title = "Submit review for PR #{number}",
+          api = {
+            endpoint = "/repos/{repo}/pulls/{number}/reviews/" .. review_id .. "/events",
+            input = { event = events[idx] },
+          },
+          edit = "body-file", -- Optional summary
+          success = "Submitted review for PR #{number}",
+        }, ctx)
+      end
+    )
   end,
 }
 
@@ -512,7 +708,7 @@ M.cli_actions = {
     title = "Review: approve PR #{number}",
     success = "Approved PR #{number}",
     enabled = function(item)
-      return item.state == "open"
+      return item.state == "open" and not item.pendingReview
     end,
   },
   gh_request_changes = {
@@ -524,7 +720,7 @@ M.cli_actions = {
     title = "Review: request changes on PR #{number}",
     success = "Requested changes on PR #{number}",
     enabled = function(item)
-      return item.state == "open"
+      return item.state == "open" and not item.pendingReview
     end,
   },
   gh_review = {
@@ -536,7 +732,7 @@ M.cli_actions = {
     title = "Review: comment on PR #{number}",
     success = "Commented on PR #{number}",
     enabled = function(item)
-      return item.state == "open"
+      return item.state == "open" and not item.pendingReview
     end,
   },
 }
@@ -573,14 +769,15 @@ function M.tpl(str, ...)
 end
 
 ---@param item snacks.picker.gh.Item
-function M.get_actions(item)
+---@param ctx snacks.gh.action.ctx
+function M.get_actions(item, ctx)
   local ret = {} ---@type table<string, snacks.gh.Action>
   local keys = vim.tbl_keys(M.actions) ---@type string[]
   vim.list_extend(keys, vim.tbl_keys(M.cli_actions))
   for _, name in ipairs(keys) do
     local action = M.actions[name]
     local enabled = action.type == nil or action.type == item.type
-    enabled = enabled and (action.enabled == nil or action.enabled(item))
+    enabled = enabled and (action.enabled == nil or action.enabled(item, ctx))
     if enabled then
       local a = setmetatable({}, { __index = action })
       local ca = M.cli_actions[name] or {}
@@ -687,9 +884,7 @@ function M._run(ctx, force)
         vim.schedule(function()
           Api.refresh(ctx.item)
           if ctx.picker and not ctx.picker.closed then
-            ctx.picker.list:set_selected()
-            ctx.picker.list:set_target()
-            ctx.picker:find()
+            ctx.picker:refresh()
             vim.cmd.startinsert()
           end
         end)
@@ -800,11 +995,19 @@ function M.submit(ctx)
     return -- error already shown in M.parse
   end
 
+  if ctx.opts.on_submit then
+    body = ctx.opts.on_submit(body, ctx) or body
+  end
+
   if body:find("%S") then
     if edit == "body-file" then
       if ctx.opts.api then
         ctx.opts.api.input = ctx.opts.api.input or {}
-        ctx.opts.api.input.body = body
+        if ctx.opts.api.input.variables then
+          ctx.opts.api.input.variables.body = body
+        else
+          ctx.opts.api.input.body = body
+        end
       else
         ctx.input = body
         vim.list_extend(ctx.args, { "--body-file", "-" })

@@ -32,7 +32,6 @@ end
 ---@param action snacks.picker.Action.spec
 ---@param ref snacks.Picker.ref
 ---@param name? string
----@return snacks.win.Action?
 function M.wrap(action, ref, name)
   local picker = ref()
   if not picker then
@@ -40,6 +39,7 @@ function M.wrap(action, ref, name)
   end
   action = M.resolve(action, picker, name)
   action.name = name
+  ---@type snacks.win.Action
   return {
     name = name,
     action = function()

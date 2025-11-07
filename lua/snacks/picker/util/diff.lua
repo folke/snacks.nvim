@@ -3,7 +3,35 @@ local M = {}
 ---@class snacks.diff.Config
 ---@field max_hunk_lines? number only show last N lines of each hunk (used by GitHub PRs)
 ---@field hunk_header? boolean whether to show hunk header (default: true)
----@field ft? "diff" | "git"
+---@field annotations? snacks.diff.Annotation[]
+
+---@class snacks.diff.Annotation
+---@field file string
+---@field side "left" | "right"
+---@field left? number
+---@field right? number
+---@field line number
+---@field text snacks.picker.Highlight[][]
+
+---@class snacks.diff.Meta
+---@field side "left" | "right"
+---@field file string
+---@field line number
+---@field code string
+
+---@class snacks.diff.ctx
+---@field diff snacks.picker.Diff
+---@field opts snacks.diff.Config
+---@field block? snacks.picker.diff.Block
+---@field hunk? snacks.picker.diff.Hunk
+local C = {}
+C.__index = C
+
+---@param ctx snacks.diff.ctx|{}
+---@return snacks.diff.ctx
+function C:extend(ctx)
+  return setmetatable(ctx, { __index = self })
+end
 
 ---@param ... string
 local function diff_linenr(...)
@@ -34,6 +62,8 @@ Snacks.util.set_hl({
   DiffConflictLineNr = diff_linenr("DiagnosticVirtualTextWarn"),
 }, { default = true, prefix = "Snacks" })
 
+local H = Snacks.picker.highlight
+
 ---@param diff string|string[]|snacks.picker.Diff
 function M.get_diff(diff)
   if type(diff) == "string" then
@@ -54,32 +84,33 @@ end
 function M.render(buf, ns, diff, opts)
   diff = M.get_diff(diff)
   local ret = M.format(diff, opts)
-  return Snacks.picker.highlight.render(buf, ns, ret)
+  return H.render(buf, ns, ret)
 end
 
 ---@param diff string|string[]|snacks.picker.Diff
 ---@param opts? snacks.diff.Config
 function M.format(diff, opts)
-  diff = M.get_diff(diff)
+  local ctx = C:extend({
+    diff = M.get_diff(diff),
+    opts = opts or {},
+  })
   local ret = {} ---@type snacks.picker.Highlight[][]
-  vim.list_extend(ret, M.format_header(diff, opts))
-  for _, block in ipairs(diff.blocks) do
-    vim.list_extend(ret, M.format_block(block, opts))
+  vim.list_extend(ret, M.format_header(ctx))
+  for _, block in ipairs(ctx.diff.blocks) do
+    vim.list_extend(ret, M.format_block(ctx:extend({ block = block })))
   end
   return ret
 end
 
----@param diff snacks.picker.Diff
----@param opts? snacks.diff.Config
-function M.format_header(diff, opts)
-  if #(diff.header or {}) == 0 then
+---@param ctx snacks.diff.ctx
+function M.format_header(ctx)
+  if #(ctx.diff.header or {}) == 0 then
     return {}
   end
   local popts = Snacks.picker.config.get({})
-  opts = opts or {}
   local ret = {} ---@type snacks.picker.Highlight[][]
   local msg = {} ---@type string[]
-  for _, line in ipairs(diff.header or {}) do
+  for _, line in ipairs(ctx.diff.header or {}) do
     local hash = line:match("^commit%s+(%S+)$")
     if hash then
       ret[#ret + 1] = {
@@ -110,36 +141,35 @@ function M.format_header(diff, opts)
     ret[#ret + 1] = Snacks.picker.format.commit_message({ msg = subject }, {})
   end
   if #msg > 0 then
-    ret[#ret + 1] = Snacks.picker.highlight.rule()
-    local virt_lines = Snacks.picker.highlight.get_virtual_lines(table.concat(msg, "\n"), { ft = "markdown" })
+    ret[#ret + 1] = H.rule()
+    local virt_lines = H.get_virtual_lines(table.concat(msg, "\n"), { ft = "markdown" })
     for _, vl in ipairs(virt_lines) do
       ret[#ret + 1] = vl
     end
   end
-  ret[#ret + 1] = Snacks.picker.highlight.rule()
+  ret[#ret + 1] = H.rule()
   return ret
 end
 
----@param block snacks.picker.diff.Block
----@param opts? snacks.diff.Config
-function M.format_block(block, opts)
+---@param ctx snacks.diff.ctx
+function M.format_block(ctx)
   local ret = {} ---@type snacks.picker.Highlight[][]
-  vim.list_extend(ret, M.format_block_header(block, opts))
-  for _, hunk in ipairs(block.hunks) do
-    local hunk_lines = M.format_hunk(hunk, block, opts)
-    if opts and opts.max_hunk_lines and #hunk_lines > opts.max_hunk_lines then
-      hunk_lines = vim.list_slice(hunk_lines, #hunk_lines - opts.max_hunk_lines + 1)
+  vim.list_extend(ret, M.format_block_header(ctx))
+  for _, hunk in ipairs(ctx.block.hunks) do
+    local hunk_lines = M.format_hunk(ctx:extend({ hunk = hunk }))
+    if ctx.opts and ctx.opts.max_hunk_lines and #hunk_lines > ctx.opts.max_hunk_lines then
+      hunk_lines = vim.list_slice(hunk_lines, #hunk_lines - ctx.opts.max_hunk_lines + 1)
     end
     vim.list_extend(ret, hunk_lines)
   end
   return ret
 end
 
----@param block snacks.picker.diff.Block
----@param opts? snacks.diff.Config
-function M.format_block_header(block, opts)
+---@param ctx snacks.diff.ctx
+function M.format_block_header(ctx)
+  local block = assert(ctx.block)
   local ret = {} ---@type snacks.picker.Highlight[][]
-  ret[#ret + 1] = Snacks.picker.highlight.add_eol({}, "SnacksDiffHeader")
+  ret[#ret + 1] = H.add_eol({}, "SnacksDiffHeader")
 
   local icon, icon_hl = Snacks.util.icon(block.file)
   local file = {} ---@type snacks.picker.Highlight[]
@@ -154,28 +184,24 @@ function M.format_block_header(block, opts)
   else
     file[#file + 1] = { block.file }
   end
-  Snacks.picker.highlight.insert_hl(file, "SnacksDiffHeader")
-  Snacks.picker.highlight.add_eol(file, "SnacksDiffHeader")
+  H.insert_hl(file, "SnacksDiffHeader")
+  H.add_eol(file, "SnacksDiffHeader")
   ret[#ret + 1] = file
 
-  ret[#ret + 1] = Snacks.picker.highlight.add_eol({}, "SnacksDiffHeader")
+  ret[#ret + 1] = H.add_eol({}, "SnacksDiffHeader")
   return ret
 end
 
----@param hunk snacks.picker.diff.Hunk
----@param block snacks.picker.diff.Block
----@param opts? snacks.diff.Config
-function M.format_hunk(hunk, block, opts)
-  opts = opts or {}
-  local a = Snacks.picker.util.align
-  local ret = {} ---@type snacks.picker.Highlight[][]
+---@param ctx snacks.diff.ctx
+function M.parse_hunk(ctx)
+  local block = assert(ctx.block)
+  local hunk = assert(ctx.hunk)
   local diff = vim.deepcopy(hunk.diff)
-  table.remove(diff, 1) -- remove hunk header line
-  while #diff > 0 and diff[#diff]:match("^%s*$") do
-    table.remove(diff) -- remove trailing empty lines
-  end
-
   local versions = {} ---@type snacks.picker.diff.hunk.Pos[]
+  local unmerged = #versions > 2
+  local lines, prefixes, conflict_markers = {}, {}, {} ---@type string[], string[], table<number, string>
+
+  -- build versions
   versions[#versions + 1] = hunk.left
   vim.list_extend(versions, hunk.parents or {})
   versions[#versions + 1] = hunk.right
@@ -183,9 +209,13 @@ function M.format_hunk(hunk, block, opts)
     versions[#versions + 1] = { line = hunk.line, count = 0 }
   end
 
-  local unmerged = #versions > 2
+  -- setup diff lines
+  table.remove(diff, 1) -- remove hunk header line
+  while #diff > 0 and diff[#diff]:match("^%s*$") do
+    table.remove(diff) -- remove trailing empty lines
+  end
 
-  local code, prefixes, conflict_markers = {}, {}, {} ---@type string[], string[], table<number, string>
+  -- parse diff lines
   for l, line in ipairs(diff) do
     prefixes[#prefixes + 1] = line:sub(1, #versions - 1)
     local code_line = line:sub(#versions)
@@ -193,37 +223,51 @@ function M.format_hunk(hunk, block, opts)
       conflict_markers[l] = code_line
       code_line = ""
     end
-    code[#code + 1] = code_line
+    lines[#lines + 1] = code_line
   end
 
-  table.insert(code, 1, hunk.context or "") -- add hunk context for syntax highlighting
-  local ft = vim.filetype.match({ filename = block.file, contents = code }) or ""
-  local virt_lines = Snacks.picker.highlight.get_virtual_lines(table.concat(code, "\n"), { ft = ft })
-  local context = table.remove(virt_lines, 1) -- remove hunk context virt lines
-  table.remove(code, 1)
+  -- generate virt lines
+  table.insert(lines, 1, hunk.context or "") -- add hunk context for syntax highlighting
+  local ft = vim.filetype.match({ filename = block.file, contents = lines }) or ""
+  local text = H.get_virtual_lines(table.concat(lines, "\n"), { ft = ft })
+  local context = table.remove(text, 1) -- remove hunk context virt lines
+  table.remove(lines, 1) -- remove hunk context code line
 
-  local lines = {} ---@type table<number, string[]>
+  ---@class snacks.diff.hunk.Parse
+  local ret = {
+    len = #diff, -- number of lines in hunk
+    versions = versions, -- positions of each version
+    lines = lines, -- code lines of hunk
+    text = text, -- virt lines of hunk
+    prefixes = prefixes, -- diff prefixes of hunk
+    conflict_markers = conflict_markers, -- conflict markers lines of hunk
+    context = context, -- virt lines of hunk context
+    unmerged = unmerged, -- whether hunk is unmerged
+  }
+  return ret
+end
+
+--- Build hunk line index for each version
+---@param parse snacks.diff.hunk.Parse
+function M.build_hunk_index(parse)
+  local versions = parse.versions
+  local index = {} ---@type table<number, number>[]|{max: number}
   local idx = {} ---@type number[]
   for p, pos in ipairs(versions) do
     idx[p] = idx[p] or ((pos.line or 1) - 1)
   end
   local max = 0
+  for l = 1, parse.len do
+    local prefix = parse.prefixes[l]
+    index[l] = {}
 
-  for l in ipairs(diff) do
-    local prefix = prefixes[l]
-    local line = {} ---@type string[]
-    lines[l] = line
-    for i = 1, #versions do
-      line[i] = ""
-    end
-
-    if not conflict_markers[l] then
+    if not parse.conflict_markers[l] then
       -- Increment parent versions
       for i = 1, #versions - 1 do
         local char = prefix:sub(i, i)
         if char == " " or char == "-" then
           idx[i] = idx[i] + 1
-          line[i] = tostring(idx[i])
+          index[l][i] = idx[i]
           max = math.max(max, #tostring(idx[i]))
         end
       end
@@ -240,40 +284,67 @@ function M.format_hunk(hunk, block, opts)
     end
     if has_working then
       idx[#idx] = idx[#idx] + 1
-      line[#idx] = tostring(idx[#idx])
+      index[l][#idx] = idx[#idx]
       max = math.max(max, #tostring(idx[#idx]))
     end
   end
+  index.max = max
+  return index
+end
 
-  if opts.hunk_header ~= false then
-    local header = {} ---@type snacks.picker.Highlight[]
-    header[#header + 1] = { "  " }
-    header[#header + 1] = { " ", "Special" }
-    header[#header + 1] = { " " }
-    Snacks.picker.highlight.extend(header, context)
-    local context_width = Snacks.picker.highlight.offset(context)
-    ret[#ret + 1] = {
-      { string.rep("─", context_width + 7) .. "┐", "FloatBorder" },
-    }
-    header[#header + 1] = { "  │", "FloatBorder" }
-    ret[#ret + 1] = header
-    ret[#ret + 1] = {
-      { string.rep("─", context_width + 7) .. "┘", "FloatBorder" },
-    }
+---@param parse snacks.diff.hunk.Parse
+function M.format_hunk_header(parse)
+  local ret = {} ---@type snacks.picker.Highlight[][]
+  local header = {} ---@type snacks.picker.Highlight[]
+  header[#header + 1] = { "  " }
+  header[#header + 1] = { " ", "Special" }
+  header[#header + 1] = { " " }
+  H.extend(header, parse.context)
+  local context_width = H.offset(parse.context)
+  ret[#ret + 1] = {
+    { string.rep("─", context_width + 7) .. "┐", "FloatBorder" },
+  }
+  header[#header + 1] = { "  │", "FloatBorder" }
+  ret[#ret + 1] = header
+  ret[#ret + 1] = {
+    { string.rep("─", context_width + 7) .. "┘", "FloatBorder" },
+  }
+  return ret
+end
+
+---@param ctx snacks.diff.ctx
+function M.format_hunk(ctx)
+  local block = assert(ctx.block)
+  local align = Snacks.picker.util.align
+  local ret = {} ---@type snacks.picker.Highlight[][]
+
+  local parse = M.parse_hunk(ctx)
+
+  local annotations = {} ---@type table<string, snacks.picker.Highlight[][]>
+  for _, annotation in ipairs(ctx.opts.annotations or {}) do
+    if annotation.file == block.file then
+      annotations[("%s:%d"):format(annotation.side, annotation.line)] = annotation.text
+    end
+  end
+
+  local index = M.build_hunk_index(parse)
+
+  if ctx.opts.hunk_header ~= false then
+    vim.list_extend(ret, M.format_hunk_header(parse))
   end
 
   local in_conflict = false
-  for l = 1, #diff do
-    local have_left, have_right = lines[l][1] ~= "", lines[l][#versions] ~= ""
-    local hl = (conflict_markers[l] and "SnacksDiffConflict")
+  for l = 1, parse.len do
+    local have_left, have_right = index[l][1] ~= nil, index[l][#parse.versions] ~= nil
+    local hl = (parse.conflict_markers[l] and "SnacksDiffConflict")
       or (have_right and not have_left and "SnacksDiffAdd")
       or (have_left and not have_right and "SnacksDiffDelete")
       or "SnacksDiffContext"
 
-    local prefix = prefixes[l]
-    if unmerged then
+    local prefix = parse.prefixes[l]
+    if parse.unmerged then
       local p = "  "
-      local marker = conflict_markers[l] or ""
+      local marker = parse.conflict_markers[l] or ""
       marker = marker:match("^%s*(%S+)") or ""
       if marker == "<<<<<<<" then
         in_conflict = true
@@ -286,14 +357,14 @@ function M.format_hunk(hunk, block, opts)
       elseif in_conflict then
         p = "│ "
       end
-      prefix = a(p, 2) .. prefix
+      prefix = align(p, 2) .. prefix
     end
 
     local line = {} ---@type snacks.picker.Highlight[]
 
     local line_nr = {} ---@type string[]
-    for i = 1, #versions do
-      line_nr[i] = a(lines[l][i], max, { align = i == #versions and "right" or "left" })
+    for i = 1, #parse.versions do
+      line_nr[i] = align(tostring(index[l][i] or ""), index.max, { align = i == #parse.versions and "right" or "left" })
     end
     local line_col = " " .. table.concat(line_nr, "  ") .. " "
     local prefix_col = " " .. prefix .. " "
@@ -316,10 +387,10 @@ function M.format_hunk(hunk, block, opts)
     }
 
     -- empty prefix overlay that will be used for wrapped lines
-    local ws = (conflict_markers[l] or code[l]):match("^(%s*)") -- add ws for breakindent
+    local ws = (parse.conflict_markers[l] or parse.lines[l]):match("^(%s*)") -- add ws for breakindent
     line[#line + 1] = {
       col = #line_col,
-      virt_text = { { a(prefix_col:gsub("[%-%+]", " "), #ws + #prefix_col), hl } },
+      virt_text = { { align(prefix_col:gsub("[%-%+]", " "), #ws + #prefix_col), hl } },
       virt_text_pos = "overlay",
       hl_mode = "replace",
       virt_text_repeat_linebreak = true,
@@ -333,18 +404,124 @@ function M.format_hunk(hunk, block, opts)
       hl_mode = "replace",
     }
 
-    local vl = Snacks.picker.highlight.indent({}, #line_col + #prefix_col)
-    if conflict_markers[l] then
-      vl[#vl + 1] = { conflict_markers[l], hl }
-    else
-      vim.list_extend(vl, virt_lines[l] or {})
+    if have_left or have_right then
+      line[#line + 1] = {
+        "",
+        meta = {
+          ---@type snacks.diff.Meta
+          diff = {
+            side = have_right and "right" or "left",
+            file = block.file,
+            line = have_right and index[l][#parse.versions] or index[l][1],
+            code = parse.lines[l],
+          },
+        },
+      }
     end
-    Snacks.picker.highlight.insert_hl(vl, hl)
-    Snacks.picker.highlight.extend(line, vl)
-    Snacks.picker.highlight.add_eol(line, hl)
+
     ret[#ret + 1] = line
+
+    local annot_left = "left:" .. (index[l][1] or "")
+    local annot_right = "right:" .. (index[l][#parse.versions] or "")
+    local ann = annotations[annot_left] or annotations[annot_right]
+    if ann then
+      vim.list_extend(
+        ret,
+        M.format_annotation(ann, {
+          indent = { line[1] },
+          indent_width = #line_col,
+          hl = hl,
+        })
+      )
+    end
+
+    local vl = H.indent({}, #line_col + #prefix_col)
+    if parse.conflict_markers[l] then
+      vl[#vl + 1] = { parse.conflict_markers[l], hl }
+    else
+      vim.list_extend(vl, parse.text[l] or {})
+    end
+    H.insert_hl(vl, hl)
+    H.extend(line, vl)
+    H.add_eol(line, hl)
   end
   return ret
+end
+
+---@param annotation snacks.picker.Highlight[][]
+---@param ctx {indent: snacks.picker.Highlight[][], indent_width: number, hl: string}
+function M.format_annotation(annotation, ctx)
+  local ret = {} ---@type snacks.picker.Highlight[][]
+  local box, width = M.format_box(annotation)
+
+  local empty = vim.deepcopy(ctx.indent) ---@type snacks.picker.Highlight[]
+  vim.list_extend(empty, H.indent({}, ctx.indent_width + 2, ctx.hl))
+  H.add_eol(empty, ctx.hl)
+
+  ret[#ret + 1] = vim.deepcopy(empty)
+  for _, line in ipairs(box) do
+    for _, chunk in ipairs(line) do
+      if chunk.virt_text_win_col then
+        chunk.virt_text_win_col = chunk.virt_text_win_col + ctx.indent_width + 2
+      end
+    end
+    local al = vim.deepcopy(ctx.indent)
+    local vl = H.indent({}, ctx.indent_width + 2, ctx.hl)
+    H.extend(al, vl)
+    H.extend(al, vim.deepcopy(line))
+    H.add_eol(al, ctx.hl, width + ctx.indent_width + 6)
+    ret[#ret + 1] = al
+  end
+  ret[#ret + 1] = vim.deepcopy(empty)
+  return ret
+end
+
+---@param lines snacks.picker.Highlight[][]
+---@param border_hl? string
+function M.format_box(lines, border_hl)
+  border_hl = border_hl or "FloatBorder"
+  local ret = {} ---@type snacks.picker.Highlight[][]
+  local width = 0
+  for _, line in ipairs(lines) do
+    width = math.max(width, H.offset(line, { char_idx = true }))
+  end
+  width = math.max(width, 50) --[[@as number]]
+
+  ---@param text snacks.picker.Highlight[]
+  ---@param col? number
+  local function vt(text, col)
+    ---@type snacks.picker.Highlight
+    return {
+      col = 0,
+      virt_text_pos = "overlay",
+      virt_text_win_col = col,
+      virt_text = text,
+    }
+  end
+
+  ret[#ret + 1] = {
+    vt({
+      { "┌", border_hl },
+      { string.rep("─", width + 2), border_hl },
+      { "┐", border_hl },
+    }),
+  }
+  for _, line in ipairs(lines) do
+    ret[#ret + 1] = {
+      { "│", border_hl, virtual = true },
+      { " " },
+    }
+    H.extend(ret[#ret], vim.deepcopy(line))
+    table.insert(ret[#ret], vt({ { "│", border_hl } }, width + 3))
+  end
+  ret[#ret + 1] = {
+    vt({
+      { "└", border_hl },
+      { string.rep("─", width + 2), border_hl },
+      { "┘", border_hl },
+    }),
+  }
+  return ret, width
 end
 
 return M

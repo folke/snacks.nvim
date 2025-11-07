@@ -20,7 +20,7 @@ local uv = vim.uv or vim.loop
 ---@field cmd? nil
 ---@field on_exit? fun(procs: snacks.spawn.Proc[], err: boolean)
 
----@class snacks.spawn.Proc
+---@class snacks.spawn.Proc: snacks.picker.Waitable
 ---@field opts snacks.spawn.Config
 ---@field handle? uv.uv_process_t
 ---@field stdout uv.uv_pipe_t
