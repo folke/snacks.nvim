@@ -71,4 +71,105 @@ describe("layout.footer_keys", function()
     assert.is_true(count >= 2, "Expected at least q and <CR> keys displayed")
     layout:close()
   end)
+
+  it("applies footer_max_keys (window only)", function()
+    local w = win_mod.new({
+      show = false,
+      keys = { q = "close", h = "help", ["<CR>"] = "confirm" },
+      footer_keys = true,
+      footer_max_keys = 1,
+    })
+    local layout = layout_mod.new({
+      wins = { a = w },
+      footer_keys = true,
+      layout = { box = "horizontal", width = 0.4, height = 0.2 },
+    })
+    vim.schedule(function()
+      layout:update_footer()
+    end)
+    vim.wait(50)
+    local footer = layout.root.opts.footer
+    local key_count = 0
+    for _, cell in ipairs(footer) do
+      if cell[2] == "SnacksFooterKey" then
+        key_count = key_count + 1
+      end
+    end
+    assert.equals(1, key_count, "Should only show 1 key due to window footer_max_keys")
+    layout:close()
+  end)
+
+  it("applies footer_max_keys (layout only)", function()
+    local w =
+      win_mod.new({ show = false, keys = { q = "close", h = "help", ["<CR>"] = "confirm" }, footer_keys = true })
+    local layout = layout_mod.new({
+      wins = { a = w },
+      footer_keys = true,
+      footer_max_keys = 2,
+      layout = { box = "horizontal", width = 0.4, height = 0.2 },
+    })
+    vim.schedule(function()
+      layout:update_footer()
+    end)
+    vim.wait(50)
+    local footer = layout.root.opts.footer
+    local key_count = 0
+    for _, cell in ipairs(footer) do
+      if cell[2] == "SnacksFooterKey" then
+        key_count = key_count + 1
+      end
+    end
+    assert.equals(2, key_count, "Should only show 2 keys due to layout footer_max_keys")
+    layout:close()
+  end)
+
+  it("applies min(window,max(layout))", function()
+    local w = win_mod.new({
+      show = false,
+      keys = { q = "close", h = "help", ["<CR>"] = "confirm" },
+      footer_keys = true,
+      footer_max_keys = 3,
+    })
+    local layout = layout_mod.new({
+      wins = { a = w },
+      footer_keys = true,
+      footer_max_keys = 2,
+      layout = { box = "horizontal", width = 0.4, height = 0.2 },
+    })
+    vim.schedule(function()
+      layout:update_footer()
+    end)
+    vim.wait(50)
+    local footer = layout.root.opts.footer
+    local key_count = 0
+    for _, cell in ipairs(footer) do
+      if cell[2] == "SnacksFooterKey" then
+        key_count = key_count + 1
+      end
+    end
+    assert.equals(2, key_count, "Should show min(window.footer_max_keys, layout.footer_max_keys)=2")
+    layout:close()
+  end)
+
+  it("handles footer_max_keys=0 (show none)", function()
+    local w = win_mod.new({ show = false, keys = { q = "close", h = "help" }, footer_keys = true, footer_max_keys = 0 })
+    local layout = layout_mod.new({
+      wins = { a = w },
+      footer_keys = true,
+      layout = { box = "horizontal", width = 0.4, height = 0.2 },
+    })
+    vim.schedule(function()
+      layout:update_footer()
+    end)
+    vim.wait(50)
+    local footer = layout.root.opts.footer
+    local key_count = 0
+    for _, cell in ipairs(footer) do
+      if cell[2] == "SnacksFooterKey" then
+        key_count = key_count + 1
+      end
+    end
+    assert.equals(0, key_count, "Should show 0 keys when footer_max_keys=0")
+    layout:close()
+  end)
 end)

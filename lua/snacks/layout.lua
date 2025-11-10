@@ -32,6 +32,7 @@ M.meta = {
 ---@field fullscreen? boolean open in fullscreen
 ---@field hidden? string[] list of windows that will be excluded from the layout (but can be toggled)
 ---@field footer_keys? boolean|string[] Show keys footer for the currently focused layout window. When string[], only show those keys with lhs (default: false)
+---@field footer_max_keys? number Maximum number of keys to show in the footer (layout-wide cap; effective value is the minimum of layout and window caps)
 ---@field on_update? fun(layout: snacks.layout)
 ---@field on_update_pre? fun(layout: snacks.layout)
 ---@field on_close? fun(layout: snacks.layout)
@@ -608,7 +609,8 @@ function M:update_footer()
   if not focused then
     return
   end
-  self.root.opts.footer = focused:build_footer_keys(want)
+  -- Determine effective max keys (minimum of layout and window caps if both set)
+  self.root.opts.footer = focused:build_footer_keys(want, self.opts.footer_max_keys)
   if self.root:valid() then
     local cfg = vim.api.nvim_win_get_config(self.root.win)
     cfg.footer = self.root.opts.footer
