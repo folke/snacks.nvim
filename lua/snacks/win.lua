@@ -26,6 +26,7 @@ M.meta = {
 ---@field [1]? string
 ---@field [2]? string|string[]|fun(self: snacks.win): string?
 ---@field mode? string|string[]
+---@field desc? string Description shown in footer/help
 ---@field weight? number Weight for footer ordering (higher first)
 
 ---@class snacks.win.Event: vim.api.keyset.create_autocmd
@@ -99,7 +100,7 @@ local defaults = {
   bo = {},
   title_pos = "center",
   keys = {
-    q = "close",
+    q = { "q", "close", desc = "Close" },
   },
   footer_pos = "center",
   footer_keys = false,
@@ -838,9 +839,10 @@ function M:build_footer_keys(want, max)
     if not want or vim.tbl_contains(want, keymap) then
       count = count + 1
       if not effective_max or count <= effective_max then
+        local _, desc = self:resolve_key(key)
         table.insert(footer, { " ", "SnacksFooter" })
         table.insert(footer, { " " .. keymap .. " ", "SnacksFooterKey" })
-        table.insert(footer, { " " .. (key.desc or keymap) .. " ", "SnacksFooterDesc" })
+        table.insert(footer, { " " .. (desc or keymap) .. " ", "SnacksFooterDesc" })
       else
         break
       end
@@ -990,6 +992,25 @@ function M:set_buf(buf)
   Snacks.util.wo(self.win, self.opts.wo)
 end
 
+---@param spec snacks.win.Keys
+---@return fun(): boolean|string? rhs, string? desc
+function M:resolve_key(spec)
+  local rhs = spec[2]
+  local desc = spec.desc
+  local is_action = type(rhs) == "string" or type(rhs) == "table"
+  if is_action then
+    local action_desc
+    ---@cast rhs string|string[]
+    rhs, action_desc = self:action(rhs)
+    desc = spec.desc or action_desc
+  else
+    rhs = function()
+      return spec[2](self)
+    end
+  end
+  return rhs, desc
+end
+
 function M:map()
   if not self:buf_valid() then
     return
@@ -1004,19 +1025,8 @@ function M:map()
     ---@cast opts vim.keymap.set.Opts
     opts.buffer = self.buf
     opts.nowait = true
-    local rhs = spec[2]
-    local is_action = type(rhs) == "string" or type(rhs) == "table"
-    if is_action then
-      local desc = spec.desc
-      ---@cast rhs string|string[]
-      rhs, desc = self:action(rhs)
-      opts.desc = opts.desc or desc
-    else
-      rhs = function()
-        return spec[2](self)
-      end
-    end
-    spec.desc = spec.desc or opts.desc
+    local rhs, desc = self:resolve_key(spec)
+    opts.desc = desc
     ---@cast spec snacks.win.Keys
     vim.keymap.set(spec.mode or "n", spec[1], rhs, opts)
   end

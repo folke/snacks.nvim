@@ -36,18 +36,21 @@ Snacks.config.style("terminal", {
   wo = {},
   stack = true, -- when enabled, multiple split windows with the same position will be stacked together (useful for terminals)
   keys = {
-    q = "hide",
-    gf = function(self)
-      local f = vim.fn.findfile(vim.fn.expand("<cfile>"), "**")
-      if f == "" then
-        Snacks.notify.warn("No file under cursor")
-      else
-        self:hide()
-        vim.schedule(function()
-          vim.cmd("e " .. f)
-        end)
-      end
-    end,
+    q = { "q", "hide", desc = "Hide window" },
+    gf = {
+      function(self)
+        local f = vim.fn.findfile(vim.fn.expand("<cfile>"), "**")
+        if f == "" then
+          Snacks.notify.warn("No file under cursor")
+        else
+          self:hide()
+          vim.schedule(function()
+            vim.cmd("e " .. f)
+          end)
+        end
+      end,
+      desc = "Open file under cursor",
+    },
     term_normal = {
       "<esc>",
       function(self)
