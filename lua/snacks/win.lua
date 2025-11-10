@@ -26,6 +26,7 @@ M.meta = {
 ---@field [1]? string
 ---@field [2]? string|string[]|fun(self: snacks.win): string?
 ---@field mode? string|string[]
+---@field weight? number Weight for footer ordering (higher first)
 
 ---@class snacks.win.Event: vim.api.keyset.create_autocmd
 ---@field buf? true
@@ -822,6 +823,11 @@ end
 function M:build_footer_keys(want, max)
   local footer = {}
   table.sort(self.keys, function(a, b)
+    local aw = a.weight or 0
+    local bw = b.weight or 0
+    if aw ~= bw then
+      return aw > bw
+    end
     return (a[1] or "") < (b[1] or "")
   end)
   want = want and vim.tbl_map(Snacks.util.normkey, want) or nil --[[@as string[]?]]
@@ -993,6 +999,7 @@ function M:map()
     opts[1] = nil
     opts[2] = nil
     opts.mode = nil
+    opts.weight = nil
     ---@diagnostic disable-next-line: cast-type-mismatch
     ---@cast opts vim.keymap.set.Opts
     opts.buffer = self.buf
