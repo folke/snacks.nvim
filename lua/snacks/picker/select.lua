@@ -39,6 +39,7 @@ function M.select(items, opts, on_choice)
     format = Snacks.picker.format.ui_select(opts),
     title = title,
     layout = {
+      footer_keys = false,  -- Keep the select simple
       config = function(layout)
         -- Fit list height to number of items, up to 10
         for _, box in ipairs(layout.layout) do

@@ -816,6 +816,25 @@ function M:on_current_tab()
   return self:win_valid() and vim.api.nvim_get_current_tabpage() == vim.api.nvim_win_get_tabpage(self.win)
 end
 
+---@param want string[]|nil
+function M:build_footer_keys(want)
+  local footer = {}
+  table.sort(self.keys, function(a, b)
+    return (a[1] or "") < (b[1] or "")
+  end)
+  want = want and vim.tbl_map(Snacks.util.normkey, want) or nil --[[@as string[]?]]
+  for _, key in ipairs(self.keys) do
+    local keymap = Snacks.util.normkey(key[1])
+    if not want or vim.tbl_contains(want, keymap) then
+      table.insert(footer, { " ", "SnacksFooter" })
+      table.insert(footer, { " " .. keymap .. " ", "SnacksFooterKey" })
+      table.insert(footer, { " " .. (key.desc or keymap) .. " ", "SnacksFooterDesc" })
+    end
+  end
+  table.insert(footer, { " ", "SnacksFooter" })
+  return footer
+end
+
 function M:show()
   if self:valid() then
     self:update()
@@ -841,22 +860,8 @@ function M:show()
   end
 
   if self.opts.footer_keys then
-    self.opts.footer = {}
-    table.sort(self.keys, function(a, b)
-      return a[1] < b[1]
-    end)
     local want = type(self.opts.footer_keys) == "table" and self.opts.footer_keys or nil
-    ---@cast want string[]|nil
-    want = want and vim.tbl_map(Snacks.util.normkey, want) or nil --[[@as string[]?]]
-    for _, key in ipairs(self.keys) do
-      local keymap = Snacks.util.normkey(key[1])
-      if want == nil or vim.tbl_contains(want, keymap) then
-        table.insert(self.opts.footer, { " ", "SnacksFooter" })
-        table.insert(self.opts.footer, { " " .. keymap .. " ", "SnacksFooterKey" })
-        table.insert(self.opts.footer, { " " .. (key.desc or keymap) .. " ", "SnacksFooterDesc" })
-      end
-    end
-    table.insert(self.opts.footer, { " ", "SnacksFooter" })
+    self.opts.footer = self:build_footer_keys(want)
   end
 
   self:open_win()
