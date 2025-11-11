@@ -819,6 +819,56 @@ function M:on_current_tab()
   return self:win_valid() and vim.api.nvim_get_current_tabpage() == vim.api.nvim_win_get_tabpage(self.win)
 end
 
+--- Canonicalize a (possibly multi-char) mode to a base display mode
+--- See: [Neovim mode](https://neovim.io/doc/user/vimfn.html#mode())
+---@param m string
+---@return string
+local function canonicalize_mode(m)
+  if not m or m == "" then
+    return "n"
+  end
+  local first = m:sub(1, 1)
+  if vim.tbl_contains({ "v", "V", "\22" }, first) then
+    return "v"
+  end
+  if vim.tbl_contains({ "s", "S", "\19" }, first) then
+    return "s"
+  end
+  if vim.tbl_contains({ "R", "i" }, first) then
+    return "i"
+  end
+  if first == "n" then
+    local prefix = m:sub(1, 2)
+    if prefix == "no" then
+      return "o"
+    end
+    return "n"
+  end
+  return first
+end
+
+---Normalize key mode into a table of canonicalized modes
+---See [Neovim map modes](https://neovim.io/doc/user/map.html#map-modes)
+---Empty mode is normalized to "n"
+---@param mode string|string[]|nil
+---@return string[]
+local function key_modes(mode)
+  local modes = {}
+  for _, m in ipairs(type(mode) == "table" and mode or { mode or "n" }) do
+    if m == "v" then
+      -- v is visual mode and select
+      table.insert(modes, "s")
+      table.insert(modes, "v")
+    elseif m == "x" then
+      -- x is visual mode only
+      table.insert(modes, "v")
+    else
+      table.insert(modes, m)
+    end
+  end
+  return modes
+end
+
 ---@param want string[]|nil
 ---@param max number|nil
 function M:build_footer_keys(want, max)
@@ -833,10 +883,15 @@ function M:build_footer_keys(want, max)
   end)
   want = want and vim.tbl_map(Snacks.util.normkey, want) or nil --[[@as string[]?]]
   local effective_max = max or self.opts.footer_max_keys or nil
+
+  local raw_mode = vim.api.nvim_get_mode().mode
+  local cur_mode = canonicalize_mode(raw_mode)
+
   local count = 0
   for _, key in ipairs(self.keys) do
+    local modes = key_modes(key.mode)
     local keymap = Snacks.util.normkey(key[1])
-    if not want or vim.tbl_contains(want, keymap) then
+    if vim.tbl_contains(modes, cur_mode) and (not want or vim.tbl_contains(want, keymap)) then
       count = count + 1
       if not effective_max or count <= effective_max then
         local _, desc = self:resolve_key(key)
@@ -879,6 +934,10 @@ function M:show()
   if self.opts.footer_keys then
     local want = type(self.opts.footer_keys) == "table" and self.opts.footer_keys or nil
     self.opts.footer = self:build_footer_keys(want)
+    -- update footer on mode changes for this buffer
+    self:on("ModeChanged", function()
+      self:update_footer_keys(self:build_footer_keys(want))
+    end, { buf = true })
   end
 
   self:open_win()
@@ -1356,6 +1415,18 @@ function M:dim(parent)
   ret.col = pos(self.opts.col, ret.width, parent.width, border.left, border.right)
 
   return ret
+end
+
+function M:update_footer_keys(keys)
+  if self:win_valid() then
+    local cfg = vim.api.nvim_win_get_config(self.win)
+    cfg.footer = keys
+    cfg.footer_pos = self.opts.footer_pos or "center"
+    if not self:has_border() then
+      cfg.border = { "", "", "", "", "", " ", "", "" }
+    end
+    pcall(vim.api.nvim_win_set_config, self.win, cfg)
+  end
 end
 
 --- Calculate the next available zindex for snacks windows.

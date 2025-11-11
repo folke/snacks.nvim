@@ -173,3 +173,68 @@ describe("layout.footer_keys", function()
     layout:close()
   end)
 end)
+
+describe("layout.footer_keys mode filtering", function()
+  local orig_get_mode
+  local function with_mode(mode, fn)
+    orig_get_mode = orig_get_mode or vim.api.nvim_get_mode
+    vim.api.nvim_get_mode = function() return { mode = mode } end
+    fn()
+    vim.api.nvim_get_mode = orig_get_mode
+  end
+  local function new_layout()
+    local w = win_mod.new({
+      show = false,
+      footer_keys = true,
+      keys = {
+        q = { "q", "close", desc = "Close", mode = "n" },
+        both = { "b", "both", desc = "Both", mode = { "n", "v" } },
+        only_v = { "v", "visual", desc = "Visual", mode = "v" },
+        insert_i = { "i", "insert", desc = "Insert", mode = "i" },
+        replace_r = { "r", "replace", desc = "Replace", mode = "R" },
+        visual_x = { "x", "xmode", desc = "XMode", mode = "x" },
+        op_pend = { "o", "opend", desc = "OpPending", mode = "o" },
+        cmd_line = { "c", "cmd", desc = "Cmd", mode = "c" },
+        term_key = { "t", "term", desc = "Term", mode = "t" },
+      },
+    })
+    local layout = layout_mod.new({ wins = { a = w }, footer_keys = true, layout = { box = "horizontal", width = 0.3, height = 0.2 } })
+    vim.wait(50) -- wait for scheduled show
+    return layout
+  end
+  local function count_keys(footer)
+    local n = 0
+    for _, cell in ipairs(footer) do if cell[2] == "SnacksFooterKey" then n = n + 1 end end
+    return n
+  end
+  it("shows normal keys in normal mode", function()
+    local layout = new_layout()
+    with_mode("n", function()
+      layout:update_footer()
+      local footer = layout.root.opts.footer
+      assert.is_not_nil(footer)
+      assert.equals(3, count_keys(footer))
+    end)
+    layout:close()
+  end)
+  it("shows insert + replace in insert mode", function()
+    local layout = new_layout()
+    with_mode("i", function()
+      layout:update_footer()
+      local footer = layout.root.opts.footer
+      assert.is_not_nil(footer)
+      assert.equals(2, count_keys(footer))
+    end)
+    layout:close()
+  end)
+  it("shows visual + x + multi-mode in visual mode", function()
+    local layout = new_layout()
+    with_mode("v", function()
+      layout:update_footer()
+      local footer = layout.root.opts.footer
+      assert.is_not_nil(footer)
+      assert.equals(3, count_keys(footer))
+    end)
+    layout:close()
+  end)
+end)

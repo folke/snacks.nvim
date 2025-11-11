@@ -609,20 +609,8 @@ function M:update_footer()
   if not focused then
     return
   end
-  -- Determine effective max keys (minimum of layout and window caps if both set)
-  self.root.opts.footer = focused:build_footer_keys(want, self.opts.footer_max_keys)
-  if self.root:valid() then
-    local cfg = vim.api.nvim_win_get_config(self.root.win)
-    cfg.footer = self.root.opts.footer
-    cfg.footer_pos = self.root.opts.footer and (self.root.opts.footer_pos or "center") or nil
-    -- Ensure root has a bottom border so we can show a footer
-    -- Only auto-add a bottom border if user did not explicitly set any border
-    if not self.root:has_border() and not self._root_border_explicit then
-      cfg.border = { "", "", "", "", "", " ", "", "" }
-    end
-
-    pcall(vim.api.nvim_win_set_config, self.root.win, cfg)
-  end
+  local keys = focused:build_footer_keys(want, self.opts.footer_max_keys)
+  self.root:update_footer_keys(keys)
 end
 
 function M:setup_footer_autocmd()
@@ -631,6 +619,11 @@ function M:setup_footer_autocmd()
   end
   self._footer_autocmd = true
   self.root:on("WinEnter", function()
+    if self.opts.footer_keys then
+      self:update_footer()
+    end
+  end)
+  self.root:on("ModeChanged", function()
     if self.opts.footer_keys then
       self:update_footer()
     end
