@@ -61,6 +61,9 @@ local defaults = {
     min = 4, -- minimum number of lines changed to show diff
     wrap = 80, -- wrap diff lines at this length
   },
+  scratch = {
+    height = 15, -- height of scratch window
+  },
   -- stylua: ignore
   icons = {
     logo = " ",
@@ -128,6 +131,8 @@ Snacks.util.set_hl({
   NormalFloat = "NormalFloat",
   Border = "FloatBorder",
   Title = "FloatTitle",
+  ScratchTitle = "Number",
+  ScratchBorder = "Number",
   Footer = "FloatFooter",
   Number = "Number",
   Green = { fg = "#28a745" },

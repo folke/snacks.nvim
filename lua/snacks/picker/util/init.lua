@@ -21,7 +21,7 @@ end
 ---@param opts? {cwd?: string, kind?: "left" | "center" | "right"}
 function M.truncpath(path, len, opts)
   opts = opts or {}
-  local cwd = svim.fs.normalize(opts and opts.cwd or vim.fn.getcwd(), { _fast = true, expand_env = false })
+  local cwd = svim.fs.normalize(opts and opts.cwd or vim.fn.getcwd(0), { _fast = true, expand_env = false })
   local home = svim.fs.normalize("~")
   path = svim.fs.normalize(path, { _fast = true, expand_env = false })
 

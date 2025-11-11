@@ -64,7 +64,7 @@ function M.diff(opts, ctx)
     end
   end
 
-  local cwd = ctx.filter.cwd
+  local cwd = opts.cwd or ctx.filter.cwd
   return function(cb)
     if finder then
       finder(function(proc_item)

@@ -16,7 +16,7 @@ local function setup()
 end
 
 ---@param buf number
----@param opts? {images: boolean, win?: number}
+---@param opts? {images: boolean, bullets?: boolean}
 function M.render(buf, opts)
   setup()
   opts = opts or {}
@@ -42,21 +42,23 @@ function M.render(buf, opts)
   end
 
   if package.loaded["render-markdown"] then
-    local UI = require("render-markdown.core.ui")
-    local State = require("render-markdown.state")
-    local s = State.get(buf)
-    s.render_modes = true
-    s.resolved.modes = true
-    local wins = vim.fn.win_findbuf(buf)
-    for _, win in ipairs(wins) do
-      UI.update(buf, win, "Snacks", true)
-    end
+    require("render-markdown").render({
+      buf = buf,
+      event = "Snacks",
+      config = {
+        render_modes = true,
+        bullet = { enabled = opts.bullets ~= false },
+      },
+    })
   elseif package.loaded["markview"] then
-    local strict = require("markview").strict_render
-    if strict then
-      strict:clear(buf)
-      strict:render(buf)
-    end
+    local render = require("markview").strict_render
+    render:render(buf, nil, {
+      markdown = {
+        list_items = {
+          enable = opts.bullets ~= false,
+        },
+      },
+    })
   else
     M.render_fallback(buf)
   end

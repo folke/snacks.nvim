@@ -100,7 +100,7 @@ function M.loading(msg, opts)
     focusable = false,
     enter = false,
     relative = "win",
-    zindex = vim.api.nvim_win_get_config(parent_win).zindex + 1,
+    zindex = (vim.api.nvim_win_get_config(parent_win).zindex or 50) + 1,
     width = vim.api.nvim_strwidth(msg) + 1,
     height = 1,
     border = "rounded",

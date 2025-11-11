@@ -450,7 +450,7 @@ M.git_status = {
     input = {
       keys = {
         ["<Tab>"] = { "git_stage", mode = { "n", "i" } },
-        ["<c-r>"] = { "git_restore", mode = { "n", "i" } },
+        ["<c-r>"] = { "git_restore", mode = { "n", "i" }, nowait = true },
       },
     },
   },
@@ -466,11 +466,12 @@ M.git_diff = {
   format = "git_status",
   preview = "diff",
   matcher = { sort_empty = true },
+  sort = { fields = { "score:desc", "file", "idx" } },
   win = {
     input = {
       keys = {
         ["<Tab>"] = { "git_stage", mode = { "n", "i" } },
-        ["<c-r>"] = { "git_restore", mode = { "n", "i" } },
+        ["<c-r>"] = { "git_restore", mode = { "n", "i" }, nowait = true },
       },
     },
   },
@@ -905,7 +906,7 @@ M.projects = {
         ["<c-e>"] = { { "tcd", "picker_explorer" }, mode = { "n", "i" } },
         ["<c-f>"] = { { "tcd", "picker_files" }, mode = { "n", "i" } },
         ["<c-g>"] = { { "tcd", "picker_grep" }, mode = { "n", "i" } },
-        ["<c-r>"] = { { "tcd", "picker_recent" }, mode = { "n", "i" } },
+        ["<c-r>"] = { { "tcd", "picker_recent" }, mode = { "n", "i" }, nowait = true },
         ["<c-w>"] = { { "tcd" }, mode = { "n", "i" } },
         ["<c-t>"] = {
           function(picker)

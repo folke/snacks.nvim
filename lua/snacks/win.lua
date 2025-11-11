@@ -54,7 +54,7 @@ M.meta = {
 ---@class snacks.win.Config: vim.api.keyset.win_config
 ---@field style? string merges with config from `Snacks.config.styles[style]`
 ---@field show? boolean Show the window immediately (default: true)
----@field footer_keys? boolean Show keys footer (default: false)
+---@field footer_keys? boolean|string[] Show keys footer. When string[], only show those keys with lhs (default: false)
 ---@field height? number|fun(self:snacks.win):number Height of the window. Use <1 for relative height. 0 means full height. (default: 0.9)
 ---@field width? number|fun(self:snacks.win):number Width of the window. Use <1 for relative width. 0 means full width. (default: 0.9)
 ---@field min_height? number Minimum height of the window
@@ -65,7 +65,7 @@ M.meta = {
 ---@field row? number|fun(self:snacks.win):number Row of the window. Use <1 for relative row. (default: center)
 ---@field minimal? boolean Disable a bunch of options to make the window minimal (default: true)
 ---@field position? "float"|"bottom"|"top"|"left"|"right"|"current"
----@field border? "none"|"top"|"right"|"bottom"|"left"|"hpad"|"vpad"|"rounded"|"single"|"double"|"solid"|"shadow"|"bold"|string[]|false|true
+---@field border? "none"|"top"|"right"|"bottom"|"left"|"top_bottom"|"hpad"|"vpad"|"rounded"|"single"|"double"|"solid"|"shadow"|"bold"|string[]|false|true
 ---@field buf? number If set, use this buffer instead of creating a new one
 ---@field file? string If set, use this file instead of creating a new buffer
 ---@field enter? boolean Enter the window after opening (default: false)
@@ -147,7 +147,7 @@ Snacks.config.style("minimal", {
   },
 })
 
-local SCROLL_UP, SCROLL_DOWN = Snacks.util.keycode("<c-u>"), Snacks.util.keycode("<c-d>")
+local SCROLL_UP, SCROLL_DOWN = Snacks.util.keycode("<c-y>"), Snacks.util.keycode("<c-e>")
 
 local split_commands = {
   editor = {
@@ -193,6 +193,7 @@ local borders = {
   right = { "", "", "", "│", "", "", "", "" },
   top = { "", "─", "", "", "", "", "", "" },
   bottom = { "", "", "", "", "", "─", "", "" },
+  top_bottom = { "", "─", "", "", "", "─", "", "" },
   hpad = { "", "", "", " ", "", "", "", " " },
   vpad = { "", " ", "", "", "", " ", "", "" },
 }
@@ -304,8 +305,19 @@ function M.new(opts)
       table.insert(self.keys, spec)
     end
   end
+  -- last defined mapping is found first, so for `nowait` to work,
+  -- we need to sort in reverse order
+  table.sort(self.keys, function(a, b)
+    return (a[1] or "") > (b[1] or "")
+  end)
 
   self:on("WinClosed", self.on_close, { win = true })
+  self:on("WinResized", function()
+    if self.backdrop and not self:is_floating() then
+      self.backdrop:close()
+      self.backdrop = nil
+    end
+  end)
 
   -- update window size when resizing
   self:on("VimResized", self.on_resize)
@@ -512,7 +524,7 @@ end
 ---@param up? boolean
 function M:scroll(up)
   vim.api.nvim_win_call(self.win, function()
-    vim.cmd(("normal! %s"):format(up and SCROLL_UP or SCROLL_DOWN))
+    vim.cmd(("normal! %d%s"):format(vim.wo[self.win].scroll, up and SCROLL_UP or SCROLL_DOWN))
   end)
 end
 
@@ -833,11 +845,16 @@ function M:show()
     table.sort(self.keys, function(a, b)
       return a[1] < b[1]
     end)
+    local want = type(self.opts.footer_keys) == "table" and self.opts.footer_keys or nil
+    ---@cast want string[]|nil
+    want = want and vim.tbl_map(Snacks.util.normkey, want) or nil --[[@as string[]?]]
     for _, key in ipairs(self.keys) do
-      local keymap = vim.fn.keytrans(Snacks.util.keycode(key[1]))
-      table.insert(self.opts.footer, { " ", "SnacksFooter" })
-      table.insert(self.opts.footer, { " " .. keymap .. " ", "SnacksFooterKey" })
-      table.insert(self.opts.footer, { " " .. (key.desc or keymap) .. " ", "SnacksFooterDesc" })
+      local keymap = Snacks.util.normkey(key[1])
+      if want == nil or vim.tbl_contains(want, keymap) then
+        table.insert(self.opts.footer, { " ", "SnacksFooter" })
+        table.insert(self.opts.footer, { " " .. keymap .. " ", "SnacksFooterKey" })
+        table.insert(self.opts.footer, { " " .. (key.desc or keymap) .. " ", "SnacksFooterDesc" })
+      end
     end
     table.insert(self.opts.footer, { " ", "SnacksFooter" })
   end

@@ -45,6 +45,7 @@ The default implementation enables `syntax` for the buffer and disables
       vim.cmd([[NoMatchParen]])
     end
     Snacks.util.wo(0, { foldmethod = "manual", statuscolumn = "", conceallevel = 0 })
+    vim.b.completion = false
     vim.b.minianimate_disable = true
     vim.b.minihipatterns_disable = true
     vim.schedule(function()

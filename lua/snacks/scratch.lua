@@ -277,7 +277,6 @@ function M.get(opts)
   else
     ret.count = opts.filekey.count and vim.v.count1 or nil
     ret.cwd = opts.filekey.cwd and svim.fs.normalize(assert(uv.cwd())) or nil
-    ret.hash = opts.filekey.hash and opts.filekey.hash or nil
     if opts.filekey.branch and uv.fs_stat(".git") then
       local out = vim.trim(vim.fn.systemlist("git branch --show-current")[1] or "")
       ret.branch = vim.v.shell_error == 0 and out ~= "" and out or nil

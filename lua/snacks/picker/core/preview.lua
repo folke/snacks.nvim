@@ -428,9 +428,7 @@ function M:markdown()
   if not self.win:valid() then
     return
   end
-  local buf, win = self.win.buf, self.win.win ---@type number, number
-
-  require("snacks.picker.util.markdown").render(buf, { win = win })
+  require("snacks.picker.util.markdown").render(self.win.buf)
 end
 
 function M:spinner(enable)

@@ -111,7 +111,7 @@ end
 
 ---@param source string|number
 ---@param opts? {ft:string, bg?: string}
----@return snacks.picker.Text[]
+---@return snacks.picker.Text[][]
 function M.get_virtual_lines(source, opts)
   opts = opts or {}
 
@@ -142,8 +142,9 @@ function M.get_virtual_lines(source, opts)
     end
   end
 
-  local ret = {} ---@type snacks.picker.Text[]
+  local ret = {} ---@type snacks.picker.Text[][]
   for i = 1, #lines do
+    ret[i] = {}
     local line = lines[i]
     local from = 0
     local hl_group = nil ---@type string?
@@ -151,7 +152,6 @@ function M.get_virtual_lines(source, opts)
     ---@param to number
     local function add(to)
       if to >= from then
-        ret[i] = ret[i] or {}
         local text = line:sub(from, to)
         local hl = opts.bg and { hl_group or "Normal", opts.bg } or hl_group
         if #text > 0 then
