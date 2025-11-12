@@ -38,6 +38,8 @@ math.randomseed(os.time())
 ---@field icon? string
 ---@field title? string
 ---@field text? string|snacks.dashboard.Text[]
+---@field path? string path to an image file (used by the image section)
+---@field height? number height for image section
 
 ---@alias snacks.dashboard.Format.ctx {width?:number}
 ---@alias snacks.dashboard.Action string|fun(self:snacks.dashboard.Class)
@@ -959,6 +961,8 @@ function M.sections.terminal(opts)
 
     local ttl = opts.ttl or 3600
     local height, width = opts.height or 10, opts.width or (self.opts.width - (opts.indent or 0))
+    local pane_width = self.opts.width - (opts.indent or 0)
+    local win_width = (opts.center and math.min(width, pane_width)) or width
     local hl = opts.hl and hl_groups[opts.hl] or opts.hl or "SnacksDashboardTerminal"
     local cache_buf, term_buf, win ---@type integer?, integer?, integer?
 
@@ -1011,7 +1015,7 @@ function M.sections.terminal(opts)
         Snacks.config.merge({}, {
           start = false,
           term = true,
-          width = width,
+          width = win_width,
           height = height,
           on_stdout = function(_, data)
             if recording:is_active() then
@@ -1053,7 +1057,7 @@ function M.sections.terminal(opts)
         -- This is to ensure it starts with the correct window size.
         win = vim.api.nvim_open_win(assert(term_buf or cache_buf), false, {
           bufpos = { pos[1] - 1, pos[2] + 1 },
-          col = opts.indent or 0,
+          col = (opts.indent or 0) + ((opts.center and math.floor((pane_width - win_width) / 2)) or 0),
           focusable = false,
           height = height,
           noautocmd = true,
@@ -1061,7 +1065,7 @@ function M.sections.terminal(opts)
           row = 0,
           zindex = Snacks.config.styles.dashboard.zindex + 1,
           style = "minimal",
-          width = width,
+          width = win_width,
           win = self.win,
           border = "none",
         })
@@ -1103,6 +1107,106 @@ function M.sections.startup(opts)
       { " plugins in ", hl = "footer" },
       { ms .. "ms", hl = "special" },
     },
+  }
+end
+
+--- Add an image section using kitty protocol or chafa as fallback
+---@param opts? snacks.dashboard.Item
+---@return snacks.dashboard.Section?
+function M.sections.image(opts)
+  opts = opts or {}
+  if not opts.path then
+    return { text = { { "No image path provided", hl = "error" } } }
+  end
+
+  local height = opts.height or 17
+  local width = opts.width or 60
+
+  -- kitty protocol is not available
+  if not Snacks.image.supports(opts.path) then
+    local chafa_available = vim.fn.executable("chafa") == 1
+    if chafa_available then
+      local chafa_cmd = string.format(
+        "chafa %s --format symbols --symbols vhalf --size %dx%d --stretch; sleep .2",
+        vim.fn.fnameescape(opts.path),
+        width,
+        height
+      )
+
+      return M.sections.terminal({
+        cmd = chafa_cmd,
+        height = height,
+        width = width,
+        center = true,
+        indent = opts.indent,
+        action = opts.action,
+        key = opts.key,
+        label = opts.label,
+      })
+    else
+      -- Neither kitty protocol nor chafa is available
+      return { text = { { "Image format or terminal is not supported!", hl = "error" } } }
+    end
+  end
+
+  return {
+    action = opts.action,
+    key = opts.key,
+    label = opts.label,
+    render = function(self, pos)
+      local buf = vim.api.nvim_create_buf(false, true)
+
+      Snacks.util.bo(buf, {
+        filetype = "image",
+        modifiable = false,
+        modified = false,
+        swapfile = false,
+      })
+
+      local img_opts = {
+        pos = { 1, 0 },
+        height = height,
+        auto_resize = true,
+      }
+
+      local placement = Snacks.image.placement.new(buf, opts.path, img_opts)
+
+      local pane_width = self.opts.width - (opts.indent or 0)
+      local win_width = math.min(width, pane_width)
+      local center_offset = math.floor((pane_width - win_width) / 2)
+
+      local win = vim.api.nvim_open_win(buf, false, {
+        relative = "win",
+        win = self.win,
+        bufpos = { pos[1] - 1, pos[2] + center_offset },
+        width = win_width,
+        height = height,
+        focusable = false,
+        style = "minimal",
+        zindex = Snacks.config.styles.dashboard.zindex + 1,
+      })
+
+      Snacks.util.wo(win, {
+        winhighlight = "Normal:SnacksDashboardNormal",
+      })
+
+      local close = vim.schedule_wrap(function()
+        if win and vim.api.nvim_win_is_valid(win) then
+          pcall(vim.api.nvim_win_close, win, true)
+        end
+        if buf and vim.api.nvim_buf_is_valid(buf) then
+          pcall(vim.api.nvim_buf_delete, buf, { force = true })
+        end
+        if placement then
+          placement:close()
+        end
+        return true
+      end)
+
+      self.on("UpdatePre", close, self.augroup)
+      self.on("Closed", close, self.augroup)
+    end,
+    text = ("\n"):rep(height - 1), -- Placeholder text for layout
   }
 end
 
