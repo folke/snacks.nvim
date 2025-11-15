@@ -177,7 +177,7 @@ end
 function M.actions.explorer_paste(picker)
   local files = vim.split(vim.fn.getreg(vim.v.register or "+") or "", "\n", { plain = true })
   files = vim.tbl_filter(function(file)
-    return file ~= "" and vim.fn.filereadable(file) == 1
+    return file ~= "" and vim.fn.filereadable(vim.fs.abspath(file)) == 1
   end, files)
 
   if #files == 0 then
