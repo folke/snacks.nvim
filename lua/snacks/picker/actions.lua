@@ -610,7 +610,7 @@ function M.paste(picker, item, action)
         if col == eol then
           vim.cmd.startinsert({ bang = true })
         else
-          vim.cmd.normal { "l", bang = true }
+          vim.cmd.normal({ "l", bang = true })
           vim.cmd.startinsert()
         end
       end)
