@@ -263,6 +263,8 @@ end
 function M.tree(item, picker)
   local ret = {} ---@type snacks.picker.Highlight[]
   local icons = picker.opts.icons.tree
+  local layout = Snacks.picker.config.layout(picker.opts)
+  local last_icon = layout.reverse and icons.last_r or icons.last
   local indent = {} ---@type string[]
   local node = item
   while node and node.parent do
@@ -270,7 +272,7 @@ function M.tree(item, picker)
     if node ~= item then
       icon = is_last and "  " or icons.vertical
     else
-      icon = is_last and icons.last or icons.middle
+      icon = is_last and last_icon or icons.middle
     end
     table.insert(indent, 1, icon)
     node = node.parent
