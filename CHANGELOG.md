@@ -1,5 +1,54 @@
 # Changelog
 
+## [2.31.0](https://github.com/folke/snacks.nvim/compare/v2.30.0...v2.31.0) (2025-11-18)
+
+
+### Features
+
+* **gh:** added `Start Review`. Closes [#2463](https://github.com/folke/snacks.nvim/issues/2463) ([ac5f497](https://github.com/folke/snacks.nvim/commit/ac5f49700527ee5fd14473c5a759460c58d2789d))
+* **gh:** added cycle win and scrolling to scratch buffers when opened in a picker. Closes [#2480](https://github.com/folke/snacks.nvim/issues/2480) ([021855c](https://github.com/folke/snacks.nvim/commit/021855cf29eae9e41107ba28786e5e68b748e8c3))
+* **gh:** make copilot authors as bots ([c6ab189](https://github.com/folke/snacks.nvim/commit/c6ab18964b587edab0e4046719fbc590a59ee042))
+* **gh:** make markview.nvim play nicely with snacks. See [#2467](https://github.com/folke/snacks.nvim/issues/2467) ([deeb1e0](https://github.com/folke/snacks.nvim/commit/deeb1e03e22d83a18c04d1230e628d98a490b6ec))
+* **gh:** open scratch buffers at the bottom of the window. Closes [#2476](https://github.com/folke/snacks.nvim/issues/2476) ([a6a9678](https://github.com/folke/snacks.nvim/commit/a6a967810e185ecc94304529dc09d57e18ba9b68))
+* **gh:** special formatting for code suggestions in review comments. See [#2463](https://github.com/folke/snacks.nvim/issues/2463) ([f1c7f62](https://github.com/folke/snacks.nvim/commit/f1c7f62f9fd6974da3dc8526f454cd364cd73eeb))
+* **gh:** when selecting lines in a diff to add a review comment, you can now suggest code changes. See [#2463](https://github.com/folke/snacks.nvim/issues/2463) ([e896fb9](https://github.com/folke/snacks.nvim/commit/e896fb93f66d6f60176d6c014ddec4352ced4c61))
+* **lua:** add any treesitter injection to a string with a comment like -- inject:graphql ([1d5b12d](https://github.com/folke/snacks.nvim/commit/1d5b12d0c67071320e5572a1f2ac1265904426b3))
+* **picker.actions:** allow specifying an additional window for `cycle_win` ([197f393](https://github.com/folke/snacks.nvim/commit/197f393bbb30684d33165106482aad0a663964c8))
+* **win:** `opts.footer_keys` can now be an array of lhs to show instead of all. See [#2469](https://github.com/folke/snacks.nvim/issues/2469) ([6d72138](https://github.com/folke/snacks.nvim/commit/6d721388cc5760db215abd875606a273c1c685f9))
+* **win:** better zindex calculation ([08c0951](https://github.com/folke/snacks.nvim/commit/08c09515234b1ecc285d63aa56915caafa1d72d3))
+* **win:** new border `top_bottom` ([6134c98](https://github.com/folke/snacks.nvim/commit/6134c98d48657b457a7d4b1e2cd2c7ce37d98ea4))
+
+
+### Bug Fixes
+
+* **gh.item:** timestamps should be in UTC, not local time ([1ba0bf8](https://github.com/folke/snacks.nvim/commit/1ba0bf8a10b117d08c2a97347bd666f995600d8a))
+* **gh.scratch:** if scratch would hide the cursor, then scroll preview up taking scrolloff into account. See [#2480](https://github.com/folke/snacks.nvim/issues/2480) ([a271610](https://github.com/folke/snacks.nvim/commit/a2716102c8bd7d25693201af0942552f10e9a0c3))
+* **gh:** better integration with render-markdown. Closes [#2467](https://github.com/folke/snacks.nvim/issues/2467) ([717073d](https://github.com/folke/snacks.nvim/commit/717073df1a515a1564e855cc6ae8986025611e4b))
+* **gh:** diff comment action should only show when available ([fe20e95](https://github.com/folke/snacks.nvim/commit/fe20e9578033a1b726983d6f410a5cc8098fb3c2))
+* **gh:** render gh comments as markdown when displaying in a non-markdown buffer. Closes [#2481](https://github.com/folke/snacks.nvim/issues/2481) ([06e9ca9](https://github.com/folke/snacks.nvim/commit/06e9ca95f81f528c4314afb80a59ce317f12ac5d))
+* **gh:** rendering of markdown comments. Closes [#2488](https://github.com/folke/snacks.nvim/issues/2488) ([dec29f5](https://github.com/folke/snacks.nvim/commit/dec29f55666f8f4545835636077a86b150faf630))
+* **gh:** set default scratch `height=15` and fix bottom offset for custom height ([6900f3f](https://github.com/folke/snacks.nvim/commit/6900f3feaa397e8bd671be39411a370188f856c6))
+* **input:** fixed completion. Closes [#2472](https://github.com/folke/snacks.nvim/issues/2472) ([3024376](https://github.com/folke/snacks.nvim/commit/30243765808a6ea92da9886b50b4e2e01ff262e3))
+* **markdown:** use new markview API ([9b86d57](https://github.com/folke/snacks.nvim/commit/9b86d57cc580e976ee3c89fdf20477873bd5f0c2))
+* **picker.actions:** `vim.v.count1` should be `1` in insert mode. Closes [#2492](https://github.com/folke/snacks.nvim/issues/2492) ([d902c0a](https://github.com/folke/snacks.nvim/commit/d902c0a415ffbf66321f40ecb07e73fea283d0ab))
+* **picker.confirm:** better layout for confirm ([7f62aa6](https://github.com/folke/snacks.nvim/commit/7f62aa6c6c78a1fcbe207dbb59f6b3105f756e79))
+* **picker.diff:** make diff filename extmarks play nicely with markview / markdown-renderer ([4f749ab](https://github.com/folke/snacks.nvim/commit/4f749ab355cd62bbffbb2f6cc4ddcf0fc274fece))
+* **picker.git:** fix cwd for git diff. Closes [#2483](https://github.com/folke/snacks.nvim/issues/2483) ([9076793](https://github.com/folke/snacks.nvim/commit/907679381ba5ed36a24b0176930e3ceb97ca4755))
+* **picker.lsp:** wait for pending requests. See [#2527](https://github.com/folke/snacks.nvim/issues/2527) ([fe7cfe9](https://github.com/folke/snacks.nvim/commit/fe7cfe9800a182274d0f868a74b7263b8c0c020b))
+* **picker.preview:** remove `--no-ext-diff` option for git diff preview ([836e073](https://github.com/folke/snacks.nvim/commit/836e07336ba523d4da480cd66f0241815393e98e))
+* **picker.spinner:** when parent win is not float win ([#2487](https://github.com/folke/snacks.nvim/issues/2487)) ([8ca098c](https://github.com/folke/snacks.nvim/commit/8ca098ca360b45a361c475be6ea7dd81e438cc35))
+* **picker:** fix nowait for `<c-r>` ([685c433](https://github.com/folke/snacks.nvim/commit/685c433e61812eb21a890f14dac38a8c573931df))
+* **scratch:** set filetype correctly. Closes [#2510](https://github.com/folke/snacks.nvim/issues/2510) ([3c5c23b](https://github.com/folke/snacks.nvim/commit/3c5c23ba91e608bd89bb36d76cb005aa63d20dbf))
+* **util.diff:** proper linebreak repeat for annotation boxes ([64179b9](https://github.com/folke/snacks.nvim/commit/64179b96f547bc10211de3360a1e17a237cdb434))
+* **win:** allow scrolling beyond eob ([8b5f762](https://github.com/folke/snacks.nvim/commit/8b5f76292becf9ad76ef1507cbdcec64a49ff3f4))
+* **win:** use normkey instead of keytrans for footer keys ([9bd41bb](https://github.com/folke/snacks.nvim/commit/9bd41bb2ff5acd68d81e7323a80d18aa9efb7ca9))
+* **win:** when a floating win becomes non-floating, remove its backdrop ([c1e1500](https://github.com/folke/snacks.nvim/commit/c1e15001c0da18f740bc8bbe55fc0509f41bd9c6))
+
+
+### Performance Improvements
+
+* **bigfile:** disable completion to avoid lag when entering insert mode ([#2475](https://github.com/folke/snacks.nvim/issues/2475)) ([c49c3f3](https://github.com/folke/snacks.nvim/commit/c49c3f364cde3bb1bbf79e501d1492ea8e2397bc))
+
 ## [2.30.0](https://github.com/folke/snacks.nvim/compare/v2.29.0...v2.30.0) (2025-11-06)
 
 
