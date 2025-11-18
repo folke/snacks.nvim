@@ -601,7 +601,18 @@ function M.paste(picker, item, action)
     vim.api.nvim_paste(value, true, -1)
     if picker.input.mode == "i" then
       vim.schedule(function()
-        vim.cmd.startinsert({ bang = true })
+        -- `nvim_paste` puts the cursor on the last character, so we need to
+        -- emulate `a` to re-enter insert mode at the correct position. However,
+        -- `:startinsert` does `i` and `:startinsert!` does `A`, so we need to
+        -- check if the cursor is at the end of the line.
+        local col = vim.fn.virtcol(".")
+        local eol = vim.fn.virtcol("$") - 1
+        if col == eol then
+          vim.cmd.startinsert({ bang = true })
+        else
+          vim.cmd.normal({ "l", bang = true })
+          vim.cmd.startinsert()
+        end
       end)
     end
   end
