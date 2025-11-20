@@ -67,6 +67,7 @@ end
 ---@field left snacks.statuscolumn.Components
 ---@field right snacks.statuscolumn.Components
 ---@field enabled? boolean
+---@field disable_ft? string[]
 local defaults = {
   left = { "mark", "sign" }, -- priority of signs on the left (high to low)
   right = { "fold", "git" }, -- priority of signs on the right (high to low)
@@ -246,6 +247,10 @@ function M._get()
   local buf = vim.api.nvim_win_get_buf(win)
   local left_c = type(config.left) == "function" and config.left(win, buf, vim.v.lnum) or config.left --[[@as snacks.statuscolumn.Component[] ]]
   local right_c = type(config.right) == "function" and config.right(win, buf, vim.v.lnum) or config.right --[[@as snacks.statuscolumn.Component[] ]]
+
+  if vim.tbl_contains(config.disable_ft or {}, vim.bo[buf].filetype) then
+    return ""
+  end
 
   ---@type snacks.statuscolumn.Wanted
   local wanted = { sign = show_signs }
