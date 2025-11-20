@@ -17,6 +17,7 @@ Table of Contents                    *snacks.nvim-dashboard-table-of-contents*
   - files                               |snacks.nvim-dashboard-examples-files|
   - github                             |snacks.nvim-dashboard-examples-github|
   - pokemon                           |snacks.nvim-dashboard-examples-pokemon|
+  - image                               |snacks.nvim-dashboard-examples-image|
   - startify                         |snacks.nvim-dashboard-examples-startify|
 6. Styles                                       |snacks.nvim-dashboard-styles|
   - dashboard                         |snacks.nvim-dashboard-styles-dashboard|
@@ -456,6 +457,30 @@ Pokemons, because why not?
       },
     }
 <
+
+IMAGE                               *snacks.nvim-dashboard-examples-image*
+
+Display an image using the kitty graphics protocol in the dashboard or fallbacks to chafa.
+
+>lua
+    {
+      sections = {
+        { section = "header" },
+        {
+          pane = 2,
+          section = "image",
+          path = "/path/to/your/image.png",
+          height = 17,
+          width = 60,
+          padding = 1,
+        },
+        { section = "keys", gap = 1, padding = 1 },
+        { section = "startup" },
+      },
+    }
+<
+
+Width only works with `chafa`. With kitty protocol, the width of the image will be calculated automatically.
 
 
 STARTIFY                             *snacks.nvim-dashboard-examples-startify*
