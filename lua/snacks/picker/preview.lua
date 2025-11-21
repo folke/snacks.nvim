@@ -250,7 +250,7 @@ function M.git_show(ctx)
     cmd[#cmd + 1] = "--"
     vim.list_extend(cmd, pathspec)
   end
-  M.cmd(cmd, ctx, { ft = not terminal and "git" or nil })
+  M.cmd(cmd, ctx, { ft = not terminal and "diff" or nil })
 end
 
 ---@param ctx snacks.picker.preview.ctx
