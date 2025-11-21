@@ -311,7 +311,7 @@ end
 
 ---@param ctx snacks.picker.preview.ctx
 function M.git_diff(ctx)
-  local cmd, terminal = git(ctx, "diff", "--no-ext-diff")
+  local cmd, terminal = git(ctx, "diff")
   if not ctx.item.status then
     cmd[#cmd + 1] = "HEAD" -- generic diff against HEAD
   elseif ctx.item.status:find("[UAD][UAD]") then
