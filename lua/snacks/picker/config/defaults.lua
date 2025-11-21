@@ -358,6 +358,7 @@ local defaults = {
       vertical = "│ ",
       middle   = "├╴",
       last     = "└╴",
+      last_r   = "┌╴",
     },
     undo = {
       saved   = " ",
