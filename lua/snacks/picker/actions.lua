@@ -26,6 +26,12 @@ local edit_cmd = {
   tabdrop = "tab drop",
 }
 
+--- Get `vim.v.count1`, but return 1 if in insert mode.
+--- In insert mode, you can't really pass a count, so we default to 1
+local function count1()
+  return vim.fn.mode():sub(1, 1) == "i" and 1 or vim.v.count1
+end
+
 function M.jump(picker, _, action)
   ---@cast action snacks.picker.jump.Action
   -- if we're still in insert mode, stop it and schedule
@@ -614,14 +620,14 @@ end
 --- and moves the cursor to the next item.
 function M.select_and_next(picker)
   picker.list:select()
-  picker.list:_move(vim.v.count1)
+  picker.list:_move(count1())
 end
 
 --- Toggles the selection of the current item,
 --- and moves the cursor to the prev item.
 function M.select_and_prev(picker)
   picker.list:select()
-  picker.list:_move(-vim.v.count1)
+  picker.list:_move(-count1())
 end
 
 --- Selects all items in the list.
@@ -805,11 +811,11 @@ function M.list_bottom(picker)
 end
 
 function M.list_down(picker)
-  picker.list:move(vim.v.count1)
+  picker.list:move(count1())
 end
 
 function M.list_up(picker)
-  picker.list:move(-vim.v.count1)
+  picker.list:move(-count1())
 end
 
 function M.list_scroll_top(picker)
