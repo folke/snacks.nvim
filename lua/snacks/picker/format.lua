@@ -445,7 +445,20 @@ function M.tmux(item)
     end
   end
   if item.window_panes then
-    ret[#ret + 1] = { a(item.window_panes .. " panes", 10, { align = "right" }), "SnacksPickerDesc" }
+    ret[#ret + 1] = {
+      a(item.window_panes .. " pane" .. (tonumber(item.window_panes) > 1 and "s" or " "), 10, { align = "right" }),
+      "SnacksPickerDesc",
+    }
+  end
+  if item.session_windows then
+    ret[#ret + 1] = {
+      a(
+        item.session_windows .. " window" .. (tonumber(item.session_windows) > 1 and "s" or " "),
+        12,
+        { align = "right" }
+      ),
+      "SnacksPickerDesc",
+    }
   end
   if item.current_command then
     ret[#ret + 1] = { "  " .. item.current_command, "SnacksPickerCmd" }
@@ -455,6 +468,9 @@ function M.tmux(item)
   end
   if (item.pane_id and item.pane_active) or (item.window_id and item.window_active) then
     ret[#ret + 1] = { " (active)", "SnacksPickerComment" }
+  end
+  if item.session_attached and (tonumber(item.session_attached) > 0) then
+    ret[#ret + 1] = { " (attached)", "SnacksPickerComment" }
   end
   return ret
 end
