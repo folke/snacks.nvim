@@ -1032,6 +1032,14 @@ M.tmux_panes = {
   confirm = "tmux_select",
 }
 
+-- Search tmux windows
+M.tmux_windows = {
+  finder = "tmux_windows",
+  format = "tmux",
+  preview = "none",
+  confirm = "tmux_select",
+}
+
 ---@class snacks.picker.treesitter.Config: snacks.picker.Config
 ---@field filter table<string, string[]|boolean>? symbol kind filter
 ---@field tree? boolean show symbol tree
