@@ -1029,7 +1029,7 @@ M.tmux_panes = {
   finder = "tmux_panes",
   format = "tmux",
   preview = "tmux_pane",
-  confirm = "tmux_select_pane",
+  confirm = "tmux_select",
 }
 
 ---@class snacks.picker.treesitter.Config: snacks.picker.Config
