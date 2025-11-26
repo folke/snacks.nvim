@@ -376,4 +376,9 @@ function M.man(ctx)
   })
 end
 
+---@param ctx snacks.picker.preview.ctx
+function M.tmux_pane(ctx)
+  M.cmd(("setterm -linewrap off; tmux capture-pane -pe -t %s"):format(ctx.item.pane_id), ctx)
+end
+
 return M
