@@ -418,7 +418,7 @@ function M.tmux_panes(item)
   local inactive_window_icons = {
     top = "󰧇",
     bottom = "󰦿",
-    left = "󰦿",
+    left = "󰧀",
     right = "󰧂",
     ["top-left"] = "󰧃",
     ["top-right"] = "󰧅",
