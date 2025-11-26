@@ -402,7 +402,7 @@ function M.text(item, picker)
   return ret
 end
 
-function M.tmux_panes(item)
+function M.tmux(item)
   local a = Snacks.picker.util.align
   local active_window_icons = {
     top = "󰁞",
