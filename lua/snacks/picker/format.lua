@@ -433,17 +433,27 @@ function M.tmux_panes(item)
       "SnacksPickerIcon",
     }
   end
-  if item.session_name and item.window_index and item.pane_index then
+  if item.session_name then
     ret[#ret + 1] = { a(item.session_name, 8, { truncate = true, align = "right" }), "SnacksPickerIdx" }
-    ret[#ret + 1] = { " :", "SnacksPickerDelim" }
-    ret[#ret + 1] = { a(item.window_index, 3, { align = "center" }), "SnacksPickerIdx" }
-    ret[#ret + 1] = { ". ", "SnacksPickerDelim" }
-    ret[#ret + 1] = { a(item.pane_index, 3), "SnacksPickerIdx" }
+    if item.window_index then
+      ret[#ret + 1] = { " :", "SnacksPickerDelim" }
+      ret[#ret + 1] = { a(item.window_index, 3, { align = "center" }), "SnacksPickerIdx" }
+      if item.pane_index then
+        ret[#ret + 1] = { ". ", "SnacksPickerDelim" }
+        ret[#ret + 1] = { a(item.pane_index, 3), "SnacksPickerIdx" }
+      end
+    end
+  end
+  if item.window_panes then
+    ret[#ret + 1] = { a(item.window_panes .. " panes", 10, { align = "right" }), "SnacksPickerDesc" }
   end
   if item.current_command then
-    ret[#ret + 1] = { item.current_command, "SnacksPickerCmd" }
+    ret[#ret + 1] = { "  " .. item.current_command, "SnacksPickerCmd" }
   end
-  if item.pane_active then
+  if item.window_name then
+    ret[#ret + 1] = { "  " .. item.window_name, "SnacksPickerCmd" }
+  end
+  if item.pane_active or item.window_active then
     ret[#ret + 1] = { " (active)", "SnacksPickerComment" }
   end
   return ret
