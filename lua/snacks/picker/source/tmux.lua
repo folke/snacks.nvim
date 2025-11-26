@@ -59,7 +59,7 @@ function M.windows(opts, ctx)
       },
       transform = function(item)
         local session_name, window_index, window_id, window_active, window_panes, window_name =
-          item.text:match("^(.+):(%d+)% (%$%d+) (@%d+) ([01]) (%d+) (.+)$")
+          item.text:match("^(.+):(%d+)% (@%d+) ([01]) (%d+) (.+)$")
         item.session_name = session_name
         item.window_index = window_index
         item.window_id = window_id
