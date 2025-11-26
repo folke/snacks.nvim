@@ -1031,6 +1031,14 @@ M.tmux_panes = {
   preview = "tmux_pane",
   confirm = "tmux_select",
 }
+--
+-- Search tmux sessions
+M.tmux_sessions = {
+  finder = "tmux_sessions",
+  format = "tmux",
+  preview = "none",
+  confirm = "tmux_select",
+}
 
 -- Search tmux windows
 M.tmux_windows = {
