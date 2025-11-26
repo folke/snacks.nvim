@@ -46,4 +46,31 @@ function M.panes(opts, ctx)
   )
 end
 
+---@param opts snacks.picker.proc.Config
+---@type snacks.picker.finder
+function M.windows(opts, ctx)
+  return require("snacks.picker.source.proc").proc(
+    ctx:opts({
+      cmd = "tmux",
+      args = {
+        "list-windows",
+        "-aF",
+        "#{session_name}:#{window_index} #{session_id} #{window_id} #{window_active} #{window_panes} #{window_name}",
+      },
+      transform = function(item)
+        local session_name, window_index, session_id, window_id, window_active, window_panes, window_name =
+          item.text:match("^(.+):(%d+)% (%$%d+) (@%d+) ([01]) (%d+) (.+)$")
+        item.session_name = session_name
+        item.window_index = window_index
+        item.session_id = session_id
+        item.window_id = window_id
+        item.window_active = window_active == "1"
+        item.window_panes = window_panes
+        item.window_name = window_name
+      end,
+    }),
+    ctx
+  )
+end
+
 return M
