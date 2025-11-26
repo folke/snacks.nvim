@@ -841,4 +841,17 @@ function M.list_scroll_up(picker)
   picker.list:scroll(-picker.list.state.scroll)
 end
 
+function M.tmux_select_pane(picker)
+  local items = picker:selected({ fallback = true })
+  local first = items[1]
+  if not first or not first.pane_id then
+    Snacks.notify.error("Can't find tmux pane", { title = "Snacks Picker" })
+    return
+  end
+  local cmd = { "tmux", "select-pane", "-t", first.pane_id }
+  Snacks.picker.util.cmd(cmd, function()
+    Snacks.notify("Switched to tmux pane " .. first.pane_id, { title = "Snacks Picker" })
+  end)
+end
+
 return M
