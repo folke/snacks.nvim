@@ -1024,6 +1024,14 @@ M.tags = {
   format = "lsp_symbol",
 }
 
+-- Search tmux panes
+M.tmux_panes = {
+  finder = "tmux_panes",
+  format = "tmux_panes",
+  preview = "tmux_pane",
+  confirm = "tmux_select_pane",
+}
+
 ---@class snacks.picker.treesitter.Config: snacks.picker.Config
 ---@field filter table<string, string[]|boolean>? symbol kind filter
 ---@field tree? boolean show symbol tree

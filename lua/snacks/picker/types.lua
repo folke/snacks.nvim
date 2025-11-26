@@ -65,6 +65,7 @@
 ---@field smart fun(opts?: snacks.picker.smart.Config|{}): snacks.Picker
 ---@field spelling fun(opts?: snacks.picker.Config|{}): snacks.Picker
 ---@field tags fun(opts?: snacks.picker.tags.Config|{}): snacks.Picker
+---@field tmux_panes fun(opts?: snacks.picker.Config|{}): snacks.Picker
 ---@field treesitter fun(opts?: snacks.picker.treesitter.Config|{}): snacks.Picker
 ---@field undo fun(opts?: snacks.picker.undo.Config|{}): snacks.Picker
 ---@field zoxide fun(opts?: snacks.picker.Config|{}): snacks.Picker
