@@ -402,6 +402,49 @@ function M.text(item, picker)
   return ret
 end
 
+function M.tmux_panes(item)
+  local a = Snacks.picker.util.align
+  local active_window_icons = {
+    top = "󰁞",
+    bottom = "󰁆",
+    left = "󰁎",
+    right = "󰁕",
+    ["top-left"] = "󰧄",
+    ["top-right"] = "󰧆",
+    ["bottom-left"] = "󰦸",
+    ["bottom-right"] = "󰦺",
+    none = "",
+  }
+  local inactive_window_icons = {
+    top = "󰧇",
+    bottom = "󰦿",
+    left = "󰦿",
+    right = "󰧂",
+    ["top-left"] = "󰧃",
+    ["top-right"] = "󰧅",
+    ["bottom-left"] = "󰦷",
+    ["bottom-right"] = "󰦹",
+    none = "",
+  }
+  local ret = {} ---@type snacks.picker.Highlight[]
+  if item.position then
+    ret[#ret + 1] = {
+      a((item.window_active and active_window_icons or inactive_window_icons)[item.position], 2),
+      "SnacksPickerIcon",
+    }
+  end
+  ret[#ret + 1] = { a(item.session_name, 8, { truncate = true, align = "right" }), "SnacksPickerIdx" }
+  ret[#ret + 1] = { " :", "SnacksPickerDelim" }
+  ret[#ret + 1] = { a(item.window_index, 3, { align = "center" }), "SnacksPickerIdx" }
+  ret[#ret + 1] = { ". ", "SnacksPickerDelim" }
+  ret[#ret + 1] = { a(item.pane_index, 3), "SnacksPickerIdx" }
+  ret[#ret + 1] = { item.current_command, "SnacksPickerCode" }
+  if item.pane_active then
+    ret[#ret + 1] = { " (active)", "SnacksPickerComment" }
+  end
+  return ret
+end
+
 function M.command(item)
   local ret = {} ---@type snacks.picker.Highlight[]
   ret[#ret + 1] = { item.cmd, "SnacksPickerCmd" .. (item.cmd:find("^[a-z]") and "Builtin" or "") }
