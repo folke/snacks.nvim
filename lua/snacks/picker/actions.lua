@@ -856,6 +856,7 @@ function M.tmux_select(picker)
   local cmd = { "tmux", "switch-client", "-t", target }
   Snacks.picker.util.cmd(cmd, function()
     Snacks.notify("Switched to tmux target " .. target, { title = "Snacks Picker" })
+    picker:close()
   end)
 end
 
