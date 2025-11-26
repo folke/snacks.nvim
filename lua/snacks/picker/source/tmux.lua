@@ -13,7 +13,7 @@ function M.panes(opts, ctx)
       },
       transform = function(item)
         local session_name, window_index, pane_index, pane_id, window_active, pane_active, pane_at_top, pane_at_bottom, pane_at_left, pane_at_right, current_command =
-          item.text:match("^(.+):(%d+)%.(%d+) %%(%d+) ([01]) ([01]) ([01]) ([01]) ([01]) ([01]) (.+)$")
+          item.text:match("^(.+):(%d+)%.(%d+) (%%%d+) ([01]) ([01]) ([01]) ([01]) ([01]) ([01]) (.+)$")
         item.session_name = session_name
         item.window_index = window_index
         item.pane_index = pane_index
