@@ -72,4 +72,26 @@ function M.windows(opts, ctx)
   )
 end
 
+---@param opts snacks.picker.proc.Config
+---@type snacks.picker.finder
+function M.sessions(opts, ctx)
+  return require("snacks.picker.source.proc").proc(
+    ctx:opts({
+      cmd = "tmux",
+      args = {
+        "list-sessions",
+        "-F",
+        "#{session_name} #{session_windows} #{session_attached}",
+      },
+      transform = function(item)
+        local session_name, session_windows, session_attached = item.text:match("^(.+) (%d+) (%d+)$")
+        item.session_name = session_name
+        item.session_windows = session_windows
+        item.session_attached = session_attached
+      end,
+    }),
+    ctx
+  )
+end
+
 return M
