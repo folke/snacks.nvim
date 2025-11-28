@@ -1,7 +1,6 @@
 local M = {}
 
 ---@param opts snacks.picker.proc.Config
----@type snacks.picker.finder
 function M.panes(opts, ctx)
   local obj = vim
     .system({
@@ -11,16 +10,12 @@ function M.panes(opts, ctx)
       "#{session_name}:#{window_index}.#{pane_index} #{window_id} #{pane_id} #{window_active} #{pane_active} #{pane_at_top} #{pane_at_bottom} #{pane_at_left} #{pane_at_right} #{pane_current_command}",
     }, { text = true })
     :wait()
-  local maxima = {}
   local items = {}
   for line in obj.stdout:gmatch("(.-)\n") do
     local session_name, window_index, pane_index, window_id, pane_id, window_active, pane_active, pane_at_top, pane_at_bottom, pane_at_left, pane_at_right, current_command =
       line:match("^(.+):(%d+)%.(%d+) (@%d+) (%%%d+) ([01]) ([01]) ([01]) ([01]) ([01]) ([01]) (.+)$")
     window_index = tonumber(window_index)
     pane_index = tonumber(pane_index)
-    if not maxima[window_id] or pane_index > maxima[window_id] then
-      maxima[window_id] = pane_index
-    end
     local position
     if pane_at_top == "1" and pane_at_bottom == "0" and pane_at_left == pane_at_right then
       position = "top"
@@ -52,19 +47,12 @@ function M.panes(opts, ctx)
       pane_active = pane_active == "1",
       position = position,
       current_command = current_command,
-      parent = { parent = {} },
     }
-  end
-  for _, item in ipairs(items) do
-    if item.pane_index == maxima[item.window_id] then
-      item.last = true
-    end
   end
   return items
 end
 
 ---@param opts snacks.picker.proc.Config
----@type snacks.picker.finder
 function M.windows(opts, ctx)
   local obj = vim
     .system({
@@ -74,15 +62,11 @@ function M.windows(opts, ctx)
       "#{session_name}:#{window_index} #{session_id} #{window_id} #{window_active} #{window_panes} #{window_name}",
     }, { text = true })
     :wait()
-  local maxima = {}
   local items = {}
   for line in obj.stdout:gmatch("(.-)\n") do
     local session_name, window_index, session_id, window_id, window_active, window_panes, window_name =
       line:match("^(.+):(%d+)% (%$%d+) (@%d+) ([01]) (%d+) (.+)$")
     window_index = tonumber(window_index)
-    if not maxima[session_id] or window_index > maxima[session_id] then
-      maxima[session_id] = window_index
-    end
     items[#items + 1] = {
       type = "window",
       session_name = session_name,
@@ -93,19 +77,12 @@ function M.windows(opts, ctx)
       window_active = window_active == "1",
       window_panes = window_panes,
       window_name = window_name,
-      parent = {},
     }
-  end
-  for _, item in ipairs(items) do
-    if item.window_index == maxima[item.session_id] then
-      item.last = true
-    end
   end
   return items
 end
 
 ---@param opts snacks.picker.proc.Config
----@type snacks.picker.finder
 function M.sessions(opts, ctx)
   local obj = vim
     .system(
@@ -126,7 +103,53 @@ function M.sessions(opts, ctx)
       session_attached = session_attached,
     }
   end
-  items[#items].last = true
+  return items
+end
+
+---@param opts snacks.picker.proc.Config
+function M.tree(opts, ctx)
+  local panes = M.panes(opts, ctx)
+  local windows = M.windows(opts, ctx)
+  local sessions = M.sessions(opts, ctx)
+
+  local session_map = {}
+  local window_map = {}
+  local session_maxima = {}
+  local window_maxima = {}
+
+  for _, session in ipairs(sessions) do
+    session_map[session.session_id] = session
+  end
+  for _, window in ipairs(windows) do
+    window_map[window.window_id] = window
+    if not session_maxima[window.session_id] or window.window_index > session_maxima[window.session_id] then
+      session_maxima[window.session_id] = window.window_index
+    end
+  end
+  for _, pane in ipairs(panes) do
+    if not window_maxima[pane.window_id] or pane.pane_index > window_maxima[pane.window_id] then
+      window_maxima[pane.window_id] = pane.pane_index
+    end
+  end
+
+  sessions[#sessions].last = true
+  for _, window in ipairs(windows) do
+    window.parent = session_map[window.session_id]
+    if window.window_index == session_maxima[window.session_id] then
+      window.last = true
+    end
+  end
+  for _, pane in ipairs(panes) do
+    pane.parent = window_map[pane.window_id]
+    if pane.pane_index == window_maxima[pane.window_id] then
+      pane.last = true
+    end
+  end
+
+  local items = {}
+  vim.list_extend(items, sessions)
+  vim.list_extend(items, windows)
+  vim.list_extend(items, panes)
   return items
 end
 
