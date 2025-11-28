@@ -468,7 +468,7 @@ function M.tmux(item)
   if item.window_name then
     ret[#ret + 1] = { "  " .. item.window_name, "SnacksPickerCmd" }
   end
-  if (item.pane_id and item.pane_active) or (item.window_id and item.window_active) then
+  if (item.type == "pane" and item.pane_active) or (item.type == "window" and item.window_active) then
     ret[#ret + 1] = { " (active)", "SnacksPickerComment" }
   end
   return ret

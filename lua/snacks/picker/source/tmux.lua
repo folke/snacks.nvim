@@ -42,6 +42,7 @@ function M.panes(opts, ctx)
       position = "none"
     end
     items[#items + 1] = {
+      type = "pane",
       session_name = session_name,
       window_index = window_index,
       pane_index = pane_index,
@@ -58,7 +59,6 @@ function M.panes(opts, ctx)
     if item.pane_index == maxima[item.window_id] then
       item.last = true
     end
-    item.window_id = nil
   end
   return items
 end
@@ -84,6 +84,7 @@ function M.windows(opts, ctx)
       maxima[session_id] = window_index
     end
     items[#items + 1] = {
+      type = "window",
       session_name = session_name,
       window_index = window_index,
       pane_index = -1,
@@ -99,7 +100,6 @@ function M.windows(opts, ctx)
     if item.window_index == maxima[item.session_id] then
       item.last = true
     end
-    item.session_id = nil
   end
   return items
 end
@@ -108,13 +108,18 @@ end
 ---@type snacks.picker.finder
 function M.sessions(opts, ctx)
   local obj = vim
-    .system({ "tmux", "list-sessions", "-F", "#{session_name} #{session_windows} #{session_attached}" }, { text = true })
+    .system(
+      { "tmux", "list-sessions", "-F", "#{session_name} #{session_id} #{session_windows} #{session_attached}" },
+      { text = true }
+    )
     :wait()
   local items = {}
   for line in obj.stdout:gmatch("(.-)\n") do
-    local session_name, session_windows, session_attached = line:match("^(.+) (%d+) (%d+)$")
+    local session_name, session_id, session_windows, session_attached = line:match("^(.+) (%$%d+) (%d+) (%d+)$")
     items[#items + 1] = {
+      type = "session",
       session_name = session_name,
+      session_id = session_id,
       window_index = -1,
       pane_index = -1,
       session_windows = session_windows,
@@ -122,7 +127,6 @@ function M.sessions(opts, ctx)
     }
   end
   items[#items].last = true
-  vim.print(items)
   return items
 end
 
