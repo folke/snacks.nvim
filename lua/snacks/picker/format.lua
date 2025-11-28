@@ -435,12 +435,12 @@ function M.tmux(item)
   end
   if item.session_name then
     ret[#ret + 1] = { a(item.session_name, 8, { truncate = true, align = "right" }), "SnacksPickerIdx" }
-    if item.window_index then
+    if item.window_index and item.window_index >= 0 then
       ret[#ret + 1] = { " :", "SnacksPickerDelim" }
-      ret[#ret + 1] = { a(item.window_index, 3, { align = "center" }), "SnacksPickerIdx" }
-      if item.pane_index then
+      ret[#ret + 1] = { a(tostring(item.window_index), 3, { align = "center" }), "SnacksPickerIdx" }
+      if item.pane_index and item.pane_index >= 0 then
         ret[#ret + 1] = { ". ", "SnacksPickerDelim" }
-        ret[#ret + 1] = { a(item.pane_index, 3), "SnacksPickerIdx" }
+        ret[#ret + 1] = { a(tostring(item.pane_index), 3), "SnacksPickerIdx" }
       end
     end
   end
