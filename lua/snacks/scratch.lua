@@ -170,7 +170,7 @@ function M.open(opts)
 
   opts.win = Snacks.win.resolve("scratch", opts.win_by_ft[scratch.ft], opts.win, {
     show = false,
-    { bo = { filetype = scratch.ft } },
+    bo = { filetype = scratch.ft },
   })
 
   opts.win.title = {

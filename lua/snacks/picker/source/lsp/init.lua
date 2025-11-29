@@ -197,6 +197,7 @@ function R:request(buf, method, params, cb)
     ---@diagnostic disable-next-line: param-type-mismatch
     local clients = type(buf) == "number" and M.get_clients(buf, method) or { wrap(buf) }
 
+    self.pending = self.pending + #clients
     for _, client in ipairs(clients) do
       local done = false
       local status, request_id ---@type boolean, number?
@@ -218,7 +219,7 @@ function R:request(buf, method, params, cb)
         self:track(client.id, request_id)
       end
     end
-    self.pending = self.pending - 1
+    self.pending = self.pending - 1 - #clients
     self.async:resume()
   end)
   return self
