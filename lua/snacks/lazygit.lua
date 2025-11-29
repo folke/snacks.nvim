@@ -60,7 +60,10 @@ local defaults = {
   },
 }
 
-Snacks.config.style("lazygit", {})
+Snacks.config.style("lazygit", {
+  width = 0.9,
+  height = 0.9,
+})
 
 -- re-create config file on startup
 local dirty = true
