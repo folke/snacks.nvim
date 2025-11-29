@@ -101,18 +101,40 @@ end
 
 M.win = nil ---@type snacks.win?
 
+local function enabled()
+  if M.win and M.win:valid() then
+    return true
+  end
+  return false
+end
+
 ---@param opts? snacks.zen.Config
 function M.zen(opts)
+  -- close if already open
+  if M.disable() then
+    return
+  end
+  return M.enable(opts)
+end
+
+function M.disable()
+  if not enabled() then
+    return
+  end
+  M.win:close()
+  M.win = nil
+  return true
+end
+
+---@param opts? snacks.zen.Config
+function M.enable(opts)
+  if enabled() then
+    return
+  end
+
   local toggles = opts and opts.toggles
   opts = Snacks.config.get("zen", defaults, opts)
   opts.toggles = toggles or opts.toggles
-
-  -- close if already open
-  if M.win and M.win:valid() then
-    M.win:close()
-    M.win = nil
-    return
-  end
 
   local parent_win = vim.api.nvim_get_current_win()
   local parent_zindex = vim.api.nvim_win_get_config(parent_win).zindex
