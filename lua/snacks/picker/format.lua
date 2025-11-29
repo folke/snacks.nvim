@@ -402,7 +402,7 @@ function M.text(item, picker)
   return ret
 end
 
-function M.tmux(item)
+function M.tmux(item, picker)
   local a = Snacks.picker.util.align
   local active_window_icons = {
     top = "󰁞",
@@ -427,6 +427,8 @@ function M.tmux(item)
     none = "",
   }
   local ret = {} ---@type snacks.picker.Highlight[]
+  vim.list_extend(ret, M.tree(item, picker))
+  ret[#ret + 1] = { item[item.type .. "_id"], "SnacksPickerKeymapNowait" }
   if item.position then
     ret[#ret + 1] = {
       a((item.window_active and active_window_icons or inactive_window_icons)[item.position], 2),
