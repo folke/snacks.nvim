@@ -743,6 +743,10 @@ function N:notify(msg, level, opts)
   return self:add(opts)
 end
 
+function N:clear_history()
+  self.history = {}
+end
+
 -- Global instance
 local notifier = N.new()
 
@@ -766,6 +770,10 @@ end
 ---@param opts? snacks.notifier.history
 function M.show_history(opts)
   return notifier:show_history(opts)
+end
+
+function M.clear_history()
+  notifier:clear_history()
 end
 
 ---@private
