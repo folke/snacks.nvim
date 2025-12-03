@@ -48,13 +48,13 @@ and integrate edit with the current neovim instance.
   -- Theme for lazygit
   theme = {
     [241]                      = { fg = "Special" },
-    activeBorderColor          = { fg = "MatchParen", bold = true },
+    activeBorderColor          = { bg = "MatchParen", bold = true },
     cherryPickedCommitBgColor  = { fg = "Identifier" },
     cherryPickedCommitFgColor  = { fg = "Function" },
     defaultFgColor             = { fg = "Normal" },
     inactiveBorderColor        = { fg = "FloatBorder" },
     optionsTextColor           = { fg = "Function" },
-    searchingActiveBorderColor = { fg = "MatchParen", bold = true },
+    searchingActiveBorderColor = { bg = "MatchParen", bold = true },
     selectedLineBgColor        = { bg = "Visual" }, -- set to `default` to have no background colour
     unstagedChangesColor       = { fg = "DiagnosticError" },
   },
