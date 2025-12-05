@@ -108,10 +108,10 @@ function M.new(picker)
       vim.o.eventignore = "all"
       for _, buf in ipairs(vim.api.nvim_list_bufs()) do
         if
-          vim.api.nvim_buf_is_loaded(buf)
-          and vim.b[buf].snacks_picker_loaded
-          and not vim.bo[buf].buflisted
-          and #vim.fn.win_findbuf(buf) == 0
+            vim.api.nvim_buf_is_loaded(buf)
+            and vim.b[buf].snacks_picker_loaded
+            and not vim.bo[buf].buflisted
+            and #vim.fn.win_findbuf(buf) == 0
         then
           vim.api.nvim_buf_delete(buf, { force = true })
         end
@@ -397,6 +397,16 @@ function M:set_lines(lines, offset)
   lines = vim.split(table.concat(lines, "\n"), "\n", { plain = true })
   vim.bo[self.win.buf].modifiable = true
   vim.api.nvim_buf_set_lines(self.win.buf, offset or 0, -1, false, lines)
+  vim.bo[self.win.buf].modifiable = false
+end
+
+---@param path string
+function M:set_lines_from_file(path)
+  vim.bo[self.win.buf].modifiable = true
+  vim.api.nvim_buf_call(self.win.buf, function()
+    vim.cmd(string.format('silent! read %s', path))
+  end)
+  vim.api.nvim_buf_set_lines(self.win.buf, 0, 1, false, {})
   vim.bo[self.win.buf].modifiable = false
 end
 
