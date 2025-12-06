@@ -429,9 +429,7 @@ function M.tmux(item, picker)
   local ret = {} ---@type snacks.picker.Highlight[]
   local element
 
-  element = item.pane
-      and item.position
-      and (item.window_active and active_window_icons or inactive_window_icons)[item.position]
+  element = item.position and (item.window_active and active_window_icons or inactive_window_icons)[item.position]
     or (item.tree and "")
   if element then
     ret[#ret + 1] = { a(element, 2), "SnacksPickerIcon" }
