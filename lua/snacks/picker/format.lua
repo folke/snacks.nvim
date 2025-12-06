@@ -427,52 +427,74 @@ function M.tmux(item, picker)
     none = "",
   }
   local ret = {} ---@type snacks.picker.Highlight[]
-  vim.list_extend(ret, M.tree(item, picker))
-  ret[#ret + 1] = { item[item.type .. "_id"], "SnacksPickerKeymapNowait" }
-  if item.position then
-    ret[#ret + 1] = {
-      a((item.window_active and active_window_icons or inactive_window_icons)[item.position], 2),
-      "SnacksPickerIcon",
-    }
+  local element
+
+  element = item.pane
+      and item.position
+      and (item.window_active and active_window_icons or inactive_window_icons)[item.position]
+    or (item.tree and "")
+  if element then
+    ret[#ret + 1] = { a(element, 2), "SnacksPickerIcon" }
   end
-  if item.session_name then
-    ret[#ret + 1] = { a(item.session_name, 8, { truncate = true, align = "right" }), "SnacksPickerIdx" }
-    if item.window_index and item.window_index >= 0 then
+
+  if item.tree then
+    vim.list_extend(ret, M.tree(item, picker))
+    if item.type == "session" and item.session_name then
+      ret[#ret + 1] = { a(item.session_name .. ":", 9, { truncate = true }), "SnacksPickerIdx" }
+    elseif item.type == "window" and item.window_index then
+      ret[#ret + 1] = { a(tostring(item.window_index) .. ".", 7, { truncate = true }), "SnacksPickerIdx" }
+    elseif item.type == "pane" and item.pane_index then
+      ret[#ret + 1] = { a(tostring(item.pane_index), 5, { truncate = true }), "SnacksPickerIdx" }
+    end
+  else
+    if item.session_name then
+      ret[#ret + 1] = { a(item.session_name, 8, { truncate = true, align = "right" }), "SnacksPickerIdx" }
       ret[#ret + 1] = { " :", "SnacksPickerDelim" }
-      ret[#ret + 1] = { a(tostring(item.window_index), 3, { align = "center" }), "SnacksPickerIdx" }
-      if item.pane_index and item.pane_index >= 0 then
+      if item.window_index and item.window_index >= 0 then
+        ret[#ret + 1] = { a(tostring(item.window_index), 3, { align = "center" }), "SnacksPickerIdx" }
         ret[#ret + 1] = { ". ", "SnacksPickerDelim" }
-        ret[#ret + 1] = { a(tostring(item.pane_index), 3), "SnacksPickerIdx" }
+        if item.pane_index and item.pane_index >= 0 then
+          ret[#ret + 1] = { a(tostring(item.pane_index), 3), "SnacksPickerIdx" }
+        end
+      else
+        ret[#ret + 1] = { " ", "SnacksPickerDelim" }
       end
     end
   end
-  if item.window_panes then
-    ret[#ret + 1] = {
-      a(item.window_panes .. " pane" .. (item.window_panes == "1" and " " or "s"), 10, { align = "right" }),
-      "SnacksPickerDesc",
-    }
+
+  element = item.current_command or item.window_name or (item.tree and "")
+  if element then
+    ret[#ret + 1] = { a(element, 8, { truncate = true }), "SnacksPickerCmd" }
   end
-  if item.session_windows then
-    ret[#ret + 1] = {
-      a(item.session_windows .. " window" .. (item.session_windows == "1" and " " or "s"), 12, { align = "right" }),
-      "SnacksPickerDesc",
-    }
+
+  if item.type and item[item.type .. "_id"] then
+    ret[#ret + 1] = { a(item[item.type .. "_id"], 3), "SnacksPickerKeymapNowait" }
   end
-  if item.session_attached then
-    ret[#ret + 1] = {
-      a(item.session_attached .. " client" .. (item.session_attached == "1" and " " or "s"), 12, { align = "right" }),
-      "SnacksPickerComment",
-    }
+
+  element = nil
+  if item.type == "session" and item.session_windows then
+    element = item.session_windows .. " window" .. (item.session_windows == "1" and " " or "s")
+  elseif item.type == "window" and item.window_panes then
+    element = item.window_panes .. " pane" .. (item.window_panes == "1" and " " or "s")
+  elseif item.tree then
+    element = ""
   end
-  if item.current_command then
-    ret[#ret + 1] = { "  " .. item.current_command, "SnacksPickerCmd" }
+  if element then
+    ret[#ret + 1] = { a(element, 11), "SnacksPickerDesc" }
   end
-  if item.window_name then
-    ret[#ret + 1] = { "  " .. item.window_name, "SnacksPickerCmd" }
+
+  element = nil
+  if item.type == "session" and item.session_attached then
+    element = item.session_attached .. " client" .. (item.session_attached == "1" and " " or "s")
+  elseif (item.type == "pane" and item.pane_active) or (item.type == "window" and item.window_active) then
+    element = "(active)"
+  elseif item.tree then
+    element = ""
   end
-  if (item.type == "pane" and item.pane_active) or (item.type == "window" and item.window_active) then
-    ret[#ret + 1] = { " (active)", "SnacksPickerComment" }
+  if element then
+    ret[#ret + 1] = { a(element, 11), "SnacksPickerComment" }
   end
+
   return ret
 end
 

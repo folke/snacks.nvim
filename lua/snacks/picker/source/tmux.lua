@@ -118,15 +118,18 @@ function M.tree(opts, ctx)
   local window_maxima = {}
 
   for _, session in ipairs(sessions) do
+    session.tree = true
     session_map[session.session_id] = session
   end
   for _, window in ipairs(windows) do
+    window.tree = true
     window_map[window.window_id] = window
     if not session_maxima[window.session_id] or window.window_index > session_maxima[window.session_id] then
       session_maxima[window.session_id] = window.window_index
     end
   end
   for _, pane in ipairs(panes) do
+    pane.tree = true
     if not window_maxima[pane.window_id] or pane.pane_index > window_maxima[pane.window_id] then
       window_maxima[pane.window_id] = pane.pane_index
     end
