@@ -16,6 +16,7 @@ function M.panes(opts, ctx)
       line:match("^(.+):(%d+)%.(%d+) (%$%d+) (@%d+) (%%%d+) ([01]) ([01]) ([01]) ([01]) ([01]) ([01]) (.+)$")
     window_index = tonumber(window_index)
     pane_index = tonumber(pane_index)
+    pane_active = pane_active == "1"
     local position
     if pane_at_top == "1" and pane_at_bottom == "0" and pane_at_left == pane_at_right then
       position = "top"
@@ -45,7 +46,7 @@ function M.panes(opts, ctx)
       window_id = window_id,
       pane_id = pane_id,
       window_active = window_active == "1",
-      pane_active = pane_active == "1",
+      pane_active = pane_active,
       position = position,
       current_command = current_command,
       text = ("%s %s:%s.%s %s %s %s %s %s"):format(
@@ -80,6 +81,7 @@ function M.windows(opts, ctx)
       line:match("^(.+):(%d+)% (%$%d+) (@%d+) ([01]) (%d+) (.+)$")
     window_index = tonumber(window_index)
     window_panes = tonumber(window_panes)
+    window_active = window_active == "1"
     items[#items + 1] = {
       type = "window",
       session_name = session_name,
@@ -87,7 +89,7 @@ function M.windows(opts, ctx)
       pane_index = -1,
       session_id = session_id,
       window_id = window_id,
-      window_active = window_active == "1",
+      window_active = window_active,
       window_panes = window_panes,
       window_name = window_name,
       text = ("%s %s:%s. %s %s %s %s"):format(
