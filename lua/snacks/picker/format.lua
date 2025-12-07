@@ -471,9 +471,9 @@ function M.tmux(item, picker)
 
   element = nil
   if item.type == "session" and item.session_windows then
-    element = item.session_windows .. " window" .. (item.session_windows == "1" and " " or "s")
+    element = tostring(item.session_windows) .. " window" .. (item.session_windows == 1 and " " or "s")
   elseif item.type == "window" and item.window_panes then
-    element = item.window_panes .. " pane" .. (item.window_panes == "1" and " " or "s")
+    element = tostring(item.window_panes) .. " pane" .. (item.window_panes == 1 and " " or "s")
   elseif item.tree then
     element = ""
   end
@@ -483,7 +483,7 @@ function M.tmux(item, picker)
 
   element = nil
   if item.type == "session" and item.session_attached then
-    element = item.session_attached .. " client" .. (item.session_attached == "1" and " " or "s")
+    element = tostring(item.session_attached) .. " client" .. (item.session_attached == 1 and " " or "s")
   elseif (item.type == "pane" and item.pane_active) or (item.type == "window" and item.window_active) then
     element = "(active)"
   elseif item.tree then

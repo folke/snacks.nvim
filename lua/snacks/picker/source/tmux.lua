@@ -7,13 +7,13 @@ function M.panes(opts, ctx)
       "tmux",
       "list-panes",
       "-aF",
-      "#{session_name}:#{window_index}.#{pane_index} #{window_id} #{pane_id} #{window_active} #{pane_active} #{pane_at_top} #{pane_at_bottom} #{pane_at_left} #{pane_at_right} #{pane_current_command}",
+      "#{session_name}:#{window_index}.#{pane_index} #{session_id} #{window_id} #{pane_id} #{window_active} #{pane_active} #{pane_at_top} #{pane_at_bottom} #{pane_at_left} #{pane_at_right} #{pane_current_command}",
     }, { text = true })
     :wait()
   local items = {}
   for line in obj.stdout:gmatch("(.-)\n") do
-    local session_name, window_index, pane_index, window_id, pane_id, window_active, pane_active, pane_at_top, pane_at_bottom, pane_at_left, pane_at_right, current_command =
-      line:match("^(.+):(%d+)%.(%d+) (@%d+) (%%%d+) ([01]) ([01]) ([01]) ([01]) ([01]) ([01]) (.+)$")
+    local session_name, window_index, pane_index, session_id, window_id, pane_id, window_active, pane_active, pane_at_top, pane_at_bottom, pane_at_left, pane_at_right, current_command =
+      line:match("^(.+):(%d+)%.(%d+) (%$%d+) (@%d+) (%%%d+) ([01]) ([01]) ([01]) ([01]) ([01]) ([01]) (.+)$")
     window_index = tonumber(window_index)
     pane_index = tonumber(pane_index)
     local position
@@ -41,12 +41,23 @@ function M.panes(opts, ctx)
       session_name = session_name,
       window_index = window_index,
       pane_index = pane_index,
+      session_id = session_id,
       window_id = window_id,
       pane_id = pane_id,
       window_active = window_active == "1",
       pane_active = pane_active == "1",
       position = position,
       current_command = current_command,
+      text = ("%s:%s.%s %s %s %s %s %s"):format(
+        session_name,
+        window_index,
+        pane_index,
+        session_id,
+        window_id,
+        pane_id,
+        current_command,
+        pane_active and "active" or ""
+      ),
     }
   end
   return items
@@ -67,6 +78,7 @@ function M.windows(opts, ctx)
     local session_name, window_index, session_id, window_id, window_active, window_panes, window_name =
       line:match("^(.+):(%d+)% (%$%d+) (@%d+) ([01]) (%d+) (.+)$")
     window_index = tonumber(window_index)
+    window_panes = tonumber(window_panes)
     items[#items + 1] = {
       type = "window",
       session_name = session_name,
@@ -77,6 +89,18 @@ function M.windows(opts, ctx)
       window_active = window_active == "1",
       window_panes = window_panes,
       window_name = window_name,
+      text = ("%s:%s. %s %s %s %s"):format(
+        session_name,
+        window_index,
+        session_id,
+        window_id,
+        window_name,
+        window_active and "active" or ""
+      ),
+    }
+  end
+  return items
+end
     }
   end
   return items
@@ -93,6 +117,8 @@ function M.sessions(opts, ctx)
   local items = {}
   for line in obj.stdout:gmatch("(.-)\n") do
     local session_name, session_id, session_windows, session_attached = line:match("^(.+) (%$%d+) (%d+) (%d+)$")
+    session_windows = tonumber(session_windows)
+    session_attached = tonumber(session_attached)
     items[#items + 1] = {
       type = "session",
       session_name = session_name,
@@ -101,6 +127,7 @@ function M.sessions(opts, ctx)
       pane_index = -1,
       session_windows = session_windows,
       session_attached = session_attached,
+      text = ("%s: %s %s"):format(session_name, session_id, session_attached > 0 and "client" or ""),
     }
   end
   return items
