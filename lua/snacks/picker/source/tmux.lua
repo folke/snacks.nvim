@@ -131,7 +131,12 @@ function M.sessions(opts, ctx)
       pane_index = -1,
       session_windows = session_windows,
       session_attached = session_attached,
-      text = ("%s %s: %s %s"):format("session", session_name, session_id, session_attached > 0 and "client" or ""),
+      text = ("%s %s: %s %s"):format(
+        "session",
+        session_name,
+        session_id,
+        session_attached > 0 and session_attached .. " client" .. (session_attached > 1 and "s" or "") or ""
+      ),
     }
   end
   return items
