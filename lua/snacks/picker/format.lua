@@ -466,7 +466,7 @@ function M.tmux(item, picker)
   end
 
   if item.type and item[item.type .. "_id"] then
-    ret[#ret + 1] = { a(item[item.type .. "_id"], 3), "SnacksPickerKeymapNowait" }
+    ret[#ret + 1] = { a(item[item.type .. "_id"], 4), "SnacksPickerKeymapNowait" }
   end
 
   element = nil
@@ -485,7 +485,7 @@ function M.tmux(item, picker)
   if item.type == "session" and item.session_attached then
     element = tostring(item.session_attached) .. " client" .. (item.session_attached == 1 and " " or "s")
   elseif (item.type == "pane" and item.pane_active) or (item.type == "window" and item.window_active) then
-    element = "(active)"
+    element = "active"
   elseif item.tree then
     element = ""
   end
