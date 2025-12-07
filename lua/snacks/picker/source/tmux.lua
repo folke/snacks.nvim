@@ -48,7 +48,8 @@ function M.panes(opts, ctx)
       pane_active = pane_active == "1",
       position = position,
       current_command = current_command,
-      text = ("%s:%s.%s %s %s %s %s %s"):format(
+      text = ("%s %s:%s.%s %s %s %s %s %s"):format(
+        "pane",
         session_name,
         window_index,
         pane_index,
@@ -89,7 +90,8 @@ function M.windows(opts, ctx)
       window_active = window_active == "1",
       window_panes = window_panes,
       window_name = window_name,
-      text = ("%s:%s. %s %s %s %s"):format(
+      text = ("%s %s:%s. %s %s %s %s"):format(
+        "window",
         session_name,
         window_index,
         session_id,
@@ -127,7 +129,7 @@ function M.sessions(opts, ctx)
       pane_index = -1,
       session_windows = session_windows,
       session_attached = session_attached,
-      text = ("%s: %s %s"):format(session_name, session_id, session_attached > 0 and "client" or ""),
+      text = ("%s %s: %s %s"):format("session", session_name, session_id, session_attached > 0 and "client" or ""),
     }
   end
   return items
