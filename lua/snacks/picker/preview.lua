@@ -377,8 +377,29 @@ function M.man(ctx)
 end
 
 ---@param ctx snacks.picker.preview.ctx
-function M.tmux_pane(ctx)
-  M.cmd(("setterm -linewrap off; tmux capture-pane -pe -t %s"):format(ctx.item.pane_id), ctx)
+function M.tmux(ctx)
+  local main_type = ctx.item.type:gsub("^%l", string.upper)
+  local child_type = (ctx.item.type == "session" and "windows") or (ctx.item.type == "window" and "panes") or "preview"
+  local addr = (ctx.item.session_name and ctx.item.session_name or "")
+    .. (ctx.item.window_index >= 0 and ":" .. tostring(ctx.item.window_index) or "")
+    .. (ctx.item.pane_index >= 0 and "." .. tostring(ctx.item.pane_index) or "")
+  ctx.preview:set_title(("%s %s %s"):format(main_type, addr, child_type))
+  if ctx.item.type == "session" or ctx.item.type == "window" then
+    ctx.preview:scratch()
+    -- ctx.preview:reset()
+    -- ctx.preview:minimal()
+    local children = vim.tbl_map(
+      function(val)
+        return Snacks.picker.format.tmux(val, ctx.picker)
+      end,
+      vim.tbl_filter(function(val)
+        return val[ctx.item.type .. "_id"] == ctx.item[ctx.item.type .. "_id"]
+      end, require("snacks.picker.source.tmux")[child_type](_, ctx))
+    )
+    Snacks.picker.highlight.render(ctx.buf, ns, children, { append = true })
+  elseif ctx.item.type == "pane" and ctx.item.pane_id then
+    M.cmd(("setterm -linewrap off; tmux capture-pane -pe -t %s"):format(ctx.item.pane_id), ctx)
+  end
 end
 
 return M
