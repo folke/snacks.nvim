@@ -386,8 +386,6 @@ function M.tmux(ctx)
   ctx.preview:set_title(("%s %s %s"):format(main_type, addr, child_type))
   if ctx.item.type == "session" or ctx.item.type == "window" then
     ctx.preview:scratch()
-    -- ctx.preview:reset()
-    -- ctx.preview:minimal()
     local children = vim.tbl_map(
       function(val)
         return Snacks.picker.format.tmux(val, ctx.picker)
