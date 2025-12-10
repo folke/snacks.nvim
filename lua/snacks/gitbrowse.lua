@@ -31,6 +31,8 @@ local defaults = {
   branch = nil, ---@type string?
   line_start = nil, ---@type number?
   line_end = nil, ---@type number?
+  ---@type boolean
+  only_upstream_remote = false, -- if branch = nil and upstream of the current branch is found, do not consider other remotes
   -- patterns to transform remotes to an actual URL
   -- stylua: ignore
   remote_patterns = {
@@ -236,7 +238,8 @@ function M._open(opts)
 
   for _, line in ipairs(system({ "git", "-C", cwd, "remote", "-v" }, "Failed to get git remotes")) do
     local name, remote = line:match("(%S+)%s+(%S+)%s+%(fetch%)")
-    if name and remote then
+    local skip = opts.only_upstream_remote and opts.branch == nil and upstream ~= nil and name ~= upstream
+    if name and remote and not skip then
       local repo = M.get_repo(remote, opts)
       if repo then
         local old_fields_branch = fields.branch
