@@ -31,6 +31,8 @@ local defaults = {
   branch = nil, ---@type string?
   line_start = nil, ---@type number?
   line_end = nil, ---@type number?
+  ---@type boolean
+  only_upstream_remote = false, -- if branch = nil and upstream of the current branch is found, do not consider other remotes
   -- patterns to transform remotes to an actual URL
   -- stylua: ignore
   remote_patterns = {
@@ -146,6 +148,33 @@ function M.open(opts)
   end
 end
 
+---@param cwd string
+---@param local_branch string
+---@return string? remote
+---@return string? remote_branch
+local function get_upstream_remote_and_branch(cwd, local_branch)
+  local remote = "."
+  local branch = "refs/heads/" .. local_branch
+  while remote == "." do
+    local descs = system({ "git", "-C", cwd,
+      "for-each-ref", "--format=%(upstream:remotename) %(upstream:remoteref)", branch,
+    }, "Failed to find upstream branch")
+    if #descs == 0 or descs[1] == "" then
+      return nil, nil
+    end
+    descs = vim.split(descs[1], " ")
+    remote, branch = descs[1], descs[2]
+  end
+  local remote_branch, _ = branch:gsub("^refs/heads/", "", 1)
+  return remote, remote_branch
+end
+
+---@param cwd string
+---@return string
+local function get_current_branch(cwd)
+  return system({ "git", "-C", cwd, "rev-parse", "--abbrev-ref", "HEAD" }, "Failed to get current branch")[1]
+end
+
 ---@param opts? snacks.gitbrowse.Config
 function M._open(opts)
   opts = Snacks.config.get("gitbrowse", defaults, opts)
@@ -153,10 +182,12 @@ function M._open(opts)
   file = file and (uv.fs_stat(file) or {}).type == "file" and svim.fs.normalize(file) or nil
   local cwd = file and vim.fn.fnamemodify(file, ":h") or vim.fn.getcwd()
 
+  local local_branch = get_current_branch(cwd)
+  local upstream, remote_branch = get_upstream_remote_and_branch(cwd, local_branch)
+
   ---@type snacks.gitbrowse.Fields
   local fields = {
-    branch = opts.branch
-      or system({ "git", "-C", cwd, "rev-parse", "--abbrev-ref", "HEAD" }, "Failed to get current branch")[1],
+    branch = opts.branch or local_branch,
     file = file and system({ "git", "-C", cwd, "ls-files", "--full-name", file }, "Failed to get git file path")[1],
     line_start = opts.line_start,
     line_end = opts.line_end,
@@ -207,16 +238,31 @@ function M._open(opts)
 
   for _, line in ipairs(system({ "git", "-C", cwd, "remote", "-v" }, "Failed to get git remotes")) do
     local name, remote = line:match("(%S+)%s+(%S+)%s+%(fetch%)")
-    if name and remote then
+    local skip = opts.only_upstream_remote and opts.branch == nil and upstream ~= nil and name ~= upstream
+    if name and remote and not skip then
       local repo = M.get_repo(remote, opts)
       if repo then
+        local old_fields_branch = fields.branch
+        if opts.branch == nil and name == upstream then
+          fields.branch = remote_branch or fields.branch
+        end
         table.insert(remotes, {
           name = name,
           url = M.get_url(repo, fields, opts),
         })
+        fields.branch = old_fields_branch
       end
     end
   end
+  table.sort(remotes, function(a, b)
+    if a.name == upstream then
+      return true
+    elseif b.name == upstream then
+      return false
+    else
+      return a.name < b.name
+    end
+  end)
 
   local function open(remote)
     if remote then
