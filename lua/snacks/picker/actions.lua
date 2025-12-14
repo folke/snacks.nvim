@@ -261,9 +261,13 @@ function M.toggle_input(picker)
   picker:toggle("input", { focus = true })
 end
 
-function M.picker_grep(_, item)
+function M.picker_grep(picker, item)
   if item then
-    Snacks.picker.grep({ cwd = Snacks.picker.util.dir(item) })
+    local search_dirs = { Snacks.picker.util.dir(item) }
+    for _, selected in ipairs(picker:selected({ fallback = true })) do
+      table.insert(search_dirs, Snacks.picker.util.path(selected))
+    end
+    Snacks.picker.grep({ dirs = search_dirs })
   end
 end
 
