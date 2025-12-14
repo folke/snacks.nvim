@@ -4,6 +4,8 @@ local Tree = require("snacks.explorer.tree")
 
 local M = {}
 
+M.actions = Actions.actions
+
 ---@type table<snacks.Picker, snacks.picker.explorer.State>
 M._state = setmetatable({}, { __mode = "k" })
 local uv = vim.uv or vim.loop
@@ -48,7 +50,9 @@ function State.new(picker)
   if opts.watch then
     local on_close = picker.opts.on_close
     picker.opts.on_close = function(p)
-      require("snacks.explorer.watch").abort()
+      vim.schedule(function()
+        require("snacks.explorer.watch").watch()
+      end)
       if on_close then
         on_close(p)
       end
@@ -60,6 +64,20 @@ function State.new(picker)
     if p then
       Tree:refresh(ev.file)
       Actions.update(p)
+    end
+  end)
+
+  picker.list.win:on("TabEnter", function(_, ev)
+    local p = ref()
+    if p and p:on_current_tab() then
+      Actions.update(p)
+    end
+  end)
+
+  picker.list.win:on("WinEnter", function(_, ev)
+    local p = ref()
+    if p then
+      p._main:update()
     end
   end)
 
@@ -128,7 +146,7 @@ end
 function State:setup(ctx)
   local opts = ctx.picker.opts --[[@as snacks.picker.explorer.Config]]
   if opts.watch then
-    require("snacks.explorer.watch").watch(ctx.filter.cwd)
+    require("snacks.explorer.watch").watch()
   end
   return not ctx.filter:is_empty()
 end
@@ -136,7 +154,6 @@ end
 ---@param opts snacks.picker.explorer.Config
 function M.setup(opts)
   local searching = false
-  local ref ---@type snacks.Picker.ref
   return Snacks.config.merge(opts, {
     actions = {
       confirm = Actions.actions.confirm,
@@ -146,52 +163,11 @@ function M.setup(opts)
       ---@param picker snacks.Picker
       ---@param filter snacks.picker.Filter
       transform = function(picker, filter)
-        ref = picker:ref()
         local s = not filter:is_empty()
         if searching ~= s then
           searching = s
           filter.meta.searching = searching
           return true
-        end
-      end,
-    },
-    matcher = {
-      --- Add parent dirs to matching items
-      ---@param matcher snacks.picker.Matcher
-      ---@param item snacks.picker.explorer.Item
-      on_match = function(matcher, item)
-        if not searching then
-          return
-        end
-        local picker = ref.value
-        if picker and item.score > 0 then
-          local parent = item.parent
-          while parent do
-            if parent.score == 0 or parent.match_tick ~= matcher.tick then
-              parent.score = 1
-              parent.match_tick = matcher.tick
-              parent.match_topk = nil
-              picker.list:add(parent)
-            else
-              break
-            end
-            parent = parent.parent
-          end
-        end
-      end,
-      on_done = function()
-        if not searching then
-          return
-        end
-        local picker = ref.value
-        if not picker or picker.closed then
-          return
-        end
-        for item, idx in picker:iter() do
-          if not item.dir then
-            picker.list:view(idx)
-            return
-          end
         end
       end,
     },
@@ -216,9 +192,17 @@ end
 function M.explorer(opts, ctx)
   local state = M.get_state(ctx.picker)
 
+  ctx.picker.matcher.opts.keep_parents = false
   if state:setup(ctx) then
+    ctx.picker.matcher.opts.keep_parents = true
     return M.search(opts, ctx)
   end
+
+  -- initial on_find (typically for follow_file), has to be done both for:
+  -- * regular explorer view
+  -- * when git status refreshes the view
+  local on_find = state.on_find
+  state.on_find = nil
 
   if opts.git_status then
     require("snacks.explorer.git").update(ctx.filter.cwd, {
@@ -228,7 +212,7 @@ function M.explorer(opts, ctx)
           return
         end
         ctx.picker.list:set_target()
-        ctx.picker:find()
+        ctx.picker:find({ on_done = on_find })
       end,
     })
   end
@@ -238,9 +222,9 @@ function M.explorer(opts, ctx)
   end
 
   return function(cb)
-    if state.on_find then
-      ctx.picker.matcher.task:on("done", vim.schedule_wrap(state.on_find))
-      state.on_find = nil
+    if on_find then
+      assert(ctx.picker.matcher.task:running())
+      ctx.picker.matcher.task:on("done", vim.schedule_wrap(on_find))
     end
     local items = {} ---@type table<string, snacks.picker.explorer.Item>
     local top = Tree:find(ctx.filter.cwd)

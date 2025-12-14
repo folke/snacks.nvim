@@ -113,7 +113,7 @@ local defaults = {
   formats = {
     icon = function(item)
       if item.file and item.icon == "file" or item.icon == "directory" then
-        return M.icon(item.file, item.icon)
+        return Snacks.dashboard.icon(item.file, item.icon)
       end
       return { item.icon, width = 2, hl = "icon" }
     end,
@@ -551,7 +551,7 @@ end
 ---@param cb fun()
 ---@param group? string|integer
 function D.on(event, cb, group)
-  vim.api.nvim_create_autocmd("User", { pattern = "SnacksDashboard" .. event, callback = cb, group = group })
+  return vim.api.nvim_create_autocmd("User", { pattern = "SnacksDashboard" .. event, callback = cb, group = group })
 end
 
 ---@param pos {[1]:number, [2]:number}
@@ -717,23 +717,25 @@ function D:update()
 
   -- cursor movement
   local last = { 1, 0 }
+  local function update_cursor()
+    local item = self:find(vim.api.nvim_win_get_cursor(self.win), last)
+    -- can happen for panes without actionable items
+    item = item or vim.tbl_filter(function(it)
+      return it.action and it._
+    end, self.items)[1]
+    if item then
+      local col = self.lines[item._.row]:find("[%w%d%p]", item._.col + 1)
+      col = col or (item._.col + 1 + (item.indent and (item.indent + 1) or 0))
+      last = { item._.row, (col or item._.col + 1) - 1 }
+    end
+    vim.api.nvim_win_set_cursor(self.win, last)
+  end
   vim.api.nvim_create_autocmd("CursorMoved", {
     group = vim.api.nvim_create_augroup("snacks_dashboard_cursor", { clear = true }),
     buffer = self.buf,
-    callback = function()
-      local item = self:find(vim.api.nvim_win_get_cursor(self.win), last)
-      -- can happen for panes without actionable items
-      item = item or vim.tbl_filter(function(it)
-        return it.action and it._
-      end, self.items)[1]
-      if item then
-        local col = self.lines[item._.row]:find("[%w%d%p]", item._.col + 1)
-        col = col or (item._.col + 1 + (item.indent and (item.indent + 1) or 0))
-        last = { item._.row, (col or item._.col + 1) - 1 }
-      end
-      vim.api.nvim_win_set_cursor(self.win, last)
-    end,
+    callback = update_cursor,
   })
+  update_cursor()
   self.fire("UpdatePost")
 end
 
@@ -804,7 +806,9 @@ function M.oldfiles(opts)
       if want then
         done[file] = true
         for _, f in ipairs(filter) do
-          if (file:sub(1, #f.path) == f.path) ~= f.want then
+          local matches = file:sub(1, #f.path) == f.path
+            and (file == f.path or file:sub(#f.path + 1, #f.path + 1):find("[/\\]") ~= nil)
+          if matches ~= f.want then
             want = false
             break
           end
@@ -831,6 +835,7 @@ function M.sections.session(item)
     { "possession.nvim", ":PossessionLoadCwd" },
     { "mini.sessions", ":lua require('mini.sessions').read()" },
     { "mini.nvim", ":lua require('mini.sessions').read()" },
+    { "auto-session", ":AutoSession restore" },
   }
   for _, plugin in pairs(plugins) do
     if M.have_plugin(plugin[1]) then
@@ -850,9 +855,11 @@ function M.sections.recent_files(opts)
   return function()
     opts = opts or {}
     local limit = opts.limit or 5
-    local root = opts.cwd and svim.fs.normalize(opts.cwd == true and vim.fn.getcwd() or opts.cwd) or ""
+    local root = opts.cwd and svim.fs.normalize(opts.cwd == true and vim.fn.getcwd() or opts.cwd) or nil
+    -- Only filter by directory when root is specified. If nil, M.oldfiles will use default filters only (excludes stdpath data/cache/state).
+    local oldfiles_opts = root and { filter = { [root] = true } } or nil
     local ret = {} ---@type snacks.dashboard.Section
-    for file in M.oldfiles({ filter = { [root] = true } }) do
+    for file in M.oldfiles(oldfiles_opts) do
       if not opts.filter or opts.filter(file) then
         ret[#ret + 1] = {
           file = file,
@@ -874,7 +881,7 @@ end
 --- try to restore the session and open the picker if the session is not restored.
 --- You can customize the behavior by providing a custom action.
 --- Use `opts.dirs` to provide a list of directories to use instead of the git roots.
----@param opts? {limit?:number, dirs?:(string[]|fun():string[]), pick?:boolean, session?:boolean, action?:fun(dir)}
+---@param opts? {limit?:number, dirs?:(string[]|fun():string[]), pick?:boolean, session?:boolean, action?:fun(dir), filter?:fun(dir:string):boolean?}
 function M.sections.projects(opts)
   opts = vim.tbl_extend("force", { pick = true, session = true }, opts or {})
   local limit = opts.limit or 5
@@ -886,9 +893,11 @@ function M.sections.projects(opts)
     for file in M.oldfiles() do
       local dir = Snacks.git.get_root(file)
       if dir and not vim.tbl_contains(dirs, dir) then
-        table.insert(dirs, dir)
-        if #dirs >= limit then
-          break
+        if not opts.filter or opts.filter(dir) then
+          table.insert(dirs, dir)
+          if #dirs >= limit then
+            break
+          end
         end
       end
     end
@@ -896,15 +905,16 @@ function M.sections.projects(opts)
 
   local ret = {} ---@type snacks.dashboard.Item[]
   for _, dir in ipairs(dirs) do
-    ret[#ret + 1] = {
-      file = dir,
-      icon = "directory",
-      action = function(self)
-        if opts.action then
-          return opts.action(dir)
-        end
-        vim.fn.chdir(dir)
-        local session = M.sections.session()
+    if not opts.filter or opts.filter(dir) then
+      ret[#ret + 1] = {
+        file = dir,
+        icon = "directory",
+        action = function(self)
+          if opts.action then
+            return opts.action(dir)
+          end
+          vim.fn.chdir(dir)
+          local session = M.sections.session()
         -- stylua: ignore
         if opts.session and session then
           local session_loaded = false
@@ -914,9 +924,10 @@ function M.sections.projects(opts)
         elseif opts.pick then
           M.pick()
         end
-      end,
-      autokey = true,
-    }
+        end,
+        autokey = true,
+      }
+    end
   end
   return ret
 end
@@ -940,109 +951,97 @@ end
 function M.sections.terminal(opts)
   return function(self)
     local cmd = opts.cmd or 'echo "No `cmd` provided"'
-    local ttl = opts.ttl or 3600
-    local height = opts.height or 10
-    local width = opts.width
-    if not width then
-      width = self.opts.width - (opts.indent or 0)
+    if type(cmd) == "string" and vim.fn.has("linux") == 1 and not vim.o.shell:find("nu") then
+      -- work-around for https://github.com/folke/snacks.nvim/issues/1706
+      -- jobstart+pty sometimes doesn't flush the full output before exiting
+      cmd = cmd .. "; sleep .1"
     end
+
+    local ttl = opts.ttl or 3600
+    local height, width = opts.height or 10, opts.width or (self.opts.width - (opts.indent or 0))
+    local hl = opts.hl and hl_groups[opts.hl] or opts.hl or "SnacksDashboardTerminal"
+    local cache_buf, term_buf, win ---@type integer?, integer?, integer?
 
     local cache_parts = {
       table.concat(type(cmd) == "table" and cmd or { cmd }, " "),
       uv.cwd(),
       opts.random and math.random(1, opts.random) or "",
     }
-    local hashed_cache_key = vim.fn.sha256(table.concat(cache_parts, "."))
-
     local cache_dir = vim.fn.stdpath("cache") .. "/snacks"
-    local cache_file = cache_dir .. "/" .. hashed_cache_key .. ".txt"
+    local cache_file = ("%s/%s.txt"):format(cache_dir, vim.fn.sha256(table.concat(cache_parts, ".")))
     local stat = uv.fs_stat(cache_file)
-    local buf = vim.api.nvim_create_buf(false, true)
-    local chan = vim.api.nvim_open_term(buf, {})
-
-    local function send(data, refresh)
-      vim.api.nvim_chan_send(chan, data)
-      if refresh then
-        -- HACK: this forces a refresh of the terminal buffer and prevents flickering
-        vim.bo[buf].scrollback = 9999
-        vim.bo[buf].scrollback = 9998
-      end
-    end
-
-    local jid, stopped ---@type number?, boolean?
     local has_cache = stat and stat.type == "file" and stat.size > 0
     local is_expired = has_cache and stat and os.time() - stat.mtime.sec >= ttl
-    if has_cache and stat then
+
+    if has_cache and stat then -- show cached output
+      cache_buf = vim.api.nvim_create_buf(false, true)
+      vim.bo[cache_buf].buftype = "nofile"
       local fin = assert(uv.fs_open(cache_file, "r", 438))
-      send(uv.fs_read(fin, stat.size, 0) or "", true)
+      vim.api.nvim_chan_send(vim.api.nvim_open_term(cache_buf, {}), uv.fs_read(fin, stat.size, 0) or "")
       uv.fs_close(fin)
+      -- -- HACK: without this, some lines may not show up in the terminal buffer
+      vim.bo[cache_buf].scrollback = 9999
+      vim.bo[cache_buf].scrollback = 9998
     end
-    if not has_cache or is_expired then
-      local output, recording = {}, assert(uv.new_timer())
-      -- record output for max 5 seconds. otherwise assume its streaming
-      recording:start(5000, 0, function()
-        output = {}
-      end)
-      local first = true
-      jid = vim.fn.jobstart(cmd, {
-        height = height,
-        width = width,
-        pty = true,
-        on_stdout = function(_, data)
-          data = table.concat(data, "\n")
 
-          local termenv = {
-            ["\27%]11;%?\27\\"] = function() -- OSC 11
-              local rgb = (vim.o.background == "light") and "ffff/ffff/ffff" or "0000/0000/0000"
-              return "\x1b]11;rgb:" .. rgb .. "\x1b\\"
-            end,
-            ["\27%[6n"] = function() -- CSI 6 n
-              return "\x1b[1;" .. tostring(width) .. "R"
-            end,
-          }
-          for seq, repl in pairs(termenv) do
-            if data:find(seq) then
-              pcall(vim.fn.chansend, jid, repl())
-              data = data:gsub(seq, "")
-            end
-          end
-          if data == "" then
-            return
-          end
-
-          if recording:is_active() then
-            table.insert(output, data)
-          end
-          if first and has_cache then -- clear the screen if cache was expired
-            first = false
-            data = "\27[2J\27[H" .. data -- clear screen
-          end
-          pcall(send, data)
-        end,
-        on_exit = function(_, code)
-          if not recording:is_active() or stopped then
-            return
-          end
-          if code ~= 0 then
-            Snacks.notify.error(
-              ("Terminal **cmd** `%s` failed with code `%d`:\n- `vim.o.shell = %q`\n\nOutput:\n%s"):format(
-                cmd,
-                code,
-                vim.o.shell,
-                vim.trim(table.concat(output, ""))
-              )
-            )
-          elseif ttl > 0 then -- save the output
-            vim.fn.mkdir(cache_dir, "p")
-            local fout = assert(uv.fs_open(cache_file, "w", 438))
-            uv.fs_write(fout, table.concat(output, ""))
-            uv.fs_close(fout)
-          end
-        end,
-      })
-      if jid <= 0 then
-        Snacks.notify.error(("Failed to start terminal **cmd** `%s`"):format(cmd))
+    ---@param buf integer
+    local function show(buf)
+      if win and vim.api.nvim_win_is_valid(win) then
+        vim.api.nvim_win_set_buf(win, buf)
+        Snacks.util.wo(win, { winhighlight = "TermCursorNC:" .. hl .. ",NormalFloat:" .. hl })
+        Snacks.util.bo(buf, { filetype = Snacks.config.styles.dashboard.bo.filetype })
       end
+    end
+
+    local job ---@type snacks.Job?
+    if not has_cache or is_expired then
+      term_buf = vim.api.nvim_create_buf(false, true)
+      local term_ready = false
+      local output = {} ---@type string[]
+
+      local recording = vim.defer_fn(function()
+        output = {}
+        show(term_buf)
+      end, 5000) --[[@as uv.uv_timer_t]]
+
+      local Job = require("snacks.util.job")
+      job = Job.new(
+        term_buf,
+        cmd,
+        Snacks.config.merge({}, {
+          start = false,
+          term = true,
+          width = width,
+          height = height,
+          on_stdout = function(_, data)
+            if recording:is_active() then
+              table.insert(output, table.concat(data, "\n"))
+            end
+            if not term_ready and job then
+              local non_empty = #vim.tbl_filter(function(line)
+                return line:match("%S")
+              end, job.lines)
+              if non_empty >= 3 then
+                term_ready = true
+                show(term_buf)
+              end
+            end
+          end,
+          on_exit = function(_, code)
+            if job and job.killed then
+              return
+            end
+            show(term_buf)
+            if recording:is_active() and code == 0 and ttl > 0 then -- save the output
+              vim.fn.mkdir(cache_dir, "p")
+              local fout = assert(uv.fs_open(cache_file, "w", 438))
+              local data = table.concat(output, "")
+              uv.fs_write(fout, data, 0)
+              uv.fs_close(fout)
+            end
+          end,
+        })
+      )
     end
     return {
       action = not opts.title and opts.action or nil,
@@ -1050,7 +1049,9 @@ function M.sections.terminal(opts)
       label = not opts.title and opts.label or nil,
       render = function(_, pos)
         self:trace("terminal.render")
-        local win = vim.api.nvim_open_win(buf, false, {
+        -- open the window with the terminal buffer if available.
+        -- This is to ensure it starts with the correct window size.
+        win = vim.api.nvim_open_win(assert(term_buf or cache_buf), false, {
           bufpos = { pos[1] - 1, pos[2] + 1 },
           col = opts.indent or 0,
           focusable = false,
@@ -1062,15 +1063,19 @@ function M.sections.terminal(opts)
           style = "minimal",
           width = width,
           win = self.win,
+          border = "none",
         })
-        local hl = opts.hl and hl_groups[opts.hl] or opts.hl or "SnacksDashboardTerminal"
-        Snacks.util.wo(win, { winhighlight = "TermCursorNC:" .. hl .. ",NormalFloat:" .. hl })
-        Snacks.util.bo(buf, { filetype = Snacks.config.styles.dashboard.bo.filetype })
+        if job then -- start the job if needed
+          job:start()
+        end
+        show(assert(cache_buf or term_buf)) -- set the correct buffer
         local close = vim.schedule_wrap(function()
-          stopped = true
+          if job then
+            job:stop()
+          end
           pcall(vim.api.nvim_win_close, win, true)
-          pcall(vim.api.nvim_buf_delete, buf, { force = true })
-          pcall(vim.fn.jobstop, jid)
+          pcall(vim.api.nvim_buf_delete, cache_buf, { force = true })
+          pcall(vim.api.nvim_buf_delete, term_buf, { force = true })
           return true
         end)
         self.on("UpdatePre", close, self.augroup)
@@ -1181,13 +1186,31 @@ function M.setup()
   local options = { showtabline = vim.o.showtabline, laststatus = vim.o.laststatus }
   vim.o.showtabline, vim.o.laststatus = 0, 0
   local dashboard = M.open({ buf = buf, win = wins[1] })
-  D.on("Closed", function()
+
+  local function restore()
+    local view = vim.fn.winsaveview()
     for k, v in pairs(options) do
       if vim.o[k] == 0 and v ~= 0 then
         vim.o[k] = v
       end
     end
-  end, dashboard.augroup)
+    options = {}
+    vim.fn.winrestview(view)
+  end
+  restore = vim.schedule_wrap(restore)
+
+  D.on("Closed", restore, dashboard.augroup)
+
+  vim.api.nvim_create_autocmd("WinEnter", {
+    group = dashboard.augroup,
+    callback = function()
+      local win = vim.api.nvim_get_current_win()
+      local is_float = vim.api.nvim_win_get_config(win).relative ~= ""
+      if win ~= dashboard.win and not is_float then
+        restore()
+      end
+    end,
+  })
 
   if Snacks.config.dashboard.debug then
     Snacks.debug.stats({ min = 0.2 })

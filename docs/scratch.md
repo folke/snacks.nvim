@@ -73,6 +73,7 @@ Suggested config:
   -- * cwd (optional)
   -- * branch (optional)
   filekey = {
+    id = nil, ---@type string? unique id used instead of name for the filename hash
     cwd = true, -- use current working directory
     branch = true, -- use current branch name
     count = true, -- use vim.v.count1
@@ -114,9 +115,8 @@ docs for more information on how to customize these styles
   -- position = "right",
   zindex = 20,
   wo = { winhighlight = "NormalFloat:Normal" },
-  border = "rounded",
-  title_pos = "center",
-  footer_pos = "center",
+  footer_keys = true,
+  border = true,
 }
 ```
 
@@ -125,13 +125,14 @@ docs for more information on how to customize these styles
 ```lua
 ---@class snacks.scratch.File
 ---@field file string full path to the scratch buffer
----@field stat uv.fs_stat.result File stat result
 ---@field name string name of the scratch buffer
 ---@field ft string file type
 ---@field icon? string icon for the file type
+---@field icon_hl? string highlight group for the icon
 ---@field cwd? string current working directory
 ---@field branch? string Git branch
 ---@field count? number vim.v.count1 used to open the buffer
+---@field id? string unique id used instead of name for the filename hash
 ```
 
 ## 📦 Module

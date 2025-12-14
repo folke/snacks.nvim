@@ -163,9 +163,8 @@ function M.files(opts, ctx)
   if opts.debug.files then
     Snacks.notify(cmd .. " " .. table.concat(args or {}, " "))
   end
-  return require("snacks.picker.source.proc").proc({
-    opts,
-    {
+  return require("snacks.picker.source.proc").proc(
+    ctx:opts({
       cmd = cmd,
       args = args,
       notify = not opts.live,
@@ -174,16 +173,16 @@ function M.files(opts, ctx)
         item.cwd = cwd
         item.file = item.text
       end,
-    },
-  }, ctx)
+    }),
+    ctx
+  )
 end
 
 ---@param opts snacks.picker.proc.Config
 ---@type snacks.picker.finder
 function M.zoxide(opts, ctx)
-  return require("snacks.picker.source.proc").proc({
-    opts,
-    {
+  return require("snacks.picker.source.proc").proc(
+    ctx:opts({
       cmd = "zoxide",
       args = { "query", "--list" },
       ---@param item snacks.picker.finder.Item
@@ -191,8 +190,9 @@ function M.zoxide(opts, ctx)
         item.file = item.text
         item.dir = true
       end,
-    },
-  }, ctx)
+    }),
+    ctx
+  )
 end
 
 return M

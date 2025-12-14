@@ -49,6 +49,11 @@ M.meta = {
   merge = { config = "config.defaults", picker = "core.picker", "actions" },
 }
 
+---@class snacks.picker.resume.Opts
+---@field source? string
+---@field include? string[]
+---@field exclude? string[]
+
 -- create actual picker functions for autocomplete
 vim.defer_fn(function()
   M.config.setup()
@@ -100,6 +105,13 @@ end
 ---@param opts? {source?: string, tab?: boolean} tab defaults to true
 function M.get(opts)
   return require("snacks.picker.core.picker").get(opts)
+end
+
+---@param opts? snacks.picker.resume.Opts
+---@overload fun(source:string):snacks.Picker?
+---@return snacks.Picker?
+function M.resume(opts)
+  return require("snacks.picker.resume").resume(opts)
 end
 
 return M

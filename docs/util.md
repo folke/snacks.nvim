@@ -10,6 +10,13 @@
 
 ## 📦 Module
 
+```lua
+---@class snacks.util
+---@field spawn snacks.spawn
+---@field lsp snacks.lsp
+Snacks.util = {}
+```
+
 ### `Snacks.util.blend()`
 
 ```lua
@@ -81,7 +88,7 @@ Get an icon from `mini.icons` or `nvim-web-devicons`.
 
 ```lua
 ---@param name string
----@param cat? string defaults to "file"
+---@param cat? string "file"|"filetype"|"extension"|"directory"
 ---@param opts? { fallback?: {dir?:string, file?:string} }
 ---@return string, string?
 Snacks.util.icon(name, cat, opts)
@@ -202,6 +209,13 @@ Snacks.util.set_hl(groups, opts)
 
 ```lua
 Snacks.util.spinner()
+```
+
+### `Snacks.util.stop()`
+
+```lua
+---@param handle? uv.uv_handle_t|uv.uv_timer_t
+Snacks.util.stop(handle)
 ```
 
 ### `Snacks.util.throttle()`

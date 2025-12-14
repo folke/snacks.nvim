@@ -11,8 +11,14 @@
 ---@field diagnostics_buffer fun(opts?: snacks.picker.diagnostics.Config|{}): snacks.Picker
 ---@field explorer fun(opts?: snacks.picker.explorer.Config|{}): snacks.Picker
 ---@field files fun(opts?: snacks.picker.files.Config|{}): snacks.Picker
+---@field gh_actions fun(opts?: snacks.picker.gh.actions.Config|{}): snacks.Picker
+---@field gh_diff fun(opts?: snacks.picker.gh.diff.Config|{}): snacks.Picker
+---@field gh_issue fun(opts?: snacks.picker.gh.issue.Config|{}): snacks.Picker
+---@field gh_labels fun(opts?: snacks.picker.gh.labels.Config|{}): snacks.Picker
+---@field gh_pr fun(opts?: snacks.picker.gh.pr.Config|{}): snacks.Picker
+---@field gh_reactions fun(opts?: snacks.picker.gh.reactions.Config|{}): snacks.Picker
 ---@field git_branches fun(opts?: snacks.picker.git.branches.Config|{}): snacks.Picker
----@field git_diff fun(opts?: snacks.picker.git.Config|{}): snacks.Picker
+---@field git_diff fun(opts?: snacks.picker.git.diff.Config|{}): snacks.Picker
 ---@field git_files fun(opts?: snacks.picker.git.files.Config|{}): snacks.Picker
 ---@field git_grep fun(opts?: snacks.picker.git.grep.Config|{}): snacks.Picker
 ---@field git_log fun(opts?: snacks.picker.git.log.Config|{}): snacks.Picker
@@ -35,6 +41,8 @@
 ---@field lsp_declarations fun(opts?: snacks.picker.lsp.Config|{}): snacks.Picker
 ---@field lsp_definitions fun(opts?: snacks.picker.lsp.Config|{}): snacks.Picker
 ---@field lsp_implementations fun(opts?: snacks.picker.lsp.Config|{}): snacks.Picker
+---@field lsp_incoming_calls fun(opts?: snacks.picker.lsp.Config|{}): snacks.Picker
+---@field lsp_outgoing_calls fun(opts?: snacks.picker.lsp.Config|{}): snacks.Picker
 ---@field lsp_references fun(opts?: snacks.picker.lsp.references.Config|{}): snacks.Picker
 ---@field lsp_symbols fun(opts?: snacks.picker.lsp.symbols.Config|{}): snacks.Picker
 ---@field lsp_type_definitions fun(opts?: snacks.picker.lsp.Config|{}): snacks.Picker
@@ -52,9 +60,11 @@
 ---@field recent fun(opts?: snacks.picker.recent.Config|{}): snacks.Picker
 ---@field registers fun(opts?: snacks.picker.Config|{}): snacks.Picker
 ---@field resume fun(): snacks.Picker
+---@field scratch fun(opts?: snacks.picker.Config|{}): snacks.Picker
 ---@field search_history fun(opts?: snacks.picker.history.Config|{}): snacks.Picker
 ---@field smart fun(opts?: snacks.picker.smart.Config|{}): snacks.Picker
 ---@field spelling fun(opts?: snacks.picker.Config|{}): snacks.Picker
+---@field tags fun(opts?: snacks.picker.tags.Config|{}): snacks.Picker
 ---@field treesitter fun(opts?: snacks.picker.treesitter.Config|{}): snacks.Picker
 ---@field undo fun(opts?: snacks.picker.undo.Config|{}): snacks.Picker
 ---@field zoxide fun(opts?: snacks.picker.Config|{}): snacks.Picker

@@ -1,5 +1,15 @@
 ---@class snacks.util
-local M = {}
+---@field spawn snacks.spawn
+---@field lsp snacks.lsp
+local M = setmetatable({}, {
+  ---@param M snacks.util
+  __index = function(M, k)
+    if vim.tbl_contains({ "spawn", "lsp" }, k) then
+      M[k] = require("snacks.util." .. k)
+    end
+    return rawget(M, k)
+  end,
+})
 
 M.meta = {
   desc = "Utility functions for Snacks _(library)_",
@@ -60,7 +70,7 @@ function M.color(group, prop)
   group = type(group) == "table" and group or { group }
   ---@cast group string[]
   for _, g in ipairs(group) do
-    local hl = vim.api.nvim_get_hl(0, { name = g, link = false })
+    local hl = vim.api.nvim_get_hl(0, { name = g, link = false, create = false })
     if hl[prop] then
       return string.format("#%06x", hl[prop])
     end
@@ -119,7 +129,7 @@ end
 
 --- Get an icon from `mini.icons` or `nvim-web-devicons`.
 ---@param name string
----@param cat? string defaults to "file"
+---@param cat? string "file"|"filetype"|"extension"|"directory"
 ---@param opts? { fallback?: {dir?:string, file?:string} }
 ---@return string, string?
 function M.icon(name, cat, opts)
@@ -127,7 +137,7 @@ function M.icon(name, cat, opts)
   opts.fallback = opts.fallback or {}
   local try = {
     function()
-      return require("mini.icons").get(cat or "file", name)
+      return MiniIcons.get(cat or "file", name)
     end,
     function()
       if cat == "directory" then
@@ -449,12 +459,22 @@ M.base64 = vim.base64 and vim.base64.encode
 ---@param on_parse fun(err?: string, trees?: table<integer, TSTree>) Function invoked when parsing completes.
 function M.parse(parser, range, on_parse)
   ---@diagnostic disable-next-line: invisible
-  local have_async = (vim.treesitter.languagetree or {})._async_parse ~= nil
+  local have_async = vim.fn.has("nvim-0.11.4") == 1 or (vim.treesitter.languagetree or {})._async_parse ~= nil
   if have_async then
     parser:parse(range, on_parse)
   else
     parser:parse(range)
     on_parse(nil, parser:trees())
+  end
+end
+
+---@param handle? uv.uv_handle_t|uv.uv_timer_t
+function M.stop(handle)
+  if handle and not handle:is_closing() then
+    if handle.stop then
+      handle:stop()
+    end
+    handle:close()
   end
 end
 

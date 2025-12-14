@@ -12,6 +12,8 @@ setmetatable(M, {
 _G.Snacks = M
 _G.svim = vim.fn.has("nvim-0.11") == 1 and vim or require("snacks.compat")
 
+M.version = "2.30.0" -- x-release-please-version
+
 ---@class snacks.Config.base
 ---@field example? string
 ---@field config? fun(opts: table, defaults: table)
@@ -38,6 +40,7 @@ local config = {
       "mkv",
       "webm",
       "pdf",
+      "icns",
     },
   },
 }
@@ -199,6 +202,15 @@ function M.setup(opts)
       end,
     })
   end
+
+  vim.api.nvim_create_autocmd("BufReadCmd", {
+    once = true,
+    pattern = "gh://*",
+    group = group,
+    callback = function(e)
+      require("snacks.gh").setup(e)
+    end,
+  })
 
   if M.config.statuscolumn.enabled then
     vim.o.statuscolumn = [[%!v:lua.require'snacks.statuscolumn'.get()]]

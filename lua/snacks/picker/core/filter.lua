@@ -14,8 +14,6 @@
 local M = {}
 M.__index = M
 
-local uv = vim.uv or vim.loop
-
 ---@param picker snacks.Picker
 function M.new(picker)
   local opts = picker.opts ---@type snacks.picker.Config|{filter?:snacks.picker.filter.Config}
@@ -38,7 +36,7 @@ function M:init(opts)
   self.all = not self.opts or not (self.opts.cwd or self.opts.buf or self.opts.paths or self.opts.filter)
   self.paths = {}
   local cwd = self.opts and self.opts.cwd
-  self.cwd = type(cwd) == "string" and cwd or opts.cwd or uv.cwd() or "."
+  self.cwd = type(cwd) == "string" and cwd or opts.cwd or vim.fn.getcwd(0)
   self.cwd = svim.fs.normalize(self.cwd --[[@as string]], { _fast = true })
   if not self.all and self.opts then
     self.buf = self.opts.buf == true and 0 or self.opts.buf --[[@as number?]]

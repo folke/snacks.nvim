@@ -13,6 +13,50 @@ M.__index = M
 ---@field filter snacks.picker.Filter
 ---@field async snacks.picker.Async
 ---@field meta table<string, any>
+---@field _opts? snacks.picker.Config
+local Ctx = {}
+Ctx.__index = Ctx
+
+---@param picker snacks.Picker
+---@param filter snacks.picker.Filter
+function Ctx.new(picker, filter)
+  local notified = false
+  local self = setmetatable({}, Ctx)
+  self.picker = picker
+  self.filter = filter
+  self.meta = {}
+  self.async = setmetatable({}, {
+    __index = function()
+      if not notified then
+        notified = true
+        Snacks.notify.warn("You can only use the `async` object in async functions")
+      end
+    end,
+  })
+  return self
+end
+
+---@param opts? snacks.picker.Config
+---@return snacks.picker.finder.ctx
+function Ctx:clone(opts)
+  return setmetatable({ _opts = opts }, { __index = self })
+end
+
+---@generic T: snacks.picker.Config
+---@param opts T
+---@return T
+function Ctx:opts(opts)
+  self._opts = setmetatable(opts or {}, { __index = self._opts or self.picker.opts })
+  return self._opts
+end
+
+function Ctx:cwd()
+  return self.filter.cwd
+end
+
+function Ctx:git_root()
+  return Snacks.git.get_root(self:cwd()) or self:cwd()
+end
 
 ---@alias snacks.picker.finder.async fun(cb:async fun(item:snacks.picker.finder.Item))
 ---@alias snacks.picker.finder.result snacks.picker.finder.Item[] | snacks.picker.finder.async
@@ -52,23 +96,7 @@ end
 
 ---@param picker snacks.Picker
 function M:ctx(picker)
-  local notified = false
-  ---@type snacks.picker.finder.ctx
-  local ret = {
-    picker = picker,
-    async = setmetatable({}, {
-      __index = function()
-        if not notified then
-          notified = true
-          Snacks.notify.warn("You can only use the `async` object in async functions")
-        end
-      end,
-    }),
-    filter = self.filter,
-    meta = {},
-  }
-  setmetatable(ret, { __index = M:deprecated(self.filter) })
-  return ret
+  return Ctx.new(picker, self.filter)
 end
 
 ---@param filter snacks.picker.Filter
@@ -79,30 +107,6 @@ function M:init(filter)
   return ret
 end
 
----@generic T: table
----@param t T
----@return T
-function M:deprecated(t)
-  local notified = false
-  return setmetatable({}, {
-    __index = function(_, k)
-      if not notified then
-        notified = true
-        Snacks.notify.warn({
-          "# API changed",
-          "",
-          "- Snacks finder signature changed.",
-          "```lua",
-          "fun(opts: snacks.picker.Config, ctx: snacks.picker.finder.ctx)",
-          "```",
-        })
-        Snacks.debug.backtrace()
-      end
-      return t[k]
-    end,
-  })
-end
-
 ---@param picker snacks.Picker
 function M:run(picker)
   local default_score = require("snacks.picker.core.matcher").DEFAULT_SCORE
@@ -110,8 +114,8 @@ function M:run(picker)
   self.items = {}
   local yield ---@type fun()
   local ctx = self:ctx(picker)
-  local finder = self._find(picker.opts, ctx, self:deprecated(picker))
-  local limit = picker.opts.limit or math.huge
+  local finder = self._find(picker.opts, ctx)
+  local limit = (picker.opts.live and picker.opts.limit_live or picker.opts.limit) or math.huge
 
   ---@param item snacks.picker.finder.Item
   local function add(item)
@@ -141,6 +145,8 @@ function M:run(picker)
     return
   end
 
+  local running = true
+
   collectgarbage("stop") -- moar speed
   ---@cast finder snacks.picker.finder.async
   ---@diagnostic disable-next-line: await-in-sync
@@ -151,17 +157,30 @@ function M:run(picker)
       if #self.items >= limit then
         return self.task:abort()
       end
+      if not running then
+        Snacks.debug.backtrace({
+          "Finder yielded after done. This is a bug.",
+          ("- aborted: `%s`"):format(self.task:aborted() or false),
+          "",
+          "# Backtrace",
+        }, {
+          level = vim.log.levels.ERROR,
+          title = "Snacks Picker Finder",
+        })
+        return
+      end
       add(item)
       picker.matcher.task:resume()
       yield = yield or Async.yielder(YIELD_FIND)
       yield()
-    end, self:deprecated(ctx.async))
+    end)
   end):on("done", function()
     collectgarbage("restart")
     if not self.task:aborted() then
       picker.matcher.task:resume()
       picker:update()
     end
+    running = false
   end)
 end
 

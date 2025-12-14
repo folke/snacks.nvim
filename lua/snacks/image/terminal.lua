@@ -1,4 +1,5 @@
 ---@class snacks.image.terminal
+---@field transform? fun(data: string): string
 local M = {}
 
 local size ---@type snacks.image.terminal.Dim?
@@ -6,25 +7,19 @@ local size ---@type snacks.image.terminal.Dim?
 local environments = {
   {
     name = "kitty",
-    env = { TERM = "kitty", KITTY_PID = true },
+    terminal = "kitty",
     supported = true,
     placeholders = true,
   },
   {
     name = "ghostty",
-    env = { TERM = "ghostty", GHOSTTY_BIN_DIR = true },
+    terminal = "ghostty",
     supported = true,
     placeholders = true,
   },
   {
     name = "wezterm",
-    env = {
-      TERM = "wezterm",
-      WEZTERM_PANE = true,
-      WEZTERM_EXECUTABLE = true,
-      WEZTERM_CONFIG_FILE = true,
-      SNACKS_WEZTERM = true,
-    },
+    terminal = "wezterm",
     supported = true,
     placeholders = false,
   },
@@ -44,25 +39,14 @@ local environments = {
 
 M._env = nil ---@type snacks.image.Env?
 
+M._terminal = nil ---@type snacks.image.Terminal?
+
 vim.api.nvim_create_autocmd("VimResized", {
   group = vim.api.nvim_create_augroup("snacks.image.terminal", { clear = true }),
   callback = function()
     size = nil
   end,
 })
-
--- HACK: ghostty doesn't like it when sending images too fast,
--- after Neovim startup, so we delay the first image
-local queue = {} ---@type string[]?
-vim.defer_fn(
-  vim.schedule_wrap(function()
-    for _, data in ipairs(queue or {}) do
-      io.stdout:write(data)
-    end
-    queue = nil
-  end),
-  100
-)
 
 function M.size()
   if size then
@@ -127,6 +111,9 @@ function M.env()
   if M._env then
     return M._env
   end
+  if not M._terminal then
+    M.detect()
+  end
   M._env = {
     name = "",
     env = {},
@@ -136,11 +123,16 @@ function M.env()
     if override then
       e.detected = override ~= "0" and override ~= "false"
     else
-      for k, v in pairs(e.env) do
-        local val = os.getenv(k)
-        if val and (v == true or val:find(v)) then
-          e.detected = true
-          break
+      if e.terminal and M._terminal and M._terminal.terminal then
+        e.detected = M._terminal.terminal:lower():find(e.terminal:lower()) ~= nil
+      end
+      if not e.detected then
+        for k, v in pairs(e.env or {}) do
+          local val = os.getenv(k)
+          if val and (v == true or val:find(v)) then
+            e.detected = true
+            break
+          end
         end
       end
     end
@@ -165,7 +157,7 @@ end
 
 ---@param opts table<string, string|number>|{data?: string}
 function M.request(opts)
-  opts.q = opts.q or 2 -- silence all
+  opts.q = opts.q ~= false and (opts.q or 2) or nil -- silence all
   local msg = {} ---@type string[]
   for k, v in pairs(opts) do
     if k ~= "data" then
@@ -178,10 +170,6 @@ function M.request(opts)
     msg[#msg + 1] = tostring(opts.data)
   end
   local data = "\27_G" .. table.concat(msg) .. "\27\\"
-  local env = M.env()
-  if env.transform then
-    data = env.transform(data)
-  end
   if Snacks.image.config.debug.request and opts.m ~= 1 then
     Snacks.debug.inspect(opts)
   end
@@ -194,11 +182,112 @@ function M.set_cursor(pos)
 end
 
 function M.write(data)
-  if queue then
-    table.insert(queue, data)
+  data = M.transform and M.transform(data) or data
+  if vim.api.nvim_ui_send then
+    vim.api.nvim_ui_send(data)
   else
     io.stdout:write(data)
   end
+end
+
+--- Detect terminal capabilities
+--- Will call the callback when detection is complete,
+--- or block until detection is complete if no callback is provided.
+---@param cb? fun(term: snacks.image.Terminal)
+function M.detect(cb)
+  if cb then -- async
+    return M._detect(cb)
+  end
+  -- sync
+  local detected = false
+  M.detect(function()
+    detected = true
+  end)
+  vim.wait(1500, function()
+    return detected
+  end, 10)
+end
+
+---@param cb fun(term: snacks.image.Terminal)
+function M._detect(cb)
+  if M._terminal then
+    if M._terminal.pending then
+      table.insert(M._terminal.pending, cb)
+      return
+    end
+    return cb(M._terminal)
+  end
+
+  ---@class snacks.image.Terminal
+  ---@field terminal? string
+  ---@field version? string
+  ---@field supported? boolean
+  ---@field placeholders? boolean
+  local ret = {
+    terminal = "unknown",
+    version = "unknown",
+    pending = { cb }, ---@type fun(term: snacks.image.Terminal)[]
+  }
+  M._terminal = ret
+
+  local timer = assert(vim.uv.new_timer())
+
+  local function on_done()
+    if timer and not timer:is_closing() then
+      timer:stop()
+      timer:close()
+    end
+    vim.schedule(function()
+      local todo = ret.pending or {}
+      ret.pending = nil
+      for _, c in ipairs(todo) do
+        c(ret)
+      end
+    end)
+  end
+
+  if vim.env.TMUX then
+    pcall(vim.fn.system, { "tmux", "set", "-p", "allow-passthrough", "all" })
+    M.transform = function(data)
+      return ("\027Ptmux;" .. data:gsub("\027", "\027\027")) .. "\027\\"
+    end
+    -- NOTE: When tmux has extended-keys enabled, Neovim's TermResponse autocmd doesn't fire.
+    -- Terminal response sequences leak as literal text instead of being captured.
+    -- Workaround: Query tmux directly for the terminal name instead of sending escape sequences.
+    -- See: https://github.com/folke/snacks.nvim/issues/2332
+    local ok, out = pcall(vim.fn.system, { "tmux", "show", "-g", "extended-keys" })
+    if ok and vim.trim(out):find(" on$") then
+      ok, out = pcall(vim.fn.system, { "tmux", "display-message", "-p", "#{client_termname}" })
+      if ok then
+        ret.terminal = vim.trim(out):gsub("^xterm%-", "")
+        return vim.schedule(on_done)
+      end
+    end
+  end
+
+  local id = vim.api.nvim_create_autocmd("TermResponse", {
+    group = vim.api.nvim_create_augroup("image.terminal.detect", { clear = true }),
+    callback = function(ev)
+      local data = ev.data.sequence ---@type string
+      local term, version = data:match("P>|(%S+)%s*(.*)")
+      if not (term and version) then
+        return
+      end
+      ret.terminal = term
+      ret.version = version
+      vim.schedule(on_done)
+      return true -- delete autocmd
+    end,
+  })
+
+  timer:start(1000, 0, function()
+    vim.schedule(function()
+      pcall(vim.api.nvim_del_autocmd, id)
+    end)
+    on_done()
+  end)
+
+  M.write("\27[>q")
 end
 
 return M

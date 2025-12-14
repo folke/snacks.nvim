@@ -9,7 +9,7 @@
 ((math_environment
   (#set! image.ext "math.tex"))
   @image.content @image
-  (#not-has-ancestor? @image "displayed_equation"))
+  (#not-has-ancestor? @image "displayed_equation" "math_environment"))
 
 (graphics_include
   (_ (path) @image.src)

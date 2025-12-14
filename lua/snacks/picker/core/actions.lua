@@ -8,6 +8,7 @@ local M = {}
 ---@field action snacks.picker.Action.fn
 ---@field desc? string
 ---@field name? string
+---@field [string] any additional fields
 
 ---@param picker snacks.Picker
 function M.get(picker)
@@ -31,7 +32,6 @@ end
 ---@param action snacks.picker.Action.spec
 ---@param ref snacks.Picker.ref
 ---@param name? string
----@return snacks.win.Action?
 function M.wrap(action, ref, name)
   local picker = ref()
   if not picker then
@@ -39,6 +39,7 @@ function M.wrap(action, ref, name)
   end
   action = M.resolve(action, picker, name)
   action.name = name
+  ---@type snacks.win.Action
   return {
     name = name,
     action = function()
@@ -81,28 +82,21 @@ function M.resolve(action, picker, name, stack)
       end
     end
     stack[#stack + 1] = action
-    return M.resolve(
-      (picker.opts.actions or {})[action]
-        or require("snacks.picker.actions")[action]
-        or require("snacks.explorer.actions").actions[action],
-      picker,
-      action,
-      stack
-    )
+    return M.resolve(Snacks.picker.config.action(picker, action), picker, action, stack)
   elseif type(action) == "table" and svim.islist(action) then
-    ---@type snacks.picker.Action[]
     local actions = vim.tbl_map(function(a)
       return M.resolve(a, picker, nil, stack)
     end, action)
+    ---@type snacks.picker.Action
     return {
-      action = function(p, i, aa)
+      action = function(p, i)
         for _, a in ipairs(actions) do
-          a.action(p, i, aa)
+          a.action(p, i, a)
         end
       end,
       desc = table.concat(
         vim.tbl_map(function(a)
-          return a.desc
+          return a.desc or a.name or "unknown"
         end, actions),
         ", "
       ),
@@ -113,6 +107,7 @@ function M.resolve(action, picker, name, stack)
       action.action = M.resolve(action.action, picker, nil, stack).action
     end
     ---@cast action snacks.picker.Action
+    action.desc = action.desc or name or nil
     return action
   end
   assert(type(action) == "function", "Invalid action")

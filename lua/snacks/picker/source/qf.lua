@@ -53,15 +53,15 @@ function M.qf(opts, ctx)
         pos = { row, col },
         end_pos = item.end_lnum ~= 0 and { end_row, end_col } or nil,
         text = file .. " " .. text,
-        line = item.text,
+        line = text,
         file = file,
         severity = severities[item.type] or 0,
         buf = item.bufnr,
         item = item,
       }
-    elseif #ret > 0 and ret[#ret].item.text and item.text then
-      ret[#ret].item.text = ret[#ret].item.text .. "\n" .. item.text
-      ret[#ret].item.line = ret[#ret].item.line .. "\n" .. item.text
+    elseif #ret > 0 and ret[#ret].text and item.text then
+      ret[#ret].text = ret[#ret].text .. "\n" .. item.text
+      ret[#ret].line = ret[#ret].line .. "\n" .. item.text
     end
   end
   return ctx.filter:filter(ret)

@@ -13,8 +13,8 @@ M.meta = {
 -- All easing functions take these parameters:
 --
 -- * `t` _(time)_: should go from 0 to duration
--- * `b` _(begin)_: value of the property being ease.
--- * `c` _(change)_: ending value of the property - beginning value of the property
+-- * `b` _(begin)_: starting value of the property
+-- * `c` _(change)_: ending value of the property - starting value
 -- * `d` _(duration)_: total duration of the animation
 --
 -- Some functions allow additional modifiers, like the elastic functions
@@ -34,7 +34,7 @@ local defaults = {
   ---@type snacks.animate.Duration|number
   duration = 20, -- ms per step
   easing = "linear",
-  fps = 60, -- frames per second. Global setting for all animations
+  fps = 120, -- frames per second. Global setting for all animations
 }
 
 ---@class snacks.animate.Opts: snacks.animate.Config
@@ -51,74 +51,127 @@ local defaults = {
 
 local uv = vim.uv or vim.loop
 local _id = 0
-local active = {} ---@type table<number|string, snacks.animate.Animation>
-local timer = assert(uv.new_timer())
-local scheduled = false
+
+local function next_id()
+  _id = _id + 1
+  return _id
+end
+
+---@type table<number|string, snacks.animate.Animation>
+local active = setmetatable({}, { __mode = "v" })
 
 ---@class snacks.animate.Animation
 ---@field id number|string unique identifier
 ---@field opts snacks.animate.Opts
----@field from number start value
----@field to number end value
----@field done boolean
----@field duration number total duration in ms
 ---@field easing snacks.animate.easing.Fn
----@field value number current value
----@field start number start time in ms
----@field cb snacks.animate.cb
----@field stopped? boolean
+---@field timer? uv.uv_timer_t
+---@field steps? number[]
+---@field _step? number
 local Animation = {}
 Animation.__index = Animation
 
----@return number value, boolean done
-function Animation:next()
-  self.start = self.start == 0 and uv.hrtime() or self.start
-  if not self:enabled() then
-    return self.to, true
+---@param opts? snacks.animate.Opts
+function Animation.new(opts)
+  local id = opts and opts.id or next_id()
+
+  if active[id] then
+    active[id]:stop()
+    active[id] = nil
   end
-  local elapsed = (uv.hrtime() - self.start) / 1e6 -- ms
-  local b, c, d = self.from, self.to - self.from, self.duration
-  local t, done = math.min(elapsed, d), elapsed >= d
-  local value = done and b + c or self.easing(t, b, c, d)
-  value = self.opts.int and (value + (2 ^ 52 + 2 ^ 51) - (2 ^ 52 + 2 ^ 51)) or value
-  return value, done
+
+  local self = setmetatable({}, Animation)
+  self.id = id
+  self.opts = Snacks.config.get("animate", defaults, opts) --[[@as snacks.animate.Opts]]
+
+  -- resolve easing function
+  local easing = self.opts.easing or "linear"
+  -- easing = easing == "linear" and self.opts.int and "linear_int" or easing
+  easing = type(easing) == "string" and require("snacks.animate.easing")[easing] or easing
+  ---@cast easing snacks.animate.easing.Fn
+  self.easing = easing
+  active[self.id] = self
+
+  return self
 end
 
-function Animation:remaining()
-  if not self:enabled() then
-    return 0
+---@param from number
+---@param to number
+---@param cb snacks.animate.cb
+function Animation:start(from, to, cb)
+  self:stop()
+  if from == to then
+    cb(from, { anim = self, prev = from, done = true })
+    return self
   end
-  local elapsed = (uv.hrtime() - self.start) / 1e6 -- ms
-  return math.max(0, self.duration - elapsed)
+
+  -- calculate duration
+  local d = type(self.opts.duration) == "table" and self.opts.duration or { step = self.opts.duration }
+  ---@cast d snacks.animate.Duration
+  local duration = 0
+  if d.step then
+    duration = d.step * math.abs(to - from)
+    duration = math.min(duration, d.total or duration)
+  elseif d.total then
+    duration = d.total
+  end
+  duration = duration or 250
+  local step_duration = math.max(duration / (to - from), 1000 / self.opts.fps)
+  -- local step_duration = math.max(duration / (to - from), 1)
+  local step_count = math.max(math.floor(duration / step_duration + 0.5), 10)
+
+  local delta = 0
+  if (self.opts.easing or "linear") == "linear" and self.opts.int then
+    local one_step = math.max(1, math.floor(math.abs(to - from) / step_count + 0.5))
+    step_count = math.floor(math.abs(to - from) / one_step + 0.5)
+    delta = math.abs(to - from) - one_step * step_count
+    step_duration = duration / step_count
+  end
+
+  self.steps = {}
+  for i = 1, step_count do
+    local value = 0
+    if i == step_count then
+      value = to
+    else
+      value = self.easing(i, from, to - from - delta, step_count)
+    end
+    if self.opts.int then
+      value = math.floor(value + 0.5)
+    end
+    table.insert(self.steps, value)
+  end
+  self._step = 0
+  active[self.id] = self
+  self.timer = assert(uv.new_timer())
+  self.timer:start(0, step_duration, function()
+    vim.schedule(function()
+      self:step(cb)
+    end)
+  end)
+  return self
 end
 
-function Animation:enabled()
-  return M.enabled({ buf = self.opts.buf, name = tostring(self.id) })
-end
-
----@return boolean done
-function Animation:update()
-  if self.stopped then
-    return true
+---@param cb snacks.animate.cb
+function Animation:step(cb)
+  if not self.steps or not self._step or self._step >= #self.steps then
+    return self:stop()
   end
-  local value, done = self:next()
-  local prev = self.value
-  if prev ~= value or done then
-    self.cb(value, { anim = self, prev = prev, done = done })
-    self.value = value
-    self.done = done
-  end
-  return done
-end
-
-function Animation:dirty()
-  local value, done = self:next()
-  return self.value ~= value or done
+  self._step = self._step + 1
+  local value = self.steps[self._step]
+  local done = self._step >= #self.steps
+  local prev = self.steps[self._step - 1] or value
+  cb(value, { anim = self, prev = prev, done = done })
 end
 
 function Animation:stop()
-  self.stopped = true
-  active[self.id] = nil
+  if self.timer then
+    if self.timer:is_active() then
+      self.timer:stop()
+      self.timer:close()
+      self.timer = nil
+    end
+  end
+  self.steps, self._step = nil, nil
 end
 
 --- Check if animations are enabled.
@@ -140,41 +193,7 @@ end
 ---@param cb snacks.animate.cb
 ---@param opts? snacks.animate.Opts
 function M.add(from, to, cb, opts)
-  opts = Snacks.config.get("animate", defaults, opts) --[[@as snacks.animate.Opts]]
-
-  -- calculate duration
-  local d = type(opts.duration) == "table" and opts.duration or { step = opts.duration }
-  ---@cast d snacks.animate.Duration
-  local duration = 0
-  if d.step then
-    duration = d.step * math.abs(to - from)
-    duration = math.min(duration, d.total or duration)
-  elseif d.total then
-    duration = d.total
-  end
-
-  -- resolve easing function
-  local easing = opts.easing or "linear"
-  easing = type(easing) == "string" and require("snacks.animate.easing")[easing] or easing
-  ---@cast easing snacks.animate.easing.Fn
-
-  _id = _id + 1
-  ---@type snacks.animate.Animation
-  local ret = setmetatable({
-    id = opts.id or _id,
-    opts = opts,
-    from = from,
-    to = to,
-    value = from,
-    duration = duration --[[@as number]],
-    easing = easing,
-    start = 0,
-    cb = cb,
-  }, Animation)
-  M.del(ret.id)
-  active[ret.id] = ret
-  M.start()
-  return ret
+  return Animation.new(opts):start(from, to, cb)
 end
 
 --- Delete an animation
@@ -184,49 +203,6 @@ function M.del(id)
     active[id]:stop()
     active[id] = nil
   end
-end
-
---- Step the animations and stop loop if no animations are active
----@private
-function M.step()
-  if scheduled then -- no need to check this step
-    return
-  elseif vim.tbl_isempty(active) then
-    return timer:stop()
-  end
-
-  -- check if any animation needs to be updated
-  local update = false
-  for _, anim in pairs(active) do
-    if anim:dirty() then
-      update = true
-      break
-    end
-  end
-
-  if update then
-    -- schedule an update
-    scheduled = true
-    vim.schedule(function()
-      scheduled = false
-      for a, anim in pairs(active) do
-        if anim:update() then
-          active[a] = nil
-        end
-      end
-    end)
-  end
-end
-
---- Start the animation loop
----@private
-function M.start()
-  if timer:is_active() then
-    return
-  end
-  local opts = Snacks.config.get("animate", defaults)
-  local ms = 1000 / (opts and opts.fps or 30)
-  timer:start(0, ms, M.step)
 end
 
 return M

@@ -43,7 +43,7 @@ Doing this, will disable `scroll`, `indent`, `dim` and all other animations.
   ---@type snacks.animate.Duration|number
   duration = 20, -- ms per step
   easing = "linear",
-  fps = 60, -- frames per second. Global setting for all animations
+  fps = 120, -- frames per second. Global setting for all animations
 }
 ```
 
@@ -52,8 +52,8 @@ Doing this, will disable `scroll`, `indent`, `dim` and all other animations.
 All easing functions take these parameters:
 
 * `t` _(time)_: should go from 0 to duration
-* `b` _(begin)_: value of the property being ease.
-* `c` _(change)_: ending value of the property - beginning value of the property
+* `b` _(begin)_: starting value of the property
+* `c` _(change)_: ending value of the property - starting value
 * `d` _(duration)_: total duration of the animation
 
 Some functions allow additional modifiers, like the elastic functions

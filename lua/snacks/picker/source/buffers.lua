@@ -22,7 +22,7 @@ function M.buffers(opts, ctx)
     if keep then
       local name = vim.api.nvim_buf_get_name(buf)
       if name == "" then
-        name = "[No Name]" .. (vim.bo[buf].filetype ~= "" and " " .. vim.bo[buf].filetype or "")
+        name = "[Scratch]"
       end
       local info = vim.fn.getbufinfo(buf)[1]
       local mark = vim.api.nvim_buf_get_mark(buf, '"')
@@ -35,11 +35,14 @@ function M.buffers(opts, ctx)
       table.insert(items, {
         flags = table.concat(flags),
         buf = buf,
-        text = buf .. " " .. name,
+        name = vim.api.nvim_buf_get_name(buf),
+        buftype = vim.bo[buf].buftype,
+        filetype = vim.bo[buf].filetype,
         file = name,
         info = info,
         pos = mark[1] ~= 0 and mark or { info.lnum, 0 },
       })
+      items[#items].text = Snacks.picker.util.text(items[#items], { "buf", "name", "filetype", "buftype" })
     end
   end
   if opts.sort_lastused then

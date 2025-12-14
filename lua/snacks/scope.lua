@@ -10,6 +10,7 @@ M.meta = {
 ---@field buf? number
 ---@field pos? {[1]:number, [2]:number} -- (1,0) indexed
 ---@field end_pos? {[1]:number, [2]:number} -- (1,0) indexed
+---@field async? boolean run scope detection asynchronously (defaults to true)
 
 ---@class snacks.scope.TextObject: snacks.scope.Opts
 ---@field linewise? boolean if nil, use visual mode. Defaults to `false` when not in visual mode
@@ -68,7 +69,7 @@ local defaults = {
   -- Alternatively, you can set them manually in your config,
   -- using the `Snacks.scope.textobject` and `Snacks.scope.jump` functions.
   keys = {
-    ---@type table<string, snacks.scope.TextObject|{desc?:string}>
+    ---@type table<string, snacks.scope.TextObject|{desc?:string}|false>
     textobject = {
       ii = {
         min_size = 2, -- minimum size of the scope
@@ -84,7 +85,7 @@ local defaults = {
         desc = "full scope",
       },
     },
-    ---@type table<string, snacks.scope.Jump|{desc?:string}>
+    ---@type table<string, snacks.scope.Jump|{desc?:string}|false>
     jump = {
       ["[i"] = {
         min_size = 1, -- allow single line scopes
@@ -396,7 +397,12 @@ function TSScope:init(cb, opts)
   if not parser then
     return cb()
   end
-  Snacks.util.parse(parser, opts.treesitter.injections, cb)
+  if opts.async == false then
+    parser:parse()
+    cb()
+  else
+    Snacks.util.parse(parser, opts.treesitter.injections, cb)
+  end
 end
 
 ---@param opts snacks.scope.Opts
@@ -731,6 +737,7 @@ function M.textobject(opts)
   end
   local inner = not opts.edge
   opts.edge = true -- always include the edge of the scope to make inner work
+  opts.async = false -- run synchronously
 
   M.get(function(scope)
     if not scope then
@@ -774,14 +781,18 @@ end
 function M.setup()
   local keys = Snacks.config.get("scope", defaults).keys
   for key, opts in pairs(keys.textobject) do
-    vim.keymap.set({ "x", "o" }, key, function()
-      M.textobject(opts)
-    end, { silent = true, desc = opts.desc })
+    if opts then
+      vim.keymap.set({ "x", "o" }, key, function()
+        M.textobject(opts)
+      end, { silent = true, desc = opts.desc })
+    end
   end
   for key, opts in pairs(keys.jump) do
-    vim.keymap.set({ "n", "x", "o" }, key, function()
-      M.jump(opts)
-    end, { silent = true, desc = opts.desc })
+    if opts then
+      vim.keymap.set({ "n", "x", "o" }, key, function()
+        M.jump(opts)
+      end, { silent = true, desc = opts.desc })
+    end
   end
 end
 

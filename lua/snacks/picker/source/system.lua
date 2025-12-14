@@ -3,9 +3,8 @@ local M = {}
 ---@param opts snacks.picker.proc.Config
 ---@type snacks.picker.finder
 function M.cliphist(opts, ctx)
-  return require("snacks.picker.source.proc").proc({
-    opts,
-    {
+  return require("snacks.picker.source.proc").proc(
+    ctx:opts({
       cmd = "cliphist",
       args = { "list" },
       ---@param item snacks.picker.finder.Item
@@ -34,16 +33,16 @@ function M.cliphist(opts, ctx)
           return false
         end
       end,
-    },
-  }, ctx)
+    }),
+    ctx
+  )
 end
 
 ---@param opts snacks.picker.proc.Config
 ---@type snacks.picker.finder
 function M.man(opts, ctx)
-  return require("snacks.picker.source.proc").proc({
-    opts,
-    {
+  return require("snacks.picker.source.proc").proc(
+    ctx:opts({
       cmd = "man",
       args = { "-k", "." },
       ---@param item snacks.picker.finder.Item
@@ -59,8 +58,9 @@ function M.man(opts, ctx)
           return false
         end
       end,
-    },
-  }, ctx)
+    }),
+    ctx
+  )
 end
 
 return M

@@ -1,8 +1,10 @@
 local M = {}
 
+---@alias snacks.picker.format.resolve fun(max_width:number):snacks.picker.Highlight[]
 ---@alias snacks.picker.Extmark vim.api.keyset.set_extmark|{col:number, row?:number, field?:string}
----@alias snacks.picker.Text {[1]:string, [2]:string?, virtual?:boolean, field?:string}
----@alias snacks.picker.Highlight snacks.picker.Text|snacks.picker.Extmark
+---@alias snacks.picker.Meta {[string]:any}
+---@alias snacks.picker.Text {[1]:string, [2]:(string|string[])?, virtual?:boolean, field?:string, resolve?:snacks.picker.format.resolve, inline?:boolean}
+---@alias snacks.picker.Highlight snacks.picker.Text|snacks.picker.Extmark|{meta?:snacks.picker.Meta}
 ---@alias snacks.picker.format fun(item:snacks.picker.Item, picker:snacks.Picker):snacks.picker.Highlight[]
 ---@alias snacks.picker.preview fun(ctx: snacks.picker.preview.ctx):boolean?
 ---@alias snacks.picker.sort fun(a:snacks.picker.Item, b:snacks.picker.Item):boolean
@@ -10,7 +12,7 @@ local M = {}
 ---@alias snacks.picker.Pos {[1]:number, [2]:number}
 ---@alias snacks.picker.toggle {icon?:string, enabled?:boolean, value?:boolean}
 
---- Generic filter used by finders to pre-filter items
+--- Generic filter used by some finders to pre-filter items
 ---@class snacks.picker.filter.Config
 ---@field cwd? boolean|string only show files for the given cwd
 ---@field buf? boolean|number only show items for the current or given buffer
@@ -42,6 +44,7 @@ local M = {}
 ---@field highlights? snacks.picker.Highlight[][]
 ---@field preview? snacks.picker.Item.preview
 ---@field resolve? fun(item:snacks.picker.Item)
+---@field positions? number[] indices of matched characters in `text`
 
 ---@class snacks.picker.finder.Item: snacks.picker.Item
 ---@field idx? number
@@ -71,7 +74,9 @@ local M = {}
 ---@field cwd? string current working directory
 ---@field live? boolean when true, typing will trigger live searches
 ---@field limit? number when set, the finder will stop after finding this number of items. useful for live searches
+---@field limit_live? number when set, the finder will stop after finding this number of items during live searches. useful for performance
 ---@field ui_select? boolean set `vim.ui.select` to a snacks picker
+---@field filter? snacks.picker.filter.Config generic filter used by some finders
 --- Source definition
 ---@field items? snacks.picker.finder.Item[] items to show instead of using a finder
 ---@field format? string|snacks.picker.format|string format function or preset
@@ -88,6 +93,7 @@ local M = {}
 ---@field title? string defaults to a capitalized source name
 ---@field auto_close? boolean automatically close the picker when focusing another window (defaults to true)
 ---@field show_empty? boolean show the picker even when there are no items
+---@field show_delay? number delay (in ms) to wait before showing the picker while no results yet
 ---@field focus? "input"|"list" where to focus when the picker is opened (defaults to "input")
 ---@field enter? boolean enter the picker when opening it
 ---@field toggles? table<string, string|false|snacks.picker.toggle>
@@ -113,6 +119,8 @@ local defaults = {
   prompt = " ",
   sources = {},
   focus = "input",
+  show_delay = 5000,
+  limit_live = 10000,
   layout = {
     cycle = true,
     --- Use the default layout or vertical if the window is too narrow
@@ -146,7 +154,12 @@ local defaults = {
     },
     file = {
       filename_first = false, -- display filename before the file path
-      truncate = 40, -- truncate the file path to (roughly) this length
+      --- * left: truncate the beginning of the path
+      --- * center: truncate the middle of the path
+      --- * right: truncate the end of the path
+      ---@type "left"|"center"|"right"
+      truncate = "center",
+      min_width = 40, -- minimum length of the truncated path
       filename_only = false, -- only show the filename
       icon_width = 2, -- width of the icon (in characters)
       git_status_hl = true, -- use the git status highlight group for the filename
@@ -165,11 +178,20 @@ local defaults = {
   ---@class snacks.picker.previewers.Config
   previewers = {
     diff = {
-      builtin = true, -- use Neovim for previewing diffs (true) or use an external tool (false)
-      cmd = { "delta" }, -- example to show a diff with delta
+      -- fancy: Snacks fancy diff (borders, multi-column line numbers, syntax highlighting)
+      -- syntax: Neovim's built-in diff syntax highlighting
+      -- terminal: external command (git's pager for git commands, `cmd` for other diffs)
+      style = "fancy", ---@type "fancy"|"syntax"|"terminal"
+      cmd = { "delta" }, -- example for using `delta` as the external diff command
+      ---@type vim.wo?|{} window options for the fancy diff preview window
+      wo = {
+        breakindent = true,
+        wrap = true,
+        linebreak = true,
+        showbreak = "",
+      },
     },
     git = {
-      builtin = true, -- use Neovim for previewing git output (true) or use git (false)
       args = {}, -- additional arguments passed to the git command. Useful to set pager options usin `-c ...`
     },
     file = {
@@ -217,6 +239,7 @@ local defaults = {
         ["<a-f>"] = { "toggle_follow", mode = { "i", "n" } },
         ["<a-h>"] = { "toggle_hidden", mode = { "i", "n" } },
         ["<a-i>"] = { "toggle_ignored", mode = { "i", "n" } },
+        ["<a-r>"] = { "toggle_regex", mode = { "i", "n" } },
         ["<a-m>"] = { "toggle_maximize", mode = { "i", "n" } },
         ["<a-p>"] = { "toggle_preview", mode = { "i", "n" } },
         ["<a-w>"] = { "cycle_win", mode = { "i", "n" } },
@@ -250,7 +273,7 @@ local defaults = {
         ["gg"] = "list_top",
         ["j"] = "list_down",
         ["k"] = "list_up",
-        ["q"] = "close",
+        ["q"] = "cancel",
       },
       b = {
         minipairs_disable = true,
@@ -284,6 +307,7 @@ local defaults = {
         ["<c-n>"] = "list_down",
         ["<c-p>"] = "list_up",
         ["<c-q>"] = "qflist",
+        ["<c-g>"] = "print_path",
         ["<c-s>"] = "edit_split",
         ["<c-t>"] = "tab",
         ["<c-u>"] = "list_scroll_up",
@@ -298,7 +322,7 @@ local defaults = {
         ["i"] = "focus_input",
         ["j"] = "list_down",
         ["k"] = "list_up",
-        ["q"] = "close",
+        ["q"] = "cancel",
         ["zb"] = "list_scroll_bottom",
         ["zt"] = "list_scroll_top",
         ["zz"] = "list_scroll_center",
@@ -312,7 +336,7 @@ local defaults = {
     preview = {
       keys = {
         ["<Esc>"] = "cancel",
-        ["q"] = "close",
+        ["q"] = "cancel",
         ["i"] = "focus_input",
         ["<a-w>"] = "cycle_win",
       },

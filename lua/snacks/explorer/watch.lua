@@ -16,11 +16,12 @@ function M.start(path, cb)
   end
   local handle = assert(vim.uv.new_fs_event())
   local ok, err = handle:start(path, {}, function(_, file, events)
-    file = path .. "/" .. file
     if cb then
-      cb(file, events)
+      -- Handle nil filename (FreeBSD kqueue bug where filename may be unavailable)
+      -- In that case, we just pass the path being watched
+      cb(file and (path .. "/" .. file) or path, events)
     else
-      Tree:refresh(vim.fs.dirname(file))
+      Tree:refresh(path)
       M.refresh()
     end
   end)
@@ -58,43 +59,53 @@ function M.refresh()
     100,
     0,
     vim.schedule_wrap(function()
-      local picker = Snacks.picker.get({ source = "explorer" })[1]
-      if picker and not picker.closed and Tree:is_dirty(picker:cwd(), picker.opts) then
-        if not picker.list.target then
+      local pickers = Snacks.picker.get({ source = "explorer", tab = false })
+      for _, picker in ipairs(pickers) do
+        if picker and not picker.closed and Tree:is_dirty(picker:cwd(), picker.opts) then
           picker.list:set_target()
+          vim.schedule(function()
+            if not picker or picker.closed then
+              return
+            end
+            picker:find()
+          end)
         end
-        vim.schedule(function()
-          picker:find()
-        end)
       end
     end)
   )
 end
 
----@param cwd string
-function M.watch(cwd)
+function M.watch()
   -- Track used watches
   local used = {} ---@type table<string, boolean>
 
-  -- Watch git index
-  local root = Snacks.git.get_root(cwd)
-  if root then
-    used[root .. "/.git"] = true
-    M.start(root .. "/.git", function(file)
-      if vim.fs.basename(file) == "index" then
-        Git.refresh(root)
-        M.refresh()
+  local pickers = Snacks.picker.get({ source = "explorer", tab = false })
+  local cwds = {} ---@type table<string, boolean>
+  for _, picker in ipairs(pickers) do
+    cwds[picker:cwd()] = true
+  end
+
+  for cwd in pairs(cwds) do
+    -- Watch git index
+    local root = Snacks.git.get_root(cwd)
+    if root then
+      used[root .. "/.git"] = true
+      M.start(root .. "/.git", function(file)
+        if vim.fs.basename(file) == "index" then
+          Git.refresh(root)
+          M.refresh()
+        end
+      end)
+    end
+
+    -- Watch open directories
+    Tree:walk(Tree:find(cwd), function(node)
+      if node.dir and node.open then
+        used[node.path] = true
+        M.start(node.path)
       end
     end)
   end
-
-  -- Watch open directories
-  Tree:walk(Tree:find(cwd), function(node)
-    if node.dir and node.open then
-      used[node.path] = true
-      M.start(node.path)
-    end
-  end)
 
   -- Stop unused watches
   for path in pairs(M._watches) do

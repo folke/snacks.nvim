@@ -16,13 +16,15 @@ M.meta = {
 ---@class snacks.explorer.Config
 local defaults = {
   replace_netrw = true, -- Replace netrw with the snacks explorer
+  trash = true, -- Use the system trash when deleting files
 }
+
+M.config = Snacks.config.get("explorer", defaults)
 
 ---@private
 ---@param event? vim.api.keyset.create_autocmd.callback_args
 function M.setup(event)
-  local opts = Snacks.config.get("explorer", defaults)
-  if opts.replace_netrw then
+  if M.config.replace_netrw then
     -- Disable netrw
     pcall(vim.api.nvim_del_augroup_by_name, "FileExplorer")
 
@@ -81,19 +83,45 @@ function M.reveal(opts)
   local Tree = require("snacks.explorer.tree")
   opts = opts or {}
   local file = svim.fs.normalize(opts.file or vim.api.nvim_buf_get_name(opts.buf or 0))
-  local explorer = Snacks.picker.get({ source = "explorer" })[1] or M.open()
-  local cwd = explorer:cwd()
-  if not Tree:in_cwd(cwd, file) then
-    for parent in vim.fs.parents(file) do
-      if Tree:in_cwd(parent, cwd) then
-        explorer:set_cwd(parent)
-        break
+  local explorer = Snacks.picker.get({ source = "explorer" })[1]
+
+  local function reveal()
+    local cwd = explorer:cwd()
+    if not Tree:in_cwd(cwd, file) then
+      for parent in vim.fs.parents(file) do
+        if Tree:in_cwd(parent, cwd) then
+          explorer:set_cwd(parent)
+          break
+        end
       end
     end
+    Tree:open(file)
+    Actions.update(explorer, { target = file, refresh = true })
   end
-  Tree:open(file)
-  Actions.update(explorer, { target = file, refresh = true })
+
+  if explorer then
+    reveal()
+  else
+    explorer = M.open({ on_show = reveal })
+  end
   return explorer
+end
+
+function M.health()
+  local cmds = require("snacks.explorer.actions").get_trash_cmds("test")
+
+  if M.config.trash == false then
+    Snacks.health.ok("System trash disabled in config")
+  else
+    local tools = vim.tbl_map(function(cmd)
+      return cmd[1]
+    end, cmds)
+    if Snacks.health.have_tool(tools) then
+      Snacks.health.ok("System trash command found")
+    else
+      Snacks.health.warn("No system trash command found; deleting files will be permanent")
+    end
+  end
 end
 
 return M

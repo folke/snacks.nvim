@@ -1,8 +1,10 @@
 ---@class snacks.picker.input
 ---@field win snacks.win
+---@field mode? string
 ---@field totals string
 ---@field picker snacks.Picker
 ---@field filter snacks.picker.Filter
+---@field paused? boolean
 local M = {}
 M.__index = M
 
@@ -14,6 +16,7 @@ function M.new(picker)
   self.totals = ""
   self.picker = picker
   self.filter = require("snacks.picker.core.filter").new(picker)
+  self.mode = vim.fn.mode()
   picker.matcher:init(self.filter.pattern)
 
   self.win = Snacks.win(Snacks.win.resolve(picker.opts.win.input, {
@@ -50,7 +53,13 @@ function M.new(picker)
 
   self.win:on("BufEnter", function()
     vim.bo[self.win.buf].buftype = "prompt"
-    vim.cmd("startinsert!")
+    if vim.fn.mode() == "t" then
+      vim.schedule(function()
+        vim.cmd("startinsert!")
+      end)
+    else
+      vim.cmd("startinsert!")
+    end
   end, { buf = true })
 
   local ref = Snacks.util.ref(self)
@@ -142,7 +151,7 @@ function M:update()
     Snacks.util.wo(self.win.win, { statuscolumn = sc })
   end
   local line = {} ---@type snacks.picker.Highlight[]
-  if self.picker:is_active() then
+  if self.picker:is_active() and self.spinner ~= false then
     line[#line + 1] = { Snacks.util.spinner(), "SnacksPickerSpinner" }
     line[#line + 1] = { " " }
   end
@@ -169,6 +178,14 @@ end
 
 function M:get()
   return self.win:line()
+end
+
+function M:pause(ms)
+  self.paused = true
+  vim.defer_fn(function()
+    self.paused = false
+    self:update()
+  end, ms or 100)
 end
 
 ---@param pattern? string

@@ -38,7 +38,7 @@ What this does:
 ```lua
 ---@class snacks.debug.cmd
 ---@field cmd string|string[]
----@field level? snacks.notifier.level
+---@field level? snacks.notifier.level|vim.log.levels
 ---@field title? string
 ---@field args? string[]
 ---@field cwd? string
@@ -46,7 +46,7 @@ What this does:
 ---@field notify? boolean
 ---@field footer? string
 ---@field header? string
----@field props? table<string, string>
+---@field props? table<string, string|boolean|number|nil>
 ```
 
 ```lua

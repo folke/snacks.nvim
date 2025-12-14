@@ -11,6 +11,7 @@
 ---@field title? string
 ---@field split_layout? boolean
 ---@field opts? snacks.picker.previewers.Config
+---@field _spinner? snacks.util.Spinner
 local M = {}
 M.__index = M
 
@@ -90,6 +91,7 @@ function M.new(picker)
     main = {
       relative = "win",
       backdrop = false,
+      zindex = 40, -- Lower than default (50) so input/help windows stay on top
     },
     layout = {
       backdrop = win_opts.backdrop == true,
@@ -101,6 +103,21 @@ function M.new(picker)
 
   self.win:on("WinClosed", function()
     self:clear(self.win.buf)
+    vim.schedule(function()
+      local ei = vim.o.eventignore
+      vim.o.eventignore = "all"
+      for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        if
+          vim.api.nvim_buf_is_loaded(buf)
+          and vim.b[buf].snacks_picker_loaded
+          and not vim.bo[buf].buflisted
+          and #vim.fn.win_findbuf(buf) == 0
+        then
+          vim.api.nvim_buf_delete(buf, { force = true })
+        end
+      end
+      vim.o.eventignore = ei
+    end)
   end, { win = true })
 
   self.preview = Snacks.picker.config.preview(opts)
@@ -163,6 +180,7 @@ function M:show(picker, opts)
   self.item = item
   self.filter = picker:filter()
   self.pos = item and item.pos or nil
+  self:spinner(false)
   if item then
     local buf = self.win.buf
     local ok, err = pcall(
@@ -183,7 +201,7 @@ function M:show(picker, opts)
       })
     )
     if not ok then
-      self:notify(err, "error")
+      self:notify(err --[[@as string]], "error")
     end
     if self.win.buf ~= buf then
       self:clear(buf)
@@ -218,6 +236,9 @@ end
 function M:set_buf(buf)
   vim.b[buf].snacks_previewed = true
   self.win:set_buf(buf)
+  if self.item and self.item.wo and self.win:win_valid() then
+    Snacks.util.wo(self.win.win, self.item.wo)
+  end
 end
 
 function M:reset()
@@ -231,6 +252,7 @@ function M:reset()
   end
   vim.api.nvim_buf_clear_namespace(self.win.buf, -1, 0, -1)
   self:set_title()
+  self:spinner(false)
   vim.treesitter.stop(self.win.buf)
   vim.bo[self.win.buf].modifiable = true
   self:set_lines({})
@@ -278,11 +300,17 @@ function M:highlight(opts)
       filename = opts.file,
     })
   end
-  self:check_big()
   local lang = Snacks.util.get_lang(opts.lang or ft)
+  if lang == "markdown" then
+    return self:markdown()
+  end
   if not (lang and pcall(vim.treesitter.start, self.win.buf, lang)) and ft then
     vim.bo[self.win.buf].syntax = ft
   end
+end
+
+function M:ns()
+  return ns
 end
 
 -- show the item location
@@ -318,7 +346,16 @@ function M:loc()
 
   if self.item.pos and self.item.pos[1] > 0 and self.item.pos[1] <= line_count then
     show(self.item.pos)
-    if self.item.end_pos then
+    if self.item.positions then
+      for _, extmark in ipairs(Snacks.picker.highlight.matches({}, self.item.positions)) do
+        local col, row = extmark.col, self.item.pos[1]
+        extmark.col = nil
+        extmark.row = nil
+        extmark.field = nil
+        extmark.hl_group = "SnacksPickerSearch"
+        pcall(vim.api.nvim_buf_set_extmark, self.win.buf, ns_loc, row - 1, col, extmark)
+      end
+    elseif self.item.end_pos then
       vim.api.nvim_buf_set_extmark(self.win.buf, ns_loc, self.item.pos[1] - 1, self.item.pos[2], {
         end_row = self.item.end_pos[1] - 1,
         end_col = self.item.end_pos[2],
@@ -343,37 +380,23 @@ function M:loc()
     end
   elseif self.item.search then
     vim.api.nvim_win_call(self.win.win, function()
-      vim.cmd("keepjumps norm! gg")
-      if pcall(vim.cmd, self.item.search) then
-        vim.cmd("norm! zz")
+      if pcall(vim.cmd, ":0;" .. self.item.search) then
+        vim.fn.histdel("search", -1) -- remove from search history
+        vim.cmd("norm! zzze")
         self:wo({ cursorline = true })
       end
     end)
+  else -- no position info, go to top
+    vim.api.nvim_win_set_cursor(self.win.win, { 1, 0 })
   end
-end
-
-function M:check_big()
-  local big = self:is_big()
-  vim.b[self.win.buf].snacks_scroll = not big
-end
-
-function M:is_big()
-  local lines = vim.api.nvim_buf_line_count(self.win.buf)
-  if lines > 2000 then
-    return true
-  end
-  local path = self.item and self.item.file and Snacks.picker.util.path(self.item)
-  if path and vim.fn.getfsize(path) > 1.5 * 1024 * 1024 then
-    return true
-  end
-  return false
 end
 
 ---@param lines string[]
-function M:set_lines(lines)
+---@param offset? number
+function M:set_lines(lines, offset)
   lines = vim.split(table.concat(lines, "\n"), "\n", { plain = true })
   vim.bo[self.win.buf].modifiable = true
-  vim.api.nvim_buf_set_lines(self.win.buf, 0, -1, false, lines)
+  vim.api.nvim_buf_set_lines(self.win.buf, offset or 0, -1, false, lines)
   vim.bo[self.win.buf].modifiable = false
 end
 
@@ -399,6 +422,27 @@ function M:notify(msg, level, opts)
     end_row = msg_len,
   })
   self:highlight({ lang = "lua" })
+end
+
+function M:markdown()
+  if not self.win:valid() then
+    return
+  end
+  require("snacks.picker.util.markdown").render(self.win.buf)
+end
+
+function M:spinner(enable)
+  if enable == false then
+    if self._spinner then
+      self._spinner:stop()
+      self._spinner = nil
+    end
+    return
+  end
+  assert(self.win:buf_valid(), "invalid buffer")
+  local ret = Snacks.picker.util.spinner(self.win.buf)
+  self._spinner = ret
+  return ret
 end
 
 return M

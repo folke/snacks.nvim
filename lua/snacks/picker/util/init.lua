@@ -3,6 +3,8 @@ local M = {}
 
 local uv = vim.uv or vim.loop
 
+local str_byteindex_new = pcall(vim.str_byteindex, "aa", "utf-8", 1)
+
 ---@param item snacks.picker.Item
 ---@return string?
 function M.path(item)
@@ -15,10 +17,11 @@ function M.path(item)
 end
 
 ---@param path string
----@param len? number
----@param opts? {cwd?: string}
+---@param len number
+---@param opts? {cwd?: string, kind?: "left" | "center" | "right"}
 function M.truncpath(path, len, opts)
-  local cwd = svim.fs.normalize(opts and opts.cwd or vim.fn.getcwd(), { _fast = true, expand_env = false })
+  opts = opts or {}
+  local cwd = svim.fs.normalize(opts and opts.cwd or vim.fn.getcwd(0), { _fast = true, expand_env = false })
   local home = svim.fs.normalize("~")
   path = svim.fs.normalize(path, { _fast = true, expand_env = false })
 
@@ -35,6 +38,12 @@ function M.truncpath(path, len, opts)
   end
   path = path:gsub("/$", "")
 
+  if opts.kind == "left" then
+    return M.truncate(path, len, true)
+  elseif opts.kind == "right" then
+    return M.truncate(path, len, false)
+  end
+
   if vim.api.nvim_strwidth(path) <= len then
     return path
   end
@@ -49,6 +58,9 @@ function M.truncpath(path, len, opts)
     first = "~/" .. table.remove(parts, 1)
   end
   local width = vim.api.nvim_strwidth(ret) + vim.api.nvim_strwidth(first) + 3
+  if width > len then
+    return first .. "/…/" .. M.truncate(ret, len - vim.api.nvim_strwidth(first) - 3, true)
+  end
   while width < len and #parts > 0 do
     local part = table.remove(parts) .. "/"
     local w = vim.api.nvim_strwidth(part)
@@ -61,10 +73,31 @@ function M.truncpath(path, len, opts)
   return first .. "/…/" .. ret
 end
 
+---@param prompt string
+---@param fn fun()
+function M.confirm(prompt, fn)
+  Snacks.picker.select({ "No", "Yes" }, {
+    prompt = prompt,
+    snacks = {
+      layout = {
+        layout = {
+          max_width = 60,
+        },
+      },
+    },
+  }, function(_, idx)
+    if idx == 2 then
+      fn()
+    end
+  end)
+end
+
+---@alias snacks.picker.util.cmd.Opts {env?: table<string, string>, cwd?: string, input?: string}
 ---@param cmd string|string[]
 ---@param cb fun(output: string[], code: number)
----@param opts? {env?: table<string, string>, cwd?: string}
+---@param opts? snacks.picker.util.cmd.Opts
 function M.cmd(cmd, cb, opts)
+  opts = opts or {}
   local output = {} ---@type string[]
   local id = vim.fn.jobstart(
     cmd,
@@ -72,23 +105,29 @@ function M.cmd(cmd, cb, opts)
       on_stdout = function(_, data)
         output[#output + 1] = table.concat(data, "\n")
       end,
+      on_stderr = function(_, data)
+        output[#output + 1] = table.concat(data, "\n")
+      end,
       on_exit = function(_, code)
-        cb(output, code)
-        if code ~= 0 then
-          Snacks.notify.error(
-            ("Terminal **cmd** `%s` failed with code `%d`:\n- `vim.o.shell = %q`\n\nOutput:\n%s"):format(
-              cmd,
-              code,
-              vim.o.shell,
-              vim.trim(table.concat(output, ""))
-            )
-          )
+        if code == 0 then
+          cb(output, code)
+          return
         end
+        Snacks.debug.cmd({
+          header = "Command failed",
+          cmd = cmd,
+          props = { code = code, ["vim.o.shell"] = vim.o.shell },
+          footer = vim.trim(table.concat(output, "")),
+          level = vim.log.levels.ERROR,
+        })
       end,
     })
   )
   if id <= 0 then
     Snacks.notify.error(("Failed to start job `%s`"):format(cmd))
+  elseif opts.input then
+    vim.fn.chansend(id, opts.input .. "\n")
+    vim.fn.chanclose(id, "stdin")
   end
   return id > 0 and id or nil
 end
@@ -135,9 +174,12 @@ end
 
 ---@param text string
 ---@param width number
-function M.truncate(text, width)
-  if vim.api.nvim_strwidth(text) > width then
-    return vim.fn.strcharpart(text, 0, width - 1) .. "…"
+---@param left? boolean
+function M.truncate(text, width, left)
+  local tw = vim.api.nvim_strwidth(text)
+  if tw > width then
+    return left and "…" .. vim.fn.strcharpart(text, tw - width + 1, width - 1)
+      or vim.fn.strcharpart(text, 0, width - 1) .. "…"
   end
   return text
 end
@@ -163,6 +205,7 @@ function M.visual()
   local text = table.concat(lines, "\n")
   ---@class snacks.picker.Visual
   local ret = {
+    buf = vim.api.nvim_get_current_buf(),
     pos = pos,
     end_pos = end_pos,
     text = text,
@@ -171,10 +214,25 @@ function M.visual()
 end
 
 ---@param str string
----@param data table<string, string>
+---@param data table<string, string|boolean|number>|table<string, string|boolean|number>[]
 ---@param opts? {prefix?: string, indent?: boolean, offset?: number[]}
 function M.tpl(str, data, opts)
   opts = opts or {}
+
+  local function get(key)
+    if not vim.tbl_isempty(data) and svim.islist(data) and not getmetatable(data) then
+      for _, d in ipairs(data) do
+        if d[key] ~= nil then
+          return d[key]
+        end
+      end
+    else
+      if data[key] ~= nil then
+        return data[key]
+      end
+    end
+  end
+
   local ret = (
     str:gsub(
       "(" .. vim.pesc(opts.prefix or "") .. "%b{}" .. ")",
@@ -182,7 +240,7 @@ function M.tpl(str, data, opts)
       function(w)
         local inner = w:sub(2 + #(opts.prefix or ""), -2)
         local key, default = inner:match("^(.-):(.*)$")
-        local ret = data[key or inner]
+        local ret = get(key or inner)
         if ret == "" and default then
           return default
         end
@@ -298,13 +356,17 @@ end
 ---@param s string
 ---@param index number
 ---@param encoding string
-function M.str_byteindex(s, index, encoding)
-  if vim.lsp.util._str_byteindex_enc then
-    return vim.lsp.util._str_byteindex_enc(s, index, encoding)
-  elseif vim._str_byteindex then
-    return vim._str_byteindex(s, index, encoding == "utf-16")
+---@param strict_indexing? boolean
+function M.str_byteindex(s, index, encoding, strict_indexing)
+  if str_byteindex_new then
+    return vim.str_byteindex(s, encoding, index, strict_indexing)
+  elseif vim.str_byteindex then
+    ---@diagnostic disable-next-line: param-type-mismatch
+    return vim.str_byteindex(s, index, encoding == "utf-16")
+  elseif vim.lsp.util._str_byteindex then
+    return vim.lsp.util._str_byteindex(s, index, encoding)
   end
-  return vim.str_byteindex(s, index, encoding == "utf-16")
+  error("No str_byteindex function available")
 end
 
 --- Resolves the location of an item to byte positions
@@ -363,6 +425,9 @@ function M.reltime(time)
       local value = math.floor(delta / v[1] + 0.5)
       return value == 1 and v[3] or v[4]:format(value)
     end
+  end
+  if os.date("%Y", time) == os.date("%Y") then
+    return os.date("%b %d", time) ---@type string
   end
   return os.date("%b %d, %Y", time) ---@type string
 end
@@ -618,6 +683,11 @@ function M.globber(globs)
     end
     return false
   end
+end
+
+---@param buf number
+function M.spinner(buf)
+  return require("snacks.picker.util.spinner").new(buf)
 end
 
 return M

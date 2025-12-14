@@ -58,23 +58,25 @@ function M.history(opts)
 end
 
 ---@param opts snacks.picker.marks.Config
-function M.marks(opts)
+---@type snacks.picker.finder
+function M.marks(opts, ctx)
   local marks = {} ---@type vim.fn.getmarklist.ret.item[]
+  local current_buf = ctx.filter.current_buf
   if opts.global then
     vim.list_extend(marks, vim.fn.getmarklist())
   end
   if opts["local"] then
-    vim.list_extend(marks, vim.fn.getmarklist(vim.api.nvim_get_current_buf()))
+    vim.list_extend(marks, vim.fn.getmarklist(current_buf))
   end
 
   ---@type snacks.picker.finder.Item[]
   local items = {}
-  local bufname = vim.api.nvim_buf_get_name(0)
+  local bufname = vim.api.nvim_buf_get_name(current_buf)
   for _, mark in ipairs(marks) do
     local file = mark.file or bufname
     local buf = mark.pos[1] and mark.pos[1] > 0 and mark.pos[1] or nil
     local line ---@type string?
-    if buf and mark.pos[2] > 0 and vim.api.nvim_buf_is_valid(mark.pos[2]) then
+    if buf and mark.pos[2] > 0 and vim.api.nvim_buf_is_valid(mark.pos[1]) then
       line = vim.api.nvim_buf_get_lines(buf, mark.pos[2] - 1, mark.pos[2], false)[1]
     end
     local label = mark.mark:sub(2, 2)
@@ -242,9 +244,15 @@ function M.keymaps(opts)
       }
       if km.callback then
         local info = debug.getinfo(km.callback, "S")
+        item.info = info
         if info.what == "Lua" then
-          item.file = info.source:sub(2)
-          item.pos = { info.linedefined, 0 }
+          local source = info.source:sub(2)
+          item.file = source:gsub("^vim/", vim.env.VIMRUNTIME .. "/lua/vim/")
+          if source:find("^vim/") and info.linedefined == 0 then
+            item.search = "/vim\\.keymap\\.set.*['\"]" .. km.lhs
+          else
+            item.pos = { info.linedefined, 0 }
+          end
           item.preview = "file"
         end
       end
@@ -319,6 +327,56 @@ function M.spelling()
   return items
 end
 
+---@class snacks.picker.tags.Tag
+---@field name string
+---@field filename string
+---@field cmd string
+---@field kind? string
+---@field static? string
+
+---@param opts snacks.picker.tags.Config
+---@type snacks.picker.finder
+function M.tags(opts, ctx)
+  local buf = ctx.filter.current_buf
+  ---@type snacks.picker.tags.Tag[]
+  local tags = vim.fn.taglist(ctx.filter.search == "" and ".*" or ctx.filter.search, vim.api.nvim_buf_get_name(buf))
+  local ret = {} ---@type snacks.picker.finder.Item[]
+
+  local lsp_kinds = {
+    c = "Class",
+    d = "Constant",
+    e = "Enum",
+    f = "Function",
+    g = "EnumMember",
+    l = "Variable",
+    m = "Method",
+    s = "Struct",
+    t = "TypeParameter",
+    v = "Variable",
+    F = "Field",
+    M = "Module",
+    n = "Namespace",
+    P = "Property",
+    S = "Struct",
+    T = "TypeParameter",
+  }
+
+  for _, tag in ipairs(tags) do
+    ---@type snacks.picker.finder.Item
+    local item = {
+      text = tag.name,
+      name = tag.name,
+      file = tag.filename,
+      search = tag.cmd,
+      kind = tag.kind,
+      lsp_kind = lsp_kinds[tag.kind] or "Text",
+    }
+    ret[#ret + 1] = item
+  end
+
+  return ret
+end
+
 ---@param opts snacks.picker.undo.Config
 ---@type snacks.picker.finder
 function M.undo(opts, ctx)
@@ -326,6 +384,7 @@ function M.undo(opts, ctx)
   local buf = vim.api.nvim_get_current_buf()
   local file = vim.api.nvim_buf_get_name(buf)
   local items = {} ---@type snacks.picker.finder.Item[]
+  local diff_fn = vim.text and vim.text.diff or vim.diff
 
   -- Copy the current buffer to a temporary file and load the undo history.
   -- This is done to prevent the current buffer from being modified,
@@ -361,7 +420,7 @@ function M.undo(opts, ctx)
     end)
     vim.o.eventignore = ei
 
-    local diff = vim.diff(table.concat(before, "\n") .. "\n", table.concat(after, "\n") .. "\n", opts.diff) --[[@as string]]
+    local diff = diff_fn(table.concat(before, "\n") .. "\n", table.concat(after, "\n") .. "\n", opts.diff) --[[@as string]]
     local changes = {} ---@type string[]
     local added_lines = {} ---@type string[]
     local removed_lines = {} ---@type string[]
@@ -423,8 +482,20 @@ function M.undo(opts, ctx)
   ---@param cb async fun(item: snacks.picker.finder.Item)
   ---@async
   return function(cb)
+    ctx.async:on("done", function()
+      vim.schedule(function()
+        -- Clean up the temporary files
+        vim.api.nvim_buf_delete(tmpbuf, { force = true })
+        vim.fn.delete(tmp_file)
+        vim.fn.delete(tmp_undo)
+      end)
+    end)
     for i = #items, 1, -1 do
-      cb(items[i])
+      local item = items[i]
+      cb(item)
+      if item.current then
+        ctx.picker.list:set_target(#items - i + 1)
+      end
     end
 
     while #items > 0 do
@@ -439,9 +510,6 @@ function M.undo(opts, ctx)
       end)
       ctx.async:suspend()
     end
-    vim.schedule(function()
-      vim.api.nvim_buf_delete(tmpbuf, { force = true })
-    end)
   end
 end
 

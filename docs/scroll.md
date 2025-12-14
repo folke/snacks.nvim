@@ -35,7 +35,7 @@ Similar plugins:
 ---@field animate_repeat snacks.animate.Config|{}|{delay:number}
 {
   animate = {
-    duration = { step = 15, total = 250 },
+    duration = { step = 10, total = 200 },
     easing = "linear",
   },
   -- faster animation when repeating scroll after delay
@@ -55,19 +55,6 @@ Similar plugins:
 
 ```lua
 ---@alias snacks.scroll.View {topline:number, lnum:number}
-```
-
-```lua
----@class snacks.scroll.State
----@field anim? snacks.animate.Animation
----@field win number
----@field buf number
----@field view vim.fn.winsaveview.ret
----@field current vim.fn.winsaveview.ret
----@field target vim.fn.winsaveview.ret
----@field scrolloff number
----@field changedtick number
----@field last number vim.uv.hrtime of last scroll
 ```
 
 ## 📦 Module

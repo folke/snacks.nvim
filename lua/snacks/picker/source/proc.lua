@@ -14,17 +14,14 @@ M.USE_QUEUE = true
 ---@field cwd? string
 ---@field notify? boolean Notify on failure
 ---@field transform? snacks.picker.transform
+---@field raw? boolean Return raw output without processing
 
----@param opts snacks.picker.proc.Config|{[1]: snacks.picker.Config, [2]: snacks.picker.proc.Config}
+---@param opts snacks.picker.proc.Config
 ---@type snacks.picker.finder
 function M.proc(opts, ctx)
-  if svim.islist(opts) then
-    local transform = opts[2].transform
-    opts = Snacks.config.merge(unpack(vim.deepcopy(opts))) --[[@as snacks.picker.proc.Config]]
-    opts.transform = transform
-  end
   ---@cast opts snacks.picker.proc.Config
   assert(opts.cmd, "`opts.cmd` is required")
+
   ---@async
   return function(cb)
     if opts.transform then
@@ -40,7 +37,8 @@ function M.proc(opts, ctx)
 
     if ctx.picker.opts.debug.proc then
       vim.schedule(function()
-        Snacks.debug.cmd(Snacks.config.merge(opts, { group = true }))
+        ---@diagnostic disable-next-line: param-type-mismatch
+        Snacks.debug.cmd(ctx:opts({ group = true }))
       end)
     end
 
@@ -102,6 +100,9 @@ function M.proc(opts, ctx)
       if not data then
         return prev and cb({ text = prev })
       end
+      if opts.raw then
+        return cb({ text = data })
+      end
       local from = 1
       while from <= #data do
         local nl = data:find(sep, from, true)
@@ -148,6 +149,34 @@ function M.proc(opts, ctx)
     -- process the last line
     if prev then
       cb({ text = prev })
+    end
+  end
+end
+
+---@param opts snacks.picker.proc.Config|{[1]: snacks.picker.Config, [2]: snacks.picker.proc.Config}
+---@type snacks.picker.finder
+function M.json(opts, ctx)
+  opts = get_opts(opts) --[[@as snacks.picker.proc.Config]]
+  opts.raw = true
+  local transform = opts.transform
+  opts.transform = nil
+  return function(cb)
+    local Buffer = require("string.buffer")
+    local data = Buffer.new()
+    M.proc(opts, ctx)(function(item)
+      data:put(item.text)
+    end)
+    local json = vim.json.decode(data:get())
+    assert(svim.islist(json), "Expected JSON array")
+    ---@cast json snacks.picker.finder.Item[]
+    for _, item in ipairs(json) do
+      item = setmetatable({ item = item }, { __index = item })
+      item.text = item.text or ""
+      local t = transform and transform(item, ctx) or nil
+      item = type(t) == "table" and t or item
+      if t ~= false then
+        cb(item)
+      end
     end
   end
 end

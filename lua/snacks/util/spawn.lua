@@ -1,3 +1,5 @@
+local Async = require("snacks.picker.util.async")
+
 ---@class snacks.spawn
 local M = {}
 
@@ -9,6 +11,7 @@ local uv = vim.uv or vim.loop
 ---@field timeout? number
 ---@field run? boolean
 ---@field debug? boolean
+---@field input? string
 ---@field on_stdout? fun(proc: snacks.spawn.Proc, data: string)
 ---@field on_stderr? fun(proc: snacks.spawn.Proc, data: string)
 ---@field on_exit? fun(proc: snacks.spawn.Proc, err: boolean)
@@ -17,16 +20,19 @@ local uv = vim.uv or vim.loop
 ---@field cmd? nil
 ---@field on_exit? fun(procs: snacks.spawn.Proc[], err: boolean)
 
----@class snacks.spawn.Proc
+---@class snacks.spawn.Proc: snacks.picker.Waitable
 ---@field opts snacks.spawn.Config
 ---@field handle? uv.uv_process_t
 ---@field stdout uv.uv_pipe_t
 ---@field stderr uv.uv_pipe_t
+---@field stdin? uv.uv_pipe_t
 ---@field code? number
 ---@field signal? number
 ---@field timer? uv.uv_timer_t
 ---@field aborted? boolean
 ---@field data table<uv.uv_pipe_t, string[]>
+---@field async? snacks.picker.Async
+---@field did_exit? boolean
 local Proc = {}
 Proc.__index = Proc
 
@@ -57,9 +63,8 @@ end
 function Proc:kill(signal)
   close(self.stdout)
   close(self.stderr)
-  if not self.handle then
+  if self:running() then
     self.aborted = true
-  elseif self:running() then
     self.handle:kill(signal or "sigterm")
   end
 end
@@ -100,13 +105,39 @@ function Proc:debug(opts)
   return Snacks.debug.cmd(opts)
 end
 
+function Proc:setup_async()
+  self.async = Async.running()
+  if self.async then
+    self.async:on("abort", function()
+      if self:running() then
+        self:kill()
+      end
+    end)
+  end
+end
+
+---@async
+function Proc:wait()
+  self:setup_async()
+  assert(self.async, "Not in an async context")
+  assert(self.async == Async.running(), "Not in the current async context")
+  while not self.did_exit or self:running() do
+    self.async:suspend()
+  end
+  return self
+end
+
 function Proc:run()
   assert(not self.handle, "already running")
   if self.aborted then
     return self:on_exit()
   end
+
+  self:setup_async()
+
   self.stdout = assert(uv.new_pipe())
   self.stderr = assert(uv.new_pipe())
+  self.stdin = self.opts.input and assert(uv.new_pipe()) or nil
   self.data = { [self.stdout] = {}, [self.stderr] = {} }
   if self.opts.debug then
     vim.schedule(function()
@@ -114,7 +145,7 @@ function Proc:run()
     end)
   end
   local opts = vim.tbl_deep_extend("force", self.opts, {
-    stdio = { nil, self.stdout, self.stderr },
+    stdio = { self.stdin, self.stdout, self.stderr },
     hide = true,
     args = vim.tbl_map(tostring, self.opts.args or {}),
   })
@@ -130,6 +161,13 @@ function Proc:run()
     close(self.stderr)
     return self:on_exit()
   end
+
+  if self.stdin and self.opts.input then
+    self.stdin:write(self.opts.input)
+    self.stdin:shutdown()
+    self.stdin:close()
+  end
+
   if self.opts.timeout then
     self.timer = assert(uv.new_timer())
     self.timer:start(self.opts.timeout, 0, function()
@@ -146,6 +184,10 @@ function Proc:run()
       end
     end)
   end
+end
+
+function Proc:json()
+  return vim.json.decode(self:out())
 end
 
 function Proc:out()
@@ -187,6 +229,10 @@ function Proc:on_exit()
     close(self.stderr)
     if self.opts.on_exit then
       self.opts.on_exit(self, self.code ~= 0 or self.signal ~= 0 or self.aborted or false)
+    end
+    self.did_exit = true
+    if self.async then
+      self.async:resume()
     end
   end)
 end
@@ -239,5 +285,18 @@ function M.multi(procs, opts)
 end
 
 M.new = Proc.new
+
+---@param cmd string[]
+---@async
+function M.exec(cmd)
+  return vim.trim(M.new({
+    cmd = cmd[1],
+    args = vim.list_slice(cmd, 2),
+    stdout_buffered = true,
+    stderr_buffered = true,
+  })
+    :wait()
+    :out())
+end
 
 return M

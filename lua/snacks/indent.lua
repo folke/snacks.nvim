@@ -75,7 +75,9 @@ local defaults = {
     },
   },
   -- filter for buffers to enable indent guides
-  filter = function(buf)
+  ---@param buf number
+  ---@param win number
+  filter = function(buf, win)
     return vim.g.snacks_indent ~= false and vim.b[buf].snacks_indent ~= false and vim.bo[buf].buftype == ""
   end,
   debug = false,
@@ -301,7 +303,7 @@ local function bounds(scope, state)
   return from, to
 end
 
---- Render the scope overlappping the given range
+--- Render the scope overlapping the given range
 ---@param scope snacks.indent.Scope
 ---@param state snacks.indent.State
 ---@private
@@ -312,14 +314,17 @@ function M.render_scope(scope, state)
   local col = indent - state.leftcol
 
   if config.scope.underline and scope.from == from then
-    vim.api.nvim_buf_set_extmark(scope.buf, ns, scope.from - 1, math.max(col, 0), {
-      end_col = #vim.api.nvim_buf_get_lines(scope.buf, scope.from - 1, scope.from, false)[1],
-      hl_group = get_underline_hl(hl),
-      hl_mode = "combine",
-      priority = config.scope.priority + 1,
-      strict = false,
-      ephemeral = true,
-    })
+    local scope_first_line = vim.api.nvim_buf_get_lines(scope.buf, scope.from - 1, scope.from, false)[1]
+    if scope_first_line ~= nil then
+      vim.api.nvim_buf_set_extmark(scope.buf, ns, scope.from - 1, math.max(col, 0), {
+        end_col = #scope_first_line,
+        hl_group = get_underline_hl(hl),
+        hl_mode = "combine",
+        priority = config.scope.priority + 1,
+        strict = false,
+        ephemeral = true,
+      })
+    end
   end
 
   if col < 0 then -- scope is hidden
@@ -494,7 +499,7 @@ function M.enable()
   -- setup decoration provider
   vim.api.nvim_set_decoration_provider(ns, {
     on_win = function(_, win, buf, top, bottom)
-      if M.enabled and config.filter(buf) then
+      if M.enabled and config.filter(buf, win) then
         M.on_win(win, buf, top + 1, bottom + 1)
       end
     end,

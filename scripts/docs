@@ -1,27 +1,3 @@
 #!/bin/env bash
 
-set -e
-
 nvim -u tests/minit.lua --headless +'lua require("snacks.meta.docs").build()' +qa
-
-echo -e "\n\nGenerating Vim Help"
-
-if [ "$GITHUB_ACTIONS" = "true" ]; then
-  exit 0
-fi
-
-PANVIMDOC=~/projects/panvimdoc
-
-for f in docs/*.md; do
-  plugin=$(basename "$f" .md)
-  desc="snacks_$plugin"
-  $PANVIMDOC/panvimdoc.sh \
-    --project-name "snacks-$plugin" \
-    --description "$desc" \
-    --input-file "$f" \
-    --vim-version "Neovim" \
-    --demojify "true" \
-    --shift-heading-level-by -1
-done
-
-nvim -u tests/minit.lua --headless +'lua require("snacks.meta.docs").fix_titles()' +qa

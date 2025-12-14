@@ -12,7 +12,7 @@ M.meta = {
 
 ---@class snacks.debug.cmd
 ---@field cmd string|string[]
----@field level? snacks.notifier.level
+---@field level? snacks.notifier.level|vim.log.levels
 ---@field title? string
 ---@field args? string[]
 ---@field cwd? string
@@ -20,7 +20,7 @@ M.meta = {
 ---@field notify? boolean
 ---@field footer? string
 ---@field header? string
----@field props? table<string, string>
+---@field props? table<string, string|boolean|number|nil>
 
 local uv = vim.uv or vim.loop
 
@@ -97,6 +97,21 @@ function M.run(opts)
     for _ = 1, from[1] - 1 do
       table.insert(lines, 1, "")
     end
+    vim.fn.feedkeys("gv", "nx")
+  elseif mode == "\22" then
+    -- Yank the visual selection to handle irregularly shaped blocks
+    local tmp = vim.fn.getreginfo("*")
+    vim.cmd('normal! "*y')
+    lines = vim.fn.getreginfo("*").regcontents
+    vim.fn.setreg("*", tmp.regcontents, tmp.regtype)
+
+    -- Insert empty lines to keep the line numbers
+    local from = vim.api.nvim_buf_get_mark(buf, "<")
+    for _ = 1, from[1] - 1 do
+      table.insert(lines, 1, "")
+    end
+
+    -- Restore the selection
     vim.fn.feedkeys("gv", "nx")
   else
     lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
@@ -386,7 +401,7 @@ function M.cmd(opts)
     table.insert(prop_lines, ("- **%s**: %s"):format(key, props[key]))
   end
 
-  local id = cmd
+  local id = cmd or "cmd"
   lines = {
     opts.header or "",
     table.concat(prop_lines, "\n"),

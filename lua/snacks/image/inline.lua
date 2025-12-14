@@ -16,7 +16,7 @@ function M.new(buf)
     self:update()
   end, { ms = 100 })
 
-  vim.api.nvim_create_autocmd({ "BufWritePost", "WinScrolled" }, {
+  vim.api.nvim_create_autocmd({ "BufWritePost", "WinScrolled", "BufWinEnter" }, {
     group = group,
     buffer = buf,
     callback = vim.schedule_wrap(update),
@@ -29,6 +29,9 @@ function M.new(buf)
         self:conceal()
       end
     end,
+  })
+  vim.api.nvim_buf_attach(buf, false, {
+    on_lines = update,
   })
   vim.schedule(update)
   return self
@@ -67,7 +70,7 @@ end
 ---@param to number 1-indexed inclusive
 function M:get(from, to)
   local ret = {} ---@type table<number, snacks.image.Placement>
-  local marks = vim.api.nvim_buf_get_extmarks(self.buf, Snacks.image.placement.ns, { from - 1, 0 }, { to - 1, -1 }, {
+  local marks = vim.api.nvim_buf_get_extmarks(self.buf, Snacks.image.placement.ns, { from - 1, 0 }, { to, -1 }, {
     overlap = true,
     hl_name = false,
   })
@@ -110,7 +113,7 @@ function M:update()
             pos = i.pos,
             range = i.range,
             inline = true,
-            conceal = conceal(i.lang, i.type),
+            conceal = vim.b[self.buf].snacks_image_conceal or conceal(i.lang, i.type),
             type = i.type,
             ---@param p snacks.image.Placement
             on_update = function(p)

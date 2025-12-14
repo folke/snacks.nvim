@@ -16,7 +16,7 @@ M.meta = {
 ---@field wk_desc? string|{ enabled: string, disabled: string }
 ---@field map? fun(mode: string|string[], lhs: string, rhs: string|fun(), opts?: vim.keymap.set.Opts)
 ---@field which_key? boolean
----@field notify? boolean
+---@field notify? boolean|fun(state:boolean, opts: snacks.toggle.Opts)
 local defaults = {
   map = vim.keymap.set, -- keymap.set function to use
   which_key = true, -- integrate with which-key to show enabled/disabled icons and colors
@@ -97,12 +97,17 @@ end
 function Toggle:toggle()
   local state = not self:get()
   self:set(state)
-  if self.opts.notify then
-    Snacks.notify(
-      (state and "Enabled" or "Disabled") .. " **" .. self.opts.name .. "**",
-      { title = self.opts.name, level = state and vim.log.levels.INFO or vim.log.levels.WARN }
-    )
+  if not self.opts.notify then
+    return
   end
+  if type(self.opts.notify) == "function" then
+    self.opts.notify(state, self.opts)
+    return
+  end
+  Snacks.notify(
+    (state and "Enabled" or "Disabled") .. " **" .. self.opts.name .. "**",
+    { title = self.opts.name, level = state and vim.log.levels.INFO or vim.log.levels.WARN }
+  )
 end
 
 ---@param keys string
@@ -154,17 +159,11 @@ function M.option(option, opts)
     id = option,
     name = option,
     get = function()
-      if opts.global then
-        return vim.opt[option]:get() == on
-      end
-      return vim.opt_local[option]:get() == on
+      return vim.api.nvim_get_option_value(option, { scope = opts.global and "global" or "local" }) == on
     end,
     set = function(state)
-      if opts.global then
-        vim.opt[option] = state and on or off
-        return
-      end
-      vim.opt_local[option] = state and on or off
+      local value = state and on or off
+      vim.api.nvim_set_option_value(option, value, { scope = opts.global and "global" or "local" })
     end,
   }, opts)
 end
