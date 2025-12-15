@@ -380,9 +380,10 @@ end
 function M.tmux(ctx)
   local main_type = ctx.item.type:gsub("^%l", string.upper)
   local child_type = (ctx.item.type == "session" and "windows") or (ctx.item.type == "window" and "panes") or "preview"
-  local addr = (ctx.item.session_name and ctx.item.session_name or "")
-    .. (ctx.item.window_index >= 0 and ":" .. tostring(ctx.item.window_index) or "")
-    .. (ctx.item.pane_index >= 0 and "." .. tostring(ctx.item.pane_index) or "")
+  local addr = ctx.item.type == "client" and ctx.item.client_name
+    or (ctx.item.session_name or "")
+      .. (ctx.item.window_index >= 0 and ":" .. tostring(ctx.item.window_index) or "")
+      .. (ctx.item.pane_index >= 0 and "." .. tostring(ctx.item.pane_index) or "")
   ctx.preview:set_title(("%s %s %s"):format(main_type, addr, child_type))
   if ctx.item.type == "session" or ctx.item.type == "window" then
     ctx.preview:scratch()
@@ -395,7 +396,7 @@ function M.tmux(ctx)
       end, require("snacks.picker.source.tmux")[child_type](_, ctx))
     )
     Snacks.picker.highlight.render(ctx.buf, ns, children, { append = true })
-  elseif ctx.item.type == "pane" and ctx.item.pane_id then
+  elseif ctx.item.type == "pane" or ctx.item.type == "client" and ctx.item.pane_id then
     M.cmd(("setterm -linewrap off; tmux capture-pane -pe -t %s"):format(ctx.item.pane_id), ctx)
   end
 end
