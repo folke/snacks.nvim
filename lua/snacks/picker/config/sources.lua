@@ -1033,6 +1033,14 @@ M.tmux = {
   confirm = "tmux_select",
 }
 
+-- Search tmux clients
+M.tmux_clients = {
+  finder = "tmux_clients",
+  format = "tmux",
+  preview = "tmux",
+  confirm = "tmux_select",
+}
+
 -- Search tmux panes
 M.tmux_panes = {
   finder = "tmux_panes",
@@ -1040,7 +1048,7 @@ M.tmux_panes = {
   preview = "tmux",
   confirm = "tmux_select",
 }
---
+
 -- Search tmux sessions
 M.tmux_sessions = {
   finder = "tmux_sessions",

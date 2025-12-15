@@ -66,6 +66,7 @@
 ---@field spelling fun(opts?: snacks.picker.Config|{}): snacks.Picker
 ---@field tags fun(opts?: snacks.picker.tags.Config|{}): snacks.Picker
 ---@field tmux fun(opts?: snacks.picker.Config|{}): snacks.Picker
+---@field tmux_clients fun(opts?: snacks.picker.Config|{}): snacks.Picker
 ---@field tmux_panes fun(opts?: snacks.picker.Config|{}): snacks.Picker
 ---@field tmux_sessions fun(opts?: snacks.picker.Config|{}): snacks.Picker
 ---@field tmux_windows fun(opts?: snacks.picker.Config|{}): snacks.Picker
