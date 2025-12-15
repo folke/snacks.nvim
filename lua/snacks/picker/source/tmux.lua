@@ -105,6 +105,32 @@ function M.windows(opts, ctx)
   end
   return items
 end
+
+---@param opts snacks.picker.proc.Config
+function M.clients(opts, ctx)
+  local obj = vim
+    .system({
+      "tmux",
+      "list-clients",
+      "-F",
+      "#{session_name}:#{window_index}.#{pane_index} #{pane_id} #{client_name} #{client_user} #{pane_current_command}",
+    }, { text = true })
+    :wait()
+  local items = {}
+  for line in obj.stdout:gmatch("(.-)\n") do
+    local session_name, window_index, pane_index, pane_id, client_name, client_user, current_command =
+      line:match("^(.+):(%d+)%.(%d+) (%%%d+) (.+) (.+) (.+)$")
+    window_index = tonumber(window_index)
+    pane_index = tonumber(pane_index)
+    items[#items + 1] = {
+      type = "client",
+      session_name = session_name,
+      window_index = window_index,
+      pane_index = pane_index,
+      pane_id = pane_id,
+      client_name = client_name,
+      client_user = client_user,
+      current_command = current_command,
     }
   end
   return items
