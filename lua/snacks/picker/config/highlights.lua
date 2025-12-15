@@ -114,6 +114,14 @@ Snacks.util.set_hl({
   IconTypeParameter = "@lsp.type.typeParameter",
   IconVariable = "@variable",
   Rule = "@punctuation.special.markdown",
+  TmuxActivity = "Changed",
+  TmuxAddr = "Number",
+  TmuxDelim = "Delimiter",
+  TmuxExtra = "Special",
+  TmuxIcon = "Special",
+  TmuxId = "Label",
+  TmuxName = "Title",
+  TmuxUser = "Constant",
 }, { prefix = "SnacksPicker", default = true })
 
 return M

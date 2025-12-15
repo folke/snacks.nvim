@@ -432,41 +432,41 @@ function M.tmux(item, picker)
   element = item.position and (item.window_active and active_window_icons or inactive_window_icons)[item.position]
     or (item.tree and "")
   if element then
-    ret[#ret + 1] = { a(element, 2), "SnacksPickerIcon" }
+    ret[#ret + 1] = { a(element, 2), "SnacksPickerTmuxIcon" }
   end
 
   if item.tree then
     vim.list_extend(ret, M.tree(item, picker))
     if item.type == "session" and item.session_name then
-      ret[#ret + 1] = { a(item.session_name .. ":", 9, { truncate = true }), "SnacksPickerIdx" }
+      ret[#ret + 1] = { a(item.session_name .. ":", 9, { truncate = true }), "SnacksPickerTmuxAddr" }
     elseif item.type == "window" and item.window_index then
-      ret[#ret + 1] = { a(tostring(item.window_index) .. ".", 7, { truncate = true }), "SnacksPickerIdx" }
+      ret[#ret + 1] = { a(tostring(item.window_index) .. ".", 7, { truncate = true }), "SnacksPickerTmuxAddr" }
     elseif item.type == "pane" and item.pane_index then
-      ret[#ret + 1] = { a(tostring(item.pane_index), 5, { truncate = true }), "SnacksPickerIdx" }
+      ret[#ret + 1] = { a(tostring(item.pane_index), 5, { truncate = true }), "SnacksPickerTmuxAddr" }
     end
   else
     if item.session_name then
-      ret[#ret + 1] = { a(item.session_name, 8, { truncate = true, align = "right" }), "SnacksPickerIdx" }
-      ret[#ret + 1] = { " :", "SnacksPickerDelim" }
+      ret[#ret + 1] = { a(item.session_name, 8, { truncate = true, align = "right" }), "SnacksPickerTmuxAddr" }
+      ret[#ret + 1] = { " :", "SnacksPickerTmuxDelim" }
       if item.window_index and item.window_index >= 0 then
-        ret[#ret + 1] = { a(tostring(item.window_index), 3, { align = "center" }), "SnacksPickerIdx" }
-        ret[#ret + 1] = { ". ", "SnacksPickerDelim" }
+        ret[#ret + 1] = { a(tostring(item.window_index), 3, { align = "center" }), "SnacksPickerTmuxAddr" }
+        ret[#ret + 1] = { ". ", "SnacksPickerTmuxDelim" }
         if item.pane_index and item.pane_index >= 0 then
-          ret[#ret + 1] = { a(tostring(item.pane_index), 3), "SnacksPickerIdx" }
+          ret[#ret + 1] = { a(tostring(item.pane_index), 3), "SnacksPickerTmuxAddr" }
         end
       else
-        ret[#ret + 1] = { " ", "SnacksPickerDelim" }
+        ret[#ret + 1] = { " ", "SnacksPickerTmuxDelim" }
       end
     end
   end
 
   element = item.current_command or item.window_name or (item.tree and "")
   if element then
-    ret[#ret + 1] = { a(element, 8, { truncate = true }), "SnacksPickerCmd" }
+    ret[#ret + 1] = { a(element, 8, { truncate = true }), "SnacksPickerTmuxName" }
   end
 
   if item.type and item[item.type .. "_id"] then
-    ret[#ret + 1] = { a(item[item.type .. "_id"], 4), "SnacksPickerKeymapNowait" }
+    ret[#ret + 1] = { a(item[item.type .. "_id"], 4), "SnacksPickerTmuxId" }
   end
 
   element = nil
@@ -478,7 +478,7 @@ function M.tmux(item, picker)
     element = ""
   end
   if element then
-    ret[#ret + 1] = { a(element, 11), "SnacksPickerDesc" }
+    ret[#ret + 1] = { a(element, 11), "SnacksPickerTmuxExtra" }
   end
 
   element = nil
@@ -490,7 +490,7 @@ function M.tmux(item, picker)
     element = ""
   end
   if element then
-    ret[#ret + 1] = { a(element, 11), "SnacksPickerComment" }
+    ret[#ret + 1] = { a(element, 11), "SnacksPickerTmuxActivity" }
   end
 
   return ret
