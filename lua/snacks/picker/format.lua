@@ -435,6 +435,10 @@ function M.tmux(item, picker)
     ret[#ret + 1] = { a(element, 2), "SnacksPickerTmuxIcon" }
   end
 
+  if item.type == "client" and item.client_name then
+    ret[#ret + 1] = { a(item.client_name, 12), "SnacksPickerTmuxId" }
+  end
+
   if item.tree then
     vim.list_extend(ret, M.tree(item, picker))
     if item.type == "session" and item.session_name then
@@ -491,6 +495,10 @@ function M.tmux(item, picker)
   end
   if element then
     ret[#ret + 1] = { a(element, 11), "SnacksPickerTmuxActivity" }
+  end
+
+  if item.client_user then
+    ret[#ret + 1] = { a("<" .. item.client_user .. ">", 12), "SnacksPickerTmuxUser" }
   end
 
   return ret
