@@ -64,7 +64,7 @@ M.transforms = {
       return
     end
     img.content = vim.base64.decode(data)
-    img.content_id = data:sub(1, 20)
+    img.content_id = vim.fn.sha256(data)
     img.src = nil
     img.ext = ft:match("^image/(%w+)$") or "png"
   end,
@@ -324,11 +324,7 @@ function M._img(ctx)
   if img.content and not img.src then
     local root = Snacks.image.config.cache
     vim.fn.mkdir(root, "p")
-    img.src = root
-      .. "/"
-      .. (img.content_id or vim.fn.sha256(img.content):sub(1, 8))
-      .. "-content."
-      .. (img.ext or "png")
+    img.src = root .. "/" .. (img.content_id or vim.fn.sha256(img.content)) .. "-content." .. (img.ext or "png")
     if vim.fn.filereadable(img.src) == 0 then
       local fd = assert(io.open(img.src, "w"), "failed to open " .. img.src)
       fd:write(img.content)
