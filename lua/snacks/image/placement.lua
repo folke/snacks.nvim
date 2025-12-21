@@ -538,6 +538,9 @@ function M:update()
     self:hide()
     return
   end
+  if self.hidden then
+    self:show()
+  end
   self.img:place(self)
 
   self:debug("update")
