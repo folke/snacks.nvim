@@ -410,9 +410,21 @@ function M.hover()
       return
     end
 
+    local bufpos ---@type number[]?
+    if img.range then
+      bufpos = { img.range[3] - 1, img.range[4] }
+    end
+
     local win = Snacks.win(Snacks.win.resolve(Snacks.image.config.doc, "snacks_image", {
       show = false,
       enter = false,
+      -- Place the hover preview after the end of the math expression,
+      -- so it doesn't cover the closing delimiters.
+      relative = bufpos and "win" or nil,
+      win = bufpos and current_win or nil,
+      bufpos = bufpos,
+      row = bufpos and 1 or nil,
+      col = bufpos and 0 or nil,
       wo = { winblend = Snacks.image.terminal.env().placeholders and 0 or nil },
     }))
     win:open_buf()
