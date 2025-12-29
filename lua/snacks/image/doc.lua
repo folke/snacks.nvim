@@ -378,7 +378,8 @@ function M.match_at_cursor(cb)
 end
 
 function M.hover()
-  if vim.api.nvim_get_mode().mode:sub(1, 1) ~= "n" then
+  local mode = vim.api.nvim_get_mode().mode:sub(1, 1):lower()
+  if mode ~= "n" and mode ~= "i" and mode ~= "s" then
     return M.hover_close()
   end
 
@@ -446,7 +447,7 @@ function M.hover()
       buf = current_buf,
       img = Snacks.image.placement.new(win.buf, src, o),
     }
-    vim.api.nvim_create_autocmd({ "BufWritePost", "CursorMoved", "ModeChanged", "BufLeave" }, {
+    vim.api.nvim_create_autocmd({ "BufWritePost", "CursorMoved", "CursorMovedI", "ModeChanged", "BufLeave" }, {
       group = vim.api.nvim_create_augroup("snacks.image.hover", { clear = true }),
       callback = function()
         if not hover then
@@ -483,7 +484,7 @@ function M._attach(buf)
 
   if float then
     local group = vim.api.nvim_create_augroup("snacks.image.doc." .. buf, { clear = true })
-    vim.api.nvim_create_autocmd({ "CursorMoved" }, {
+    vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
       group = group,
       buffer = buf,
       callback = vim.schedule_wrap(M.hover),

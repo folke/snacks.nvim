@@ -38,28 +38,19 @@ function M.new(buf)
 end
 
 function M:conceal()
-  local mode = vim.api.nvim_get_mode().mode:sub(1, 1):lower() ---@type string
-
-  -- Disable inline previews in insert/select mode to avoid hiding the cursor,
-  -- e.g. while using luasnip choices.
+  local mode = vim.fn.mode():sub(1, 1):lower() ---@type string
   if mode == "i" or mode == "s" then
     for _, img in pairs(self.imgs) do
-      img:hide()
+      if img.opts.conceal then
+        img:hide()
+      else
+        img:show()
+      end
     end
     return
   end
-
-  -- Keep the cursor visible on concealed expressions (like math) by hiding the
-  -- preview when the cursor is on a line covered by its range.
-  local row = vim.api.nvim_win_get_cursor(0)[1]
   for _, img in pairs(self.imgs) do
-    local range = img.opts.range
-    local hide = (img.opts.type == "math" or img.opts.conceal) and range and row >= range[1] and row <= range[3]
-    if hide then
-      img:hide()
-    else
-      img:show()
-    end
+    img:show()
   end
   if vim.wo.concealcursor:find(mode) then
     return
@@ -137,36 +128,12 @@ function M:update()
             ---@param p snacks.image.Placement
             on_update_pre = function(p)
               local mode = vim.api.nvim_get_mode().mode:sub(1, 1):lower()
-              if p.buf ~= vim.api.nvim_get_current_buf() then
-                p.hidden = false
-                return
-              end
-              if mode == "i" or mode == "s" then
-                p.hidden = true
-                return
-              end
-              if mode == "n" and (p.opts.type == "math" or p.opts.conceal) and p.opts.range then
-                local cursor = vim.api.nvim_win_get_cursor(0)
-                local row = cursor[1]
-                local range = p.opts.range
-                if row >= range[1] and row <= range[3] then
-                  p.hidden = true
-                  return
-                end
-              end
-              p.hidden = false
+              p.hidden = (mode == "i" or mode == "s") and p.opts.conceal or false
             end,
             ---@param p snacks.image.Placement
             on_update = function(p)
               for _, eid in ipairs(p.eids) do
                 self.idx[eid] = p
-              end
-              if self.buf == vim.api.nvim_get_current_buf() then
-                vim.schedule(function()
-                  if self.buf == vim.api.nvim_get_current_buf() then
-                    self:conceal()
-                  end
-                end)
               end
             end,
           })
