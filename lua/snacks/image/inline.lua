@@ -49,22 +49,16 @@ function M:conceal()
     return
   end
 
-  for _, img in pairs(self.imgs) do
-    img:show()
-  end
-
   -- Keep the cursor visible on concealed expressions (like math) by hiding the
-  -- preview when the cursor is inside its range.
-  local cursor = vim.api.nvim_win_get_cursor(0)
-  local row, col = cursor[1], cursor[2]
+  -- preview when the cursor is on a line covered by its range.
+  local row = vim.api.nvim_win_get_cursor(0)[1]
   for _, img in pairs(self.imgs) do
     local range = img.opts.range
-    if img.opts.conceal and range then
-      local inside = (range[1] == range[3] and row == range[1] and col >= range[2] and col <= range[4])
-        or (range[1] ~= range[3] and row >= range[1] and row <= range[3])
-      if inside then
-        img:hide()
-      end
+    local hide = (img.opts.type == "math" or img.opts.conceal) and range and row >= range[1] and row <= range[3]
+    if hide then
+      img:hide()
+    else
+      img:show()
     end
   end
   if vim.wo.concealcursor:find(mode) then
@@ -151,13 +145,11 @@ function M:update()
                 p.hidden = true
                 return
               end
-              if mode == "n" and p.opts.conceal and p.opts.range then
+              if mode == "n" and (p.opts.type == "math" or p.opts.conceal) and p.opts.range then
                 local cursor = vim.api.nvim_win_get_cursor(0)
-                local row, col = cursor[1], cursor[2]
+                local row = cursor[1]
                 local range = p.opts.range
-                local inside = (range[1] == range[3] and row == range[1] and col >= range[2] and col <= range[4])
-                  or (range[1] ~= range[3] and row >= range[1] and row <= range[3])
-                if inside then
+                if row >= range[1] and row <= range[3] then
                   p.hidden = true
                   return
                 end
