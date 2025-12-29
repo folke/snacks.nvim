@@ -52,6 +52,20 @@ function M:conceal()
   for _, img in pairs(self.imgs) do
     img:show()
   end
+
+  local cursor = vim.api.nvim_win_get_cursor(0)
+  local row, col = cursor[1], cursor[2]
+  for _, img in pairs(self.imgs) do
+    local range = img.opts.conceal and img.opts.range
+    if range then
+      local inside = (range[1] == range[3] and row == range[1] and col >= range[2] and col <= range[4])
+        or (range[1] ~= range[3] and row >= range[1] and row <= range[3])
+      if inside then
+        img:hide()
+      end
+    end
+  end
+
   if vim.wo.concealcursor:find(mode) then
     return
   end
@@ -128,7 +142,26 @@ function M:update()
             ---@param p snacks.image.Placement
             on_update_pre = function(p)
               local mode = vim.api.nvim_get_mode().mode:sub(1, 1):lower()
-              p.hidden = (mode == "i" or mode == "s") and p.opts.conceal or false
+              if p.buf ~= vim.api.nvim_get_current_buf() then
+                p.hidden = false
+                return
+              end
+              if (mode == "i" or mode == "s") and p.opts.conceal then
+                p.hidden = true
+                return
+              end
+              if mode == "n" and p.opts.conceal and p.opts.range then
+                local cursor = vim.api.nvim_win_get_cursor(0)
+                local row, col = cursor[1], cursor[2]
+                local range = p.opts.range
+                local inside = (range[1] == range[3] and row == range[1] and col >= range[2] and col <= range[4])
+                  or (range[1] ~= range[3] and row >= range[1] and row <= range[3])
+                if inside then
+                  p.hidden = true
+                  return
+                end
+              end
+              p.hidden = false
             end,
             ---@param p snacks.image.Placement
             on_update = function(p)
