@@ -73,6 +73,7 @@ local defaults = {
   folds = {
     open = false, -- show open fold icons
     git_hl = false, -- use Git Signs hl for fold icons
+    click_events = true, -- enable click events to toggle folds
   },
   git = {
     -- patterns to match Git signs
@@ -313,7 +314,9 @@ function M._get()
   components[3] = vim.b[buf].snacks_statuscolumn_right ~= false and components[3] or ""
 
   local ret = table.concat(components, "")
-  return "%@v:lua.require'snacks.statuscolumn'.click_fold@" .. ret .. "%T"
+  local mouse_handler = config.folds.click_events and "@v:lua.require'snacks.statuscolumn'.click_fold@" or ""
+
+  return ""%" .. mouse_handler .. ret .. "%T"
 end
 
 function M.get()
