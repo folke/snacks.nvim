@@ -165,15 +165,27 @@ local function update_config(opts)
     return type(val) == "string" and not val:find("^\"'`") and ("%q"):format(val) or val
   end
 
-  local function to_yaml(tbl, indent)
+  local function to_yaml(tbl, indent, sublist)
     indent = indent or 0
     local lines = {}
     for k, v in pairs(tbl) do
-      table.insert(lines, string.rep(" ", indent) .. k .. (type(v) == "table" and ":" or ": " .. yaml_val(v)))
+      if sublist then
+        sublist = false
+        table.insert(
+          lines,
+          string.rep(" ", indent - 2) .. "- " .. k .. (type(v) == "table" and ":" or ": " .. yaml_val(v))
+        )
+      else
+        table.insert(lines, string.rep(" ", indent) .. k .. (type(v) == "table" and ":" or ": " .. yaml_val(v)))
+      end
       if type(v) == "table" then
         if (vim.islist or vim.tbl_islist)(v) then
           for _, item in ipairs(v) do
-            table.insert(lines, string.rep(" ", indent + 2) .. "- " .. yaml_val(item))
+            if type(item) == "table" then
+              vim.list_extend(lines, to_yaml(item, indent + 4, true))
+            else
+              table.insert(lines, string.rep(" ", indent + 2) .. "- " .. yaml_val(item))
+            end
           end
         else
           vim.list_extend(lines, to_yaml(v, indent + 2))
