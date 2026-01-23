@@ -460,11 +460,13 @@ M.git_status = {
 ---@field group? boolean group changes by file (when false, show individual hunks)
 ---@field staged? boolean show staged changes
 ---@field base? string base commit/branch/tag to diff against (default: HEAD)
+---@field current_file? boolean show diff for current file (default: false)
 M.git_diff = {
   group = false,
   finder = "git_diff",
   format = "git_status",
   preview = "diff",
+  current_file = false,
   matcher = { sort_empty = true },
   sort = { fields = { "score:desc", "file", "idx" } },
   win = {
