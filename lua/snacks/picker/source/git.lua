@@ -269,7 +269,14 @@ function M.diff(opts, ctx)
   local cwd = ctx:git_root()
   ctx.picker:set_cwd(cwd)
 
-  local file = opts.current_file and { "--", svim.fs.normalize(vim.api.nvim_buf_get_name(ctx.filter.current_buf)) } or {}
+  local file = {}
+
+  if opts.current_file then
+    local bufname = vim.api.nvim_buf_get_name(ctx.filter.current_buf)
+    if bufname ~= "" then
+      file = { "--", svim.fs.normalize(bufname) }
+    end
+  end
 
   local Diff = require("snacks.picker.source.diff")
   local finders = {} ---@type snacks.picker.finder.result[]
