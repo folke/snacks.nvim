@@ -273,9 +273,15 @@ function M.diff(opts, ctx)
 
   if opts.current_file then
     local bufname = vim.api.nvim_buf_get_name(ctx.filter.current_buf)
-    if bufname ~= "" then
-      file = { "--", svim.fs.normalize(bufname) }
+    if bufname == "" then
+      return function() end
     end
+    bufname = svim.fs.normalize(bufname)
+    if not vim.startswith(bufname, cwd) then
+      Snacks.notify.warn(string.format("Current file is not inside the git root:\nFile: %s\nRoot: %s", bufname, cwd))
+      return function() end
+    end
+    file = { "--", bufname }
   end
 
   local Diff = require("snacks.picker.source.diff")
