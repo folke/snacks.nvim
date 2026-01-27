@@ -3,6 +3,8 @@ local M = {}
 
 local uv = vim.uv or vim.loop
 
+local str_byteindex_new = pcall(vim.str_byteindex, "aa", "utf-8", 1)
+
 ---@param item snacks.picker.Item
 ---@return string?
 function M.path(item)
@@ -19,7 +21,7 @@ end
 ---@param opts? {cwd?: string, kind?: "left" | "center" | "right"}
 function M.truncpath(path, len, opts)
   opts = opts or {}
-  local cwd = svim.fs.normalize(opts and opts.cwd or vim.fn.getcwd(), { _fast = true, expand_env = false })
+  local cwd = svim.fs.normalize(opts and opts.cwd or vim.fn.getcwd(0), { _fast = true, expand_env = false })
   local home = svim.fs.normalize("~")
   path = svim.fs.normalize(path, { _fast = true, expand_env = false })
 
@@ -74,17 +76,28 @@ end
 ---@param prompt string
 ---@param fn fun()
 function M.confirm(prompt, fn)
-  Snacks.picker.select({ "No", "Yes" }, { prompt = prompt }, function(_, idx)
+  Snacks.picker.select({ "No", "Yes" }, {
+    prompt = prompt,
+    snacks = {
+      layout = {
+        layout = {
+          max_width = 60,
+        },
+      },
+    },
+  }, function(_, idx)
     if idx == 2 then
       fn()
     end
   end)
 end
 
+---@alias snacks.picker.util.cmd.Opts {env?: table<string, string>, cwd?: string, input?: string}
 ---@param cmd string|string[]
 ---@param cb fun(output: string[], code: number)
----@param opts? {env?: table<string, string>, cwd?: string}
+---@param opts? snacks.picker.util.cmd.Opts
 function M.cmd(cmd, cb, opts)
+  opts = opts or {}
   local output = {} ---@type string[]
   local id = vim.fn.jobstart(
     cmd,
@@ -112,6 +125,9 @@ function M.cmd(cmd, cb, opts)
   )
   if id <= 0 then
     Snacks.notify.error(("Failed to start job `%s`"):format(cmd))
+  elseif opts.input then
+    vim.fn.chansend(id, opts.input .. "\n")
+    vim.fn.chanclose(id, "stdin")
   end
   return id > 0 and id or nil
 end
@@ -189,6 +205,7 @@ function M.visual()
   local text = table.concat(lines, "\n")
   ---@class snacks.picker.Visual
   local ret = {
+    buf = vim.api.nvim_get_current_buf(),
     pos = pos,
     end_pos = end_pos,
     text = text,
@@ -197,10 +214,25 @@ function M.visual()
 end
 
 ---@param str string
----@param data table<string, string>
+---@param data table<string, string|boolean|number>|table<string, string|boolean|number>[]
 ---@param opts? {prefix?: string, indent?: boolean, offset?: number[]}
 function M.tpl(str, data, opts)
   opts = opts or {}
+
+  local function get(key)
+    if not vim.tbl_isempty(data) and svim.islist(data) and not getmetatable(data) then
+      for _, d in ipairs(data) do
+        if d[key] ~= nil then
+          return d[key]
+        end
+      end
+    else
+      if data[key] ~= nil then
+        return data[key]
+      end
+    end
+  end
+
   local ret = (
     str:gsub(
       "(" .. vim.pesc(opts.prefix or "") .. "%b{}" .. ")",
@@ -208,7 +240,7 @@ function M.tpl(str, data, opts)
       function(w)
         local inner = w:sub(2 + #(opts.prefix or ""), -2)
         local key, default = inner:match("^(.-):(.*)$")
-        local ret = data[key or inner]
+        local ret = get(key or inner)
         if ret == "" and default then
           return default
         end
@@ -324,13 +356,17 @@ end
 ---@param s string
 ---@param index number
 ---@param encoding string
-function M.str_byteindex(s, index, encoding)
-  if vim.lsp.util._str_byteindex_enc then
-    return vim.lsp.util._str_byteindex_enc(s, index, encoding)
-  elseif vim._str_byteindex then
-    return vim._str_byteindex(s, index, encoding == "utf-16")
+---@param strict_indexing? boolean
+function M.str_byteindex(s, index, encoding, strict_indexing)
+  if str_byteindex_new then
+    return vim.str_byteindex(s, encoding, index, strict_indexing)
+  elseif vim.str_byteindex then
+    ---@diagnostic disable-next-line: param-type-mismatch
+    return vim.str_byteindex(s, index, encoding == "utf-16")
+  elseif vim.lsp.util._str_byteindex then
+    return vim.lsp.util._str_byteindex(s, index, encoding)
   end
-  return vim.str_byteindex(s, index, encoding == "utf-16")
+  error("No str_byteindex function available")
 end
 
 --- Resolves the location of an item to byte positions

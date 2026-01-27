@@ -120,6 +120,7 @@ in [mini.indentscope](https://github.com/nvim-mini/mini.indentscope).
 ---@field buf? number
 ---@field pos? {[1]:number, [2]:number} -- (1,0) indexed
 ---@field end_pos? {[1]:number, [2]:number} -- (1,0) indexed
+---@field async? boolean run scope detection asynchronously (defaults to true)
 ```
 
 ```lua

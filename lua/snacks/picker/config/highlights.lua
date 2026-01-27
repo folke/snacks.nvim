@@ -113,6 +113,7 @@ Snacks.util.set_hl({
   IconStruct = "@lsp.type.struct",
   IconTypeParameter = "@lsp.type.typeParameter",
   IconVariable = "@variable",
+  Rule = "@punctuation.special.markdown",
 }, { prefix = "SnacksPicker", default = true })
 
 return M

@@ -28,8 +28,8 @@ function M.new(path, opts)
     ---@type string
     local data = fd:read("*a")
     fd:close()
-    ---@diagnostic disable-next-line: assign-type-mismatch
-    self.data = require("string.buffer").decode(data) or {}
+    local ok, decoded = pcall(require("string.buffer").decode, data)
+    self.data = ok and decoded or {} --[[@as table<string, number>]]
   end
   return self
 end

@@ -5,6 +5,9 @@ local M = {}
 ---@param opts? snacks.image.Opts|{src?: string}
 function M._attach(buf, opts)
   Snacks.image.placement.clean(buf)
+  if not vim.api.nvim_buf_is_valid(buf) then
+    return
+  end
   opts = opts or {}
   local file = opts.src or vim.api.nvim_buf_get_name(buf)
   if not Snacks.image.supports(file) then
@@ -39,6 +42,9 @@ end
 ---@param buf number
 ---@param opts? snacks.image.Opts|{src?: string}
 function M.attach(buf, opts)
+  if Snacks.image.config.enabled == false then
+    return
+  end
   local Terminal = require("snacks.image.terminal")
   Terminal.detect(function()
     M._attach(buf, opts)

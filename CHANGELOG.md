@@ -1,5 +1,184 @@
 # Changelog
 
+## [2.30.0](https://github.com/folke/snacks.nvim/compare/v2.29.0...v2.30.0) (2025-11-06)
+
+
+### Features
+
+* **diff:** prettier commit rendering (git show, diff with header) ([dc2186e](https://github.com/folke/snacks.nvim/commit/dc2186e57221cd834487e5c3fbd548180e836d1c))
+* **gh:** add inline review comment annotations to diff viewer ([c83ff8d](https://github.com/folke/snacks.nvim/commit/c83ff8d5982e6ebf92623911e232f1dbd0b0a00c))
+* **gh:** create review comments in GitHub PR diff, on diff lines. Closes [#2446](https://github.com/folke/snacks.nvim/issues/2446) ([85bf3f0](https://github.com/folke/snacks.nvim/commit/85bf3f0123cd6aaa1e06569283ffca10b59fcc3b))
+* **layout:** allow resizing split layouts. See [#2390](https://github.com/folke/snacks.nvim/issues/2390) ([913379c](https://github.com/folke/snacks.nvim/commit/913379ccd2679fc11462479205897e584496c855))
+* **picker.gh_diff:** you can now reply to review comments in diffs with `a`. See [#2446](https://github.com/folke/snacks.nvim/issues/2446) ([c3bda87](https://github.com/folke/snacks.nvim/commit/c3bda8709ab9f300e9dd15c2e0ec47f17caff1d5))
+* **picker.icons:** make it easier to add custom icon sources ([82e6966](https://github.com/folke/snacks.nvim/commit/82e69661cd0766893184dcc3ec3684b492772854))
+* **picker.marks:** added `<c-x>` to delete a mark from the list. See [#2390](https://github.com/folke/snacks.nvim/issues/2390) ([9a04605](https://github.com/folke/snacks.nvim/commit/9a04605664be0613963910d545d4164eb2f57bab))
+* **picker:** when picker was started from insert mode, return to insert after paste ([a417630](https://github.com/folke/snacks.nvim/commit/a4176301e323d9689674764da62f628742dc744a))
+* **util.async:** add proper backtrace to unhandled async errors ([01f6cac](https://github.com/folke/snacks.nvim/commit/01f6cac48fd7a3ec9bf7e5fc8a5ae22381861baf))
+
+
+### Bug Fixes
+
+* **gh:** force `fancy` diff style for gh pr diff, since that's needed to render/interact with review comments ([bd71cd4](https://github.com/folke/snacks.nvim/commit/bd71cd4b007fd414f2bd3e4ce7d292fde4b8849f))
+* **gh:** only skip empty comment reviews. Closes [#2445](https://github.com/folke/snacks.nvim/issues/2445) ([1848d74](https://github.com/folke/snacks.nvim/commit/1848d74e7c01a0c4686b6e8353158507a73dfe10))
+* **gh:** pass correct context in gh_perform_action. Closes [#2442](https://github.com/folke/snacks.nvim/issues/2442). Closes [#2443](https://github.com/folke/snacks.nvim/issues/2443) ([13edbc6](https://github.com/folke/snacks.nvim/commit/13edbc681c727adfff72c49d07fedaec566404f8))
+* **gh:** properly handly pending requests ([7a15e16](https://github.com/folke/snacks.nvim/commit/7a15e16d0165fa3b22486066795eeca788ec0c8d))
+* **gh:** use lua to parse dates so we can do this in a fast context ([cd0d6fe](https://github.com/folke/snacks.nvim/commit/cd0d6fe86465394af8ba5037bc87d7ebfecc10fb))
+* **image:** run terminal capability detection synchronous when needed. Closes [#2439](https://github.com/folke/snacks.nvim/issues/2439) ([58f1152](https://github.com/folke/snacks.nvim/commit/58f11527fe8b63ccabb1d75bb8f14f5ebbdc6a14))
+* **layout:** ignore very zindex windows for calulating layout zindex, so that it stays below things like notifications ([47340e6](https://github.com/folke/snacks.nvim/commit/47340e6b0b24773ef4789aa677394a2499762841))
+* **lsp:** properly detach buffers on LspDetach. Closes [#2457](https://github.com/folke/snacks.nvim/issues/2457) ([beb995e](https://github.com/folke/snacks.nvim/commit/beb995e1c6a554d53f6d23fc3aadea568dab2534))
+* **picker.actions:** don't open a new tab if the current tab is empty. Closes [#2461](https://github.com/folke/snacks.nvim/issues/2461) ([4e2424e](https://github.com/folke/snacks.nvim/commit/4e2424eca7ffaa6e36ebf4ac4d136d05b79edc41))
+* **picker.diff:** added `showbreak=""` for fancy diff. Closes [#2441](https://github.com/folke/snacks.nvim/issues/2441) ([fb55f7b](https://github.com/folke/snacks.nvim/commit/fb55f7bf2b6521eb6d7adf6a6b4b437a80882cd0))
+* **picker.format:** use file for icon. fallback to ft when buffer is not a file. See [#2390](https://github.com/folke/snacks.nvim/issues/2390) ([20ac8bf](https://github.com/folke/snacks.nvim/commit/20ac8bfc4ac615a46f64b7806ff367b114bc942f))
+* **picker.grep_word:** pass `--word-regexp` to `ripgrep` ([6aad368](https://github.com/folke/snacks.nvim/commit/6aad36810a8b49041b8a7d3ef6b9050549be0617))
+* **picker.highlight:** resolve ([4438ee4](https://github.com/folke/snacks.nvim/commit/4438ee4770edad9fb843d841b9fdf5ef04d9f479))
+* **picker.input:** startinsert when starting the picker from terminal mode. See [#2390](https://github.com/folke/snacks.nvim/issues/2390) ([b2054a3](https://github.com/folke/snacks.nvim/commit/b2054a3a734631f33b3b08af88b171930666bffe))
+* **picker.lsp_config:** nil on lsp info ([#2459](https://github.com/folke/snacks.nvim/issues/2459)) ([c5257fa](https://github.com/folke/snacks.nvim/commit/c5257fa690fe7e7de7d0da29a6f46f2236b355f0))
+* **scope:** textobjects should use synchronous treesitter parsing. Closes [#2448](https://github.com/folke/snacks.nvim/issues/2448) ([9737c25](https://github.com/folke/snacks.nvim/commit/9737c25f2937ab4cd4751b7d041268949d9e0d97))
+* **toggle:** set/get raw values for option toggles. See [#2390](https://github.com/folke/snacks.nvim/issues/2390) ([41da728](https://github.com/folke/snacks.nvim/commit/41da728f0280033c13aaa4e2820bd3e926790a28))
+* **win:** set `foldcolumn='0'` for minimal style. See [#2390](https://github.com/folke/snacks.nvim/issues/2390) ([195faa0](https://github.com/folke/snacks.nvim/commit/195faa0646df9e9c765c3b86c58407021decdb7c))
+
+## [2.29.0](https://github.com/folke/snacks.nvim/compare/v2.28.0...v2.29.0) (2025-11-04)
+
+
+### Features
+
+* **gh.diff:** show git status in PR diff ([c671d06](https://github.com/folke/snacks.nvim/commit/c671d062d163a31894453dbca15087ea9149ac38))
+* **gh:** added reviews and nice diffs to gh buffer views. See [#2411](https://github.com/folke/snacks.nvim/issues/2411) ([1335ca1](https://github.com/folke/snacks.nvim/commit/1335ca1956fa81ddb3e249721e8f422c4cd0c329))
+* **gh:** allow to update pr branch ([#2419](https://github.com/folke/snacks.nvim/issues/2419)) ([f75f307](https://github.com/folke/snacks.nvim/commit/f75f307af3230c9872939aabd2fb484d8ad3cb5f))
+* **gh:** use new diff renderer for gh pr reviews ([714edec](https://github.com/folke/snacks.nvim/commit/714edec900334130a274ef1a21dd2b6edb7997fe))
+* **gh:** when on a review comment, the `gh_comment` action will now do a reply instead of a top-level comment. Fixes [#2410](https://github.com/folke/snacks.nvim/issues/2410) ([a4f2b9d](https://github.com/folke/snacks.nvim/commit/a4f2b9da2d0dd73e127459fb372e0eb695d70cb2))
+* **gh:** you can now use `Snacks.picker.gh_actions()` directly to see actions for the checked out PR ([d0d10f6](https://github.com/folke/snacks.nvim/commit/d0d10f6d13a4285a83ccf225d2a8938152efcef8))
+* **picker.diff:** new fancy diff renderer ([22eea90](https://github.com/folke/snacks.nvim/commit/22eea90a9548e692c80a20740934720e6d095be1))
+* **picker.git_diff:** show proper git status for git diff files ([ab48eeb](https://github.com/folke/snacks.nvim/commit/ab48eebeb37cc149907d13c904008712a858212b))
+* **picker.git_diff:** show renames ([77609a0](https://github.com/folke/snacks.nvim/commit/77609a00133cf56b69a7fee9b677a1f0c877e37b))
+* **picker.lsp_config:** added server/dynamic capabilities to preview ([da14fac](https://github.com/folke/snacks.nvim/commit/da14fac1e54dc0022b9ba724a50ae93e43f5f271))
+* **picker:** consolidate all diff options under `opts.previewers.diff`. Default style is `fancy` ([b65b06c](https://github.com/folke/snacks.nvim/commit/b65b06ca0ec7ea4730a7a06e71edbc9c1aa32980))
+* **zen:** added `center` option that defaults to `true` for zen mode and `false` for zoom mode. Closes [#2422](https://github.com/folke/snacks.nvim/issues/2422) ([3c2d791](https://github.com/folke/snacks.nvim/commit/3c2d79162f8174d5e1c33539a72025a25f4af590))
+
+
+### Bug Fixes
+
+* **dashboard:** start job after the terminal window is shown to make sure it has the correct size. Closes [#2421](https://github.com/folke/snacks.nvim/issues/2421) ([e440df3](https://github.com/folke/snacks.nvim/commit/e440df387d448a2ec332442a0eca6ece685f2b4d))
+* **diff:** fallback if `Normal` has no fg color. Closes [#2436](https://github.com/folke/snacks.nvim/issues/2436) ([7f453c4](https://github.com/folke/snacks.nvim/commit/7f453c4f322ea2664655cc78c70ff4a9b6238c75))
+* **diff:** improved diff parsing. Closes [#2424](https://github.com/folke/snacks.nvim/issues/2424). Closes [#2420](https://github.com/folke/snacks.nvim/issues/2420) ([b6e4eb7](https://github.com/folke/snacks.nvim/commit/b6e4eb7e608924a0d116bb01dabb575365bcfd75))
+* **diff:** remove diff injections. Closes [#2406](https://github.com/folke/snacks.nvim/issues/2406) ([ecc21bb](https://github.com/folke/snacks.nvim/commit/ecc21bbb9b6969b039676ad7f5d34df5974b1580))
+* **gh.api:** get repo from upstream remote if availble. fallback to origin ([5043637](https://github.com/folke/snacks.nvim/commit/50436373c277906cf40e47380f3dc1bd7769a885))
+* **gh.api:** pass repo to cmd. Closes [#2415](https://github.com/folke/snacks.nvim/issues/2415) ([78046eb](https://github.com/folke/snacks.nvim/commit/78046eb4817e30e216d2456c84005d5264aad67f))
+* **gh.diff:** fixed rendering of diff header when wrap=true ([07c569d](https://github.com/folke/snacks.nvim/commit/07c569dfd5f869dbe23d32d7ce1a7547a6abe69a))
+* **gh.item:** better method to extract repo from gh url. Closes [#2418](https://github.com/folke/snacks.nvim/issues/2418) ([52d544c](https://github.com/folke/snacks.nvim/commit/52d544cc64da4e9cae4f3df5adf7a777b2ed0217))
+* **gh.render:** added support for older `StatusContext` checks. Closes [#2407](https://github.com/folke/snacks.nvim/issues/2407) ([74864a7](https://github.com/folke/snacks.nvim/commit/74864a7bb8390684a5132e4025a77a1de92865e8))
+* **gh.render:** use check name. See [#2407](https://github.com/folke/snacks.nvim/issues/2407) ([6f60105](https://github.com/folke/snacks.nvim/commit/6f60105302fcae45524a5b6232beb52829e93e3f))
+* **gh:** better way of determining current PR ([bd3c1a0](https://github.com/folke/snacks.nvim/commit/bd3c1a071483c943ce98723ef7ac79fda0c7ee16))
+* **gh:** input for api should be a table, not a string. Closes [#2427](https://github.com/folke/snacks.nvim/issues/2427) ([1b3e409](https://github.com/folke/snacks.nvim/commit/1b3e4090a01331ef632ce904d364daf2b811bf54))
+* **image:** allow to fully disable all image rendering with `opts.image.enabled = false`. Closes [#2404](https://github.com/folke/snacks.nvim/issues/2404) ([34a6591](https://github.com/folke/snacks.nvim/commit/34a6591a616836d727140afcd9896981c64281e0))
+* **image:** disable image conversion error notifications by default ([cfcf525](https://github.com/folke/snacks.nvim/commit/cfcf52520765fb18113d89b970bd26a6aa6f543b))
+* **lsp:** check lsp handlers after LspAttach, since attached_buffers won't have been set ([1861b0a](https://github.com/folke/snacks.nvim/commit/1861b0a8eaee849fb8ed67a6764ef5021196bb58))
+* **picker.actions:** only allow stage/unstage/restore for some diffs ([9cde35b](https://github.com/folke/snacks.nvim/commit/9cde35b7b16244fee5c6f73749523e95e4a2b432))
+* **picker.diff:** move git status calc based on diff to format ([b553c18](https://github.com/folke/snacks.nvim/commit/b553c18c263b156f12bfc2a80124cf8edfa04dd3))
+* **picker.diff:** parse full diff including diff and hunk headers. Closes [#2429](https://github.com/folke/snacks.nvim/issues/2429) ([53d8012](https://github.com/folke/snacks.nvim/commit/53d8012e5e4b2115ade2c15d040223ef97ffb05c))
+* **picker.git_diff:** don't show git status, disable stage/unstage/restore when merge-base is set. Closes [#2397](https://github.com/folke/snacks.nvim/issues/2397) ([6ff82ca](https://github.com/folke/snacks.nvim/commit/6ff82cab7bd413bfe30cf1b1856729a59392c405))
+* **picker.highlight:** resolve all text chunks when needed. Not just the first. ([962aadd](https://github.com/folke/snacks.nvim/commit/962aadd3103496c7d2a02cc358a13f773f03a059))
+* **picker.undo:** cleanup tmp files in `async:on("done")`. Closes [#2434](https://github.com/folke/snacks.nvim/issues/2434) ([3038dac](https://github.com/folke/snacks.nvim/commit/3038dac46009a778881a7ca98287a6c1cba1d160))
+* **picker.undo:** set initial target to the current undo entry. See [#2434](https://github.com/folke/snacks.nvim/issues/2434) ([dc245ef](https://github.com/folke/snacks.nvim/commit/dc245ef04e19b34510fa1edbe52abd61d28fea37))
+* **picker:** don't focus a picker window when toggling a window and picker wasn't current. closes [#2417](https://github.com/folke/snacks.nvim/issues/2417) ([b80b330](https://github.com/folke/snacks.nvim/commit/b80b330091b488e8f41f9e5228d9c9acbe333f7b))
+* revert rename of actions.lua to tomdar87@outlook.com ([#2423](https://github.com/folke/snacks.nvim/issues/2423)) ([8bb3ad6](https://github.com/folke/snacks.nvim/commit/8bb3ad6c53232b4c7f0cf430ef3df1bef69fd6ee))
+* **win:** fixed fixbuf. Closes [#2409](https://github.com/folke/snacks.nvim/issues/2409) ([2099572](https://github.com/folke/snacks.nvim/commit/2099572fe8b7296ecda13e20b553e9cd873cf165))
+
+## [2.28.0](https://github.com/folke/snacks.nvim/compare/v2.27.0...v2.28.0) (2025-11-01)
+
+
+### Features
+
+* **gh:** new `gh` (GitHub cli) integration ([85b8ec2](https://github.com/folke/snacks.nvim/commit/85b8ec210975aa137af4b7bef1fb7b7098be331a))
+* **image:** when opts.conceal, conceal remainig lines that are not covered by the image. See [#2391](https://github.com/folke/snacks.nvim/issues/2391) ([404027c](https://github.com/folke/snacks.nvim/commit/404027c973c0a54a369931d36263996a34162ab5))
+* **picker.buffers:** add filetype/buftype to search text ([a249c86](https://github.com/folke/snacks.nvim/commit/a249c86cf1ed3b8434bc004af3a865997706c22f))
+* **picker.buffers:** added buftype and filetype for scratch buffers ([6a13271](https://github.com/folke/snacks.nvim/commit/6a132716af145a109800a129300e43104789b5c0))
+* **picker.diff:** moved git_diff finder to separate file so it can be re-used + made it more robust. Closes [#2366](https://github.com/folke/snacks.nvim/issues/2366) ([3049ad8](https://github.com/folke/snacks.nvim/commit/3049ad8beba417924b2d4ff8f77edec53d3472f6))
+* **picker.diff:** native diff now also highlights the language of the diffed code in the diff ([7260957](https://github.com/folke/snacks.nvim/commit/726095723d0ceae2ffeedf722620238491aeaa30))
+* **picker.git_diff:** `git_diff` now also shows staged hunks and added stage/unstage/restore actions for hunks. Closes [#2382](https://github.com/folke/snacks.nvim/issues/2382) ([1fb3f4d](https://github.com/folke/snacks.nvim/commit/1fb3f4de49962a80cb88a9b143bc165042c72165))
+* **picker.git_diff:** added `staged` flag ([118648c](https://github.com/folke/snacks.nvim/commit/118648ce93b9fc3a4493783fe3efce60fcdb59a3))
+* **picker.highlights:** badges ([202e595](https://github.com/folke/snacks.nvim/commit/202e595e553b8c5865c080cc375381e6b096804c))
+* **picker.preview:** allow items to define a title used in the preview window ([4b572f4](https://github.com/folke/snacks.nvim/commit/4b572f4785df68b60234996f03b91d4581a8ad47))
+* **picker.preview:** support for images and render markdown ([9585da6](https://github.com/folke/snacks.nvim/commit/9585da6c57ed4e06c52a84d680d6b700cab42d6c))
+* **picker.util:** cmdline parser used to properly parse diff args ([5025989](https://github.com/folke/snacks.nvim/commit/502598953fa70cd4507ba39f3e9b4babd7e4df9d))
+* **picker:** better integration with markview and render-markdown when previewing ([4708e9a](https://github.com/folke/snacks.nvim/commit/4708e9a38657e71b2743a35a4530d0118c21d4fe))
+* **scratch:** store scratch info in meta files, instead of the filename + custom filekeys ([85f8e22](https://github.com/folke/snacks.nvim/commit/85f8e22281bee237d5e29746019ec21b1624925c))
+* **util.spawn:** `Proc:json()` ([5589c9d](https://github.com/folke/snacks.nvim/commit/5589c9d355606a026001fe589bc0329077951f45))
+* **util:** `Snacks.util.stop()` to safely stop/close a luv handle ([ce9e299](https://github.com/folke/snacks.nvim/commit/ce9e2993dd4d8289cfdbc129efed74a3394841b9))
+
+
+### Bug Fixes
+
+* **explorer.tree:** only strip trasiling forward slashes if not at root. Closes [#2375](https://github.com/folke/snacks.nvim/issues/2375) ([72dc621](https://github.com/folke/snacks.nvim/commit/72dc6213f758da8484094cb975bfdfc2f8f61621))
+* **explorer:** differentiate if file or folder when deleting on Windows ([#2373](https://github.com/folke/snacks.nvim/issues/2373)) ([59c5545](https://github.com/folke/snacks.nvim/commit/59c5545e91878c1f6218b032a881832bc98a46f3))
+* **explorer:** do reveal in on_show if explorer is not open yet. Closes [#2388](https://github.com/folke/snacks.nvim/issues/2388) ([ba529d4](https://github.com/folke/snacks.nvim/commit/ba529d4f5d409639e082aff916c9b8e71b480531))
+* **explorer:** schedule `on_find` (typically reveal), for both files finder and when git status updates the finder. Closes [#2388](https://github.com/folke/snacks.nvim/issues/2388) ([a9b57b2](https://github.com/folke/snacks.nvim/commit/a9b57b2a7ee0642f5c5c2c3f39d7e57fadafa1af))
+* **gh:** add action idx to `gh_actions` text ([d94184d](https://github.com/folke/snacks.nvim/commit/d94184d1d91a9b8794931538da8f9c76871b3265))
+* **image.inline:** off-by-one for finding visible images at the last line of the buffer ([04b3a54](https://github.com/folke/snacks.nvim/commit/04b3a54576757215a02d306e47b7fb9a542c37b2))
+* **image:** avoid nested math environments ([#2345](https://github.com/folke/snacks.nvim/issues/2345)) ([66e3dc4](https://github.com/folke/snacks.nvim/commit/66e3dc46190992048b571e1225b5a5c2712d2ec6))
+* **image:** check for invalid buffer ([9ad4178](https://github.com/folke/snacks.nvim/commit/9ad41782eced6a06034e568357cdad35cbf52ffa))
+* **image:** check to update on BufWinEnter and attach to buffer changes ([e18e4f6](https://github.com/folke/snacks.nvim/commit/e18e4f6452c62035289d28156dbd0966af13a046))
+* **image:** don't add placements to concealed lines. Closes [#2391](https://github.com/folke/snacks.nvim/issues/2391) ([13963b1](https://github.com/folke/snacks.nvim/commit/13963b1ec41c21aa81698ed042bb48124325f61d))
+* **image:** guard against invalid buffers. Closes [#2383](https://github.com/folke/snacks.nvim/issues/2383) ([4bb1ce1](https://github.com/folke/snacks.nvim/commit/4bb1ce16ed2882978e9524ad057cfa892a226887))
+* keymap docs ([583a0c1](https://github.com/folke/snacks.nvim/commit/583a0c1c06865b4cf64e1104c5250516f5cc6d31))
+* **keymap:** make sure opts are a table. Closes [#2392](https://github.com/folke/snacks.nvim/issues/2392) ([367d1bd](https://github.com/folke/snacks.nvim/commit/367d1bd385fd43fe40defd0a901c8597e5aee1ec))
+* **layout:** only max zindex for snacks windows/layouts ([8eddc0b](https://github.com/folke/snacks.nvim/commit/8eddc0b3809b5af68bb0fc14dcf6c7a1854133cf))
+* **picker.actions:** `drop` and `tabdrop` should never reload existing buffers ([#2368](https://github.com/folke/snacks.nvim/issues/2368)) ([6cf2fee](https://github.com/folke/snacks.nvim/commit/6cf2fee619e81e519ad900542b38ed3491dc45de))
+* **picker.actions:** use `buffer!` instead of `buffer` for edit. Closes [#2378](https://github.com/folke/snacks.nvim/issues/2378) ([2a1a001](https://github.com/folke/snacks.nvim/commit/2a1a001d3a3ed66e39da353efbe37b4ab0a7db93))
+* **picker.diff:** better filename parsing. See [#2366](https://github.com/folke/snacks.nvim/issues/2366) ([377f3bf](https://github.com/folke/snacks.nvim/commit/377f3bfeca716ada246720a7974c49aee56fd382))
+* **picker.diff:** first line of header ([fb011c2](https://github.com/folke/snacks.nvim/commit/fb011c257f29cb7a5f4098f7a7e79ac76870761d))
+* **picker.diff:** only process `---` diffs directly if it doesn't start with a diff header ([0a33aec](https://github.com/folke/snacks.nvim/commit/0a33aec0c62425031efc7867be5c466b83aa82cf))
+* **picker.filter:** get cwd from active tabpage if available ([c1b517f](https://github.com/folke/snacks.nvim/commit/c1b517f545fffcf401217bd41202833ee6465f31))
+* **picker.finder:** mutate existing opts ([c91e230](https://github.com/folke/snacks.nvim/commit/c91e23060c73432cb25f99d6ed632c22fce87d88))
+* **picker.finder:** tmp fix for [#2386](https://github.com/folke/snacks.nvim/issues/2386) ([5eea5f9](https://github.com/folke/snacks.nvim/commit/5eea5f94280ef9034c7da8bbb5ec12dc71b6916f))
+* **picker.git_branches:** git log preview. Closes [#2360](https://github.com/folke/snacks.nvim/issues/2360) ([597ebd4](https://github.com/folke/snacks.nvim/commit/597ebd411529a15b23cba1bc45b20db8f6adbbae))
+* **picker.git_diff:** remove `--default-prefix`, since that's no longer needed. See [#2382](https://github.com/folke/snacks.nvim/issues/2382) ([40774ae](https://github.com/folke/snacks.nvim/commit/40774ae6cabd4b2b76705295338c2a6a71976b98))
+* **picker.git_diff:** set `group=false` by default, since we also have `git_status` ([530e591](https://github.com/folke/snacks.nvim/commit/530e5913453d2501f79caf4d909c1932334bc9f6))
+* **picker.highlights:** modifiable for set_lines ([98345fb](https://github.com/folke/snacks.nvim/commit/98345fb66753283ee4a091bb444df537e4012233))
+* **picker.keymaps:** try to locate neovim compiled lua source files for keymaps ([76160be](https://github.com/folke/snacks.nvim/commit/76160be5d38cd67e46557cb5d0b3e36ececdfa3c))
+* **picker.lsp:** fixed `vim.str_byteindex` capability check. Closes [#2389](https://github.com/folke/snacks.nvim/issues/2389) ([46917d0](https://github.com/folke/snacks.nvim/commit/46917d0629595281e7d2de3834af8fd95584befd))
+* **picker.lsp:** some LSP servers notify completion before sending the actual result. See [#2372](https://github.com/folke/snacks.nvim/issues/2372) ([aa8a318](https://github.com/folke/snacks.nvim/commit/aa8a318779ca6b5f0bba2cf383ddf596db199c09))
+* **picker.lsp:** use `LspRequest` to track completed and cancelled requests. Fixes [#2364](https://github.com/folke/snacks.nvim/issues/2364) ([8afb609](https://github.com/folke/snacks.nvim/commit/8afb609333026e1a3a27d57ada1cf849b2adbcc9))
+* **picker.preview:** again. docgen seems broken ([758bbfa](https://github.com/folke/snacks.nvim/commit/758bbfa13a3c26d80069a9f621fcfd0f0dfc608e))
+* **picker.preview:** don't show locations for diff preview ([b064488](https://github.com/folke/snacks.nvim/commit/b0644884ef3aa589df609c95565220da7eef5cce))
+* **picker.preview:** fckup ([fd7795e](https://github.com/folke/snacks.nvim/commit/fd7795e9cd615d5262862c819b5058b42869406b))
+* **picker.preview:** fix ([e2c1c52](https://github.com/folke/snacks.nvim/commit/e2c1c527e40aecd6d1ac011aef6d3c28a208a9ec))
+* **picker.preview:** show proper preview message for deleted scratch buffers ([4ad8a41](https://github.com/folke/snacks.nvim/commit/4ad8a41eac2fb636e12a11e0129d6d2d10ffb60a))
+* **picker.util:** better relative time format ([3e30fb6](https://github.com/folke/snacks.nvim/commit/3e30fb6c705c94cf29567cc6446bd9f9284c8c4d))
+* **picker.util:** ignore errors from corrupted kv stores. Closes [#2394](https://github.com/folke/snacks.nvim/issues/2394) ([b3d01c5](https://github.com/folke/snacks.nvim/commit/b3d01c59ba4ab4183b12e9e10bc1fcbbef1b02be))
+* **picker.watch:** check again for closed picker after schedule. See [#2365](https://github.com/folke/snacks.nvim/issues/2365) ([8ad80de](https://github.com/folke/snacks.nvim/commit/8ad80de67b68db773cd50599f93dfada85e00eae))
+* **picker:** close picker when layout closes. Closes [#2365](https://github.com/folke/snacks.nvim/issues/2365) ([779746f](https://github.com/folke/snacks.nvim/commit/779746f9a82e3a925393557ead441a3d22606534))
+* **picker:** dont watch files for closed pickers. Fixes [#2365](https://github.com/folke/snacks.nvim/issues/2365) ([c4ec8b6](https://github.com/folke/snacks.nvim/commit/c4ec8b6d12a9b671e65709ec64b9beb6969815c5))
+* **picker:** increase default show_delay to 5s. Closes [#2364](https://github.com/folke/snacks.nvim/issues/2364) ([b3197e3](https://github.com/folke/snacks.nvim/commit/b3197e3a2a2cec8e090a74308b630a1f451a35f0))
+* **picker:** only trim space in the title if it's preceded by a word like character (skips icons) ([2439c49](https://github.com/folke/snacks.nvim/commit/2439c493a5dbd9fd880bf70c7986ebafd6f0c9f6))
+* **picker:** pause input progress info for 60ms to prevent flickering when finder is too fast ([ecde81f](https://github.com/folke/snacks.nvim/commit/ecde81fc0ce7c4834def0ce710dd5dc62b0822fc))
+* **scratch:** make sure zindex of scratch window is higher than existing floating windows ([c8422da](https://github.com/folke/snacks.nvim/commit/c8422da50dee7d725e1a66a5dc6a930e6ac57625))
+* **scroll:** only reset count when needed ([551d79f](https://github.com/folke/snacks.nvim/commit/551d79f1c0bd5400bcf00d2133832c20b1fb29f2))
+* **util.job:** scroll to top when process exits ([b544157](https://github.com/folke/snacks.nvim/commit/b5441575e07af9f179cbeb8ea6d0b9951b28481a))
+* **util.job:** stop on BufWipeout and BufDelete ([c956b37](https://github.com/folke/snacks.nvim/commit/c956b372467467dafb32713a95d3dbc22ae5c3bc))
+* **util.job:** stop when attached buffer is no longer valid ([221d4b1](https://github.com/folke/snacks.nvim/commit/221d4b17475c36fd92b2e26baac5515f8260ef88))
+* **util.job:** use nvim_win_set_cursor instead of `gg` ([5faed2f](https://github.com/folke/snacks.nvim/commit/5faed2f7abed7fb97aed0425b2b1b03fb6048fa9))
+* **util.lsp:** `Snacks.util.lsp.on()` should trigger for each lsp client per buffer ([52f30a1](https://github.com/folke/snacks.nvim/commit/52f30a198a19bf5da6aa95cc642bfbb99b9bbfbf))
+* **util:** color() should not create hl groups ([17033e6](https://github.com/folke/snacks.nvim/commit/17033e67ef1c42a2295e2921c201f1b404d625d8))
+* **win:** ignore errors on destroy. Closes [#2381](https://github.com/folke/snacks.nvim/issues/2381) ([a8930bd](https://github.com/folke/snacks.nvim/commit/a8930bdb619024e8ba3e1fc7efc1bd8ea9a27a5a))
+* **win:** scratch buffers were sometimes not deleted ([0387297](https://github.com/folke/snacks.nvim/commit/03872973b3326ab2caff2b10d983b4cb775944f0))
+* **win:** when fixbuf triggers in a floating window, just close it. Closes [#2380](https://github.com/folke/snacks.nvim/issues/2380) ([de35242](https://github.com/folke/snacks.nvim/commit/de352425f7acd4dd1ed3ee06f9479129017da087))
+
+
+### Performance Improvements
+
+* **animate:** smoother animations ([b7a3fed](https://github.com/folke/snacks.nvim/commit/b7a3fed8d9822f448122af441018f66febbc50f4))
+* **notifier:** stop trying to fit more notifs in the layout after skipping max 10 ([3a8ecf5](https://github.com/folke/snacks.nvim/commit/3a8ecf591263e4706d9b3a45da590df914ea5505))
+* **picker.util:** cache badge hl groups ([cb85844](https://github.com/folke/snacks.nvim/commit/cb85844e8404a95c3ac0d509ec7cedd0f3d5375c))
+* **scroll:** combine all scrolling commands in one command + restore vim.v.count ([0fbea13](https://github.com/folke/snacks.nvim/commit/0fbea13c9d5ba2887ad8c1ffb20d77e11174b390))
+* **scroll:** smoother scrolling using new animations ([2221fe6](https://github.com/folke/snacks.nvim/commit/2221fe616657b9ed82bdea8566813939a7b25918))
+* **statuscolumn:** only calculate components that are actually needed ([bb80317](https://github.com/folke/snacks.nvim/commit/bb803176478dc603c1a2d09ca717964c6a27bfae))
+
+
+### Reverts
+
+* jump `buffer` -&gt; `buffer!`. See [#2378](https://github.com/folke/snacks.nvim/issues/2378) ([143e9b5](https://github.com/folke/snacks.nvim/commit/143e9b58c7b8301bdc36b1b8a03449078beb49d1))
+
 ## [2.27.0](https://github.com/folke/snacks.nvim/compare/v2.26.0...v2.27.0) (2025-10-26)
 
 

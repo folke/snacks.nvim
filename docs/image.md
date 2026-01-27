@@ -145,7 +145,7 @@ In case of issues, make sure to run `:checkhealth snacks`.
   },
   ---@class snacks.image.convert.Config
   convert = {
-    notify = true, -- show a notification on error
+    notify = false, -- show a notification on error
     ---@type snacks.image.args
     mermaid = function()
       local theme = vim.o.background == "light" and "neutral" or "dark"
@@ -223,7 +223,7 @@ docs for more information on how to customize these styles
 ```lua
 ---@class snacks.image.Env
 ---@field name string
----@field env table<string, string|true>
+---@field env? table<string, string|true>
 ---@field terminal? string
 ---@field supported? boolean default: false
 ---@field placeholders? boolean default: false

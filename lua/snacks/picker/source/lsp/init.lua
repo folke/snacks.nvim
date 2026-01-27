@@ -128,6 +128,22 @@ function R.new()
   return self
 end
 
+---@param clients vim.lsp.Client[]
+---@param ctx lsp.HandlerContext
+function R:debug(clients, ctx)
+  Snacks.debug.inspect({
+    error = "LSP request callback yielded after done.",
+    method = ctx.method,
+    requests = vim.deepcopy(self.requests),
+    pending = self.pending,
+    client_id = ctx.client_id,
+    ---@param c vim.lsp.Client
+    clients = vim.tbl_map(function(c)
+      return { id = c.id, name = c.name }
+    end, clients),
+  })
+end
+
 ---@param client_id number
 ---@param request_id number
 ---@param completed? boolean
@@ -154,14 +170,14 @@ function R:cancel()
   end
 end
 
-function R:autocmd()
+function R:track_cancel()
   if self.autocmd_id then
     return
   end
   self.autocmd_id = vim.api.nvim_create_autocmd("LspRequest", {
-    group = vim.api.nvim_create_augroup("snacks.picker.lsp." .. R._id, { clear = true }),
+    group = vim.api.nvim_create_augroup("snacks.picker.lsp.cancel." .. R._id, { clear = true }),
     callback = function(ev)
-      if ev.data.request.type == "complete" or ev.data.request.type == "cancel" then
+      if ev.data.request.type == "cancel" then
         self:track(ev.data.client_id, ev.data.request_id, true)
       end
     end,
@@ -176,17 +192,25 @@ end
 function R:request(buf, method, params, cb)
   self.pending = self.pending + 1
   vim.schedule(function()
-    self:autocmd() -- setup autocmd here, since this must be called in the main loop
+    self:track_cancel() -- setup autocmd here, since this must be called in the main loop
 
     ---@diagnostic disable-next-line: param-type-mismatch
     local clients = type(buf) == "number" and M.get_clients(buf, method) or { wrap(buf) }
 
+    self.pending = self.pending + #clients
     for _, client in ipairs(clients) do
-      local p, done = params(client), false
-      local status, request_id = client:request(method, p, function(err, result)
+      local done = false
+      local status, request_id ---@type boolean, number?
+      status, request_id = client:request(method, params(client), function(err, result, ctx)
         done = true
         if not err and result and not self.async:aborted() then
-          cb(client, result, p)
+          if not self.async:running() or self.pending <= 0 then
+            self:debug(clients, ctx)
+          end
+          cb(client, result, ctx.params)
+        end
+        if request_id then
+          self:track(client.id, request_id, true)
         end
       end)
       -- skip tracking if the request failed
@@ -195,7 +219,7 @@ function R:request(buf, method, params, cb)
         self:track(client.id, request_id)
       end
     end
-    self.pending = self.pending - 1
+    self.pending = self.pending - 1 - #clients
     self.async:resume()
   end)
   return self

@@ -225,6 +225,8 @@ function M.status(opts, ctx)
   end
 
   local cwd = ctx:git_root()
+  ctx.picker:set_cwd(cwd)
+
   local prev ---@type snacks.picker.finder.Item?
   return require("snacks.picker.source.proc").proc(
     ctx:opts({
@@ -256,21 +258,57 @@ end
 ---@type snacks.picker.finder
 function M.diff(opts, ctx)
   opts = opts or {}
-  local args = M.git("diff", "--no-color", "--no-ext-diff", "--default-prefix", { args = { "--no-pager" } }, opts)
+  local args = M.git("diff", "--no-color", "--no-ext-diff", "--diff-filter=u", { args = { "--no-pager" } }, opts)
   if opts.base then
     vim.list_extend(args, { "--merge-base", opts.base })
   end
   if opts.staged then
     table.insert(args, "--cached")
   end
-  return require("snacks.picker.source.diff").diff(
+
+  local cwd = ctx:git_root()
+  ctx.picker:set_cwd(cwd)
+
+  local Diff = require("snacks.picker.source.diff")
+  local finders = {} ---@type snacks.picker.finder.result[]
+  finders[#finders + 1] = Diff.diff(
     ctx:opts({
       cmd = "git",
       args = args,
-      cwd = ctx:git_root(),
+      cwd = cwd,
     }),
     ctx
   )
+  if opts.staged == nil and opts.base == nil then
+    finders[#finders + 1] = Diff.diff(
+      ctx:opts({
+        cmd = "git",
+        args = vim.list_extend(vim.deepcopy(args), { "--cached" }),
+        cwd = cwd,
+      }),
+      ctx
+    )
+  end
+  return function(cb)
+    local items = {} ---@type snacks.picker.finder.Item[]
+    for f, finder in ipairs(finders) do
+      finder(function(item)
+        if not opts.base then
+          item.staged = opts.staged or f == 2
+        end
+        items[#items + 1] = item
+      end)
+    end
+    table.sort(items, function(a, b)
+      if a.file ~= b.file then
+        return a.file < b.file
+      end
+      return a.pos[1] < b.pos[1]
+    end)
+    for _, item in ipairs(items) do
+      cb(item)
+    end
+  end
 end
 
 ---@param opts snacks.picker.git.branches.Config

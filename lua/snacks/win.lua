@@ -54,7 +54,7 @@ M.meta = {
 ---@class snacks.win.Config: vim.api.keyset.win_config
 ---@field style? string merges with config from `Snacks.config.styles[style]`
 ---@field show? boolean Show the window immediately (default: true)
----@field footer_keys? boolean Show keys footer (default: false)
+---@field footer_keys? boolean|string[] Show keys footer. When string[], only show those keys with lhs (default: false)
 ---@field height? number|fun(self:snacks.win):number Height of the window. Use <1 for relative height. 0 means full height. (default: 0.9)
 ---@field width? number|fun(self:snacks.win):number Width of the window. Use <1 for relative width. 0 means full width. (default: 0.9)
 ---@field min_height? number Minimum height of the window
@@ -65,7 +65,7 @@ M.meta = {
 ---@field row? number|fun(self:snacks.win):number Row of the window. Use <1 for relative row. (default: center)
 ---@field minimal? boolean Disable a bunch of options to make the window minimal (default: true)
 ---@field position? "float"|"bottom"|"top"|"left"|"right"|"current"
----@field border? "none"|"top"|"right"|"bottom"|"left"|"hpad"|"vpad"|"rounded"|"single"|"double"|"solid"|"shadow"|"bold"|string[]|false|true
+---@field border? "none"|"top"|"right"|"bottom"|"left"|"top_bottom"|"hpad"|"vpad"|"rounded"|"single"|"double"|"solid"|"shadow"|"bold"|string[]|false|true
 ---@field buf? number If set, use this buffer instead of creating a new one
 ---@field file? string If set, use this file instead of creating a new buffer
 ---@field enter? boolean Enter the window after opening (default: false)
@@ -133,6 +133,7 @@ Snacks.config.style("minimal", {
     cursorlineopt = "both",
     colorcolumn = "",
     fillchars = "eob: ,lastline:…",
+    foldcolumn = "0",
     list = false,
     listchars = "extends:…,tab:  ",
     number = false,
@@ -146,7 +147,7 @@ Snacks.config.style("minimal", {
   },
 })
 
-local SCROLL_UP, SCROLL_DOWN = Snacks.util.keycode("<c-u>"), Snacks.util.keycode("<c-d>")
+local SCROLL_UP, SCROLL_DOWN = Snacks.util.keycode("<c-y>"), Snacks.util.keycode("<c-e>")
 
 local split_commands = {
   editor = {
@@ -192,6 +193,7 @@ local borders = {
   right = { "", "", "", "│", "", "", "", "" },
   top = { "", "─", "", "", "", "", "", "" },
   bottom = { "", "", "", "", "", "─", "", "" },
+  top_bottom = { "", "─", "", "", "", "─", "", "" },
   hpad = { "", "", "", " ", "", "", "", " " },
   vpad = { "", " ", "", "", "", " ", "", "" },
 }
@@ -303,8 +305,19 @@ function M.new(opts)
       table.insert(self.keys, spec)
     end
   end
+  -- last defined mapping is found first, so for `nowait` to work,
+  -- we need to sort in reverse order
+  table.sort(self.keys, function(a, b)
+    return (a[1] or "") > (b[1] or "")
+  end)
 
   self:on("WinClosed", self.on_close, { win = true })
+  self:on("WinResized", function()
+    if self.backdrop and not self:is_floating() then
+      self.backdrop:close()
+      self.backdrop = nil
+    end
+  end)
 
   -- update window size when resizing
   self:on("VimResized", self.on_resize)
@@ -511,7 +524,7 @@ end
 ---@param up? boolean
 function M:scroll(up)
   vim.api.nvim_win_call(self.win, function()
-    vim.cmd(("normal! %s"):format(up and SCROLL_UP or SCROLL_DOWN))
+    vim.cmd(("normal! %d%s"):format(vim.wo[self.win].scroll, up and SCROLL_UP or SCROLL_DOWN))
   end)
 end
 
@@ -832,11 +845,16 @@ function M:show()
     table.sort(self.keys, function(a, b)
       return a[1] < b[1]
     end)
+    local want = type(self.opts.footer_keys) == "table" and self.opts.footer_keys or nil
+    ---@cast want string[]|nil
+    want = want and vim.tbl_map(Snacks.util.normkey, want) or nil --[[@as string[]?]]
     for _, key in ipairs(self.keys) do
-      local keymap = vim.fn.keytrans(Snacks.util.keycode(key[1]))
-      table.insert(self.opts.footer, { " ", "SnacksFooter" })
-      table.insert(self.opts.footer, { " " .. keymap .. " ", "SnacksFooterKey" })
-      table.insert(self.opts.footer, { " " .. (key.desc or keymap) .. " ", "SnacksFooterDesc" })
+      local keymap = Snacks.util.normkey(key[1])
+      if want == nil or vim.tbl_contains(want, keymap) then
+        table.insert(self.opts.footer, { " ", "SnacksFooter" })
+        table.insert(self.opts.footer, { " " .. keymap .. " ", "SnacksFooterKey" })
+        table.insert(self.opts.footer, { " " .. (key.desc or keymap) .. " ", "SnacksFooterDesc" })
+      end
     end
     table.insert(self.opts.footer, { " ", "SnacksFooter" })
   end
@@ -889,6 +907,10 @@ function M:fixbuf()
     return true
   end
 
+  if not self:buf_valid() then
+    return
+  end
+
   if not self:on_current_tab() then
     return
   end
@@ -905,13 +927,6 @@ function M:fixbuf()
     self.buf = buf
     -- update window options
     Snacks.util.wo(self.win, self.opts.wo)
-    return
-  end
-
-  if vim.api.nvim_win_get_config(self.win).zindex then
-    vim.schedule(function()
-      self:close()
-    end)
     return
   end
 
@@ -1310,6 +1325,28 @@ function M:dim(parent)
   ret.col = pos(self.opts.col, ret.width, parent.width, border.left, border.right)
 
   return ret
+end
+
+--- Calculate the next available zindex for snacks windows.
+--- New windows open on top of existing ones.
+---@param opts? { zindex?: number, tab?: number|boolean, all?: boolean, max?: number }
+---@overload fun(zindex: number): number
+function M.zindex(opts)
+  opts = opts or {}
+  opts = type(opts) == "number" and { zindex = opts } or opts
+  local zindex = opts.zindex or 50
+  local max = opts.max or 100
+  local wins = opts.tab == false and vim.api.nvim_list_wins() or vim.api.nvim_tabpage_list_wins(tonumber(opts.tab) or 0)
+  for _, win in ipairs(wins) do
+    if opts.all ~= false or vim.w[win].snacks_win then
+      local other = (vim.api.nvim_win_get_config(win).zindex or 0)
+      -- ignore very high zindex windows, like notifications, completion, etc
+      if other > zindex and other < max then
+        zindex = math.max(zindex, other + 2) --[[@as number]]
+      end
+    end
+  end
+  return zindex
 end
 
 return M

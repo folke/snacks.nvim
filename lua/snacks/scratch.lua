@@ -12,15 +12,19 @@ M.meta = {
   desc = "Scratch buffers with a persistent file",
 }
 
+M.version = 1
+M.version_checked = false
+
 ---@class snacks.scratch.File
 ---@field file string full path to the scratch buffer
----@field stat uv.fs_stat.result File stat result
 ---@field name string name of the scratch buffer
 ---@field ft string file type
 ---@field icon? string icon for the file type
+---@field icon_hl? string highlight group for the icon
 ---@field cwd? string current working directory
 ---@field branch? string Git branch
 ---@field count? number vim.v.count1 used to open the buffer
+---@field id? string unique id used instead of name for the filename hash
 
 ---@class snacks.scratch.Config
 ---@field win? snacks.win.Config scratch window
@@ -46,6 +50,7 @@ local defaults = {
   -- * cwd (optional)
   -- * branch (optional)
   filekey = {
+    id = nil, ---@type string? unique id used instead of name for the filename hash
     cwd = true, -- use current working directory
     branch = true, -- use current branch name
     count = true, -- use vim.v.count1
@@ -89,25 +94,17 @@ Snacks.config.style("scratch", {
 --- Return a list of scratch buffers sorted by mtime.
 ---@return snacks.scratch.File[]
 function M.list()
+  M.migrate()
   local root = Snacks.config.get("scratch", defaults).root
-  ---@type snacks.scratch.File[]
+  ---@type (snacks.scratch.File|{stat:uv.fs_stat.result})[]
   local ret = {}
   for file, t in vim.fs.dir(root) do
-    if t == "file" then
-      local decoded = Snacks.util.file_decode(file)
-      local count, icon, name, cwd, branch, ft = decoded:match("^(%d*)|([^|]*)|([^|]*)|([^|]*)|([^|]*)%.([^|]*)$")
-      if count and icon and name and cwd and branch and ft then
-        file = svim.fs.normalize(root .. "/" .. file)
-        table.insert(ret, {
-          file = file,
-          stat = uv.fs_stat(file),
-          count = count ~= "" and tonumber(count) or nil,
-          icon = icon ~= "" and icon or nil,
-          name = name,
-          cwd = cwd ~= "" and cwd or nil,
-          branch = branch ~= "" and branch or nil,
-          ft = ft,
-        })
+    if t == "file" and file:sub(-5) == ".meta" then
+      local path = svim.fs.normalize(root .. "/" .. file:sub(1, -6))
+      local stat = uv.fs_stat(path)
+      if stat then
+        ret[#ret + 1] = M.get({ file = path })
+        ret[#ret].stat = stat
       end
     end
   end
@@ -115,6 +112,46 @@ function M.list()
     return a.stat.mtime.sec > b.stat.mtime.sec
   end)
   return ret
+end
+
+--- Migrate old scratch files to the new format.
+---@private
+function M.migrate()
+  if M.version_checked then
+    return
+  end
+  M.version_checked = true
+  local root = Snacks.config.get("scratch", defaults).root
+  local ok, version = pcall(vim.fn.readfile, root .. "/.version")
+  if ok and tonumber(version[1]) == M.version then
+    return
+  end
+  vim.fn.mkdir(root .. "/bak", "p")
+
+  for file, t in vim.fs.dir(root) do
+    if t == "file" then
+      -- old format. Keep for backward compatibility
+      local decoded = Snacks.util.file_decode(file)
+      local count, icon, name, cwd, branch, ft = decoded:match("^(%d*)|([^|]*)|([^|]*)|([^|]*)|([^|]*)%.([^|]*)$")
+      if count and icon and name and cwd and branch and ft then
+        local path = svim.fs.normalize(root .. "/" .. file)
+        ---@type snacks.scratch.File
+        local scratch = {
+          file = path,
+          count = count ~= "" and tonumber(count) or nil,
+          icon = icon ~= "" and icon or nil,
+          name = name,
+          cwd = cwd ~= "" and cwd or nil,
+          branch = branch ~= "" and branch or nil,
+          ft = ft,
+        }
+        -- backup file
+        vim.fn.filecopy(path, root .. "/bak/" .. file)
+        vim.fn.rename(path, M._write_meta(root, scratch))
+      end
+    end
+  end
+  vim.fn.writefile({ tostring(M.version) }, root .. "/.version")
 end
 
 --- Select a scratch buffer from a list of scratch buffers.
@@ -127,75 +164,37 @@ end
 --- it will be closed instead.
 ---@param opts? snacks.scratch.Config
 function M.open(opts)
+  M.migrate()
   opts = Snacks.config.get("scratch", defaults, opts)
-  local ft = "markdown"
-  if type(opts.ft) == "function" then
-    ft = opts.ft()
-  elseif type(opts.ft) == "string" then
-    ft = opts.ft --[[@as string]]
-  end
+  local scratch = M.get(opts)
 
-  opts.win = Snacks.win.resolve("scratch", opts.win_by_ft[ft], opts.win, { show = false })
-  opts.win.bo = opts.win.bo or {}
-  opts.win.bo.filetype = ft
+  opts.win = Snacks.win.resolve("scratch", opts.win_by_ft[scratch.ft], opts.win, {
+    show = false,
+    bo = { filetype = scratch.ft },
+  })
 
-  local file = opts.file
-  if not file then
-    local branch = ""
-    if opts.filekey.branch and uv.fs_stat(".git") then
-      local ret = vim.fn.systemlist("git branch --show-current")[1]
-      if vim.v.shell_error == 0 then
-        branch = ret or "" -- fallback for detached head (ret is nil then)
-      end
-    end
-
-    local filekey = {
-      opts.filekey.count and tostring(vim.v.count1) or "",
-      (type(opts.icon) == "table" and opts.icon[1]) or opts.icon or "",
-      opts.name:gsub("|", " "),
-      opts.filekey.cwd and svim.fs.normalize(assert(uv.cwd())) or "",
-      branch,
-    }
-
-    vim.fn.mkdir(opts.root, "p")
-    local fname = Snacks.util.file_encode(table.concat(filekey, "|") .. "." .. ft)
-    file = opts.root .. "/" .. fname
-  end
-  file = svim.fs.normalize(file)
-
-  local icon, icon_hl = unpack(type(opts.icon) == "table" and opts.icon or { opts.icon, nil })
-  ---@cast icon string
-  if not icon then
-    icon, icon_hl = Snacks.util.icon(ft, "filetype")
-  end
   opts.win.title = {
-    { " " },
-    { icon .. string.rep(" ", 2 - vim.api.nvim_strwidth(icon)), icon_hl },
-    { " " },
-    { opts.name .. (vim.v.count1 > 1 and " " .. vim.v.count1 or "") },
-    { " " },
+    { " ", "SnacksScratchTitle" },
+    { scratch.icon .. string.rep(" ", 2 - vim.api.nvim_strwidth(scratch.icon)), scratch.icon_hl },
+    { " ", "SnacksScratchTitle" },
+    { opts.name .. (vim.v.count1 > 1 and " " .. vim.v.count1 or ""), "SnacksScratchTitle" },
+    { " ", "SnacksScratchTitle" },
   }
-  for _, t in ipairs(opts.win.title) do
-    t[2] = t[2] or "SnacksScratchTitle"
-  end
 
-  local is_new = not uv.fs_stat(file)
-  local buf = vim.fn.bufadd(file)
+  local is_new = not uv.fs_stat(scratch.file)
+  local buf = vim.fn.bufadd(scratch.file)
 
-  local closed = false
-  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-    if vim.api.nvim_win_get_buf(win) == buf then
-      vim.schedule(function()
-        vim.api.nvim_win_call(win, function()
-          vim.cmd([[close]])
-        end)
+  local win = vim.fn.bufwinid(buf)
+  if win ~= -1 then
+    vim.schedule(function()
+      vim.api.nvim_win_call(win, function()
+        vim.cmd([[close]])
       end)
-      closed = true
-    end
-  end
-  if closed then
+    end)
     return
   end
+
+  opts.win.zindex = Snacks.win.zindex(opts.win.zindex or 20)
   is_new = is_new
     and vim.api.nvim_buf_line_count(buf) == 0
     and #(vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] or "") == 0
@@ -229,6 +228,77 @@ function M.open(opts)
     })
   end
   return Snacks.win(opts.win):show()
+end
+
+---@param opts? snacks.scratch.Config
+---@private
+function M.get(opts)
+  opts = Snacks.config.get("scratch", defaults, opts)
+
+  -- File type
+  local ft = "markdown" ---@type string
+  if opts.file then
+    ft = vim.filetype.match({ filename = opts.file }) or ft
+  elseif type(opts.ft) == "function" then
+    ft = opts.ft()
+  elseif type(opts.ft) == "string" then
+    ft = opts.ft --[[@as string]]
+  end
+
+  -- Icon
+  local icon = opts.icon or {}
+  icon = type(icon) == "string" and { icon } or icon
+  ---@cast icon string[]
+  if not icon[1] and opts.file then
+    icon[1], icon[2] = Snacks.util.icon(opts.file or "", "file")
+  elseif not icon[1] and ft then
+    icon[1], icon[2] = Snacks.util.icon(ft, "filetype")
+  end
+
+  ---@type snacks.scratch.File
+  local ret = {
+    file = "",
+    name = opts.name,
+    ft = ft,
+    icon = icon[1],
+    icon_hl = icon[2],
+  }
+
+  -- File
+  if opts.file then
+    ret.file = svim.fs.normalize(opts.file)
+    local meta = ret.file .. ".meta"
+    if uv.fs_stat(meta) then
+      local ok, decoded = pcall(vim.json.decode, table.concat(vim.fn.readfile(meta), "\n"))
+      if ok and type(decoded) == "table" then
+        ret = Snacks.config.merge(ret, decoded, { file = ret.file })
+      end
+    end
+  else
+    ret.count = opts.filekey.count and vim.v.count1 or nil
+    ret.cwd = opts.filekey.cwd and svim.fs.normalize(assert(uv.cwd())) or nil
+    if opts.filekey.branch and uv.fs_stat(".git") then
+      local out = vim.trim(vim.fn.systemlist("git branch --show-current")[1] or "")
+      ret.branch = vim.v.shell_error == 0 and out ~= "" and out or nil
+    end
+    ret.file = M._write_meta(opts.root, ret)
+  end
+  return ret
+end
+
+---@param root string
+---@param scratch snacks.scratch.File
+---@private
+function M._write_meta(root, scratch)
+  local key = { scratch.id or scratch.name }
+  key[#key + 1] = scratch.count and tostring(scratch.count) or nil
+  key[#key + 1] = scratch.cwd and scratch.cwd or nil
+  key[#key + 1] = scratch.branch and scratch.branch or nil
+  vim.fn.mkdir(root, "p")
+  local hash = vim.fn.sha256(table.concat(key, "|")):sub(1, 8)
+  local file = svim.fs.normalize(("%s/%s.%s"):format(root, hash, scratch.ft))
+  vim.fn.writefile(vim.split(vim.json.encode(scratch), "\n"), file .. ".meta")
+  return file
 end
 
 return M

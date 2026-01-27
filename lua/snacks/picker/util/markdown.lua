@@ -16,7 +16,7 @@ local function setup()
 end
 
 ---@param buf number
----@param opts? {images: boolean, win?: number}
+---@param opts? {images: boolean, bullets?: boolean}
 function M.render(buf, opts)
   setup()
   opts = opts or {}
@@ -37,25 +37,28 @@ function M.render(buf, opts)
   end
 
   if opts.images ~= false then
+    vim.b[buf].snacks_image_conceal = true
     Snacks.image.doc.attach(buf)
   end
 
   if package.loaded["render-markdown"] then
-    local UI = require("render-markdown.core.ui")
-    local State = require("render-markdown.state")
-    local s = State.get(buf)
-    s.render_modes = true
-    s.resolved.modes = true
-    local wins = vim.fn.win_findbuf(buf)
-    for _, win in ipairs(wins) do
-      UI.update(buf, win, "Snacks", true)
-    end
+    require("render-markdown").render({
+      buf = buf,
+      event = "Snacks",
+      config = {
+        render_modes = true,
+        bullet = { enabled = opts.bullets ~= false },
+      },
+    })
   elseif package.loaded["markview"] then
-    local strict = require("markview").strict_render
-    if strict then
-      strict:clear(buf)
-      strict:render(buf)
-    end
+    local render = require("markview").strict_render
+    render:render(buf, nil, {
+      markdown = {
+        list_items = {
+          enable = opts.bullets ~= false,
+        },
+      },
+    })
   else
     M.render_fallback(buf)
   end
@@ -75,7 +78,7 @@ function M.render_fallback(buf)
     elseif line:find("^%-%-%-+%s*$") then
       vim.api.nvim_buf_set_extmark(buf, ns, l - 1, 0, {
         virt_text_win_col = 0,
-        virt_text = { { string.rep("-", vim.go.columns), "@punctuation.special.markdown" } },
+        virt_text = { { string.rep("-", vim.go.columns), "SnacksPickerRule" } },
         priority = 100,
       })
     end

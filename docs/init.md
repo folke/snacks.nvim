@@ -11,6 +11,7 @@
 ---@field dashboard? snacks.dashboard.Config
 ---@field dim? snacks.dim.Config
 ---@field explorer? snacks.explorer.Config
+---@field gh? snacks.gh.Config
 ---@field gitbrowse? snacks.gitbrowse.Config
 ---@field image? snacks.image.Config
 ---@field indent? snacks.indent.Config
@@ -76,6 +77,7 @@
 ---@field debug snacks.debug
 ---@field dim snacks.dim
 ---@field explorer snacks.explorer
+---@field gh snacks.gh
 ---@field git snacks.git
 ---@field gitbrowse snacks.gitbrowse
 ---@field health snacks.health

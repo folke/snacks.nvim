@@ -58,6 +58,7 @@ Similar plugins:
         -- diagnostics = false,
         -- inlay_hints = false,
       },
+      center = true, -- center the window
       show = {
         statusline = false, -- can only be shown when using the global statusline
         tabline = false,
@@ -74,6 +75,7 @@ Similar plugins:
       ---@type snacks.zen.Config
       zoom = {
         toggles = {},
+        center = false,
         show = { statusline = true, tabline = true },
         win = {
           backdrop = false,

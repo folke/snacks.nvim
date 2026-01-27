@@ -245,6 +245,9 @@ function M:init_layout(layout)
       preview = self.preview.win,
     },
     hidden = layout.hidden,
+    on_close = function()
+      self:close()
+    end,
     on_update = function()
       self.preview:refresh(self)
       self.input:update()
@@ -365,6 +368,7 @@ function M:set_layout(layout)
     )
   end
   self.list.reverse = layout.reverse
+  self.layout.opts.on_close = nil -- prevent closing the picker when changing layout
   self.layout:close({ wins = false })
   self:init_layout(layout)
   self.layout:show()
@@ -525,6 +529,9 @@ function M:toggle(win, opts)
   self.layout:toggle(win, opts.enable, function(enabled)
     -- called if changed and before updating the layout
     local focus = opts.focus == true and win or opts.focus or self:current_win() --[[@as string]]
+    if not focus then
+      return
+    end
     if not enabled then
       -- make sure we don't lose focus when toggling off
       self:focus(focus)
@@ -797,6 +804,14 @@ function M:hist(forward)
   local hist = self.history:get() --[[@as snacks.picker.history.Record]]
   self.opts.live = hist.live
   self.input:set(hist.pattern, hist.search)
+end
+
+--- Clears the selection, set the target to the current item,
+--- and refresh the finder and matcher.
+function M:refresh()
+  self.list:set_selected()
+  self.list:set_target()
+  self:find({ refresh = true })
 end
 
 --- Check if the finder and/or matcher need to run,

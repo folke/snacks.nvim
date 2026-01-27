@@ -46,15 +46,13 @@ function M.filename(item, picker)
     return ret
   end
   local path = Snacks.picker.util.path(item) or item.file
-  local name, cat = path, "file"
-  if item.buf and vim.api.nvim_buf_is_loaded(item.buf) then
-    name = vim.bo[item.buf].filetype
-    cat = "filetype"
-  elseif item.dir then
-    cat = "directory"
-  end
 
   if picker.opts.icons.files.enabled ~= false then
+    local name, cat = path, (item.dir and "directory" or "file")
+    if item.buf and vim.api.nvim_buf_is_loaded(item.buf) and vim.bo[item.buf].buftype ~= "" then
+      name = vim.bo[item.buf].filetype
+      cat = "filetype"
+    end
     local icon, hl = Snacks.util.icon(name, cat, {
       fallback = picker.opts.icons.files,
     })
@@ -561,9 +559,17 @@ function M.keymap(item, picker)
 end
 
 function M.git_status(item, picker)
+  local status = item.status
+  if not status and item.block then
+    local block = item.block ---@type snacks.picker.diff.Block
+    status = block.new and "A" or block.delete and "D" or block.rename and "R" or block.copy and "C" or "M"
+    status = block.unmerged and (status .. status) or item.staged and (status .. " ") or (" " .. status)
+  elseif not status then
+    return M.filename(item, picker)
+  end
   local ret = {} ---@type snacks.picker.Highlight[]
   local a = Snacks.picker.util.align
-  local s = vim.trim(item.status):sub(1, 1)
+  local s = vim.trim(status):sub(1, 1)
   local hls = {
     ["A"] = "SnacksPickerGitStatusAdded",
     ["M"] = "SnacksPickerGitStatusModified",
@@ -573,7 +579,8 @@ function M.git_status(item, picker)
     ["?"] = "SnacksPickerGitStatusUntracked",
   }
   local hl = hls[s] or "SnacksPickerGitStatus"
-  ret[#ret + 1] = { a(item.status, 2, { align = "right" }), hl }
+  hl = status:sub(1, 1) == "M" and "SnacksPickerGitStatusStaged" or hl
+  ret[#ret + 1] = { a(status, 2, { align = "right" }), hl }
   ret[#ret + 1] = { " " }
   if item.rename then
     local file = item.file
@@ -702,7 +709,8 @@ function M.icon(item, picker)
   ---@cast item snacks.picker.Icon
   local ret = {} ---@type snacks.picker.Highlight[]
 
-  ret[#ret + 1] = { a(item.icon, 2), "SnacksPickerIcon" }
+  local icon_width = vim.api.nvim_strwidth(item.icon)
+  ret[#ret + 1] = { a(item.icon, icon_width > 3 and 15 or 3), "SnacksPickerIcon" }
   ret[#ret + 1] = { " " }
   ret[#ret + 1] = { a(item.source, 10), "SnacksPickerIconSource" }
   ret[#ret + 1] = { " " }

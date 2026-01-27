@@ -208,6 +208,129 @@ M.files = {
   supports_live = true,
 }
 
+---@class snacks.picker.gh.Config: snacks.picker.Config
+---@field app? string GitHub App author
+---@field assignee? string filter by assignee
+---@field author? string filter by author
+---@field jq? string custom jq filter
+---@field label? string filter by label(s)
+---@field limit? number number of items to fetch (default: 50)
+---@field repo? string GitHub repository (owner/repo). Defaults to current git repo
+
+---@class snacks.picker.gh.issue.Config: snacks.picker.gh.Config
+---@field state "open" | "closed" | "all"
+---@field mention? string filter by mention
+---@field milestone? string filter by milestone
+M.gh_issue = {
+  title = "  Issues",
+  finder = "gh_issue",
+  format = "gh_format",
+  preview = "gh_preview",
+  sort = { fields = { "score:desc", "idx" } },
+  supports_live = true,
+  live = true,
+  confirm = "gh_actions",
+  win = {
+    input = {
+      keys = {
+        ["<a-b>"] = { "gh_browse", mode = { "n", "i" } },
+        ["<c-y>"] = { "gh_yank", mode = { "n", "i" } },
+      },
+    },
+    list = {
+      keys = {
+        ["y"] = { "gh_yank", mode = { "n", "x" } },
+      },
+    },
+  },
+}
+
+---@class snacks.picker.gh.pr.Config: snacks.picker.gh.Config
+---@field state "open" | "closed" | "merged" | "all"
+---@field draft? boolean filter draft PRs
+---@field base? string filter by base branch
+M.gh_pr = {
+  title = "  Pull Requests",
+  finder = "gh_pr",
+  format = "gh_format",
+  preview = "gh_preview",
+  sort = { fields = { "score:desc", "idx" } },
+  supports_live = true,
+  live = true,
+  confirm = "gh_actions",
+  win = {
+    input = {
+      keys = {
+        ["<a-b>"] = { "gh_browse", mode = { "n", "i" } },
+        ["<c-y>"] = { "gh_yank", mode = { "n", "i" } },
+      },
+    },
+    list = {
+      keys = {
+        ["y"] = { "gh_yank", mode = { "n", "x" } },
+      },
+    },
+  },
+}
+
+---@class snacks.picker.gh.diff.Config: snacks.picker.Config
+---@field group? boolean group changes by file (when false, show individual hunks)
+---@field pr number number PR number to diff against
+---@field repo? string GitHub repository (owner/repo). Defaults to current git repo
+M.gh_diff = {
+  title = "  Pull Request Diff",
+  group = true,
+  finder = "gh_diff",
+  format = "git_status",
+  preview = "gh_preview_diff",
+  win = {
+    preview = {
+      keys = {
+        ["a"] = { "gh_comment", mode = { "n", "x" } },
+        ["<cr>"] = { "gh_actions", mode = { "n", "x" } },
+      },
+    },
+  },
+}
+
+---@class snacks.picker.gh.reactions.Config: snacks.picker.Config
+---@field number number issue or PR number
+---@field repo string GitHub repository (owner/repo). Defaults to current git repo
+M.gh_reactions = {
+  layout = { preset = "select", layout = { max_width = 50 } },
+  title = "  Reactions",
+  main = { current = true },
+  group = true,
+  finder = "gh_reactions",
+  format = "gh_format_reaction",
+}
+
+---@class snacks.picker.gh.labels.Config: snacks.picker.Config
+---@field number number issue or PR number
+---@field repo string GitHub repository (owner/repo). Defaults to current git repo
+M.gh_labels = {
+  layout = { preset = "select", layout = { max_width = 50 } },
+  title = "  Labels",
+  main = { current = true },
+  group = true,
+  finder = "gh_labels",
+  format = "gh_format_label",
+}
+
+---@class snacks.picker.gh.actions.Config: snacks.picker.Config
+---@field number number issue or PR number
+---@field repo string GitHub repository (owner/repo). Defaults to current git repo
+---@field type "issue" | "pr"
+---@field item? snacks.picker.gh.Item
+M.gh_actions = {
+  layout = { preset = "select", layout = { max_width = 50 } },
+  title = "  Actions",
+  main = { current = true },
+  finder = "gh_get_actions",
+  format = "gh_format_action",
+  confirm = "gh_perform_action",
+}
+
 --- Git arguments are use like this:
 ---  * git [<cmd_args>] <cmd> [<args>]
 ---  * cmd may be `status`, `log`, `diff`, etc.
@@ -327,7 +450,7 @@ M.git_status = {
     input = {
       keys = {
         ["<Tab>"] = { "git_stage", mode = { "n", "i" } },
-        ["<c-r>"] = { "git_restore", mode = { "n", "i" } },
+        ["<c-r>"] = { "git_restore", mode = { "n", "i" }, nowait = true },
       },
     },
   },
@@ -340,8 +463,18 @@ M.git_status = {
 M.git_diff = {
   group = false,
   finder = "git_diff",
-  format = "file",
+  format = "git_status",
   preview = "diff",
+  matcher = { sort_empty = true },
+  sort = { fields = { "score:desc", "file", "idx" } },
+  win = {
+    input = {
+      keys = {
+        ["<Tab>"] = { "git_stage", mode = { "n", "i" } },
+        ["<c-r>"] = { "git_restore", mode = { "n", "i" }, nowait = true },
+      },
+    },
+  },
 }
 
 ---@class snacks.picker.grep.Config: snacks.picker.proc.Config
@@ -381,6 +514,7 @@ M.grep_buffers = {
 M.grep_word = {
   finder = "grep",
   regex = false,
+  args = { "--word-regexp" },
   format = "file",
   search = function(picker)
     return picker:word()
@@ -410,9 +544,14 @@ M.highlights = {
 }
 
 ---@class snacks.picker.icons.Config: snacks.picker.Config
----@field icon_sources? string[]
+---@field icon_sources? string[] list of sources to use
+--- Custom icon sources can be added here. The key is the source name,
+--- and the value is the file path or URL to load icons from.
+--- The file should be a JSON array of:
+--- `{[1]:string, [2]:string}|{icon:string, name:string, category:string}`
+--- The format is compatible with https://github.com/nvim-telescope/telescope-symbols.nvim
+---@field custom_sources? table<string,string> additional icon sources `table<source,file|url>`
 M.icons = {
-  icon_sources = { "nerd_fonts", "emoji" },
   main = { current = true },
   finder = "icons",
   format = "icon",
@@ -683,6 +822,13 @@ M.marks = {
   format = "file",
   global = true,
   ["local"] = true,
+  win = {
+    input = {
+      keys = {
+        ["<c-x>"] = { "mark_delete", mode = { "n", "i" } },
+      },
+    },
+  },
 }
 
 ---@class snacks.picker.notifications.Config: snacks.picker.Config
@@ -760,7 +906,7 @@ M.projects = {
         ["<c-e>"] = { { "tcd", "picker_explorer" }, mode = { "n", "i" } },
         ["<c-f>"] = { { "tcd", "picker_files" }, mode = { "n", "i" } },
         ["<c-g>"] = { { "tcd", "picker_grep" }, mode = { "n", "i" } },
-        ["<c-r>"] = { { "tcd", "picker_recent" }, mode = { "n", "i" } },
+        ["<c-r>"] = { { "tcd", "picker_recent" }, mode = { "n", "i" }, nowait = true },
         ["<c-w>"] = { { "tcd" }, mode = { "n", "i" } },
         ["<c-t>"] = {
           function(picker)
@@ -904,7 +1050,7 @@ M.treesitter = {
 }
 
 ---@class snacks.picker.undo.Config: snacks.picker.Config
----@field diff? vim.diff.Opts
+---@field diff? vim.text.diff.Opts
 M.undo = {
   finder = "vim_undo",
   format = "undo",

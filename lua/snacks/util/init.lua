@@ -129,7 +129,7 @@ end
 
 --- Get an icon from `mini.icons` or `nvim-web-devicons`.
 ---@param name string
----@param cat? string defaults to "file"
+---@param cat? string "file"|"filetype"|"extension"|"directory"
 ---@param opts? { fallback?: {dir?:string, file?:string} }
 ---@return string, string?
 function M.icon(name, cat, opts)
@@ -459,7 +459,7 @@ M.base64 = vim.base64 and vim.base64.encode
 ---@param on_parse fun(err?: string, trees?: table<integer, TSTree>) Function invoked when parsing completes.
 function M.parse(parser, range, on_parse)
   ---@diagnostic disable-next-line: invisible
-  local have_async = (vim.treesitter.languagetree or {})._async_parse ~= nil
+  local have_async = vim.fn.has("nvim-0.11.4") == 1 or (vim.treesitter.languagetree or {})._async_parse ~= nil
   if have_async then
     parser:parse(range, on_parse)
   else

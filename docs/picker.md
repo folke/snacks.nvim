@@ -76,6 +76,7 @@ Snacks.picker.pick({source = "files", ...})
 ---@field limit? number when set, the finder will stop after finding this number of items. useful for live searches
 ---@field limit_live? number when set, the finder will stop after finding this number of items during live searches. useful for performance
 ---@field ui_select? boolean set `vim.ui.select` to a snacks picker
+---@field filter? snacks.picker.filter.Config generic filter used by some finders
 --- Source definition
 ---@field items? snacks.picker.finder.Item[] items to show instead of using a finder
 ---@field format? string|snacks.picker.format|string format function or preset
@@ -177,11 +178,20 @@ Snacks.picker.pick({source = "files", ...})
   ---@class snacks.picker.previewers.Config
   previewers = {
     diff = {
-      builtin = true, -- use Neovim for previewing diffs (true) or use an external tool (false)
-      cmd = { "delta" }, -- example to show a diff with delta
+      -- fancy: Snacks fancy diff (borders, multi-column line numbers, syntax highlighting)
+      -- syntax: Neovim's built-in diff syntax highlighting
+      -- terminal: external command (git's pager for git commands, `cmd` for other diffs)
+      style = "fancy", ---@type "fancy"|"syntax"|"terminal"
+      cmd = { "delta" }, -- example for using `delta` as the external diff command
+      ---@type vim.wo?|{} window options for the fancy diff preview window
+      wo = {
+        breakindent = true,
+        wrap = true,
+        linebreak = true,
+        showbreak = "",
+      },
     },
     git = {
-      builtin = true, -- use Neovim for previewing git output (true) or use git (false)
       args = {}, -- additional arguments passed to the git command. Useful to set pager options usin `-c ...`
     },
     file = {
@@ -263,7 +273,7 @@ Snacks.picker.pick({source = "files", ...})
         ["gg"] = "list_top",
         ["j"] = "list_down",
         ["k"] = "list_up",
-        ["q"] = "close",
+        ["q"] = "cancel",
       },
       b = {
         minipairs_disable = true,
@@ -312,7 +322,7 @@ Snacks.picker.pick({source = "files", ...})
         ["i"] = "focus_input",
         ["j"] = "list_down",
         ["k"] = "list_up",
-        ["q"] = "close",
+        ["q"] = "cancel",
         ["zb"] = "list_scroll_bottom",
         ["zt"] = "list_scroll_top",
         ["zz"] = "list_scroll_center",
@@ -326,7 +336,7 @@ Snacks.picker.pick({source = "files", ...})
     preview = {
       keys = {
         ["<Esc>"] = "cancel",
-        ["q"] = "close",
+        ["q"] = "cancel",
         ["i"] = "focus_input",
         ["<a-w>"] = "cycle_win",
       },
@@ -525,6 +535,11 @@ Snacks.picker.pick({source = "files", ...})
     { "<leader>gS", function() Snacks.picker.git_stash() end, desc = "Git Stash" },
     { "<leader>gd", function() Snacks.picker.git_diff() end, desc = "Git Diff (Hunks)" },
     { "<leader>gf", function() Snacks.picker.git_log_file() end, desc = "Git Log File" },
+    -- gh
+    { "<leader>gi", function() Snacks.picker.gh_issue() end, desc = "GitHub Issues (open)" },
+    { "<leader>gI", function() Snacks.picker.gh_issue({ state = "all" }) end, desc = "GitHub Issues (all)" },
+    { "<leader>gp", function() Snacks.picker.gh_pr() end, desc = "GitHub Pull Requests (open)" },
+    { "<leader>gP", function() Snacks.picker.gh_pr({ state = "all" }) end, desc = "GitHub Pull Requests (all)" },
     -- Grep
     { "<leader>sb", function() Snacks.picker.lines() end, desc = "Buffer Lines" },
     { "<leader>sB", function() Snacks.picker.grep_buffers() end, desc = "Grep Open Buffers" },
@@ -642,8 +657,9 @@ Snacks.picker.pick({source = "files", ...})
 ```lua
 ---@alias snacks.picker.format.resolve fun(max_width:number):snacks.picker.Highlight[]
 ---@alias snacks.picker.Extmark vim.api.keyset.set_extmark|{col:number, row?:number, field?:string}
----@alias snacks.picker.Text {[1]:string, [2]:string?, virtual?:boolean, field?:string, resolve?:snacks.picker.format.resolve}
----@alias snacks.picker.Highlight snacks.picker.Text|snacks.picker.Extmark
+---@alias snacks.picker.Meta {[string]:any}
+---@alias snacks.picker.Text {[1]:string, [2]:(string|string[])?, virtual?:boolean, field?:string, resolve?:snacks.picker.format.resolve, inline?:boolean}
+---@alias snacks.picker.Highlight snacks.picker.Text|snacks.picker.Extmark|{meta?:snacks.picker.Meta}
 ---@alias snacks.picker.format fun(item:snacks.picker.Item, picker:snacks.Picker):snacks.picker.Highlight[]
 ---@alias snacks.picker.preview fun(ctx: snacks.picker.preview.ctx):boolean?
 ---@alias snacks.picker.sort fun(a:snacks.picker.Item, b:snacks.picker.Item):boolean
@@ -652,7 +668,7 @@ Snacks.picker.pick({source = "files", ...})
 ---@alias snacks.picker.toggle {icon?:string, enabled?:boolean, value?:boolean}
 ```
 
-Generic filter used by finders to pre-filter items
+Generic filter used by some finders to pre-filter items
 
 ```lua
 ---@class snacks.picker.filter.Config
@@ -1083,6 +1099,168 @@ Neovim commands
 }
 ```
 
+### `gh_actions`
+
+```vim
+:lua Snacks.picker.gh_actions(opts?)
+```
+
+```lua
+---@class snacks.picker.gh.actions.Config: snacks.picker.Config
+---@field number number issue or PR number
+---@field repo string GitHub repository (owner/repo). Defaults to current git repo
+---@field type "issue" | "pr"
+---@field item? snacks.picker.gh.Item
+{
+  layout = { preset = "select", layout = { max_width = 50 } },
+  title = "  Actions",
+  main = { current = true },
+  finder = "gh_get_actions",
+  format = "gh_format_action",
+  confirm = "gh_perform_action",
+}
+```
+
+### `gh_diff`
+
+```vim
+:lua Snacks.picker.gh_diff(opts?)
+```
+
+```lua
+---@class snacks.picker.gh.diff.Config: snacks.picker.Config
+---@field group? boolean group changes by file (when false, show individual hunks)
+---@field pr number number PR number to diff against
+---@field repo? string GitHub repository (owner/repo). Defaults to current git repo
+{
+  title = "  Pull Request Diff",
+  group = true,
+  finder = "gh_diff",
+  format = "git_status",
+  preview = "gh_preview_diff",
+  win = {
+    preview = {
+      keys = {
+        ["a"] = { "gh_comment", mode = { "n", "x" } },
+        ["<cr>"] = { "gh_actions", mode = { "n", "x" } },
+      },
+    },
+  },
+}
+```
+
+### `gh_issue`
+
+```vim
+:lua Snacks.picker.gh_issue(opts?)
+```
+
+```lua
+---@class snacks.picker.gh.issue.Config: snacks.picker.gh.Config
+---@field state "open" | "closed" | "all"
+---@field mention? string filter by mention
+---@field milestone? string filter by milestone
+{
+  title = "  Issues",
+  finder = "gh_issue",
+  format = "gh_format",
+  preview = "gh_preview",
+  sort = { fields = { "score:desc", "idx" } },
+  supports_live = true,
+  live = true,
+  confirm = "gh_actions",
+  win = {
+    input = {
+      keys = {
+        ["<a-b>"] = { "gh_browse", mode = { "n", "i" } },
+        ["<c-y>"] = { "gh_yank", mode = { "n", "i" } },
+      },
+    },
+    list = {
+      keys = {
+        ["y"] = { "gh_yank", mode = { "n", "x" } },
+      },
+    },
+  },
+}
+```
+
+### `gh_labels`
+
+```vim
+:lua Snacks.picker.gh_labels(opts?)
+```
+
+```lua
+---@class snacks.picker.gh.labels.Config: snacks.picker.Config
+---@field number number issue or PR number
+---@field repo string GitHub repository (owner/repo). Defaults to current git repo
+{
+  layout = { preset = "select", layout = { max_width = 50 } },
+  title = "  Labels",
+  main = { current = true },
+  group = true,
+  finder = "gh_labels",
+  format = "gh_format_label",
+}
+```
+
+### `gh_pr`
+
+```vim
+:lua Snacks.picker.gh_pr(opts?)
+```
+
+```lua
+---@class snacks.picker.gh.pr.Config: snacks.picker.gh.Config
+---@field state "open" | "closed" | "merged" | "all"
+---@field draft? boolean filter draft PRs
+---@field base? string filter by base branch
+{
+  title = "  Pull Requests",
+  finder = "gh_pr",
+  format = "gh_format",
+  preview = "gh_preview",
+  sort = { fields = { "score:desc", "idx" } },
+  supports_live = true,
+  live = true,
+  confirm = "gh_actions",
+  win = {
+    input = {
+      keys = {
+        ["<a-b>"] = { "gh_browse", mode = { "n", "i" } },
+        ["<c-y>"] = { "gh_yank", mode = { "n", "i" } },
+      },
+    },
+    list = {
+      keys = {
+        ["y"] = { "gh_yank", mode = { "n", "x" } },
+      },
+    },
+  },
+}
+```
+
+### `gh_reactions`
+
+```vim
+:lua Snacks.picker.gh_reactions(opts?)
+```
+
+```lua
+---@class snacks.picker.gh.reactions.Config: snacks.picker.Config
+---@field number number issue or PR number
+---@field repo string GitHub repository (owner/repo). Defaults to current git repo
+{
+  layout = { preset = "select", layout = { max_width = 50 } },
+  title = "  Reactions",
+  main = { current = true },
+  group = true,
+  finder = "gh_reactions",
+  format = "gh_format_reaction",
+}
+```
+
 ### `git_branches`
 
 ```vim
@@ -1133,8 +1311,18 @@ Neovim commands
 {
   group = false,
   finder = "git_diff",
-  format = "file",
+  format = "git_status",
   preview = "diff",
+  matcher = { sort_empty = true },
+  sort = { fields = { "score:desc", "file", "idx" } },
+  win = {
+    input = {
+      keys = {
+        ["<Tab>"] = { "git_stage", mode = { "n", "i" } },
+        ["<c-r>"] = { "git_restore", mode = { "n", "i" }, nowait = true },
+      },
+    },
+  },
 }
 ```
 
@@ -1280,7 +1468,7 @@ Git log
     input = {
       keys = {
         ["<Tab>"] = { "git_stage", mode = { "n", "i" } },
-        ["<c-r>"] = { "git_restore", mode = { "n", "i" } },
+        ["<c-r>"] = { "git_restore", mode = { "n", "i" }, nowait = true },
       },
     },
   },
@@ -1347,6 +1535,7 @@ Git log
 {
   finder = "grep",
   regex = false,
+  args = { "--word-regexp" },
   format = "file",
   search = function(picker)
     return picker:word()
@@ -1401,9 +1590,14 @@ Neovim help tags
 
 ```lua
 ---@class snacks.picker.icons.Config: snacks.picker.Config
----@field icon_sources? string[]
+---@field icon_sources? string[] list of sources to use
+--- Custom icon sources can be added here. The key is the source name,
+--- and the value is the file path or URL to load icons from.
+--- The file should be a JSON array of:
+--- `{[1]:string, [2]:string}|{icon:string, name:string, category:string}`
+--- The format is compatible with https://github.com/nvim-telescope/telescope-symbols.nvim
+---@field custom_sources? table<string,string> additional icon sources `table<source,file|url>`
 {
-  icon_sources = { "nerd_fonts", "emoji" },
   main = { current = true },
   finder = "icons",
   format = "icon",
@@ -1816,6 +2010,13 @@ vim.tbl_extend("force", {}, M.lsp_symbols, {
   format = "file",
   global = true,
   ["local"] = true,
+  win = {
+    input = {
+      keys = {
+        ["<c-x>"] = { "mark_delete", mode = { "n", "i" } },
+      },
+    },
+  },
 }
 ```
 
@@ -1954,7 +2155,7 @@ Open recent projects
         ["<c-e>"] = { { "tcd", "picker_explorer" }, mode = { "n", "i" } },
         ["<c-f>"] = { { "tcd", "picker_files" }, mode = { "n", "i" } },
         ["<c-g>"] = { { "tcd", "picker_grep" }, mode = { "n", "i" } },
-        ["<c-r>"] = { { "tcd", "picker_recent" }, mode = { "n", "i" } },
+        ["<c-r>"] = { { "tcd", "picker_recent" }, mode = { "n", "i" }, nowait = true },
         ["<c-w>"] = { { "tcd" }, mode = { "n", "i" } },
         ["<c-t>"] = {
           function(picker)
@@ -2202,7 +2403,7 @@ Search tags file
 
 ```lua
 ---@class snacks.picker.undo.Config: snacks.picker.Config
----@field diff? vim.diff.Opts
+---@field diff? vim.text.diff.Opts
 {
   finder = "vim_undo",
   format = "undo",
@@ -2374,8 +2575,9 @@ M.sidebar
     backdrop = false,
     width = 0.5,
     min_width = 80,
+    max_width = 100,
     height = 0.4,
-    min_height = 3,
+    min_height = 2,
     box = "vertical",
     border = true,
     title = "{title}",
@@ -2708,6 +2910,12 @@ Send selected or all items to the location list.
 
 ```lua
 Snacks.picker.actions.loclist(picker)
+```
+
+### `Snacks.picker.actions.mark_delete()`
+
+```lua
+Snacks.picker.actions.mark_delete(picker)
 ```
 
 ### `Snacks.picker.actions.paste()`
@@ -3079,6 +3287,15 @@ picker:on_current_tab()
 ```lua
 ---@return snacks.Picker.ref
 picker:ref()
+```
+
+### `picker:refresh()`
+
+Clears the selection, set the target to the current item,
+and refresh the finder and matcher.
+
+```lua
+picker:refresh()
 ```
 
 ### `picker:resolve()`

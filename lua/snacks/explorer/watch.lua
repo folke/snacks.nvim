@@ -62,9 +62,7 @@ function M.refresh()
       local pickers = Snacks.picker.get({ source = "explorer", tab = false })
       for _, picker in ipairs(pickers) do
         if picker and not picker.closed and Tree:is_dirty(picker:cwd(), picker.opts) then
-          if not picker.list.target then
-            picker.list:set_target()
-          end
+          picker.list:set_target()
           vim.schedule(function()
             if not picker or picker.closed then
               return
