@@ -18,6 +18,7 @@ Terminal support:
 - [wezterm](https://wezfurlong.org/wezterm/)
   Wezterm has only limited support for the kitty graphics protocol.
   Inline image rendering is not supported.
+- [warp](https://www.warp.dev/)
 - [tmux](https://github.com/tmux/tmux)
   Snacks automatically tries to enable `allow-passthrough=on` for tmux,
   but you may need to enable it manually in your tmux configuration.

@@ -24,6 +24,12 @@ local environments = {
     placeholders = false,
   },
   {
+    name = "warp",
+    env = { TERM_PROGRAM = "WarpTerminal" },
+    supported = true,
+    placeholders = false,
+  },
+  {
     name = "tmux",
     env = { TERM = "tmux", TMUX = true },
     setup = function()

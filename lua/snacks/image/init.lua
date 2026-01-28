@@ -18,7 +18,7 @@ local M = setmetatable({}, {
 })
 
 M.meta = {
-  desc = "Image viewer using Kitty Graphics Protocol, supported by `kitty`, `wezterm` and `ghostty`",
+  desc = "Image viewer using Kitty Graphics Protocol, supported by `kitty`, `wezterm`, `ghostty` and `warp`",
   needs_setup = true,
 }
 
@@ -308,7 +308,7 @@ function M.health()
   vim.wait(1500, function()
     return detected
   end, 10)
-  Snacks.health.have_tool({ "kitty", "wezterm", "ghostty" })
+  Snacks.health.have_tool({ "kitty", "wezterm", "ghostty", "warp" })
   local is_win = jit.os:find("Windows")
   if not Snacks.health.have_tool({ "magick", not is_win and "convert" or nil }) then
     Snacks.health.error("`magick` is required to convert images. Only PNG files will be displayed.")
@@ -374,7 +374,7 @@ function M.health()
     Snacks.health.warn("image viewer is enabled with `opts.force = true`. Use at your own risk")
   else
     Snacks.health.error("your terminal does not support the kitty graphics protocol")
-    Snacks.health.info("supported terminals: `kitty`, `wezterm`, `ghostty`")
+    Snacks.health.info("supported terminals: `kitty`, `wezterm`, `ghostty`, `warp`")
   end
 end
 
