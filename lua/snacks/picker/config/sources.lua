@@ -988,10 +988,12 @@ M.search_history = {
 --- Not meant to be used directly.
 ---@class snacks.picker.select.Config: snacks.picker.Config
 ---@field kinds? table<string, snacks.picker.Config|{}> custom snacks picker configs for specific `vim.ui.select` kinds
+---@field show_idx? boolean show indexes in the list (default: true)
 M.select = {
   items = {}, -- these are set dynamically
   main = { current = true },
   layout = { preset = "select" },
+  show_idx = true,
 }
 
 ---@class snacks.picker.smart.Config: snacks.picker.Config
