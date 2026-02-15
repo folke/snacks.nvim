@@ -778,6 +778,11 @@ function M.cycle_win(picker)
     end
   end
   win = wins[idx % #wins + 1] or 1 -- cycle
+  for name, layout in pairs(picker.layout.wins) do
+    if layout.win == win then
+      picker.init_opts.focus = name
+    end
+  end
   vim.api.nvim_set_current_win(win)
 end
 
