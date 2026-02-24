@@ -498,6 +498,9 @@ M.grep = {
   show_empty = true,
   live = true, -- live grep by default
   supports_live = true,
+  toggles = {
+    regex = { value = true },
+  },
 }
 
 ---@type snacks.picker.grep.Config|{}
