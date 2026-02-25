@@ -122,14 +122,15 @@ function M.grep(opts, ctx)
         item.cwd = cwd
         -- Split on NUL byte (which comes from rg's -0 flag)
         local file_sep = item.text:find("\0")
+        local file = item.text:sub(1, file_sep - 1)
+        local rest = item.text:sub(file_sep + 1)
+        item.text = file .. ":" .. rest:gsub(MATCH_SEP, "")
         if not file_sep then
           if not item.text:match("WARNING") then
             Snacks.notify.error("invalid grep output:\n" .. item.text)
           end
           return false
         end
-        local file = item.text:sub(1, file_sep - 1)
-        local rest = item.text:sub(file_sep + 1)
         ---@type string?, string?, string?
         local line, col, text = rest:match("^(%d+):(%d+):(.*)$")
         if not (line and col and text) then
@@ -138,7 +139,6 @@ function M.grep(opts, ctx)
           end
           return false
         end
-        item.text = file .. ":" .. rest:gsub(MATCH_SEP, "")
 
         -- indices of matches
         local from = tonumber(col)
