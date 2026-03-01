@@ -32,3 +32,28 @@ describe("image doc parser", function()
     Snacks.image.terminal.size = size
   end)
 end)
+
+describe("image placement deletion", function()
+  local image = require("snacks.image.image")
+
+  it("deletes the requested placement id", function()
+    local requests = {}
+    local request = Snacks.image.terminal.request
+    Snacks.image.terminal.request = function(opts)
+      requests[#requests + 1] = opts
+    end
+
+    image.del({
+      id = 42,
+      placements = {
+        [7] = true,
+      },
+    }, 7)
+
+    Snacks.image.terminal.request = request
+    assert.are.same({
+      { a = "d", d = "i", i = 42, p = 7 },
+      { a = "d", d = "i", i = 42 },
+    }, requests)
+  end)
+end)
