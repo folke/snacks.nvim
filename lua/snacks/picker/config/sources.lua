@@ -124,10 +124,16 @@ M.colorschemes = {
   preview = "colorscheme",
   preset = "vertical",
   confirm = function(picker, item)
-    picker:close()
+    local hidden_preview = vim.tbl_contains(picker.resolved_layout.hidden or {}, "preview")
     if item then
       picker.preview.state.colorscheme = nil
+      if hidden_preview then
+        vim.schedule(function()
+          vim.cmd("colorscheme " .. item.text)
+        end)
+      end
     end
+    picker:close()
   end,
 }
 
