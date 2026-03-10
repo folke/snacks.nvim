@@ -127,9 +127,6 @@ M.colorschemes = {
     picker:close()
     if item then
       picker.preview.state.colorscheme = nil
-      vim.schedule(function()
-        vim.cmd("colorscheme " .. item.text)
-      end)
     end
   end,
 }
