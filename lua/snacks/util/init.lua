@@ -492,4 +492,37 @@ function M.path_type(path)
   return "file"
 end
 
+--- Neovim 0.11 uses a lua class for clients, while older versions use a table.
+--- Wraps older style clients to be compatible with the new style.
+---@param client vim.lsp.Client
+---@return vim.lsp.Client
+function M.wrap(client)
+  local meta = getmetatable(client)
+  if meta and meta.request then
+    return client
+  end
+  ---@diagnostic disable-next-line: undefined-field
+  if client.wrapped then
+    return client
+  end
+  local methods = { "request", "supports_method", "cancel_request", "notify" }
+  -- old style
+  return setmetatable({ wrapped = true }, {
+    __index = function(_, k)
+      if k == "supports_method" then
+        -- supports_method doesn't support the bufnr argument
+        return function(_, method)
+          return client[k](method)
+        end
+      end
+      if vim.tbl_contains(methods, k) then
+        return function(_, ...)
+          return client[k](...)
+        end
+      end
+      return client[k]
+    end,
+  })
+end
+
 return M
