@@ -81,6 +81,7 @@ M.explorer = {
         ["l"] = "confirm",
         ["h"] = "explorer_close", -- close directory
         ["a"] = "explorer_add",
+        ["A"] = "explorer_add_cwd",
         ["d"] = "explorer_del",
         ["r"] = "explorer_rename",
         ["c"] = "explorer_copy",
