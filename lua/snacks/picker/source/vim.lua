@@ -361,13 +361,25 @@ function M.tags(opts, ctx)
     T = "TypeParameter",
   }
 
+  ---@param str string
+  ---@return string
+  local function escape_magic_characters(str)
+    -- replace * 
+    str = str:gsub("%*", "\\*")
+    -- replace [
+    str = str:gsub("%[", "\\[")
+    -- replace ]
+    str = str:gsub("%]", "\\]")
+    return str
+  end
+
   for _, tag in ipairs(tags) do
     ---@type snacks.picker.finder.Item
     local item = {
       text = tag.name,
       name = tag.name,
       file = tag.filename,
-      search = tag.cmd,
+      search = escape_magic_characters(tag.cmd),
       kind = tag.kind,
       lsp_kind = lsp_kinds[tag.kind] or "Text",
     }
