@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.32.0](https://github.com/folke/snacks.nvim/compare/v2.31.0...v2.32.0) (2026-03-21)
+
+
+### Features
+
+* **terminal:** add `focus()` method for smarter terminal toggling ([12128b9](https://github.com/folke/snacks.nvim/commit/12128b9b073b665c63fbb54860ccbc06efe50a35))
+
+
+### Bug Fixes
+
+* **keymap:** LSP keymaps now respect registration order for same mode:lhs ([809f979](https://github.com/folke/snacks.nvim/commit/809f9797918ab84ba24b6432747f496a500e5468))
+
 ## [2.31.0](https://github.com/folke/snacks.nvim/compare/v2.30.0...v2.31.0) (2026-03-20)
 
 
