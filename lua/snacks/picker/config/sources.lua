@@ -217,6 +217,38 @@ M.files = {
 ---@field limit? number number of items to fetch (default: 50)
 ---@field repo? string GitHub repository (owner/repo). Defaults to current git repo
 
+--- Prompt for GitHub repo if not in a git repository
+---@param opts snacks.picker.gh.Config
+---@param what "issue"|"pr"
+---@return boolean? should_abort returns true if picker should not open
+local function gh_prompt_repo(opts, what)
+  -- If repo is already provided, no need to prompt
+  if opts.repo then
+    return
+  end
+  -- Check if we're in a git repository
+  local git_root = Snacks.git.get_root()
+  if git_root then
+    return -- gh CLI will auto-detect repo from git remote
+  end
+  -- Not in a git repo, prompt for repository using vim.fn.input (synchronous)
+  local repo = vim.fn.input({
+    prompt = "GitHub repository (owner/repo): ",
+    default = "",
+    cancelreturn = "",
+  })
+  if not repo or repo == "" then
+    Snacks.notify.warn("No repository specified. Cannot browse GitHub " .. what .. "s.", { title = "Snacks GH" })
+    return true -- abort
+  end
+  -- Validate repo format (owner/repo)
+  if not repo:match("^[^/]+/[^/]+$") then
+    Snacks.notify.error("Invalid repository format. Use 'owner/repo' (e.g., 'folke/snacks.nvim').", { title = "Snacks GH" })
+    return true -- abort
+  end
+  opts.repo = repo
+end
+
 ---@class snacks.picker.gh.issue.Config: snacks.picker.gh.Config
 ---@field state "open" | "closed" | "all"
 ---@field mention? string filter by mention
@@ -230,6 +262,12 @@ M.gh_issue = {
   supports_live = true,
   live = true,
   confirm = "gh_actions",
+  ---@param opts snacks.picker.gh.issue.Config
+  config = function(opts)
+    if gh_prompt_repo(opts, "issue") then
+      opts.abort = true
+    end
+  end,
   win = {
     input = {
       keys = {
@@ -258,6 +296,12 @@ M.gh_pr = {
   supports_live = true,
   live = true,
   confirm = "gh_actions",
+  ---@param opts snacks.picker.gh.pr.Config
+  config = function(opts)
+    if gh_prompt_repo(opts, "pr") then
+      opts.abort = true
+    end
+  end,
   win = {
     input = {
       keys = {
