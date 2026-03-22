@@ -80,15 +80,17 @@ function M.add_loc(item, result, client)
   return item
 end
 
----@param buf number
+---@param buf? number
 ---@param method string
 ---@return vim.lsp.Client[]
 function M.get_clients(buf, method)
+  -- If the buffer number is nil, we will get all LSP clients
+  local filter = buf and { bufnr = buf } or {}
   ---@param client vim.lsp.Client
   local clients = vim.tbl_map(function(client)
     return wrap(client)
     ---@diagnostic disable-next-line: deprecated
-  end, (vim.lsp.get_clients or vim.lsp.get_active_clients)({ bufnr = buf }))
+  end, (vim.lsp.get_clients or vim.lsp.get_active_clients)(filter))
   ---@param client vim.lsp.Client
   return vim.tbl_filter(function(client)
     return client:supports_method(method, buf)
@@ -184,7 +186,7 @@ function R:track_cancel()
   })
 end
 
----@param buf number|vim.lsp.Client
+---@param buf? number|vim.lsp.Client
 ---@param method string
 ---@param params fun(client:vim.lsp.Client):table
 ---@param cb fun(client:vim.lsp.Client, result:table, params:table)
@@ -195,7 +197,7 @@ function R:request(buf, method, params, cb)
     self:track_cancel() -- setup autocmd here, since this must be called in the main loop
 
     ---@diagnostic disable-next-line: param-type-mismatch
-    local clients = type(buf) == "number" and M.get_clients(buf, method) or { wrap(buf) }
+    local clients = (type(buf) == "number" or buf == nil) and M.get_clients(buf, method) or { wrap(buf) }
 
     self.pending = self.pending + #clients
     for _, client in ipairs(clients) do
@@ -231,7 +233,7 @@ function R:wait()
   end
 end
 
----@param buf number
+---@param buf? number
 ---@param method string
 ---@param params fun(client:vim.lsp.Client):table
 ---@param cb fun(client:vim.lsp.Client, result:table, params:table)
@@ -443,10 +445,16 @@ function M.symbols(opts, ctx)
   local p = opts.workspace and { query = ctx.filter.search }
     or { textDocument = vim.lsp.util.make_text_document_params(buf) }
 
+  local request_buf = nil
+
+  if not opts.all_clients or not opts.workspace then
+    request_buf = buf
+  end
+
   ---@async
   ---@param cb async fun(item: snacks.picker.finder.Item)
   return function(cb)
-    M.request(buf, method, function()
+    M.request(request_buf, method, function()
       return p
     end, function(client, result, params)
       local items = M.results_to_items(client, result, {
