@@ -15,7 +15,7 @@ local commands = {
   {
     cmd = { "find" },
     args = { ".", "-type", "f", "-not", "-path", "*/.git/*" },
-    enabled = vim.fn.has("win-32") == 0,
+    enabled = vim.fn.has("win32") == 0,
   },
 }
 
