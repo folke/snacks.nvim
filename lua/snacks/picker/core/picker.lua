@@ -287,26 +287,28 @@ function M:attach()
     if vim.v.vim_did_enter == 0 then
       return
     end
-    if self.closed or Snacks.util.is_float() then
-      return
-    end
-    if self:is_focused() then
-      if preview then -- re-open preview when needed
-        self:toggle("preview", { enable = true })
-        preview = false
-      end
-      return
-    end
-    -- close main preview when auto_close is disabled
-    if self.opts.auto_close == false then
-      if self.preview.main and self.preview.win:valid() then
-        self:toggle("preview", { enable = false })
-        preview = true
-      end
-      return
-    end
-    -- close picker when we enter another window
+    -- schedule to allow other plugins to restore focus
+    -- https://github.com/nvim-mini/mini.nvim/issues/2255
     vim.schedule(function()
+      if self.closed or Snacks.util.is_float() then
+        return
+      end
+      if self:is_focused() then
+        if preview then -- re-open preview when needed
+          self:toggle("preview", { enable = true })
+          preview = false
+        end
+        return
+      end
+      -- close main preview when auto_close is disabled
+      if self.opts.auto_close == false then
+        if self.preview.main and self.preview.win:valid() then
+          self:toggle("preview", { enable = false })
+          preview = true
+        end
+        return
+      end
+      -- close picker when we enter another window
       self:close()
     end)
   end)
