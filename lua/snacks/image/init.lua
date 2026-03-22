@@ -81,6 +81,9 @@ local defaults = {
     float = true,
     max_width = 80,
     max_height = 40,
+    -- markdown wikilinks can request a per-image width with
+    -- `[[image.png|150]]` or `[[image.png|150px]]`
+    -- the requested width is still clamped by max_width/max_height
     -- Set to `true`, to conceal the image text when rendering inline.
     -- (experimental)
     ---@param lang string tree-sitter language

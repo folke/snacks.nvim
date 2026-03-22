@@ -98,7 +98,7 @@ function M:update()
     for _, i in ipairs(imgs) do
       local img ---@type snacks.image.Placement?
       for v, o in pairs(visible) do
-        if o.img.src == i.src then
+        if o.opts.match_id == i.id then
           img = o
           visible[v] = nil
           break
@@ -109,7 +109,8 @@ function M:update()
         img = Snacks.image.placement.new(
           self.buf,
           i.src,
-          Snacks.config.merge({}, Snacks.image.config.doc, {
+          Snacks.image.doc.opts(i, Snacks.config.merge({}, Snacks.image.config.doc, {
+            match_id = i.id,
             pos = i.pos,
             range = i.range,
             inline = true,
@@ -121,7 +122,7 @@ function M:update()
                 self.idx[eid] = p
               end
             end,
-          })
+          }))
         )
         for _, eid in ipairs(img.eids) do
           self.idx[eid] = img
@@ -131,6 +132,7 @@ function M:update()
         stats.update = stats.update + 1
         img.opts.pos = i.pos
         img.opts.range = i.range
+        img.opts.width = Snacks.image.doc.width(i.width_px) or Snacks.image.config.doc.width
         img:update()
       end
     end

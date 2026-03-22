@@ -451,10 +451,17 @@ function M:state()
   local wins = {} ---@type number[]
   local is_fallback = not terminal.env().placeholders
   local zindex = vim.api.nvim_win_get_config(0).zindex or 0
+  local pos = self.opts.pos or { 1, 0 }
+  local range = self.opts.range or { pos[1], pos[2], pos[1], pos[2] }
+  local offset = range[2]
 
   for _, win in ipairs(self:wins()) do
     width = math.min(width, vim.api.nvim_win_get_width(win))
     height = math.min(height, vim.api.nvim_win_get_height(win))
+    if self.opts.inline then
+      local info = vim.fn.getwininfo(win)[1]
+      width = math.min(width, math.max(1, info.width - info.textoff - offset))
+    end
     if is_fallback then
       local z = vim.api.nvim_win_get_config(win).zindex or 0
       if z >= zindex or (zindex > 0 and z > 0) then
@@ -473,10 +480,7 @@ function M:state()
   height = minmax(self.opts.height or height, self.opts.min_height, self.opts.max_height)
   local size = Snacks.image.util.fit(self.img.file, { width = width, height = height }, { info = self.img.info })
 
-  local pos = self.opts.pos or { 1, 0 }
-
   local function is_inline()
-    local range = self.opts.range or { pos[1], pos[2], pos[1], pos[2] }
     if range[1] == range[3] then
       local line = vim.api.nvim_buf_get_lines(self.buf, range[1] - 1, range[1], false)[1] or ""
       local has_before = line:sub(1, range[2]):find("%S") ~= nil
