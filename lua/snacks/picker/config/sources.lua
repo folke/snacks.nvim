@@ -733,6 +733,7 @@ M.lsp_references = {
 ---@field keep_parents? boolean keep parent symbols when filtering
 ---@field filter table<string, string[]|boolean>? symbol kind filter
 ---@field workspace? boolean show workspace symbols
+---@field all_clients? boolean query all LSP clients
 M.lsp_symbols = {
   finder = "lsp_symbols",
   format = "lsp_symbol",
