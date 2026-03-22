@@ -178,6 +178,7 @@ M.vscode = {
 
 M.left = M.sidebar
 M.right = { preset = "sidebar", layout = { position = "right" } }
+M.explorer = { preset = "sidebar", layout = { root_ft = "snacks_explorer" } }
 M.top = { preset = "ivy", layout = { position = "top" } }
 M.bottom = { preset = "ivy", layout = { position = "bottom" } }
 
