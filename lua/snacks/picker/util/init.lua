@@ -443,16 +443,17 @@ function M.shallow_copy(t)
   return setmetatable(ret, getmetatable(t))
 end
 
----@param opts? {main?: number, float?:boolean, filter?: fun(win:number, buf:number):boolean?}
+---@param opts? {main?: number, float?:boolean, selection_chars?: string, filter?: fun(win:number, buf:number):boolean?}
 function M.pick_win(opts)
   opts = Snacks.config.merge({
     filter = function(win, buf)
       return not vim.bo[buf].filetype:find("^snacks")
     end,
+    selection_chars = "asdfghjkl"
   }, opts)
 
   local overlays = {} ---@type snacks.win[]
-  local chars = "asdfghjkl"
+  local chars = opts.selection_chars
   local wins = {} ---@type number[]
   for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
     local buf = vim.api.nvim_win_get_buf(win)
