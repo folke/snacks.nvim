@@ -777,6 +777,9 @@ end
 -- Only works with [lazy.nvim](https://github.com/folke/lazy.nvim)
 ---@param name string
 function M.have_plugin(name)
+  if name:match("^mini%.nvim") then
+    return package.loaded.lazy and require("lazy.core.config").spec.plugins[name] ~= nil and _G.MiniSessions ~= nil
+  end
   return package.loaded.lazy and require("lazy.core.config").spec.plugins[name] ~= nil
 end
 
