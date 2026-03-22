@@ -22,14 +22,19 @@ function M.select(items, opts, on_choice)
   ---@type snacks.picker.select.Config
   local picker_opts = {
     source = "select",
-    finder = function()
+    finder = function(picker_opts)
+      local select_opts = picker_opts --[[@as snacks.picker.select.Config]]
       ---@type snacks.picker.finder.Item[]
       local ret = {}
       for idx, item in ipairs(items) do
         local text = (opts.format_item or tostring)(item)
         ---@type snacks.picker.finder.Item
         local it = type(item) == "table" and setmetatable({}, { __index = item }) or {}
-        it.text = idx .. " " .. text
+        if select_opts.show_idx ~= false then
+          it.text = idx .. " " .. text
+        else
+          it.text = text
+        end
         it.item = item
         it.idx = idx
         ret[#ret + 1] = it

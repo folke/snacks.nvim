@@ -337,12 +337,16 @@ end
 ---@return snacks.picker.format
 function M.ui_select(opts)
   return function(item, picker)
-    local count = picker:count()
     local ret = {} ---@type snacks.picker.Highlight[]
-    local idx = tostring(item.idx)
-    idx = (" "):rep(#tostring(count) - #idx) .. idx
-    ret[#ret + 1] = { idx .. ".", "SnacksPickerIdx" }
-    ret[#ret + 1] = { " " }
+
+    local select_opts = picker.opts --[[@as snacks.picker.select.Config]]
+    if select_opts.show_idx ~= false then
+      local count = picker:count()
+      local idx = tostring(item.idx)
+      idx = (" "):rep(#tostring(count) - #idx) .. idx
+      ret[#ret + 1] = { idx .. ".", "SnacksPickerIdx" }
+      ret[#ret + 1] = { " " }
+    end
 
     if opts.kind == "codeaction" then
       ---@type lsp.Command|lsp.CodeAction, lsp.HandlerContext
