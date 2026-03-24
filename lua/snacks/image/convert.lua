@@ -292,7 +292,13 @@ end
 
 ---@param ft string
 function Convert:tmpfile(ft)
-  return Snacks.image.config.cache .. "/" .. self.prefix .. "." .. ft
+  -- If it is macOS and the file name is too long
+  if jit.os:find("OSX") and #self.opts.src > 254 then
+    local hash = vim.fn.sha256(self.opts.src .. self.page):sub(1, 16)
+    return Snacks.image.config.cache .. "/" .. hash .. "." .. ft
+  else
+    return Snacks.image.config.cache .. "/" .. self.prefix .. "." .. ft
+  end
 end
 
 ---@param target string
