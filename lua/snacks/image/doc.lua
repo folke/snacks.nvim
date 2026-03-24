@@ -349,6 +349,17 @@ end
 --- Get the image at the cursor (if any)
 ---@param cb fun(image_src?:string, image_pos?: snacks.image.Pos)
 function M.at_cursor(cb)
+  M.match_at_cursor(function(img)
+    if not img then
+      return cb()
+    end
+    return cb(img.src, img.pos)
+  end)
+end
+
+--- Get the full image match at the cursor (if any)
+---@param cb fun(img?: snacks.image.match)
+function M.match_at_cursor(cb)
   local cursor = vim.api.nvim_win_get_cursor(0)
   M.find(vim.api.nvim_get_current_buf(), function(imgs)
     for _, img in ipairs(imgs) do
@@ -358,7 +369,7 @@ function M.at_cursor(cb)
           (range[1] == range[3] and cursor[2] >= range[2] and cursor[2] <= range[4])
           or (range[1] ~= range[3] and cursor[1] >= range[1] and cursor[1] <= range[3])
         then
-          return cb(img.src, img.pos)
+          return cb(img)
         end
       end
     end
@@ -367,6 +378,11 @@ function M.at_cursor(cb)
 end
 
 function M.hover()
+  local mode = vim.api.nvim_get_mode().mode:sub(1, 1):lower()
+  if mode ~= "n" and mode ~= "i" and mode ~= "s" then
+    return M.hover_close()
+  end
+
   local current_win = vim.api.nvim_get_current_win()
   local current_buf = vim.api.nvim_get_current_buf()
 
@@ -374,7 +390,7 @@ function M.hover()
     return
   end
 
-  if hover and (hover.buf ~= current_buf or vim.fn.mode() ~= "n") then
+  if hover and hover.buf ~= current_buf then
     return M.hover_close()
   end
 
@@ -382,10 +398,11 @@ function M.hover()
     M.hover_close()
   end
 
-  M.at_cursor(function(src)
-    if not src then
+  M.match_at_cursor(function(img)
+    if not img or img.type ~= "math" then
       return M.hover_close()
     end
+    local src = img.src
 
     if hover and hover.img.img.src ~= src then
       M.hover_close()
@@ -394,9 +411,21 @@ function M.hover()
       return
     end
 
+    local bufpos ---@type number[]?
+    if img.range then
+      bufpos = { img.range[3] - 1, img.range[4] }
+    end
+
     local win = Snacks.win(Snacks.win.resolve(Snacks.image.config.doc, "snacks_image", {
       show = false,
       enter = false,
+      -- Place the hover preview after the end of the math expression,
+      -- so it doesn't cover the closing delimiters.
+      relative = bufpos and "win" or nil,
+      win = bufpos and current_win or nil,
+      bufpos = bufpos,
+      row = bufpos and 1 or nil,
+      col = bufpos and 0 or nil,
       wo = { winblend = Snacks.image.terminal.env().placeholders and 0 or nil },
     }))
     win:open_buf()
@@ -418,7 +447,7 @@ function M.hover()
       buf = current_buf,
       img = Snacks.image.placement.new(win.buf, src, o),
     }
-    vim.api.nvim_create_autocmd({ "BufWritePost", "CursorMoved", "ModeChanged", "BufLeave" }, {
+    vim.api.nvim_create_autocmd({ "BufWritePost", "CursorMoved", "CursorMovedI", "ModeChanged", "BufLeave" }, {
       group = vim.api.nvim_create_augroup("snacks.image.hover", { clear = true }),
       callback = function()
         if not hover then
@@ -443,7 +472,7 @@ function M._attach(buf)
   end
   vim.b[buf].snacks_image_attached = true
   local inline = Snacks.image.config.doc.inline and Snacks.image.terminal.env().placeholders
-  local float = Snacks.image.config.doc.float and not inline
+  local float = Snacks.image.config.doc.float
 
   if not inline and not float then
     return
@@ -451,9 +480,11 @@ function M._attach(buf)
 
   if inline then
     Snacks.image.inline.new(buf)
-  else
+  end
+
+  if float then
     local group = vim.api.nvim_create_augroup("snacks.image.doc." .. buf, { clear = true })
-    vim.api.nvim_create_autocmd({ "CursorMoved" }, {
+    vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
       group = group,
       buffer = buf,
       callback = vim.schedule_wrap(M.hover),
