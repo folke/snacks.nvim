@@ -43,6 +43,8 @@ Open the repo of the active file in the browser (e.g., GitHub)
   branch = nil, ---@type string?
   line_start = nil, ---@type number?
   line_end = nil, ---@type number?
+  ---@type boolean
+  only_upstream_remote = false, -- if branch = nil and upstream of the current branch is found, do not consider other remotes
   -- patterns to transform remotes to an actual URL
   remote_patterns = {
     { "^(https?://.*)%.git$"              , "%1" },
