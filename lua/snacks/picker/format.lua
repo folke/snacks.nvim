@@ -190,8 +190,10 @@ function M.commit_message(item, picker)
   if type and body then
     local dimmed = vim.tbl_contains({ "chore", "bot", "build", "ci", "style", "test" }, type)
     msg_hl = dimmed and "SnacksPickerDimmed" or "SnacksPickerGitMsg"
-    ret[#ret + 1] =
-      { type, breaking ~= "" and "SnacksPickerGitBreaking" or dimmed and "SnacksPickerBold" or "SnacksPickerGitType" }
+    ret[#ret + 1] = {
+      type,
+      breaking ~= "" and "SnacksPickerGitBreaking" or dimmed and "SnacksPickerGitTypeDimmed" or "SnacksPickerGitType",
+    }
     if scope and scope ~= "" then
       ret[#ret + 1] = { scope, "SnacksPickerGitScope" }
     end
