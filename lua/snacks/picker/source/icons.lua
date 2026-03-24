@@ -90,6 +90,26 @@ M.sources = {
       return ret
     end,
   },
+  unicode = {
+    url = "https://raw.githubusercontent.com/iLib-js/UCD/main/json/NamesList.json",
+    v = 3,
+    build = function(data)
+      ---@cast data {NamesList: table<number, {codepoint:string, name:string, aliases:table, comments:table, crossReferences:table, compatibilityMappings:table, decompositions:table, variations:table}>}
+      local ret = {} ---@type snacks.picker.Icon[]
+      for _, info in ipairs(data.NamesList) do
+        if info.codepoint:match("^%x+$") then -- Ensure valid hex codepoint
+          local char = vim.fn.nr2char(tonumber(info.codepoint, 16))
+          table.insert(ret, {
+            name = info.name:lower(),
+            icon = char,
+            source = "unicode",
+            category = "unicode",
+          })
+        end
+      end
+      return ret
+    end,
+  },
 }
 
 ---@class snacks.picker.Icon: snacks.picker.finder.Item
