@@ -1018,7 +1018,7 @@ function M:on_close()
   -- Go back to the previous window when closing,
   -- and it's the current window
   if vim.api.nvim_get_current_win() == self.win then
-    pcall(vim.cmd.wincmd, "p")
+    vim.cmd("silent! wincmd p")
   end
 end
 
