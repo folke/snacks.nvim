@@ -404,7 +404,7 @@ function M:update_titles()
           return a:sub(1, 1):upper() .. a:sub(2)
         end, vim.split(name, "_")))
         toggles[#toggles + 1] = { " " .. toggle.icon .. " ", "SnacksPickerToggle" .. hl }
-        toggles[#toggles + 1] = { " ", "FloatTitle" }
+        toggles[#toggles + 1] = { " ", "SnacksPickerTitle" }
       end
     end
   end
@@ -415,7 +415,7 @@ function M:update_titles()
     if win.opts.title then
       local tpl = win.meta.title_tpl or win.opts.title
       win.meta.title_tpl = tpl
-      tpl = type(tpl) == "string" and { { tpl, "FloatTitle" } } or tpl
+      tpl = type(tpl) == "string" and { { tpl, "SnacksPickerTitle" } } or tpl
       ---@cast tpl snacks.picker.Text[]
 
       local has_flags = false
@@ -434,8 +434,8 @@ function M:update_titles()
         end
       end
       if #ret > 0 then
-        table.insert(ret, { " ", "FloatTitle" })
-        table.insert(ret, 1, { " ", "FloatTitle" })
+        table.insert(ret, { " ", "SnacksPickerTitle" })
+        table.insert(ret, 1, { " ", "SnacksPickerTitle" })
       end
       if has_flags and #toggles > 0 then
         vim.list_extend(ret, toggles)
