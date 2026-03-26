@@ -269,21 +269,37 @@ function M.diff(opts, ctx)
   local cwd = ctx:git_root()
   ctx.picker:set_cwd(cwd)
 
+  local file = {}
+
+  if opts.current_file then
+    local bufname = vim.api.nvim_buf_get_name(ctx.filter.current_buf)
+    if bufname == "" then
+      return function() end
+    end
+    bufname = svim.fs.normalize(bufname)
+    if not vim.startswith(bufname, cwd) then
+      Snacks.notify.warn(string.format("Current file is not inside the git root:\nFile: %s\nRoot: %s", bufname, cwd))
+      return function() end
+    end
+    file = { "--", bufname }
+  end
+
   local Diff = require("snacks.picker.source.diff")
   local finders = {} ---@type snacks.picker.finder.result[]
   finders[#finders + 1] = Diff.diff(
     ctx:opts({
       cmd = "git",
-      args = args,
+      args = vim.list_extend(vim.deepcopy(args), file),
       cwd = cwd,
     }),
     ctx
   )
   if opts.staged == nil and opts.base == nil then
+    local cached_args = vim.list_extend(vim.deepcopy(args), { "--cached" })
     finders[#finders + 1] = Diff.diff(
       ctx:opts({
         cmd = "git",
-        args = vim.list_extend(vim.deepcopy(args), { "--cached" }),
+        args = vim.list_extend(cached_args, file),
         cwd = cwd,
       }),
       ctx
