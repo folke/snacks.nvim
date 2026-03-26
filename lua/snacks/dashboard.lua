@@ -87,7 +87,6 @@ local defaults = {
     pick = nil,
     -- Used by the `keys` section to show keymaps.
     -- Set your custom keymaps here.
-    -- When using a function, the `items` argument are the default keymaps.
     -- stylua: ignore
     ---@type snacks.dashboard.Item[]
     keys = {
