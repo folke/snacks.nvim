@@ -25,7 +25,7 @@ function M.health()
   end
 
   local have_fd, version_fd = Snacks.health.have_tool({
-    { cmd = { "fd", "fdfind" }, version = "v8.4" },
+    { cmd = { "fdfind", "fd" }, version = "v8.4" },
   })
   local have_find = have_fd
     or (jit.os:find("Windows") == nil and Snacks.health.have_tool({
