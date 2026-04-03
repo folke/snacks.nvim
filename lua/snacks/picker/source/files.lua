@@ -5,7 +5,7 @@ local uv = vim.uv or vim.loop
 ---@type {cmd:string[], args:string[], enabled?:boolean, available?:boolean|string}[]
 local commands = {
   {
-    cmd = { "fd", "fdfind" },
+    cmd = { "fdfind", "fd" },
     args = { "--type", "f", "--type", "l", "--color", "never", "-E", ".git" },
   },
   {

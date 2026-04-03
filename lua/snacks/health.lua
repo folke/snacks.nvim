@@ -93,7 +93,24 @@ function M.have_tool(tools)
         if vim.fn.executable(cmd) == 1 then
           local version = tool.version == false and "" or vim.fn.system(cmd .. " --version") or ""
           version = vim.trim(vim.split(version, "\n")[1])
-          if tool_version and tool_version > vim.version.parse(version) then
+          local parsed_version = nil
+          if tool.version ~= false then
+            parsed_version = vim.version.parse(version)
+            assert(
+              parsed_version,
+              "'"
+                .. cmd
+                .. "' returned invalid version string: `"
+                .. version
+                .. "`"
+                .. (
+                  cmd == "fd"
+                    and "\n You probably have `fdclone` installed instead of `fd-find` in a Debian derived distro via `apt`"
+                  or ""
+                )
+            )
+          end
+          if tool_version and parsed_version and tool_version > parsed_version then
             M.error("'" .. cmd .. "' `" .. version .. "` is too old, expected `" .. tool.version .. "`")
           elseif tool.version == false then
             M.ok("'" .. cmd .. "'")
@@ -103,6 +120,9 @@ function M.have_tool(tools)
             version_ok = true
           end
           found = true
+          if vim.deep_equal(cmds, { "fdfind", "fd" }) then
+            break
+          end
         end
       end
     end
