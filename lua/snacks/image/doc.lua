@@ -355,7 +355,7 @@ function M.at_cursor(cb)
       local range = img.range
       if range then
         if
-          (range[1] == range[3] and cursor[2] >= range[2] and cursor[2] <= range[4])
+          (range[1] == range[3] and range[1] == cursor[1] and cursor[2] >= range[2] and cursor[2] <= range[4])
           or (range[1] ~= range[3] and cursor[1] >= range[1] and cursor[1] <= range[3])
         then
           return cb(img.src, img.pos)
