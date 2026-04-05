@@ -506,9 +506,11 @@ function M.enable()
   })
 
   -- Listen for scope changes
-  scopes = scopes or Snacks.scope.attach(M.on_scope, config.scope)
-  if not scopes.enabled then
-    scopes:enable()
+  if config.scope.enabled then
+    scopes = scopes or Snacks.scope.attach(M.on_scope, config.scope)
+    if not scopes.enabled then
+      scopes:enable()
+    end
   end
 
   local group = vim.api.nvim_create_augroup("snacks_indent", { clear = true })
