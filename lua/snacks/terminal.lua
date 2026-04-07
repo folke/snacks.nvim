@@ -28,6 +28,7 @@ local defaults = {
 ---@field auto_insert? boolean start insert mode when entering the terminal buffer
 ---@field auto_close? boolean close the terminal buffer when the process exits
 ---@field interactive? boolean shortcut for `start_insert`, `auto_close` and `auto_insert` (default: true)
+---@field on? table<vim.api.keyset.events, fun(term: snacks.win?)>? map from events to callbacks
 
 Snacks.config.style("terminal", {
   bo = {
@@ -156,6 +157,12 @@ function M.open(cmd, opts)
       terminal:close()
     end)
   end, { buf = true })
+
+  for event, callback in pairs(opts.on or {}) do
+    terminal:on(event, function()
+      callback(terminal)
+    end)
+  end
 
   terminal:show()
   vim.api.nvim_buf_call(terminal.buf, function()
