@@ -220,6 +220,19 @@ function M.toggle(cmd, opts)
   return created and terminal or assert(terminal):toggle()
 end
 
+--- Focus a terminal window. If already focused, hide it.
+--- The terminal id is based on the `cmd`, `cwd`, `env` and `vim.v.count1` options.
+---@param cmd? string | string[]
+---@param opts? snacks.terminal.Opts
+function M.focus(cmd, opts)
+  local terminal, created = M.get(cmd, opts)
+  if terminal and not created and vim.api.nvim_get_current_buf() == terminal.buf then
+    terminal:hide()
+    return terminal, created
+  end
+  return created and terminal or assert(terminal):show():focus()
+end
+
 --- Parses a shell command into a table of arguments.
 --- - spaces inside quotes (only double quotes are supported) are preserved
 --- - backslash
