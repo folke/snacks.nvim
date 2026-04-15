@@ -134,7 +134,7 @@ function M.grep(opts, ctx)
         local line, col, text = rest:match("^(%d+):(%d+):(.*)$")
         if not (line and col and text) then
           if not item.text:match("WARNING") then
-            Snacks.notify.error("invalid grep output:\n" .. item.text)
+            Snacks.notify.error("invalid grep output:\n" .. item.text:gsub("%z", " "))
           end
           return false
         end

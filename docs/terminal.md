@@ -160,6 +160,17 @@ ls -la --color=always | nvim - -c "lua Snacks.terminal.colorize()"
 Snacks.terminal.colorize()
 ```
 
+### `Snacks.terminal.focus()`
+
+Focus a terminal window. If already focused, hide it.
+The terminal id is based on the `cmd`, `cwd`, `env` and `vim.v.count1` options.
+
+```lua
+---@param cmd? string | string[]
+---@param opts? snacks.terminal.Opts
+Snacks.terminal.focus(cmd, opts)
+```
+
 ### `Snacks.terminal.get()`
 
 Get or create a terminal window.
