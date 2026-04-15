@@ -215,7 +215,7 @@ function M.cmd(cmd, ctx, opts)
   })
 
   local style = ctx.picker.opts.previewers.diff.style
-  if style == "fancy" and vim.tbl_contains({ "diff", "git" }, opts.ft) then
+  if style == "fancy" and opts.ft == "diff" then
     opts.on_line = function() end or nil -- disable default line handler
     opts.on_lines = function(_, lines)
       fancy_diff(lines, opts.ft, ctx)
@@ -250,7 +250,7 @@ function M.git_show(ctx)
     cmd[#cmd + 1] = "--"
     vim.list_extend(cmd, pathspec)
   end
-  M.cmd(cmd, ctx, { ft = not terminal and "git" or nil })
+  M.cmd(cmd, ctx, { ft = not terminal and "diff" or nil })
 end
 
 ---@param ctx snacks.picker.preview.ctx
