@@ -25,8 +25,16 @@
 
 local uv = vim.uv or vim.loop
 
+local is_win = vim.fn.has("win32") == 1 or vim.fn.has("win64") == 1
+
 local function norm(path)
-  return svim.fs.normalize(path):gsub("/$", ""):gsub("^$", "/")
+  local normalized = vim.fs.normalize(path)
+  -- Preserve trailing slash for Windows drive roots (C:/, D:/, etc.)
+  -- On Windows, "C:" means current dir of the drive, "C:/" means the actual root.
+  if is_win and normalized:match("^[a-zA-Z]:/$") then
+    return normalized
+  end
+  return normalized:gsub("/$", ""):gsub("^$", "/")
 end
 
 local function assert_dir(path)
