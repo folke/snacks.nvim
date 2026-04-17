@@ -352,6 +352,20 @@ function M.scroll()
   })
 end
 
+function M.codelens()
+  return M.new({
+    id = "codelens",
+    name = "Codelens",
+    has = "codeLens",
+    get = function()
+      return vim.lsp.codelens.is_enabled()
+    end,
+    set = function(state)
+      vim.lsp.codelens.enable(state)
+    end,
+  })
+end
+
 function M.zen()
   return M.new({
     id = "zen",
