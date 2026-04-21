@@ -86,7 +86,7 @@ end
 ---@param type string
 function Tree:child(node, name, type)
   if not node.children[name] then
-    local path = node.path .. "/" .. name
+    local path = vim.fs.joinpath(node.path, name)
     path = node == self.root and name or path
     node.children[name] = {
       name = name,
@@ -149,7 +149,7 @@ function Tree:expand(node)
     if not name then
       break
     end
-    t = t or Snacks.util.path_type(node.path .. "/" .. name)
+    t = t or Snacks.util.path_type(vim.fs.joinpath(node.path, name))
     found[name] = true
     local child = self:child(node, name, t)
     child.type = t
