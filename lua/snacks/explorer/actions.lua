@@ -140,6 +140,25 @@ function M.actions.explorer_yank(picker)
   Snacks.notify.info("Yanked " .. #files .. " files")
 end
 
+function M.actions.explorer_yank_relative(picker)
+  local files = {} ---@type string[]
+  if vim.fn.mode():find("^[vV]") then
+    picker.list:select()
+  end
+  local cwd = picker:cwd()
+  for _, item in ipairs(picker:selected({ fallback = true })) do
+    local path = Snacks.picker.util.path(item)
+    if path and path:sub(1, #cwd + 1) == cwd .. "/" then
+      path = path:sub(#cwd + 2)
+    end
+    table.insert(files, path)
+  end
+  picker.list:set_selected() -- clear selection
+  local value = table.concat(files, "\n")
+  vim.fn.setreg(vim.v.register or "+", value, "l")
+  Snacks.notify.info("Yanked " .. #files .. " relative paths")
+end
+
 function M.actions.explorer_up(picker)
   picker:set_cwd(vim.fs.dirname(picker:cwd()))
   picker:find()
