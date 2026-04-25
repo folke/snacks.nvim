@@ -106,11 +106,14 @@ Snacks.keymap.del("n", "<leader>ca", { lsp = { method = "textDocument/codeAction
 
 ```lua
 ---@class snacks.Keymap
----@field mode string|string[] Mode "short-name" (see |nvim_set_keymap()|), or a list thereof.
----@field lhs string           Left-hand side |{lhs}| of the mapping.
----@field rhs string|function  Right-hand side |{rhs}| of the mapping, can be a Lua function.
+---@field id number           Unique ID for the keymap.
+---@field key string          Unique key for the keymap, in the format "mode:lhs".
+---@field mode string         Mode "short-name" (see |nvim_set_keymap()|), or a list thereof.
+---@field lhs string          Left-hand side |{lhs}| of the mapping.
+---@field rhs string|function Right-hand side |{rhs}| of the mapping, can be a Lua function.
+---@field lsp? vim.lsp.get_clients.Filter
 ---@field opts? snacks.keymap.set.Opts
----@field enabled fun(buf?:number): boolean
+---@field enabled fun(buf:number): boolean
 ```
 
 ## 📦 Module
