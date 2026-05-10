@@ -92,6 +92,13 @@ Snacks.toggle.diagnostics(opts)
 Snacks.toggle.dim()
 ```
 
+### `Snacks.toggle.document_color()`
+
+```lua
+---@param opts? snacks.toggle.Config
+Snacks.toggle.document_color(opts)
+```
+
 ### `Snacks.toggle.get()`
 
 ```lua
