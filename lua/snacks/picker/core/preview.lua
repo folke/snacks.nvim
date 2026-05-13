@@ -280,7 +280,6 @@ function M:scratch()
   vim.bo[buf].filetype = "snacks_picker_preview"
   vim.o.eventignore = ei
   self.win:set_buf(buf)
-  self.win:map()
   self:minimal()
   return buf
 end
