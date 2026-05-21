@@ -67,19 +67,28 @@ return {
 ## [nvim-tree](https://github.com/nvim-tree/nvim-tree.lua)
 
 ```lua
-local prev = { new_name = "", old_name = "" } -- Prevents duplicate events
-vim.api.nvim_create_autocmd("User", {
-  pattern = "NvimTreeSetup",
-  callback = function()
-    local events = require("nvim-tree.api").events
-    events.subscribe(events.Event.NodeRenamed, function(data)
-      if prev.new_name ~= data.new_name or prev.old_name ~= data.old_name then
-        data = data
-        Snacks.rename.on_rename_file(data.old_name, data.new_name)
-      end
-    end)
-  end,
-})
+{
+  "nvim-tree/nvim-tree.lua",
+  opts = {
+    on_attach = function(bufnr)
+      local api = require("nvim-tree.api")
+      api.map.on_attach.default(bufnr)
+
+      vim.keymap.set("n", "r", function()
+        local node = api.tree.get_node_under_cursor()
+        if not node or node.name == ".." then return end
+
+        local old_path = node.absolute_path
+        local old_name = vim.fs.basename(old_path)
+
+        vim.ui.input({ prompt = "Rename to: ", default = old_name }, function(input)
+          if not input or input == "" or input == old_name then return end
+          Snacks.rename.rename_file({ from = old_path, to = vim.fs.joinpath(vim.fs.dirname(old_path), input) })
+        end)
+      end, { buffer = bufnr })
+    end,
+  },
+}
 ```
 
 ## netrw (builtin file explorer)
