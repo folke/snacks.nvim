@@ -256,7 +256,7 @@ function M._detect(cb)
     -- Workaround: Query tmux directly for the terminal name instead of sending escape sequences.
     -- See: https://github.com/folke/snacks.nvim/issues/2332
     local ok, out = pcall(vim.fn.system, { "tmux", "show", "-g", "extended-keys" })
-    if ok and vim.trim(out):find(" on$") then
+    if ok and (vim.trim(out):find(" on$") or vim.trim(out):find(" always$")) then
       ok, out = pcall(vim.fn.system, { "tmux", "display-message", "-p", "#{client_termname}" })
       if ok then
         ret.terminal = vim.trim(out):gsub("^xterm%-", "")
