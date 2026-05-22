@@ -1,4 +1,5 @@
 *snacks-zen*                                     snacks zen docs
+                                        For Neovim    Last change: 2026 May 21
 
 ==============================================================================
 Table of Contents                          *snacks.nvim-zen-table-of-contents*

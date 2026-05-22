@@ -1,4 +1,5 @@
 *snacks-bufdelete*                         snacks bufdelete docs
+                                        For Neovim    Last change: 2026 May 21
 
 ==============================================================================
 Table of Contents                    *snacks.nvim-bufdelete-table-of-contents*
@@ -8,6 +9,7 @@ Table of Contents                    *snacks.nvim-bufdelete-table-of-contents*
   - Snacks.bufdelete()       |snacks.nvim-bufdelete-module-snacks.bufdelete()|
   - Snacks.bufdelete.all()|snacks.nvim-bufdelete-module-snacks.bufdelete.all()|
   - Snacks.bufdelete.delete()|snacks.nvim-bufdelete-module-snacks.bufdelete.delete()|
+  - Snacks.bufdelete.invisible()|snacks.nvim-bufdelete-module-snacks.bufdelete.invisible()|
   - Snacks.bufdelete.other()|snacks.nvim-bufdelete-module-snacks.bufdelete.other()|
 Delete buffers without disrupting window layout.
 
@@ -59,6 +61,16 @@ if it is a function
 >lua
     ---@param opts? number|snacks.bufdelete.Opts
     Snacks.bufdelete.delete(opts)
+<
+
+
+`Snacks.bufdelete.invisible()`                           *Snacks.bufdelete.invisible()*
+
+Delete all invisible buffers
+
+>lua
+    ---@param opts? snacks.bufdelete.Opts
+    Snacks.bufdelete.invisible(opts)
 <
 
 

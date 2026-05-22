@@ -1,4 +1,5 @@
 *snacks-bigfile*                             snacks bigfile docs
+                                        For Neovim    Last change: 2026 May 21
 
 ==============================================================================
 Table of Contents                      *snacks.nvim-bigfile-table-of-contents*

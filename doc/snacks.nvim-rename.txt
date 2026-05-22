@@ -1,4 +1,5 @@
 *snacks-rename*                               snacks rename docs
+                                        For Neovim    Last change: 2026 May 21
 
 ==============================================================================
 Table of Contents                       *snacks.nvim-rename-table-of-contents*

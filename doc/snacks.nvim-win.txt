@@ -1,4 +1,5 @@
 *snacks-win*                                     snacks win docs
+                                        For Neovim    Last change: 2026 May 21
 
 ==============================================================================
 Table of Contents                          *snacks.nvim-win-table-of-contents*

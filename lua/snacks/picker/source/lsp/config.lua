@@ -213,7 +213,7 @@ function M.preview(ctx)
   local function list(values)
     return table.concat(
       vim.tbl_map(function(v)
-        return "`" .. v .. "`"
+        return "`" .. vim.inspect(v) .. "`"
       end, values),
       ", "
     )
@@ -273,6 +273,33 @@ function M.preview(ctx)
       -- buffers
       lines[#lines + 1] = "- **buffers**: " .. list(vim.tbl_keys(client.attached_buffers))
 
+      local function format_cap(method, value)
+        if not value then
+          return
+        end
+        value = type(value) == "table" and value or {}
+        ---@cast value table
+        local details = {} ---@type string[]
+
+        local checks = {
+          ["workspace/executeCommand"] = "commands",
+          ["textDocument/codeAction"] = "codeActionKinds",
+        }
+        for m, k in pairs(checks) do
+          if method == m and type(value[k]) == "table" then
+            details = value[k] --[[@as string[] ]]
+            break
+          end
+        end
+
+        lines[#lines + 1] = ("  *  **%s**:%s"):format(method, #details > 0 and "" or " `true`")
+        if #details > 0 then
+          for _, detail in ipairs(details) do
+            lines[#lines + 1] = "    - `" .. detail .. "`"
+          end
+        end
+      end
+
       -- server capabilities
       local methods = vim.tbl_keys(vim.lsp.protocol._request_name_to_server_capability or {}) --[[@as string[] ]]
       table.sort(methods)
@@ -280,9 +307,8 @@ function M.preview(ctx)
         lines[#lines + 1] = "- **server capabilities**:"
         for _, method in ipairs(methods) do
           local cap = vim.lsp.protocol._request_name_to_server_capability[method]
-          if vim.tbl_get(client.server_capabilities, unpack(cap)) then
-            lines[#lines + 1] = ("  *  **%s**: `%s`"):format(method, true)
-          end
+          local value = vim.tbl_get(client.server_capabilities, unpack(cap))
+          format_cap(method, value)
         end
       end
 
@@ -291,9 +317,11 @@ function M.preview(ctx)
       table.sort(methods)
       if #methods > 0 then
         lines[#lines + 1] = "- **dynamic capabilities**:"
-        for _, method in ipairs(methods) do
-          if client.dynamic_capabilities.capabilities[method] then
-            lines[#lines + 1] = ("  *  **%s**: `%s`"):format(method, true)
+        for _, cap in ipairs(methods) do
+          local method = table.concat(vim.lsp.protocol._provider_to_client_registration[cap] or {}, "/")
+          local regs = client.dynamic_capabilities.capabilities[cap]
+          for _, reg in ipairs(regs or {}) do
+            format_cap(method, reg.registerOptions or {})
           end
         end
       end

@@ -1,4 +1,5 @@
 *snacks-terminal*                           snacks terminal docs
+                                        For Neovim    Last change: 2026 May 21
 
 ==============================================================================
 Table of Contents                     *snacks.nvim-terminal-table-of-contents*
@@ -13,6 +14,7 @@ Table of Contents                     *snacks.nvim-terminal-table-of-contents*
 6. Module                                        |snacks.nvim-terminal-module|
   - Snacks.terminal()          |snacks.nvim-terminal-module-snacks.terminal()|
   - Snacks.terminal.colorize()|snacks.nvim-terminal-module-snacks.terminal.colorize()|
+  - Snacks.terminal.focus()|snacks.nvim-terminal-module-snacks.terminal.focus()|
   - Snacks.terminal.get()  |snacks.nvim-terminal-module-snacks.terminal.get()|
   - Snacks.terminal.list()|snacks.nvim-terminal-module-snacks.terminal.list()|
   - Snacks.terminal.open()|snacks.nvim-terminal-module-snacks.terminal.open()|
@@ -189,6 +191,18 @@ Example:
 
 >lua
     Snacks.terminal.colorize()
+<
+
+
+`Snacks.terminal.focus()`                            *Snacks.terminal.focus()*
+
+Focus a terminal window. If already focused, hide it. The terminal id is based
+on the `cmd`, `cwd`, `env` and `vim.v.count1` options.
+
+>lua
+    ---@param cmd? string | string[]
+    ---@param opts? snacks.terminal.Opts
+    Snacks.terminal.focus(cmd, opts)
 <
 
 

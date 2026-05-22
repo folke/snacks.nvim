@@ -108,4 +108,14 @@ function M.other(opts)
   }))
 end
 
+--- Delete all invisible buffers
+---@param opts? snacks.bufdelete.Opts
+function M.invisible(opts)
+  return M.delete(vim.tbl_extend("force", {}, opts or {}, {
+    filter = function(b)
+      return vim.fn.bufwinnr(b) == -1
+    end,
+  }))
+end
+
 return M

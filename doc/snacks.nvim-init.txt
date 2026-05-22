@@ -1,4 +1,5 @@
 *snacks-init*                                   snacks init docs
+                                        For Neovim    Last change: 2026 May 21
 
 ==============================================================================
 Table of Contents                         *snacks.nvim-init-table-of-contents*

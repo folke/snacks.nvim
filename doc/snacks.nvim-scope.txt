@@ -1,4 +1,5 @@
 *snacks-scope*                                 snacks scope docs
+                                        For Neovim    Last change: 2026 May 21
 
 ==============================================================================
 Table of Contents                        *snacks.nvim-scope-table-of-contents*

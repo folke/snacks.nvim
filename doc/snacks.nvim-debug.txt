@@ -1,4 +1,5 @@
 *snacks-debug*                                 snacks debug docs
+                                        For Neovim    Last change: 2026 May 21
 
 ==============================================================================
 Table of Contents                        *snacks.nvim-debug-table-of-contents*
