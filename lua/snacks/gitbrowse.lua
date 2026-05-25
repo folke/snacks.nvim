@@ -122,7 +122,7 @@ local function system(cmd, err)
   local proc = vim.fn.system(cmd)
   if vim.v.shell_error ~= 0 then
     Snacks.notify.error({ err, proc }, { title = "Git Browse" })
-    error("__ignore__")
+    error("__ignore__", 0)
   end
   return vim.split(vim.trim(proc), "\n")
 end
