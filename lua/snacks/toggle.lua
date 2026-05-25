@@ -217,6 +217,20 @@ function M.inlay_hints(opts)
 end
 
 ---@param opts? snacks.toggle.Config
+function M.document_color(opts)
+  return M.new({
+    id = "document_color",
+    name = "Document Color",
+    get = function()
+      return vim.lsp.document_color.is_enabled({ bufnr = 0 })
+    end,
+    set = function(state)
+      vim.lsp.document_color.enable(state, { bufnr = 0 })
+    end,
+  }, opts)
+end
+
+---@param opts? snacks.toggle.Config
 function M.diagnostics(opts)
   return M.new({
     id = "diagnostics",
