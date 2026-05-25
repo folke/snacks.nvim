@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.32.0](https://github.com/folke/snacks.nvim/compare/v2.31.0...v2.32.0) (2026-05-25)
+
+
+### Features
+
+* **bufdelete:** added Snacks.bufdelete.invisible() ([54c6ed4](https://github.com/folke/snacks.nvim/commit/54c6ed4d94a8d8834bd3c92c42085cbb2ecf8d80))
+* **terminal:** add `focus()` method for smarter terminal toggling ([12128b9](https://github.com/folke/snacks.nvim/commit/12128b9b073b665c63fbb54860ccbc06efe50a35))
+
+
+### Bug Fixes
+
+* **bufdelete:** ignore DiagnosticChanged when deleting a buffer. Fixes major flickering when closing (multiple) buffers ([ddd4e76](https://github.com/folke/snacks.nvim/commit/ddd4e76a206c32357af44abb4a60ca98b07c153d))
+* **keymap:** LSP keymaps now respect registration order for same mode:lhs ([809f979](https://github.com/folke/snacks.nvim/commit/809f9797918ab84ba24b6432747f496a500e5468))
+
 ## [2.31.0](https://github.com/folke/snacks.nvim/compare/v2.30.0...v2.31.0) (2026-03-20)
 
 
