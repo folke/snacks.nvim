@@ -85,13 +85,13 @@ function M.trace(opts, caller, ...)
   ---@type snacks.profiler.Event
   local entry = { id = M.id, start = start, pid = pid, ref = caller, opts = opts }
   M.events[#M.events + 1] = entry
-  local ret = { pcall(opts.fn, ...) }
+  local ret = vim.F.pack_len(pcall(opts.fn, ...))
   M.pids[thread] = pid
   entry.stop = hrtime()
   if not ret[1] then
     error(ret[2])
   end
-  return select(2, unpack(ret))
+  return unpack(ret, 2, ret.n)
 end
 
 ---@param depth? number
@@ -152,18 +152,16 @@ function M.require(modname)
   if not M.running or package.loaded[modname] or M.skips[modname] then
     return M._require(modname)
   end
-  local ret = {
-    M.trace({
-      fname = "require",
-      name = "require:" .. modname,
-      require = modname,
-      fn = M._require,
-    }, M.caller(), modname),
-  }
+  local ret = vim.F.pack_len(M.trace({
+    fname = "require",
+    name = "require:" .. modname,
+    require = modname,
+    fn = M._require,
+  }, M.caller(), modname))
   if type(ret[1]) == "table" then
     M.attach_mod(modname, ret[1])
   end
-  return unpack(ret)
+  return vim.F.unpack_len(ret)
 end
 
 ---@param event any (string|array) Event(s) that will trigger the handler (`callback` or `command`).
