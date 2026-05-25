@@ -88,9 +88,10 @@ function M.watch()
   for cwd in pairs(cwds) do
     -- Watch git index
     local root = Snacks.git.get_root(cwd)
-    if root then
-      used[root .. "/.git"] = true
-      M.start(root .. "/.git", function(file)
+    local git_dir = Snacks.git.get_dir(cwd)
+    if root and git_dir then
+      used[git_dir] = true
+      M.start(git_dir, function(file)
         if vim.fs.basename(file) == "index" then
           Git.refresh(root)
           M.refresh()

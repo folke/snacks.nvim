@@ -9,13 +9,16 @@ local uv = vim.uv or vim.loop
 
 local CACHE_TTL = 15 * 60 -- 15 minutes
 
-M.state = {} ---@type table<string, {tick: number, last: number}>
+M.state = {} ---@type table<string, {tick: number, last: number, running?: boolean, pending?: boolean}>
 
 ---@param path string
 function M.refresh(path)
   for root in pairs(M.state) do
     if path == root or path:find(root .. "/", 1, true) == 1 then
       M.state[root].last = 0
+      if M.state[root].running then
+        M.state[root].pending = true
+      end
     end
   end
 end
@@ -45,12 +48,30 @@ function M.update(cwd, opts)
   local now = os.time()
   M.state[root] = M.state[root] or { tick = 0, last = 0 }
   local state = M.state[root]
+  if state.running then
+    state.pending = true
+    return
+  end
   if now - state.last < ttl then
     return
   end
   state.last = now
   state.tick = state.tick + 1
   local tick = state.tick
+  state.running = true
+
+  local status_args = {
+    "--no-pager",
+    "--no-optional-locks",
+    "status",
+    "--porcelain=v1",
+    "--ignored=matching",
+    "-z",
+    opts.untracked and "-unormal" or "-uno",
+  }
+  if cwd ~= root and cwd:find(root .. "/", 1, true) == 1 then
+    vim.list_extend(status_args, { "--", cwd:sub(#root + 2) })
+  end
 
   local output = ""
   local stdout = assert(uv.new_pipe())
@@ -59,20 +80,24 @@ function M.update(cwd, opts)
     stdio = { nil, stdout, nil },
     cwd = root,
     hide = true,
-    args = {
-      "--no-pager",
-      "--no-optional-locks",
-      "status",
-      "--porcelain=v1",
-      "--ignored=matching",
-      "-z",
-      opts.untracked and "-unormal" or "-uno",
-    },
+    args = status_args,
   }, function()
+    local s = M.state[root]
+    if s and s.tick == tick then
+      s.running = false
+      if s.pending then
+        s.pending = false
+        s.last = 0
+        vim.schedule(function()
+          M.update(cwd, opts)
+        end)
+      end
+    end
     handle:close()
   end)
 
   if not handle then
+    state.running = false
     return M._update(cwd, {})
   end
 
