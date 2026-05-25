@@ -71,6 +71,7 @@ function M.projects(opts, ctx)
     "d",
     "--max-depth",
     tostring(opts.max_depth or 2),
+    "--no-ignore",
     "--follow",
     "--absolute-path",
   }
