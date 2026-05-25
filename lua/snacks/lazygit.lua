@@ -10,6 +10,37 @@ M.meta = {
   desc = "Open LazyGit in a float, auto-configure colorscheme and integration with Neovim",
 }
 
+---Handles the backend of closing lazygit and opening nvim to a particular file and line
+---@param path string
+---@param line integer?
+function M.handle_remote(path, line)
+  local prev = vim.fn.bufnr("#")
+  local prev_win = vim.fn.bufwinid(prev)
+  vim.api.nvim_feedkeys("q", "n", false)
+  if line then
+    vim.api.nvim_buf_call(prev, function()
+      vim.cmd.edit(path)
+      local buf = vim.api.nvim_get_current_buf()
+      vim.schedule(function()
+        if buf then
+          vim.api.nvim_win_set_buf(prev_win, buf)
+          vim.api.nvim_win_set_cursor(0, { line or 0, 0})
+        end
+      end)
+    end)
+  else
+    vim.api.nvim_buf_call(prev, function()
+      vim.cmd.edit(path)
+      local buf = vim.api.nvim_get_current_buf()
+      vim.schedule(function()
+        if buf then
+          vim.api.nvim_win_set_buf(prev_win, buf)
+        end
+      end)
+    end)
+  end
+end
+
 ---@alias snacks.lazygit.Color {fg?:string, bg?:string, bold?:boolean}
 
 ---@class snacks.lazygit.Theme: table<number, snacks.lazygit.Color>
@@ -34,7 +65,13 @@ local defaults = {
   -- snacks does NOT have a full yaml parser, so if you need `"test"` to appear with the quotes
   -- you need to double quote it: `"\"test\""`
   config = {
-    os = { editPreset = "nvim-remote" },
+    os = {
+      -- This prevents nvim from opening over itself and requiring closing twice in scenarios where nvim command launches something other than the current neovim program
+      editPreset = "nvim-remote",
+      edit = vim.v.progpath .. [[ --server "$NVIM" --remote-send '<cmd>lua require("snacks").lazygit.handle_remote({{filename}})<CR>']],
+      editAtLine = vim.v.progpath .. [[ --server "$NVIM" --remote-send '<cmd>lua require("snacks").lazygit.handle_remote({{filename}}, {{line}})<CR>']],
+      openDirInEditor = vim.v.progpath .. [[ --server "$NVIM" --remote-send '<cmd>lua require("snacks").lazygit.handle_remote({{dir}})<CR>']],
+    },
     gui = {
       -- set to an empty string "" to disable icons
       nerdFontsVersion = "3",
