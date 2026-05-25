@@ -5,6 +5,7 @@ local M = {}
 
 ---@class snacks.picker.ui_select.Opts: vim.ui.select.Opts
 ---@field format_item? fun(item: any, supports_chunks: boolean):(string|snacks.picker.Highlight[])
+---@field preview_item? fun(item: any): { buf?: number, pos?: { [1]: integer, [2]: integer } }?
 ---@field snacks? snacks.picker.Config
 
 ---@generic T
@@ -46,8 +47,27 @@ function M.select(items, opts, on_choice)
             box.height = math.max(math.min(#items, vim.o.lines * 0.8 - 10), 2)
           end
         end
+        if opts.preview_item and layout.hidden then
+          layout.hidden = vim.tbl_filter(function(w)
+            return w ~= "preview"
+          end, layout.hidden)
+        end
       end,
     },
+    preview = opts.preview_item and function(ctx)
+      local ok, data = pcall(opts.preview_item, ctx.item.item)
+      if not ok or type(data) ~= "table" or type(data.buf) ~= "number" or not vim.api.nvim_buf_is_valid(data.buf) then
+        ctx.preview:reset()
+        ctx.preview:notify("no preview available", "warn")
+        return
+      end
+      ctx.preview:set_title(vim.api.nvim_buf_get_name(data.buf) ~= "" and vim.fn.fnamemodify(vim.api.nvim_buf_get_name(data.buf), ":t") or "")
+      ctx.preview:set_buf(data.buf)
+      local pos = data.pos or { 1, 0 }
+      local line_count = vim.api.nvim_buf_line_count(data.buf)
+      pos = { math.min(math.max(pos[1] or 1, 1), math.max(line_count, 1)), math.max(pos[2] or 0, 0) }
+      pcall(vim.api.nvim_win_set_cursor, ctx.preview.win.win, pos)
+    end or nil,
     actions = {
       confirm = function(picker, item)
         if completed then
