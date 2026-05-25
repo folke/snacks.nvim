@@ -385,8 +385,7 @@ end
 
 ---@param opts snacks.scope.Opts
 function TSScope:parser(opts)
-  local lang = vim.bo[opts.buf].filetype
-  local has_parser, parser = pcall(vim.treesitter.get_parser, opts.buf, lang, { error = false })
+  local has_parser, parser = pcall(vim.treesitter.get_parser, opts.buf, nil, { error = false })
   return has_parser and parser or nil
 end
 
