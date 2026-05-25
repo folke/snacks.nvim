@@ -120,6 +120,7 @@ function M._update(cwd, results)
   Tree:walk(node, function(n)
     n.status = nil
     n.ignored = nil
+    n.dir_status = nil
   end, { all = true })
 
   ---@param path string
