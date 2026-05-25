@@ -95,7 +95,7 @@ function M.file(ctx)
       vim.b[ctx.item.buf].snacks_picker_loaded = true
       vim.fn.bufload(ctx.item.buf)
     end
-  elseif ctx.item.file and ctx.item.file:find("^%w+://") then
+  elseif ctx.item.file and ctx.item.file:find("^[%w-]+://") then
     ctx.item.buf = vim.fn.bufadd(ctx.item.file)
     vim.b[ctx.item.buf].snacks_picker_loaded = true
     vim.fn.bufload(ctx.item.buf)
