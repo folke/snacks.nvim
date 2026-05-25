@@ -196,7 +196,7 @@ local transparent ---@type boolean?
 --- Check if the colorscheme is transparent.
 function M.is_transparent()
   if transparent == nil then
-    transparent = M.color("Normal", "bg") == nil
+    transparent = M.color("Normal", "bg") == nil and not M.is_multigrid_ui()
     vim.api.nvim_create_autocmd("ColorScheme", {
       group = vim.api.nvim_create_augroup("snacks_util_transparent", { clear = true }),
       callback = function()
@@ -205,6 +205,16 @@ function M.is_transparent()
     })
   end
   return transparent
+end
+
+--- Check if the ext_multigrid feature is enabled, better UI for neovide.
+function M.is_multigrid_ui()
+  for _, ui in ipairs(vim.api.nvim_list_uis()) do
+    if ui.ext_multigrid then
+      return true
+    end
+  end
+  return false
 end
 
 --- Redraw the range of lines in the window.
