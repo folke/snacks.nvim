@@ -88,6 +88,7 @@ M.explorer = {
         ["o"] = "explorer_open", -- open with system application
         ["P"] = "toggle_preview",
         ["y"] = { "explorer_yank", mode = { "n", "x" } },
+        ["Y"] = { "explorer_yank_relative", mode = { "n", "x" } },
         ["p"] = "explorer_paste",
         ["u"] = "explorer_update",
         ["<c-c>"] = "tcd",
