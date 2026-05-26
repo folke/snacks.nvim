@@ -200,7 +200,7 @@ function M:row2idx(row)
   if not self.reverse then
     return ret
   end
-  return self.state.height - ret + 1
+  return self.top + self.state.height - row
 end
 
 function M:on_show()
