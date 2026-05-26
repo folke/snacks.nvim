@@ -112,6 +112,7 @@ local M = {}
 ---@field on_close? fun(picker:snacks.Picker) called when the picker is closed
 ---@field jump? snacks.picker.jump.Config|{}
 --- Other
+---@field abort? boolean when set by a config function, the picker will not be opened
 ---@field config? fun(opts:snacks.picker.Config):snacks.picker.Config? custom config function
 ---@field db? snacks.picker.db.Config|{}
 ---@field debug? snacks.picker.debug|{}

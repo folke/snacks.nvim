@@ -77,7 +77,7 @@ end
 
 ---@hide
 ---@param opts? snacks.picker.Config
----@return snacks.Picker
+---@return snacks.Picker?
 function M.new(opts)
   ---@type snacks.Picker
   local self = setmetatable({}, M)
@@ -85,6 +85,11 @@ function M.new(opts)
   self.id = _id
   self.init_opts = opts
   self.opts = Snacks.picker.config.get(opts)
+
+  -- Allow config functions to abort picker creation
+  if self.opts.abort then
+    return nil
+  end
 
   self.history = require("snacks.picker.util.history").new("picker_" .. (self.opts.source or "custom"), {
     ---@param hist snacks.picker.history.Record

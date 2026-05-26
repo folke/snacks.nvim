@@ -20,6 +20,7 @@ A modern GitHub CLI integration for Neovim that brings GitHub issues and pull re
 - 🔗 Open issues/PRs in your web browser
 - 📎 Yank URLs to clipboard
 - 🌲 Built on top of the powerful [Snacks picker](https://github.com/folke/snacks.nvim/blob/main/docs/picker.md)
+- 🌐 **Browse any repository** - when not in a git repo, you'll be prompted to enter a repository (e.g., `folke/snacks.nvim`)
 
 ## ⚡️ Requirements
 
@@ -74,12 +75,20 @@ Snacks.picker.gh_pr()
 -- Browse all pull requests
 Snacks.picker.gh_pr({ state = "all" })
 
+-- Browse issues/PRs for a specific repository (works from anywhere)
+Snacks.picker.gh_issue({ repo = "folke/snacks.nvim" })
+Snacks.picker.gh_pr({ repo = "neovim/neovim" })
+
 -- View PR diff
 Snacks.picker.gh_diff({ pr = 123 })
 
 -- Open issue/PR in buffer
 Snacks.gh.open({ type = "issue", number = 123, repo = "owner/repo" })
 ```
+
+> **Note**: When running outside a git repository, you'll be prompted to enter a repository
+> in `owner/repo` format (e.g., `folke/snacks.nvim`). You can also skip the prompt by
+> passing the `repo` option directly.
 
 ### Available Actions
 
