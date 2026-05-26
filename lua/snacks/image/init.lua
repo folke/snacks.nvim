@@ -40,6 +40,7 @@ M.meta = {
 
 ---@class snacks.image.Config
 ---@field enabled? boolean enable image viewer
+---@field disable_auto_attach? boolean disable autocommands when opening an image file
 ---@field wo? vim.wo|{} options for windows showing the image
 ---@field bo? vim.bo|{} options for the image buffer
 ---@field formats? string[]
@@ -49,6 +50,7 @@ M.meta = {
 ---@field resolve? fun(file: string, src: string): string?
 ---@field convert? snacks.image.convert.Config
 local defaults = {
+  disable_auto_attach = false,
   formats = {
     "png",
     "jpg",
@@ -259,13 +261,15 @@ function M.setup(ev)
   })
 
   if M.config.formats and #M.config.formats > 0 then
-    vim.api.nvim_create_autocmd("BufReadCmd", {
-      pattern = "*." .. table.concat(M.config.formats, ",*."),
-      group = group,
-      callback = function(e)
-        M.buf.attach(e.buf)
-      end,
-    })
+    if not M.config.disable_auto_attach then
+      vim.api.nvim_create_autocmd("BufReadCmd", {
+        pattern = "*." .. table.concat(M.config.formats, ",*."),
+        group = group,
+        callback = function(e)
+          M.buf.attach(e.buf)
+        end,
+      })
+    end
     -- prevent altering the original image file
     vim.api.nvim_create_autocmd("BufWriteCmd", {
       pattern = "*." .. table.concat(M.config.formats, ",*."),

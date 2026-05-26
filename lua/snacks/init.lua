@@ -192,7 +192,7 @@ function M.setup(opts)
     end,
   })
 
-  if M.config.image.enabled and #M.config.image.formats > 0 then
+  if M.config.image.enabled and #M.config.image.formats > 0 and not M.config.image.disable_auto_attach then
     vim.api.nvim_create_autocmd("BufReadCmd", {
       once = true,
       pattern = "*." .. table.concat(M.config.image.formats, ",*."),
