@@ -21,6 +21,7 @@ M.meta = {
 ---@class snacks.layout.Box: snacks.layout.Win,{}
 ---@field box "horizontal" | "vertical"
 ---@field id? number
+---@field root_ft? string
 ---@field [number] snacks.layout.Win | snacks.layout.Box children
 
 ---@alias snacks.layout.Widget snacks.layout.Win | snacks.layout.Box
@@ -50,12 +51,13 @@ function M.new(opts)
   self.wins = self.opts.wins or {}
   self.box_wins = {}
   self.opts.layout.zindex = Snacks.win.zindex(self.opts.layout.zindex) + 2
+  local inner
 
   -- wrap the split layout in a vertical box
   -- this is needed since a simple split window can't have borders/titles
   if self.opts.layout.position and self.opts.layout.position ~= "float" then
     self.split = true
-    local inner = self.opts.layout
+    inner = self.opts.layout
     self.opts.layout = {
       zindex = 30,
       box = "vertical",
@@ -91,7 +93,10 @@ function M.new(opts)
           noautocmd = true,
           backdrop = backdrop,
           zindex = (self.opts.layout.zindex or 50) + box.depth,
-          bo = { filetype = "snacks_layout_box", buftype = "nofile" },
+          bo = {
+            filetype = inner and inner.root_ft or self.opts.layout.root_ft or "snacks_layout_box",
+            buftype = "nofile",
+          },
           w = { snacks_layout = true },
           border = box.border,
         }))

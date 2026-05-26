@@ -62,7 +62,7 @@ M.explorer = {
   focus = "list",
   auto_close = false,
   jump = { close = false },
-  layout = { preset = "sidebar", preview = false },
+  layout = { preset = "explorer", preview = false },
   -- to show the explorer to the right, add the below to
   -- your config under `opts.picker.sources.explorer`
   -- layout = { layout = { position = "right" } },
