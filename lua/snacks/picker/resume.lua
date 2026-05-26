@@ -58,6 +58,9 @@ function M.resume(opts)
 
   for _, source in ipairs(sources) do
     if M.state[source] and not vim.tbl_contains(opts.exclude or {}, source) then
+      if opts.focus then
+        M.state[source].opts.focus = opts.focus
+      end
       states[#states + 1] = M.state[source]
     end
   end

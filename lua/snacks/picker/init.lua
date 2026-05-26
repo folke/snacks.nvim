@@ -53,6 +53,7 @@ M.meta = {
 ---@field source? string
 ---@field include? string[]
 ---@field exclude? string[]
+---@field focus? "input"|"list"
 
 -- create actual picker functions for autocomplete
 vim.defer_fn(function()
