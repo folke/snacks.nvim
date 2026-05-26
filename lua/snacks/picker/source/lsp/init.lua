@@ -68,6 +68,7 @@ end
 ---@param client vim.lsp.Client
 function M.add_loc(item, result, client)
   ---@type snacks.picker.lsp.Loc
+  local bufmap = M.bufmap()
   local loc = {
     uri = result.uri or result.targetUri,
     range = result.range or result.targetSelectionRange,
@@ -77,6 +78,7 @@ function M.add_loc(item, result, client)
   item.pos = { loc.range.start.line + 1, loc.range.start.character }
   item.end_pos = { loc.range["end"].line + 1, loc.range["end"].character }
   item.file = vim.uri_to_fname(loc.uri)
+  item.buf = bufmap[item.file]
   return item
 end
 
@@ -113,18 +115,18 @@ function R.new()
   R._id = R._id + 1
 
   self.async
-    :on(
-      "abort",
-      vim.schedule_wrap(function()
-        self:cancel()
-      end)
-    )
-    :on(
-      "done",
-      vim.schedule_wrap(function()
-        pcall(vim.api.nvim_del_autocmd, self.autocmd_id)
-      end)
-    )
+      :on(
+        "abort",
+        vim.schedule_wrap(function()
+          self:cancel()
+        end)
+      )
+      :on(
+        "done",
+        vim.schedule_wrap(function()
+          pcall(vim.api.nvim_del_autocmd, self.autocmd_id)
+        end)
+      )
   return self
 end
 
@@ -337,7 +339,7 @@ function M.get_locations(method, opts, filter)
   end
 end
 
----@alias lsp.ResultItem lsp.Symbol|lsp.CallHierarchyItem|{text?:string}
+---@alias lsp.ResultItem lsp.Symbol|lsp.CallHierarchyItem|lsp.TypeHierarchyItem|{text?:string}
 ---@param client vim.lsp.Client
 ---@param results lsp.ResultItem[]
 ---@param opts? {default_uri?:string, filter?:(fun(result:lsp.ResultItem):boolean), text_with_file?:boolean}
@@ -354,7 +356,7 @@ function M.results_to_items(client, results, opts)
       kind = M.symbol_kind(result.kind),
       parent = parent,
       detail = result.detail,
-      name = result.name,
+      name = result.detail or result.name,
       text = "",
       range = result.range or result.selectionRange,
       item = result,
@@ -441,7 +443,7 @@ function M.symbols(opts, ctx)
 
   local method = opts.workspace and "workspace/symbol" or "textDocument/documentSymbol"
   local p = opts.workspace and { query = ctx.filter.search }
-    or { textDocument = vim.lsp.util.make_text_document_params(buf) }
+      or { textDocument = vim.lsp.util.make_text_document_params(buf) }
 
   ---@async
   ---@param cb async fun(item: snacks.picker.finder.Item)
@@ -493,45 +495,57 @@ end
 
 ---@param opts snacks.picker.lsp.Config
 ---@param filter snacks.picker.Filter
----@param incoming? boolean
-function M.call_hierarchy(opts, filter, incoming)
-  local method = ("callHierarchy/%sCalls"):format(incoming and "incoming" or "outgoing")
+--- @param method vim.lsp.buf.HierarchyMethod
+function M._hierarchy(opts, filter, method)
   local buf = filter.current_buf
   local win = filter.current_win
+
+  --- @type table<vim.lsp.buf.HierarchyMethod, 'type' | 'call'>
+  local hierarchy_methods = {
+    ['typeHierarchy/subtypes'] = 'type',
+    ['typeHierarchy/supertypes'] = 'type',
+    ['callHierarchy/incomingCalls'] = 'call',
+    ['callHierarchy/outgoingCalls'] = 'call',
+  }
+  local kind = hierarchy_methods[method]
+  local prepare_method = kind == 'type' and 'textDocument/prepareTypeHierarchy'
+      or 'textDocument/prepareCallHierarchy'
 
   ---@async
   ---@param cb async fun(item: snacks.picker.finder.Item)
   return function(cb)
     local requester = R.new()
-    requester:request(buf, "textDocument/prepareCallHierarchy", function(client)
-      return vim.lsp.util.make_position_params(win, client.offset_encoding)
-    end, function(client, result)
-      ---@cast result lsp.CallHierarchyItem[]
-      for _, res in ipairs(result or {}) do
-        requester:request(client, method, function()
-          return { item = res }
-        end, function(_, calls)
-          ---@cast calls (lsp.CallHierarchyIncomingCall|lsp.CallHierarchyOutgoingCall)[]
-
-          local call_items = {} ---@type lsp.CallHierarchyItem[]
-          ---@param call lsp.CallHierarchyIncomingCall|lsp.CallHierarchyOutgoingCall
-          for _, call in ipairs(calls) do
-            if incoming then
-              for _, range in ipairs(call.fromRanges or {}) do
-                local from = vim.deepcopy(call.from)
-                from.selectionRange = range or from.selectionRange
-                table.insert(call_items, from)
+    requester:request(buf,
+      prepare_method,
+      function(client) return vim.lsp.util.make_position_params(win, client.offset_encoding) end,
+      function(client, result)
+        ---@cast result lsp.CallHierarchyItem[] | lsp.TypeHierarchyItem[]
+        for _, res in ipairs(result or {}) do
+          requester:request(client,
+            method,
+            function() return { item = res } end,
+            function(_, items)
+              ---@cast items (lsp.CallHierarchyIncomingCall[]|lsp.CallHierarchyOutgoingCall[]|lsp.TypeHierarchyItem[])
+              local _items = {} ---@type lsp.TypeHierarchyItem[]
+              if kind == 'type' then
+                _items = items
+              elseif method == 'callHierarchy/incomingCalls' then
+                for _, item in ipairs(items) do
+                  for _, range in ipairs(item.fromRanges or {}) do
+                    local from = vim.deepcopy(item.from)
+                    from.selectionRange = range or from.selectionRange
+                    table.insert(_items, from)
+                  end
+                end
+              else
+                for _, item in ipairs(items) do
+                  table.insert(_items, item.to)
+                end
               end
-            else
-              table.insert(call_items, call.to)
-            end
-          end
-
-          local items = M.results_to_items(client, call_items, { default_uri = res.uri })
-          vim.tbl_map(cb, items)
-        end)
-      end
-    end)
+              vim.tbl_map(cb, M.results_to_items(client, _items, { default_uri = res.uri }))
+            end)
+        end
+      end)
     requester:wait()
   end
 end
@@ -551,14 +565,26 @@ end
 
 ---@param opts snacks.picker.lsp.Config
 ---@type snacks.picker.finder
+function M.subtypes(opts, ctx)
+  return M._hierarchy(opts, ctx.filter, "typeHierarchy/subtypes")
+end
+
+---@param opts snacks.picker.lsp.Config
+---@type snacks.picker.finder
+function M.supertypes(opts, ctx)
+  return M._hierarchy(opts, ctx.filter, "typeHierarchy/supertypes")
+end
+
+---@param opts snacks.picker.lsp.Config
+---@type snacks.picker.finder
 function M.incoming_calls(opts, ctx)
-  return M.call_hierarchy(opts, ctx.filter, true)
+  return M._hierarchy(opts, ctx.filter, "callHierarchy/incomingCalls")
 end
 
 ---@param opts snacks.picker.lsp.Config
 ---@type snacks.picker.finder
 function M.outgoing_calls(opts, ctx)
-  return M.call_hierarchy(opts, ctx.filter, false)
+  return M._hierarchy(opts, ctx.filter, "callHierarchy/outgoingCalls")
 end
 
 ---@param opts snacks.picker.lsp.Config

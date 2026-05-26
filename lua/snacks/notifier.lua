@@ -79,6 +79,7 @@ local history_opts = {
 }
 
 Snacks.config.style("notification", {
+  focusable = false,
   border = true,
   zindex = 100,
   ft = "markdown",

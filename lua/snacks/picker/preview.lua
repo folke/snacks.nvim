@@ -145,36 +145,16 @@ function M.file(ctx)
         return false
       end
 
-      local file = assert(io.open(path, "r"))
-
-      local is_binary = false
-      local ft = ctx.picker.opts.previewers.file.ft or vim.filetype.match({ filename = path })
-      if ft == "bigfile" then
-        ft = nil
-      end
-      local lines = {}
-      for line in file:lines() do
-        ---@cast line string
-        if #line > ctx.picker.opts.previewers.file.max_line_length then
-          line = line:sub(1, ctx.picker.opts.previewers.file.max_line_length) .. "..."
-        end
-        -- Check for binary data in the current line
-        if line:find("[%z\1-\8\11\12\14-\31]") then
-          is_binary = true
-          if not ft then
-            ctx.preview:notify("binary file", "warn")
-            return
-          end
-        end
-        table.insert(lines, line)
-      end
-
-      file:close()
+      local fd = assert(io.popen("file -b --mime-encoding " .. path, "r"))
+      local is_binary = "binary" == fd:read("*l")
+      fd:close()
 
       if is_binary then
-        ctx.preview:wo({ number = false, relativenumber = false, cursorline = false, signcolumn = "no" })
+        ctx.preview:notify("binary file", "warn")
+        return
       end
-      ctx.preview:set_lines(lines)
+
+      ctx.preview:set_lines_from_file(path)
       ctx.preview:highlight({ file = path, ft = ctx.picker.opts.previewers.file.ft, buf = ctx.buf })
     end
   end
@@ -313,9 +293,9 @@ end
 function M.git_diff(ctx)
   local cmd, terminal = git(ctx, "diff")
   if not ctx.item.status then
-    cmd[#cmd + 1] = "HEAD" -- generic diff against HEAD
+    cmd[#cmd + 1] = "HEAD"     -- generic diff against HEAD
   elseif ctx.item.status:find("[UAD][UAD]") then
-    cmd[#cmd + 1] = "--cc" -- combined diff for conflicts
+    cmd[#cmd + 1] = "--cc"     -- combined diff for conflicts
   elseif ctx.item.status:sub(1, 1) ~= " " then
     cmd[#cmd + 1] = "--cached" -- staged changes
   end

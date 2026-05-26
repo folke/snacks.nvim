@@ -693,6 +693,28 @@ M.lsp_implementations = {
   jump = { tagstack = true, reuse_win = true },
 }
 
+--- LSP typehierarchy("subtypes")
+---@type snacks.picker.lsp.Config
+M.lsp_subtypes = {
+  finder = "lsp_subtypes",
+  format = "lsp_symbol",
+  include_current = false,
+  workspace = true, -- this ensures the file is included in the formatter
+  auto_confirm = true,
+  jump = { tagstack = true, reuse_win = true },
+}
+
+--- LSP typehierarchy("supertypes")
+---@type snacks.picker.lsp.Config
+M.lsp_supertypes = {
+  finder = "lsp_supertypes",
+  format = "lsp_symbol",
+  include_current = false,
+  workspace = true, -- this ensures the file is included in the formatter
+  auto_confirm = true,
+  jump = { tagstack = true, reuse_win = true },
+}
+
 -- LSP incoming calls
 ---@type snacks.picker.lsp.Config
 M.lsp_incoming_calls = {
@@ -893,7 +915,7 @@ M.projects = {
   patterns = { ".git", "_darcs", ".hg", ".bzr", ".svn", "package.json", "Makefile" },
   recent = true,
   matcher = {
-    frecency = true, -- use frecency boosting
+    frecency = true,   -- use frecency boosting
     sort_empty = true, -- sort even when the filter is empty
     cwd_bonus = false,
   },
@@ -999,10 +1021,10 @@ M.select = {
 ---@field filter? snacks.picker.filter.Config
 M.smart = {
   multi = { "buffers", "recent", "files" },
-  format = "file", -- use `file` format for all sources
+  format = "file",     -- use `file` format for all sources
   matcher = {
-    cwd_bonus = true, -- boost cwd matches
-    frecency = true, -- use frecency boosting
+    cwd_bonus = true,  -- boost cwd matches
+    frecency = true,   -- use frecency boosting
     sort_empty = true, -- sort even when the filter is empty
   },
   transform = "unique_file",
