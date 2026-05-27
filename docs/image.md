@@ -155,7 +155,13 @@ In case of issues, make sure to run `:checkhealth snacks`.
     magick = {
       default = { "{src}[0]", "-scale", "1920x1080>" }, -- default for raster images
       vector = { "-density", 192, "{src}[{page}]" }, -- used by vector images like svg
-      math = { "-density", 192, "{src}[{page}]", "-trim" },
+      -- Use fixed background colors (#ffffff for light, #000000 for dark) to improve
+      -- anti-aliasing quality while maintaining cache reusability across different themes.
+      -- The background is later made transparent via ImageMagick's -transparent option.
+      math = function()
+        local bgcolor = vim.o.background == "light" and "#ffffff" or "#000000"
+        return { "-density", 192, "-background", bgcolor, "{src}[{page}]", "-flatten", "-fuzz", "2%", "-transparent", bgcolor, "-trim" }
+      end,
       pdf = { "-density", 192, "{src}[{page}]", "-background", "white", "-alpha", "remove", "-trim" },
     },
   },
