@@ -530,11 +530,25 @@ Snacks.picker.pick({source = "files", ...})
     -- git
     { "<leader>gb", function() Snacks.picker.git_branches() end, desc = "Git Branches" },
     { "<leader>gl", function() Snacks.picker.git_log() end, desc = "Git Log" },
-    { "<leader>gL", function() Snacks.picker.git_log_line() end, desc = "Git Log Line" },
+    { "<leader>gL", function()
+      local file = vim.fn.expand("%:p")
+      if file ~= "" and vim.fn.filereadable(file) == 1 then
+        Snacks.picker.git_log_line()
+      else
+        vim.notify("Not in a file buffer", vim.log.levels.WARN)
+      end
+    end, desc = "Git Log Line" },
     { "<leader>gs", function() Snacks.picker.git_status() end, desc = "Git Status" },
     { "<leader>gS", function() Snacks.picker.git_stash() end, desc = "Git Stash" },
     { "<leader>gd", function() Snacks.picker.git_diff() end, desc = "Git Diff (Hunks)" },
-    { "<leader>gf", function() Snacks.picker.git_log_file() end, desc = "Git Log File" },
+    { "<leader>gf", function()
+      local file = vim.fn.expand("%:p")
+      if file ~= "" and vim.fn.filereadable(file) == 1 then
+        Snacks.picker.git_log_file()
+      else
+        vim.notify("Not in a file buffer", vim.log.levels.WARN)
+      end
+    end, desc = "Git Log File" },
     -- gh
     { "<leader>gi", function() Snacks.picker.gh_issue() end, desc = "GitHub Issues (open)" },
     { "<leader>gI", function() Snacks.picker.gh_issue({ state = "all" }) end, desc = "GitHub Issues (all)" },
