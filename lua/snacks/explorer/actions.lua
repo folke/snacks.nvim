@@ -197,14 +197,14 @@ function M.actions.explorer_git_prev(picker, item)
   end
 end
 
-function M.actions.explorer_add(picker)
+local function explorer_add_to(picker, base)
   Snacks.input({
     prompt = 'Add a new file or directory (directories end with a "/")',
   }, function(value)
-    if not value or value:find("^%s$") then
+    if not value or value:find("^%s*$") then
       return
     end
-    local path = svim.fs.normalize(picker:dir() .. "/" .. value)
+    local path = svim.fs.normalize(base .. "/" .. value)
     local is_file = value:sub(-1) ~= "/"
     local dir = is_file and vim.fs.dirname(path) or path
     if is_file and uv.fs_stat(path) then
@@ -213,12 +213,23 @@ function M.actions.explorer_add(picker)
     end
     vim.fn.mkdir(dir, "p")
     if is_file then
-      io.open(path, "w"):close()
+      local f = io.open(path, "w")
+      if f then
+        f:close()
+      end
     end
     Tree:open(dir)
     Tree:refresh(dir)
     M.update(picker, { target = path })
   end)
+end
+
+function M.actions.explorer_add(picker)
+  explorer_add_to(picker, picker:dir())
+end
+
+function M.actions.explorer_add_cwd(picker)
+  explorer_add_to(picker, picker:cwd())
 end
 
 function M.actions.explorer_rename(picker, item)
