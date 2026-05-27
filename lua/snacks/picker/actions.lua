@@ -841,4 +841,23 @@ function M.list_scroll_up(picker)
   picker.list:scroll(-picker.list.state.scroll)
 end
 
+function M.tmux_select(picker)
+  local items = picker:selected({ fallback = true })
+  local first = items[1]
+  if not first then
+    Snacks.notify.error("Can't find tmux target", { title = "Snacks Picker" })
+    return
+  end
+  local target = first.pane_id or first.window_id or first.session_name
+  if not target then
+    Snacks.notify.error("Can't find tmux target", { title = "Snacks Picker" })
+    return
+  end
+  local cmd = { "tmux", "switch-client", "-t", target }
+  Snacks.picker.util.cmd(cmd, function()
+    Snacks.notify("Switched to tmux target " .. target, { title = "Snacks Picker" })
+    picker:close()
+  end)
+end
+
 return M
