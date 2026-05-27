@@ -318,7 +318,7 @@ function M.pick_win(picker, item, action)
   if not picker.layout.split then
     picker.layout:hide()
   end
-  local win = Snacks.picker.util.pick_win({ main = picker.main })
+  local win = Snacks.picker.util.pick_win({ main = picker.main, selection_chars = picker.opts.pick_win.selection_chars })
   if not win then
     if not picker.layout.split then
       picker.layout:unhide()

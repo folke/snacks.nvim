@@ -111,6 +111,7 @@ local M = {}
 ---@field on_show? fun(picker:snacks.Picker) called when the picker is shown
 ---@field on_close? fun(picker:snacks.Picker) called when the picker is closed
 ---@field jump? snacks.picker.jump.Config|{}
+---@field pick_win? snacks.picker.pick_win.Config|{}
 --- Other
 ---@field config? fun(opts:snacks.picker.Config):snacks.picker.Config? custom config function
 ---@field db? snacks.picker.db.Config|{}
@@ -208,6 +209,10 @@ local defaults = {
     reuse_win = false, -- reuse an existing window if the buffer is already open
     close = true, -- close the picker when jumping/editing to a location (defaults to true)
     match = false, -- jump to the first match position. (useful for `lines`)
+  },
+  ---@class snacks.picker.pick_win.Config
+  pick_win = {
+    selection_chars = "asdfghjkl" -- letters used for picking windows
   },
   toggles = {
     follow = "f",
