@@ -157,7 +157,7 @@ function M.multi(opts)
       if win.keys then
         opts.win = opts.win or {}
         opts.win[w] = opts.win[w] or {}
-        opts.win[w].keys = Snacks.config.merge(opts.win[w].keys or {}, win.keys)
+        opts.win[w].keys = Snacks.config.merge(win.keys, opts.win[w].keys or {})
       end
     end
   end
