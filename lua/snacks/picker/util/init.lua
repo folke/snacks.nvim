@@ -399,7 +399,7 @@ function M.resolve_loc(item, buf)
       return
     end
     local line = lines[pos.line + 1]
-    local col = line and M.str_byteindex(line, pos.character, item.loc.encoding) or pos.character
+    local col = line and M.str_byteindex(line, pos.character, item.loc.encoding, false) or pos.character
     return { pos.line + 1, col }
   end
   item.pos = resolve(item.loc.range["start"])
