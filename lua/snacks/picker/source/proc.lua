@@ -35,6 +35,11 @@ function M.proc(opts, ctx)
       end
     end
 
+    local cmd_path = vim.fn.exepath(opts.cmd)
+    if cmd_path == "" then
+        return Snacks.notify.error(opts.cmd .. " was not found.")
+    end
+
     if ctx.picker.opts.debug.proc then
       vim.schedule(function()
         ---@diagnostic disable-next-line: param-type-mismatch
@@ -58,9 +63,9 @@ function M.proc(opts, ctx)
 
     local handle ---@type uv.uv_process_t
     ---@diagnostic disable-next-line: missing-fields
-    handle = uv.spawn(opts.cmd, spawn_opts, function(code, _signal)
+    handle = uv.spawn(cmd_path, spawn_opts, function(code, _signal)
       if not aborted and code ~= 0 and opts.notify ~= false then
-        local full = { opts.cmd or "" }
+        local full = { cmd_path }
         vim.list_extend(full, opts.args or {})
         Snacks.notify.error(("Command failed:\n- cmd: `%s`"):format(table.concat(full, " ")))
       end
@@ -68,7 +73,7 @@ function M.proc(opts, ctx)
       self:resume()
     end)
     if not handle then
-      return Snacks.notify.error("Failed to spawn " .. opts.cmd)
+      return Snacks.notify.error("Failed to spawn " .. cmd_path)
     end
 
     local prev ---@type string?
