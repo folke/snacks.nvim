@@ -34,7 +34,11 @@ end
 ---@type snacks.picker.finder
 function M.files(opts, ctx)
   local args = M.git("ls-files", "--exclude-standard", "--cached", opts)
-  if opts.untracked then
+  if opts.untracked and opts.submodules then
+    Snacks.notify.warn(
+      "`submodules` option ignored because Git cannot combine --others (`untracked`) with --recurse-submodules"
+    )
+  elseif opts.untracked then
     table.insert(args, "--others")
   elseif opts.submodules then
     table.insert(args, "--recurse-submodules")
@@ -65,7 +69,11 @@ function M.grep(opts, ctx)
     return function() end
   end
   local args = M.git("grep", "--line-number", "--column", "--no-color", "-I", opts)
-  if opts.untracked then
+  if opts.untracked and opts.submodules then
+    Snacks.notify.warn(
+      "`submodules` option ignored because Git cannot combine --others (`untracked`) with --recurse-submodules"
+    )
+  elseif opts.untracked then
     table.insert(args, "--untracked")
   elseif opts.submodules then
     table.insert(args, "--recurse-submodules")
