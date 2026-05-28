@@ -173,14 +173,14 @@ function M.log(opts, ctx)
           "--follow",
           "--name-status",
           "--pretty=format:''",
-          "--diff-filter=R",
+          "--diff-filter=RC",
           "--",
           file,
           opts
         ),
       }, ctx)(function(item)
         for _, text in ipairs(vim.split(item.text, "\0")) do
-          if text:find("^R%d%d%d$") then
+          if text:find("^[RC]%d%d%d$") then
             is_rename = true
           elseif is_rename then
             is_rename = false
