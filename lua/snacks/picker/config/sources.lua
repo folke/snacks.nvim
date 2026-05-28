@@ -1069,7 +1069,7 @@ M.undo = {
     yank_add = { action = "yank", field = "added_lines" },
     yank_del = { action = "yank", field = "removed_lines" },
   },
-  icons = { tree = { last = "┌╴" } }, -- the tree is upside down
+  icons = { tree = { last = "┌╴", last_r = "└╴" } }, -- the tree is upside down
   diff = {
     ctxlen = 4,
     ignore_cr_at_eol = true,
