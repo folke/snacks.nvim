@@ -69,7 +69,7 @@ Snacks.config.style("input", {
     i_ctrl_w = { "<c-w>", "<c-s-w>", mode = "i", expr = true },
     i_up = { "<up>", { "hist_up" }, mode = { "i", "n" } },
     i_down = { "<down>", { "hist_down" }, mode = { "i", "n" } },
-    q = "cancel",
+    q = { "q", "cancel", desc = "Cancel" },
   },
 })
 

@@ -31,6 +31,8 @@ M.meta = {
 ---@field layout snacks.layout.Box layout definition
 ---@field fullscreen? boolean open in fullscreen
 ---@field hidden? string[] list of windows that will be excluded from the layout (but can be toggled)
+---@field footer_keys? boolean|string[] Show keys footer for the currently focused layout window. When string[], only show those keys with lhs (default: false)
+---@field footer_max_keys? number Maximum number of keys to show in the footer (layout-wide cap; effective value is the minimum of layout and window caps)
 ---@field on_update? fun(layout: snacks.layout)
 ---@field on_update_pre? fun(layout: snacks.layout)
 ---@field on_close? fun(layout: snacks.layout)
@@ -167,6 +169,9 @@ function M.new(opts)
       self:show()
     end)
   end
+  if self.opts.footer_keys then
+    self:setup_footer_autocmd()
+  end
   return self
 end
 
@@ -300,6 +305,9 @@ function M:update()
   if self.opts.on_update then
     self.opts.on_update(self)
   end
+  if self.opts.footer_keys then
+    self:update_footer()
+  end
 end
 
 ---@param box snacks.layout.Box
@@ -364,7 +372,7 @@ function M:update_box(box, parent)
   local free_main = free[size_main]
   for c, child in ipairs(box) do
     if not dims[c] then
-      -- alocate at least 1 cell
+      -- allocate at least 1 cell
       free[size_main] = math.max(math.floor(free_main / flex), 1)
       flex = flex - 1
       free_main = free_main - free[size_main]
@@ -581,6 +589,45 @@ function M:show()
     return
   end
   self:update()
+end
+
+function M:update_footer()
+  if not self:valid() then
+    return
+  end
+  local want = type(self.opts.footer_keys) == "table" and self.opts.footer_keys or nil
+  local wins = self:get_wins()
+  local cur = vim.api.nvim_get_current_win()
+  local focused ---@type snacks.win?
+  for _, win in ipairs(wins) do
+    if win.win == cur then
+      focused = win
+      break
+    end
+  end
+  focused = focused or wins[1]
+  if not focused then
+    return
+  end
+  local keys = focused:build_footer_keys(want, self.opts.footer_max_keys)
+  self.root:update_footer_keys(keys)
+end
+
+function M:setup_footer_autocmd()
+  if not self.opts.footer_keys or self._footer_autocmd then
+    return
+  end
+  self._footer_autocmd = true
+  self.root:on("WinEnter", function()
+    if self.opts.footer_keys then
+      self:update_footer()
+    end
+  end)
+  self.root:on("ModeChanged", function()
+    if self.opts.footer_keys then
+      self:update_footer()
+    end
+  end)
 end
 
 return M

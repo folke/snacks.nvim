@@ -29,10 +29,10 @@ M.buffers = {
   win = {
     input = {
       keys = {
-        ["<c-x>"] = { "bufdelete", mode = { "n", "i" } },
+        ["<c-x>"] = { "bufdelete", mode = { "n", "i" }, desc = "Delete buffer" },
       },
     },
-    list = { keys = { ["dd"] = "bufdelete" } },
+    list = { keys = { ["dd"] = { "bufdelete", desc = "Delete buffer" } } },
   },
 }
 
@@ -77,34 +77,34 @@ M.explorer = {
   win = {
     list = {
       keys = {
-        ["<BS>"] = "explorer_up",
-        ["l"] = "confirm",
-        ["h"] = "explorer_close", -- close directory
-        ["a"] = "explorer_add",
-        ["d"] = "explorer_del",
-        ["r"] = "explorer_rename",
-        ["c"] = "explorer_copy",
-        ["m"] = "explorer_move",
-        ["o"] = "explorer_open", -- open with system application
-        ["P"] = "toggle_preview",
-        ["y"] = { "explorer_yank", mode = { "n", "x" } },
-        ["p"] = "explorer_paste",
-        ["u"] = "explorer_update",
-        ["<c-c>"] = "tcd",
-        ["<leader>/"] = "picker_grep",
-        ["<c-t>"] = "terminal",
-        ["."] = "explorer_focus",
-        ["I"] = "toggle_ignored",
-        ["H"] = "toggle_hidden",
-        ["Z"] = "explorer_close_all",
-        ["]g"] = "explorer_git_next",
-        ["[g"] = "explorer_git_prev",
-        ["]d"] = "explorer_diagnostic_next",
-        ["[d"] = "explorer_diagnostic_prev",
-        ["]w"] = "explorer_warn_next",
-        ["[w"] = "explorer_warn_prev",
-        ["]e"] = "explorer_error_next",
-        ["[e"] = "explorer_error_prev",
+        ["<BS>"] = { "explorer_up", desc = "Parent" },
+        ["l"] = { "confirm", desc = "Open" },
+        ["h"] = { "explorer_close", desc = "Close directory" },
+        ["a"] = { "explorer_add", desc = "Add" },
+        ["d"] = { "explorer_del", desc = "Del" },
+        ["r"] = { "explorer_rename", desc = "Rename" },
+        ["c"] = { "explorer_copy", desc = "Copy" },
+        ["m"] = { "explorer_move", desc = "Move" },
+        ["o"] = { "explorer_open", desc = "Open with system application" },
+        ["P"] = { "toggle_preview", desc = "Preview" },
+        ["y"] = { "explorer_yank", mode = { "n", "x" }, desc = "Yank path" },
+        ["p"] = { "explorer_paste", desc = "Paste" },
+        ["u"] = { "explorer_update", desc = "Refresh" },
+        ["<c-c>"] = { "tcd", desc = "Tab cwd" },
+        ["<leader>/"] = { "picker_grep", desc = "Grep project" },
+        ["<c-t>"] = { "terminal", desc = "Terminal" },
+        ["."] = { "explorer_focus", desc = "Focus explorer" },
+        ["I"] = { "toggle_ignored", desc = "Toggle ignored" },
+        ["H"] = { "toggle_hidden", desc = "Hidden" },
+        ["Z"] = { "explorer_close_all", desc = "Close all" },
+        ["]g"] = { "explorer_git_next", desc = "Next change" },
+        ["[g"] = { "explorer_git_prev", desc = "Prev. change" },
+        ["]d"] = { "explorer_diagnostic_next", desc = "Next diagnostic" },
+        ["[d"] = { "explorer_diagnostic_prev", desc = "Prev. diagnostic" },
+        ["]w"] = { "explorer_warn_next", desc = "Next warning" },
+        ["[w"] = { "explorer_warn_prev", desc = "Prev. warning" },
+        ["]e"] = { "explorer_error_next", desc = "Next error" },
+        ["[e"] = { "explorer_error_prev", desc = "Prev. error" },
       },
     },
   },
@@ -349,8 +349,8 @@ M.git_branches = {
   win = {
     input = {
       keys = {
-        ["<c-a>"] = { "git_branch_add", mode = { "n", "i" } },
-        ["<c-x>"] = { "git_branch_del", mode = { "n", "i" } },
+        ["<c-a>"] = { "git_branch_add", mode = { "n", "i" }, desc = "Add branch" },
+        ["<c-x>"] = { "git_branch_del", mode = { "n", "i" }, desc = "Delete branch" },
       },
     },
   },
@@ -449,8 +449,8 @@ M.git_status = {
   win = {
     input = {
       keys = {
-        ["<Tab>"] = { "git_stage", mode = { "n", "i" } },
-        ["<c-r>"] = { "git_restore", mode = { "n", "i" }, nowait = true },
+        ["<Tab>"] = { "git_stage", mode = { "n", "i" }, desc = "Stage changes" },
+        ["<c-r>"] = { "git_restore", mode = { "n", "i" }, nowait = true, desc = "Restore changes" },
       },
     },
   },
@@ -470,8 +470,8 @@ M.git_diff = {
   win = {
     input = {
       keys = {
-        ["<Tab>"] = { "git_stage", mode = { "n", "i" } },
-        ["<c-r>"] = { "git_restore", mode = { "n", "i" }, nowait = true },
+        ["<Tab>"] = { "git_stage", mode = { "n", "i" }, desc = "Stage changes" },
+        ["<c-r>"] = { "git_restore", mode = { "n", "i" }, nowait = true, desc = "Restore changes" },
       },
     },
   },
@@ -825,7 +825,7 @@ M.marks = {
   win = {
     input = {
       keys = {
-        ["<c-x>"] = { "mark_delete", mode = { "n", "i" } },
+        ["<c-x>"] = { "mark_delete", mode = { "n", "i" }, desc = "Delete mark" },
       },
     },
   },
@@ -903,12 +903,13 @@ M.projects = {
     input = {
       keys = {
         -- every action will always first change the cwd of the current tabpage to the project
-        ["<c-e>"] = { { "tcd", "picker_explorer" }, mode = { "n", "i" } },
-        ["<c-f>"] = { { "tcd", "picker_files" }, mode = { "n", "i" } },
-        ["<c-g>"] = { { "tcd", "picker_grep" }, mode = { "n", "i" } },
-        ["<c-r>"] = { { "tcd", "picker_recent" }, mode = { "n", "i" }, nowait = true },
-        ["<c-w>"] = { { "tcd" }, mode = { "n", "i" } },
+        ["<c-e>"] = { { "tcd", "picker_explorer" }, mode = { "n", "i" }, desc = "Open explorer" },
+        ["<c-f>"] = { { "tcd", "picker_files" }, mode = { "n", "i" }, desc = "Open files" },
+        ["<c-g>"] = { { "tcd", "picker_grep" }, mode = { "n", "i" }, desc = "Grep project" },
+        ["<c-r>"] = { { "tcd", "picker_recent" }, mode = { "n", "i" }, nowait = true, desc = "Open recent files" },
+        ["<c-w>"] = { { "tcd" }, mode = { "n", "i" }, desc = "Change directory" },
         ["<c-t>"] = {
+          desc = "Open in new tab",
           function(picker)
             vim.cmd("tabnew")
             Snacks.notify("New tab opened")
@@ -964,8 +965,8 @@ M.scratch = {
   win = {
     input = {
       keys = {
-        ["<c-x>"] = { "scratch_delete", mode = { "n", "i" } },
-        ["<c-n>"] = { "scratch_new", mode = { "n", "i" } },
+        ["<c-x>"] = { "scratch_delete", mode = { "n", "i" }, desc = "Delete scratch" },
+        ["<c-n>"] = { "scratch_new", mode = { "n", "i" }, desc = "New scratch" },
       },
     },
   },
@@ -1060,8 +1061,8 @@ M.undo = {
     preview = { wo = { number = false, relativenumber = false, signcolumn = "no" } },
     input = {
       keys = {
-        ["<c-y>"] = { "yank_add", mode = { "n", "i" } },
-        ["<c-s-y>"] = { "yank_del", mode = { "n", "i" } },
+        ["<c-y>"] = { "yank_add", mode = { "n", "i" }, desc = "Yank added lines" },
+        ["<c-s-y>"] = { "yank_del", mode = { "n", "i" }, desc = "Yank removed lines" },
       },
     },
   },

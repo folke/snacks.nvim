@@ -102,7 +102,7 @@ Snacks.config.style("notification_history", {
   ft = "markdown",
   bo = { filetype = "snacks_notif_history", modifiable = false },
   wo = { winhighlight = "Normal:SnacksNotifierHistory" },
-  keys = { q = "close" },
+  keys = { q = { "q", "close", desc = "Close" } },
 })
 
 ---@class snacks.notifier.Config
