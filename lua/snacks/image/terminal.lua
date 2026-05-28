@@ -268,7 +268,7 @@ function M._detect(cb)
   local id = vim.api.nvim_create_autocmd("TermResponse", {
     group = vim.api.nvim_create_augroup("image.terminal.detect", { clear = true }),
     callback = function(ev)
-      local data = ev.data.sequence ---@type string
+      local data = ev.data.sequence or ev.data ---@type string
       local term, version = data:match("P>|(%S+)%s*(.*)")
       if not (term and version) then
         return
