@@ -439,6 +439,88 @@ M.actions.gh_update_branch = {
   end,
 }
 
+M.actions.gh_view_workflows_status = {
+  icon = " ",
+  title = "View workflows status",
+  type = "pr",
+  enabled = function(item)
+    return item.headRefName
+  end,
+  action = function(item, ctx)
+    if item.headRefName == nil then
+      return
+    end
+
+    local cb = function(proc, data)
+      vim.schedule(function()
+        local text = ""
+
+        for key, value in pairs(data) do
+          text = text .. "" .. value.name .. ": "
+          local icon = ""
+
+          if value.status == "waiting" or value.status == "pending" then
+            icon = "󰮍 "
+          elseif value.status == "queued" or value.status == "requested" then
+            icon = "󱕱 "
+          elseif value.status == "in_progress" or value.status == "expected" then
+            icon = " "
+          elseif value.status == "failure" or value.conclusion == "failure" then
+            icon = " "
+          elseif value.status == "completed" and value.conclusion == "success" then
+            icon = " "
+          elseif value.conclusion == "skipped" then
+            icon = " "
+          elseif value.conclusion == "cancelled" then
+            icon = "󰜺 "
+          elseif value.conclusion == "timed_out" then
+            icon = "󱫏 "
+          end
+
+          text = text .. icon .. "\n"
+          text = text .. "(" .. value.status
+
+          if value.conclusion ~= vim.NIL then
+            text = text .. ", " .. tostring(value.conclusion) .. ")\n"
+          else
+            text = text .. ")\n"
+          end
+
+          text = text
+            .. "See workflow run here => https://github.com/"
+            .. item.repo
+            .. "/actions/runs/"
+            .. value.id
+            .. " \n\n"
+        end
+
+        Snacks.win.new({
+          ft = "markdown",
+          position = "float",
+          text = text,
+          title = "Workflows status",
+          icon = " ",
+          keys = {
+            q = "close",
+          },
+          footer_keys = true,
+          border = "single",
+          width = 0.6,
+          height = 0.7,
+          zindex = 300,
+        })
+      end)
+    end
+
+    local endpoint = "repos/" .. item.repo .. "/actions/runs?branch=" .. item.headRefName
+    Api.request(cb, {
+      endpoint = endpoint,
+      repo = item.repo,
+      jq = ".workflow_runs | unique_by(.workflow_id) | map({id, name, status, conclusion})",
+    })
+  end,
+}
+
 -- Start a new review
 M.actions.gh_start_review = {
   desc = "Start a review",
