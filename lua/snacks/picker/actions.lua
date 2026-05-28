@@ -658,6 +658,17 @@ function M.search(picker, item)
   end
 end
 
+function M.cmdlineinsert(picker, item)
+  picker:close()
+  if item then
+    vim.api.nvim_input(":")
+    vim.schedule(function()
+      vim.fn.setcmdline("e ".. item.text)
+      vim.api.nvim_input("<CR>")
+    end)
+  end
+end
+
 --- Tries to load the session, if it fails, it will open the picker.
 function M.load_session(picker, item)
   picker:close()
