@@ -194,7 +194,7 @@ local function get_state(win, buf, top, bottom)
     is_current = win == vim.api.nvim_get_current_win(),
     top = top,
     bottom = bottom,
-    leftcol = vim.api.nvim_buf_call(buf, vim.fn.winsaveview).leftcol --[[@as number]],
+    leftcol = vim.api.nvim_win_call(win, vim.fn.winsaveview).leftcol --[[@as number]],
     shiftwidth = vim.bo[buf].shiftwidth,
     indents = prev and prev.indents or { [0] = 0 },
     blanks = prev and prev.blanks or {},
