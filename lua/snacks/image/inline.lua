@@ -39,9 +39,33 @@ end
 
 function M:conceal()
   local mode = vim.fn.mode():sub(1, 1):lower() ---@type string
+  if mode == "i" or mode == "s" then
+    for _, img in pairs(self.imgs) do
+      if img.opts.conceal then
+        img:hide()
+      else
+        img:show()
+      end
+    end
+    return
+  end
   for _, img in pairs(self.imgs) do
     img:show()
   end
+
+  local cursor = vim.api.nvim_win_get_cursor(0)
+  local row, col = cursor[1], cursor[2]
+  for _, img in pairs(self.imgs) do
+    local range = img.opts.conceal and img.opts.range
+    if range then
+      local inside = (range[1] == range[3] and row == range[1] and col >= range[2] and col <= range[4])
+        or (range[1] ~= range[3] and row >= range[1] and row <= range[3])
+      if inside then
+        img:hide()
+      end
+    end
+  end
+
   if vim.wo.concealcursor:find(mode) then
     return
   end
@@ -115,6 +139,30 @@ function M:update()
             inline = true,
             conceal = vim.b[self.buf].snacks_image_conceal or conceal(i.lang, i.type),
             type = i.type,
+            ---@param p snacks.image.Placement
+            on_update_pre = function(p)
+              local mode = vim.api.nvim_get_mode().mode:sub(1, 1):lower()
+              if p.buf ~= vim.api.nvim_get_current_buf() then
+                p.hidden = false
+                return
+              end
+              if (mode == "i" or mode == "s") and p.opts.conceal then
+                p.hidden = true
+                return
+              end
+              if mode == "n" and p.opts.conceal and p.opts.range then
+                local cursor = vim.api.nvim_win_get_cursor(0)
+                local row, col = cursor[1], cursor[2]
+                local range = p.opts.range
+                local inside = (range[1] == range[3] and row == range[1] and col >= range[2] and col <= range[4])
+                  or (range[1] ~= range[3] and row >= range[1] and row <= range[3])
+                if inside then
+                  p.hidden = true
+                  return
+                end
+              end
+              p.hidden = false
+            end,
             ---@param p snacks.image.Placement
             on_update = function(p)
               for _, eid in ipairs(p.eids) do
