@@ -84,7 +84,10 @@ function M.delete(opts)
   end
 
   if vim.api.nvim_buf_is_valid(buf) then
+    local ei = vim.o.eventignore
+    vim.o.eventignore = "DiagnosticChanged"
     pcall(vim.cmd, (opts.wipe and "bwipeout! " or "bdelete! ") .. buf)
+    vim.o.eventignore = ei
   end
 end
 
@@ -104,6 +107,16 @@ function M.other(opts)
   return M.delete(vim.tbl_extend("force", {}, opts or {}, {
     filter = function(b)
       return b ~= vim.api.nvim_get_current_buf()
+    end,
+  }))
+end
+
+--- Delete all invisible buffers
+---@param opts? snacks.bufdelete.Opts
+function M.invisible(opts)
+  return M.delete(vim.tbl_extend("force", {}, opts or {}, {
+    filter = function(b)
+      return vim.fn.bufwinnr(b) == -1
     end,
   }))
 end

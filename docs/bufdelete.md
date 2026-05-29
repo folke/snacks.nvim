@@ -48,6 +48,15 @@ Delete a buffer:
 Snacks.bufdelete.delete(opts)
 ```
 
+### `Snacks.bufdelete.invisible()`
+
+Delete all invisible buffers
+
+```lua
+---@param opts? snacks.bufdelete.Opts
+Snacks.bufdelete.invisible(opts)
+```
+
 ### `Snacks.bufdelete.other()`
 
 Delete all buffers except the current one
