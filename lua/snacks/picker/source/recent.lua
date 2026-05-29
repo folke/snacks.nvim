@@ -63,6 +63,7 @@ M.recent = M.files
 function M.projects(opts, ctx)
   local args = {
     "-H",
+    "--no-ignore-vcs", -- fd 9.0.0 hides .git/ with -H, this restores it (sharkdp/fd#1396)
     "-t",
     "f",
     "-t",
