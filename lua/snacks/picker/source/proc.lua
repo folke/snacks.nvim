@@ -1,5 +1,6 @@
 ---@diagnostic disable: await-in-sync
 local Async = require("snacks.picker.util.async")
+local Spawn = require("snacks.util.spawn")
 
 local M = {}
 
@@ -58,7 +59,7 @@ function M.proc(opts, ctx)
 
     local handle ---@type uv.uv_process_t
     ---@diagnostic disable-next-line: missing-fields
-    handle = uv.spawn(opts.cmd, spawn_opts, function(code, _signal)
+    handle = uv.spawn(Spawn.resolve_cmd(opts.cmd), spawn_opts, function(code, _signal)
       if not aborted and code ~= 0 and opts.notify ~= false then
         local full = { opts.cmd or "" }
         vim.list_extend(full, opts.args or {})

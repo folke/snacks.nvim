@@ -1,4 +1,6 @@
 ---@diagnostic disable: missing-fields
+local Spawn = require("snacks.util.spawn")
+
 local M = {}
 
 ---@class snacks.explorer.git.Status
@@ -55,7 +57,7 @@ function M.update(cwd, opts)
   local output = ""
   local stdout = assert(uv.new_pipe())
   local handle ---@type uv.uv_process_t
-  handle = uv.spawn("git", {
+  handle = uv.spawn(Spawn.resolve_cmd("git"), {
     stdio = { nil, stdout, nil },
     cwd = root,
     hide = true,
