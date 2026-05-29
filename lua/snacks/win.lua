@@ -968,6 +968,7 @@ function M:set_buf(buf)
   self.buf = buf
   vim.api.nvim_win_set_buf(self.win, buf)
   Snacks.util.wo(self.win, self.opts.wo)
+  self:map()
 end
 
 function M:map()
