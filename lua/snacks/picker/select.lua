@@ -43,7 +43,7 @@ function M.select(items, opts, on_choice)
         -- Fit list height to number of items, up to 10
         for _, box in ipairs(layout.layout) do
           if box.win == "list" and not box.height then
-            box.height = math.max(math.min(#items, vim.o.lines * 0.8 - 10), 2)
+            box.height = math.max(math.min(#items, math.floor(vim.o.lines * 0.8 - 10)), 2)
           end
         end
       end,
