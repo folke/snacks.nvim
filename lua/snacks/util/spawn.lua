@@ -5,6 +5,34 @@ local M = {}
 
 local uv = vim.uv or vim.loop
 
+local is_windows = (uv.os_uname().sysname or ""):lower():find("windows") ~= nil
+
+--- Resolve a bare executable name to an absolute path on Windows.
+--- libuv's `spawn` does not search `PATH` for bare names on Windows the way
+--- it does on POSIX, so a command like `rg` may return ENOENT even when
+--- `vim.fn.exepath("rg")` resolves it (e.g. through a scoop shim).
+--- Returns the input unchanged on non-Windows systems, when given a path
+--- (anything containing `/` or `\`), or when resolution fails.
+---@param cmd string
+---@return string
+function M.resolve_cmd(cmd)
+  if not is_windows or type(cmd) ~= "string" or cmd == "" then
+    return cmd
+  end
+  if cmd:find("[/\\]") then
+    return cmd
+  end
+  local resolved = vim.fn.exepath(cmd .. ".exe")
+  if resolved ~= "" then
+    return resolved
+  end
+  resolved = vim.fn.exepath(cmd)
+  if resolved ~= "" then
+    return resolved
+  end
+  return cmd
+end
+
 ---@class snacks.spawn.Config: uv.spawn.options,{}
 ---@field cmd string
 ---@field args? (string|number)[]
@@ -149,7 +177,7 @@ function Proc:run()
     hide = true,
     args = vim.tbl_map(tostring, self.opts.args or {}),
   })
-  self.handle = uv.spawn(self.opts.cmd, opts, function(code, signal)
+  self.handle = uv.spawn(M.resolve_cmd(self.opts.cmd), opts, function(code, signal)
     self.code = code
     self.signal = signal
     self:on_exit()
