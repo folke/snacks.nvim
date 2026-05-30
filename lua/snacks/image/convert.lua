@@ -117,6 +117,15 @@ local commands = {
       end
     end,
   },
+  d2 = {
+    cmd = {
+      cmd = "d2",
+      args = Snacks.image.config.convert.d2,
+    },
+    file = function(convert, ctx)
+      return convert:tmpfile(vim.o.background .. ".png")
+    end,
+  },
   mmd = {
     cmd = {
       cmd = "mmdc",

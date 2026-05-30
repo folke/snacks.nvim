@@ -15,3 +15,11 @@
   (#set! injection.language "mermaid")
   (#set! image.ext "chart.mmd")
 ) @image
+
+(fenced_code_block
+  (info_string (language) @lang)
+  (#eq? @lang "d2")
+  (code_fence_content) @image.content
+  (#set! injection.language "d2")
+  (#set! image.ext "chart.d2")
+) @image
