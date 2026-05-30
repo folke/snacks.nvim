@@ -13,6 +13,7 @@
   - **session**: session support
   - **startup**: startup time (lazy.nvim)
   - **terminal**: colored terminal output
+  - **image**: display images using kitty graphics protocol
 - super fast `terminal` sections with automatic caching
 
 ## 🚀 Usage
@@ -409,6 +410,30 @@ Pokemons, because why not?
 }
 ```
 
+### `image`
+
+Display an image using the kitty graphics protocol in the dashboard or fallbacks to chafa.
+
+```lua
+{
+  sections = {
+    { section = "header" },
+    {
+      pane = 2,
+      section = "image",
+      path = "/path/to/your/image.png",
+      height = 17,
+      width = 60,
+      padding = 1,
+    },
+    { section = "keys", gap = 1, padding = 1 },
+    { section = "startup" },
+  },
+}
+```
+
+Width only works with `chafa`. With kitty protocol, the width of the image will be calculated automatically.
+
 ### `startify`
 
 Similar to the Vim Startify dashboard
@@ -506,6 +531,8 @@ The other options are used with `:lua Snacks.dashboard()`
 ---@field icon? string
 ---@field title? string
 ---@field text? string|snacks.dashboard.Text[]
+---@field path? string path to an image file (used by the image section)
+---@field height? number height for image section
 ```
 
 ```lua
@@ -646,6 +673,16 @@ Add the startup section
 ---@param opts? {icon?:string}
 ---@return snacks.dashboard.Section?
 Snacks.dashboard.sections.startup(opts)
+```
+
+### `Snacks.dashboard.sections.image()`
+
+Display an image using the kitty graphics protocol.
+
+```lua
+---@param opts {path:string, height?:number}|snacks.dashboard.Item
+---@return snacks.dashboard.Section?
+Snacks.dashboard.sections.image(opts)
 ```
 
 ### `Snacks.dashboard.sections.terminal()`
