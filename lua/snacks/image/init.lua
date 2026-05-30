@@ -121,8 +121,20 @@ local defaults = {
   ---@class snacks.image.convert.Config
   convert = {
     notify = false, -- show a notification on error
+    ---@class snacks.image.d2.Opts
+    d2_opts = {
+      layout = "dagre", -- default layout engine
+      theme = nil
+    },
     ---@type snacks.image.args
-    mermaid = function()
+    d2 = function ()
+      local opts = M.config.convert.d2_opts
+      local theme = opts.theme or (vim.o.background == "light" and "0" or "200")
+      local layout = M.config.convert.d2_opts.layout
+      return { "{src}", "{file}", "--layout", layout, "--theme", theme, "--scale", "{scale}" }
+    end,
+    ---@type snacks.image.args
+    mermaid = function ()
       local theme = vim.o.background == "light" and "neutral" or "dark"
       return { "-i", "{src}", "-o", "{file}", "-b", "transparent", "-t", theme, "-s", "{scale}" }
     end,
