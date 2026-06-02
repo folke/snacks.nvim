@@ -29,7 +29,7 @@ function M.truncpath(path, len, opts)
     path = path:sub(#cwd + 2)
   else
     local root = Snacks.git.get_root(path)
-    if root and root ~= "" and path:find(root, 1, true) == 1 then
+    if root and root ~= "" and path:find(root .. "/", 1, true) == 1 then
       local tail = vim.fn.fnamemodify(root, ":t")
       path = "⋮" .. tail .. "/" .. path:sub(#root + 2)
     elseif path:find(home, 1, true) == 1 then
