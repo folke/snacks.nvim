@@ -1,4 +1,5 @@
 *snacks-terminal*                           snacks terminal docs
+                                        For Neovim    Last change: 2026 May 25
 
 ==============================================================================
 Table of Contents                     *snacks.nvim-terminal-table-of-contents*
