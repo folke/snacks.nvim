@@ -76,6 +76,10 @@ function Tree:find(path)
   local parts = vim.split(path, "/", { plain = true })
   local is_dir = vim.fn.isdirectory(path) == 1
   for p, part in ipairs(parts) do
+    -- If Windows OS and root contains : without slash, add it
+    if is_win and part:match("^[a-zA-Z]:$") then
+      part = part .. "/"
+    end
     node = self:child(node, part, (is_dir or p < #parts) and "directory" or "file")
   end
   return node
