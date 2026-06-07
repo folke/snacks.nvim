@@ -718,6 +718,11 @@ function D:update()
   -- cursor movement
   local last = { 1, 0 }
   local function update_cursor()
+    -- the dashboard window may now show a different buffer (e.g. it was replaced
+    -- with `:enew` while another split still displays the dashboard)
+    if not vim.api.nvim_win_is_valid(self.win) or vim.api.nvim_win_get_buf(self.win) ~= self.buf then
+      return
+    end
     local item = self:find(vim.api.nvim_win_get_cursor(self.win), last)
     -- can happen for panes without actionable items
     item = item or vim.tbl_filter(function(it)
