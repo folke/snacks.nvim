@@ -25,8 +25,16 @@
 
 local uv = vim.uv or vim.loop
 
+local is_win = vim.fn.has("win32") == 1 or vim.fn.has("win64") == 1
+
 local function norm(path)
-  return svim.fs.normalize(path):gsub("/$", ""):gsub("^$", "/")
+  local normalized = vim.fs.normalize(path)
+  -- Preserve trailing slash for Windows drive roots (C:/, D:/, etc.)
+  -- On Windows, "C:" means current dir of the drive, "C:/" means the actual root.
+  if is_win and normalized:match("^[a-zA-Z]:/$") then
+    return normalized
+  end
+  return normalized:gsub("/$", ""):gsub("^$", "/")
 end
 
 local function assert_dir(path)
@@ -68,6 +76,10 @@ function Tree:find(path)
   local parts = vim.split(path, "/", { plain = true })
   local is_dir = vim.fn.isdirectory(path) == 1
   for p, part in ipairs(parts) do
+    -- If Windows OS and root contains : without slash, add it
+    if is_win and part:match("^[a-zA-Z]:$") then
+      part = part .. "/"
+    end
     node = self:child(node, part, (is_dir or p < #parts) and "directory" or "file")
   end
   return node
@@ -78,7 +90,7 @@ end
 ---@param type string
 function Tree:child(node, name, type)
   if not node.children[name] then
-    local path = node.path .. "/" .. name
+    local path = vim.fs.joinpath(node.path, name)
     path = node == self.root and name or path
     node.children[name] = {
       name = name,
@@ -141,7 +153,7 @@ function Tree:expand(node)
     if not name then
       break
     end
-    t = t or Snacks.util.path_type(node.path .. "/" .. name)
+    t = t or Snacks.util.path_type(vim.fs.joinpath(node.path, name))
     found[name] = true
     local child = self:child(node, name, t)
     child.type = t
