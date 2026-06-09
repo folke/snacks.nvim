@@ -201,6 +201,17 @@ function M.enable()
     end),
   })
 
+  -- clean up state when a window is closed
+  vim.api.nvim_create_autocmd("WinClosed", {
+    group = group,
+    callback = function(ev)
+      local win = tonumber(ev.match)
+      if win then
+        State.reset(win)
+      end
+    end,
+  })
+
   -- clear scroll state when leaving the cmdline after a search with incsearch
   vim.api.nvim_create_autocmd({ "CmdlineLeave" }, {
     group = group,
