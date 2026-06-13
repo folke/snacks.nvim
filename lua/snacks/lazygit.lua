@@ -173,7 +173,13 @@ local function update_config(opts)
       if type(v) == "table" then
         if (vim.islist or vim.tbl_islist)(v) then
           for _, item in ipairs(v) do
-            table.insert(lines, string.rep(" ", indent + 2) .. "- " .. yaml_val(item))
+            if type(item) == "table" and not (vim.islist or vim.tbl_islist)(item) then
+              local item_lines = to_yaml(item, indent + 4)
+              item_lines[1] = string.rep(" ", indent + 2) .. "- " .. string.sub(item_lines[1], indent + 5)
+              vim.list_extend(lines, item_lines)
+            else
+              table.insert(lines, string.rep(" ", indent + 2) .. "- " .. yaml_val(item))
+            end
           end
         else
           vim.list_extend(lines, to_yaml(v, indent + 2))
