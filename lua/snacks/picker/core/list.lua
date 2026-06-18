@@ -464,14 +464,14 @@ function M:unpause()
 end
 
 -- PERF: cache each row's formatted output; on scroll only the new row is rebuilt.
--- Invalidated by the matcher ticks (search), self._width (resize) and sel (selection).
+-- Invalidated by the matcher ticks (search), self._width (resize) and the selection state.
 ---@param item snacks.picker.Item
 function M:format(item)
   local sc = #self.selected > 0 or self.picker.opts.formatters.selected.show_always
-  local sel = sc and (self:is_selected(item) and 2 or 1) or 0
+  local is_sel = sc and self:is_selected(item)
   local mt, rt = self.matcher.tick, self.matcher_regex.tick
   local c = item._fmt
-  if c and c.mt == mt and c.rt == rt and c.width == self._width and c.sel == sel then
+  if c and c.mt == mt and c.rt == rt and c.width == self._width and c.sc == sc and c.is_sel == is_sel then
     return c.text, c.extmarks
   end
 
@@ -526,7 +526,7 @@ function M:format(item)
   end
   Snacks.picker.highlight.matches(extmarks, positions)
 
-  item._fmt = { mt = mt, rt = rt, width = self._width, sel = sel, text = text, extmarks = extmarks }
+  item._fmt = { mt = mt, rt = rt, width = self._width, sc = sc, is_sel = is_sel, text = text, extmarks = extmarks }
   return text, extmarks
 end
 
