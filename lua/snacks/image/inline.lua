@@ -93,6 +93,13 @@ function M:update()
     return conceal
   end or conceal
   Snacks.image.doc.find_visible(self.buf, function(imgs)
+    -- `find_visible` is treesitter-backed and can return no images while the
+    -- parser reparses a rapidly-changing buffer, even when an image is still
+    -- present. Treating that as "all gone" closes and recreates placements on
+    -- the next parse, which flickers. Keep placements until it reports images.
+    if #imgs == 0 then
+      return
+    end
     local visible = self:visible()
     local stats = { new = 0, del = 0, update = 0 }
     for _, i in ipairs(imgs) do
