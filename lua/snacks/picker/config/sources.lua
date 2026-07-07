@@ -39,6 +39,7 @@ M.buffers = {
 ---@class snacks.picker.explorer.Config: snacks.picker.files.Config|{}
 ---@field follow_file? boolean follow the file from the current buffer
 ---@field tree? boolean show the file tree (default: true)
+---@field compact_folders? boolean collapse single-child directory chains into one row (default: false)
 ---@field git_status? boolean show git status (default: true)
 ---@field git_status_open? boolean show recursive git status for open directories
 ---@field git_untracked? boolean needed to show untracked git status
@@ -52,6 +53,7 @@ M.explorer = {
   sort = { fields = { "sort" } },
   supports_live = true,
   tree = true,
+  compact_folders = false,
   watch = true,
   diagnostics = true,
   diagnostics_open = false,

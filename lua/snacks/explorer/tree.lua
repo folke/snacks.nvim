@@ -1,6 +1,7 @@
 ---@class snacks.picker.explorer.Node
 ---@field path string
 ---@field name string
+---@field display_name? string compacted chain name (e.g. "src/main/java/com/example")
 ---@field hidden? boolean
 ---@field status? string merged git status
 ---@field dir_status? string git status of the directory
@@ -14,6 +15,7 @@
 ---@field utime? number
 ---@field children table<string, snacks.picker.explorer.Node>
 ---@field severity? number
+---@field _compact? {parent: snacks.picker.explorer.Node, display_name: string} transient compact-chain metadata
 
 ---@class snacks.picker.explorer.Filter
 ---@field hidden? boolean show hidden files
@@ -174,15 +176,41 @@ function Tree:refresh(path)
   end, { all = true })
 end
 
+---@param node snacks.picker.explorer.Node start of the chain (a directory)
+---@param filter fun(node: snacks.picker.explorer.Node):boolean
+---@return snacks.picker.explorer.Node deepest, string[] segments
+function Tree:compact_chain(node, filter)
+  local segments = { node.name }
+  local cur = node
+  while cur.dir do
+    if not cur.expanded then
+      self:expand(cur)
+    end
+    local single ---@type snacks.picker.explorer.Node?
+    local count = 0
+    for _, c in pairs(cur.children) do
+      if filter(c) then
+        count = count + 1
+        single = c
+        if count > 1 then
+          break
+        end
+      end
+    end
+    if count == 1 and single.dir then
+      cur = single
+      segments[#segments + 1] = cur.name
+    else
+      break
+    end
+  end
+  return cur, segments
+end
+
 ---@param node snacks.picker.explorer.Node
 ---@param fn fun(node: snacks.picker.explorer.Node):boolean? return `false` to not process children, `true` to abort
----@param opts? {all?: boolean}
-function Tree:walk(node, fn, opts)
-  local abort = false ---@type boolean?
-  abort = fn(node)
-  if abort ~= nil then
-    return abort
-  end
+---@param opts? {all?: boolean, compact?: boolean, filter?: fun(node: snacks.picker.explorer.Node):boolean}
+function Tree:walk_children(node, fn, opts)
   local children = vim.tbl_values(node.children) ---@type snacks.picker.explorer.Node[]
   table.sort(children, function(a, b)
     if a.dir ~= b.dir then
@@ -192,17 +220,52 @@ function Tree:walk(node, fn, opts)
   end)
   for c, child in ipairs(children) do
     child.last = c == #children
-    abort = false
-    if child.dir and (child.open or (opts and opts.all)) then
-      abort = self:walk(child, fn, opts)
+    local abort = false
+    if opts and opts.compact and opts.filter and child.dir then
+      if opts.filter(child) then
+        local deepest, segments = self:compact_chain(child, opts.filter)
+        if #segments >= 2 then
+          deepest.last = child.last
+          deepest._compact = { parent = node, display_name = table.concat(segments, "/") }
+          abort = fn(deepest)
+          if abort == nil and deepest.dir and (deepest.open or (opts and opts.all)) then
+            abort = self:walk_children(deepest, fn, opts)
+          end
+        else
+          child._compact = nil
+          if child.dir and (child.open or (opts and opts.all)) then
+            abort = self:walk(child, fn, opts)
+          else
+            abort = fn(child)
+          end
+        end
+      else
+        -- filtered out: skip, but mirror the normal "don't process children" behavior
+        child._compact = nil
+      end
     else
-      abort = fn(child)
+      if child.dir and (child.open or (opts and opts.all)) then
+        abort = self:walk(child, fn, opts)
+      else
+        abort = fn(child)
+      end
     end
     if abort then
       return true
     end
   end
   return false
+end
+
+---@param node snacks.picker.explorer.Node
+---@param fn fun(node: snacks.picker.explorer.Node):boolean? return `false` to not process children, `true` to abort
+---@param opts? {all?: boolean, compact?: boolean, filter?: fun(node: snacks.picker.explorer.Node):boolean}
+function Tree:walk(node, fn, opts)
+  local abort = fn(node)
+  if abort ~= nil then
+    return abort
+  end
+  return self:walk_children(node, fn, opts)
 end
 
 ---@param filter snacks.picker.explorer.Filter
@@ -246,7 +309,7 @@ function Tree:get(cwd, cb, opts)
       self:expand(n)
     end
     cb(n)
-  end)
+  end, { all = opts.all, expand = opts.expand, compact = opts.compact, filter = filter })
 end
 
 ---@param cwd string
