@@ -19,6 +19,7 @@ local uv = vim.uv or vim.loop
 ---@field sort? string
 ---@field internal? boolean internal parent directories not part of fd output
 ---@field status? string
+---@field display_name? string compacted chain name (e.g. "src/main/java/com/example")
 
 local function norm(path)
   return svim.fs.normalize(path)
@@ -230,7 +231,9 @@ function M.explorer(opts, ctx)
     local top = Tree:find(ctx.filter.cwd)
     local last = {} ---@type table<snacks.picker.explorer.Node, snacks.picker.explorer.Item>
     Tree:get(ctx.filter.cwd, function(node)
-      local parent = node.parent and items[node.parent.path] or nil
+      local compact = node._compact
+      local parent_node = compact and compact.parent or node.parent
+      local parent = parent_node and items[parent_node.path] or nil
       local status = node.status
       if not status and parent and parent.dir_status then
         status = parent.dir_status
@@ -242,6 +245,7 @@ function M.explorer(opts, ctx)
         dir_status = node.dir_status or parent and parent.dir_status,
         text = node.path,
         parent = parent,
+        display_name = compact and compact.display_name or nil,
         hidden = node.hidden,
         ignored = node.ignored,
         status = (not node.dir or not node.open or opts.git_status_open) and status or nil,
@@ -249,17 +253,23 @@ function M.explorer(opts, ctx)
         type = node.type,
         severity = (not node.dir or not node.open or opts.diagnostics_open) and node.severity or nil,
       }
-      if last[node.parent] then
-        last[node.parent].last = false
+      if last[parent_node] then
+        last[parent_node].last = false
       end
-      last[node.parent] = item
+      last[parent_node] = item
       if top == node then
         item.hidden = false
         item.ignored = false
       end
       items[node.path] = item
       cb(item)
-    end, { hidden = opts.hidden, ignored = opts.ignored, exclude = opts.exclude, include = opts.include })
+    end, {
+      hidden = opts.hidden,
+      ignored = opts.ignored,
+      exclude = opts.exclude,
+      include = opts.include,
+      compact = opts.compact_folders,
+    })
   end
 end
 

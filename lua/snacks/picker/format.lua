@@ -87,9 +87,20 @@ function M.filename(item, picker)
   local dir_hl = "SnacksPickerDir"
 
   if picker.opts.formatters.file.filename_only then
-    path = vim.fn.fnamemodify(item.file, ":t")
+    path = item.display_name or vim.fn.fnamemodify(item.file, ":t")
     path = path == "" and item.file or path
-    ret[#ret + 1] = { path, base_hl, field = "file" }
+    if item.display_name then
+      -- render a compacted directory chain, dimming the path separators
+      local parts = vim.split(path, "/", { plain = true })
+      for i, p in ipairs(parts) do
+        if i > 1 then
+          ret[#ret + 1] = { "/", dir_hl, field = "file" }
+        end
+        ret[#ret + 1] = { p, base_hl, field = "file" }
+      end
+    else
+      ret[#ret + 1] = { path, base_hl, field = "file" }
+    end
   else
     ret[#ret + 1] = {
       "",
