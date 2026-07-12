@@ -219,7 +219,7 @@ end
 ---@param opts snacks.picker.git.status.Config
 ---@type snacks.picker.finder
 function M.status(opts, ctx)
-  local args = M.git("status", "-uall", "--porcelain=v1", "-z", { args = { "--no-pager" } }, opts)
+  local args = M.git("status", "-uall", "--porcelain=v1", "-z", { args = { "--no-pager", "--no-optional-locks" } }, opts)
   if opts.ignored then
     table.insert(args, "--ignored=matching")
   end
