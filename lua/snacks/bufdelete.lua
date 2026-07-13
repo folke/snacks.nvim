@@ -75,12 +75,16 @@ function M.delete(opts)
   -- replace the buffer in all windows showing it,
   -- trying to use the alternate buffer if possible
   for _, win in ipairs(vim.fn.win_findbuf(buf)) do
-    local win_buf = new_buf
-    vim.api.nvim_win_call(win, function() -- Try using alternate buffer
-      local alt = vim.fn.bufnr("#")
-      win_buf = alt >= 0 and alt ~= buf and vim.bo[alt].buflisted and alt or win_buf
-    end)
-    vim.api.nvim_win_set_buf(win, win_buf)
+    if vim.api.nvim_win_is_valid(win) then
+      local win_buf = new_buf
+      vim.api.nvim_win_call(win, function() -- Try using alternate buffer
+        local alt = vim.fn.bufnr("#")
+        win_buf = alt >= 0 and alt ~= buf and vim.bo[alt].buflisted and alt or win_buf
+      end)
+      if vim.api.nvim_win_is_valid(win) then
+        vim.api.nvim_win_set_buf(win, win_buf)
+      end
+    end
   end
 
   if vim.api.nvim_buf_is_valid(buf) then
