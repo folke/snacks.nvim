@@ -376,6 +376,7 @@ function M:_render(extmarks)
     if self.hidden then
       e.virt_text = nil
       e.conceal = nil
+      e.conceal_lines = nil
       if e.virt_lines then
         e.virt_lines = vim.tbl_map(function(l)
           return { { "" } }
