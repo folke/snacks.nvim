@@ -149,19 +149,28 @@ function M:progress()
   vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, {})
   vim.bo[self.buf].modifiable = false
   local timer = assert(uv.new_timer())
+  local eid ---@type number?
   timer:start(
     0,
     80,
     vim.schedule_wrap(function()
-      if self:ready() or self.img:failed() or not vim.api.nvim_buf_is_valid(self.buf) then
+      local valid = vim.api.nvim_buf_is_valid(self.buf)
+      -- also stop when the placement is closed: `self:ready()` can never
+      -- become true for a closed placement, and the buffer may stay valid
+      -- (and be reused for the same file) long after the placement is gone
+      if self.closed or self:ready() or self.img:failed() or not valid then
         timer:stop()
         if not timer:is_closing() then
           timer:close()
         end
+        -- remove the spinner instead of leaving it behind
+        if eid and valid then
+          vim.api.nvim_buf_del_extmark(self.buf, ns, eid)
+        end
         return
       end
       vim.api.nvim_buf_clear_namespace(self.buf, ns, 0, -1)
-      vim.api.nvim_buf_set_extmark(self.buf, ns, 0, 0, {
+      eid = vim.api.nvim_buf_set_extmark(self.buf, ns, 0, 0, {
         virt_text = {
           { Snacks.util.spinner(), "SnacksImageSpinner" },
           { " " },
