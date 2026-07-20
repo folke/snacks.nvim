@@ -547,6 +547,12 @@ function M:update()
     self:hide()
     return
   end
+  -- the buffer is visible again, so un-hide. Inline placements are
+  -- hidden/shown explicitly by `snacks.image.inline`, so leave those alone.
+  if self.hidden and not self.opts.inline then
+    self.hidden = false
+    state.hidden = false
+  end
   self.img:place(self)
 
   self:debug("update")
