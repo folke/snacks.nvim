@@ -259,7 +259,10 @@ function D:init()
     buffer = self.buf,
     callback = function()
       self.fire("Closed")
-      vim.api.nvim_del_augroup_by_id(self.augroup)
+      if self.augroup then
+        pcall(vim.api.nvim_del_augroup_by_id, self.augroup)
+        self.augroup = nil
+      end
     end,
   })
   vim.api.nvim_create_autocmd("WinEnter", {
