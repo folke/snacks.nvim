@@ -104,7 +104,7 @@ local defaults = {
     spell = false,
     statuscolumn = "",
   },
-  cache = vim.fn.stdpath("cache") .. "/snacks/image",
+  cache = vim.fn.stdpath("cache") .. vim.fs.normalize("/snacks/image"),
   debug = {
     request = false,
     convert = false,
@@ -228,7 +228,7 @@ end
 function M.langs()
   local queries = vim.api.nvim_get_runtime_file("queries/*/images.scm", true)
   return vim.tbl_map(function(q)
-    return q:match("queries/(.-)/images%.scm")
+  return vim.fs.normalize(q):match("queries/(.-)/images%.scm")
   end, queries)
 end
 
