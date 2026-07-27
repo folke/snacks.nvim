@@ -140,6 +140,24 @@ local function get_color(v)
   return color
 end
 
+--- Whether the builtin TUI is attached to a terminal that can receive escape
+--- sequences, checked at call time since UIs can attach and detach over a
+--- session. This is the same check Neovim core uses before emitting escape
+--- sequences (`runtime/lua/vim/_defaults.lua`). With a GUI frontend (Neovide,
+--- neovim-qt, any `--embed` client) stdout is the msgpack-RPC channel instead,
+--- so writing to it corrupts the protocol stream.
+local function tui_attached()
+  if vim.fn.has("nvim-0.10") == 0 then
+    return true -- `stdout_tty` is only reported on 0.10+, keep the old behavior
+  end
+  for _, ui in ipairs(vim.api.nvim_list_uis()) do
+    if ui.chan == 1 and ui.stdout_tty then
+      return true
+    end
+  end
+  return false
+end
+
 ---@param opts snacks.lazygit.Config
 local function update_config(opts)
   ---@type table<string, string[]>
@@ -150,7 +168,11 @@ local function update_config(opts)
       local color = get_color(v)
       -- LazyGit uses color 241 a lot, so also set it to a nice color
       -- pcall, since some terminals don't like this
-      pcall(io.write, ("\27]4;%d;%s\7"):format(k, color[1]))
+      if vim.api.nvim_ui_send then -- 0.12+: routed to the TUI host terminal, no-op for GUIs
+        pcall(vim.api.nvim_ui_send, ("\27]4;%d;%s\7"):format(k, color[1]))
+      elseif tui_attached() then
+        pcall(io.write, ("\27]4;%d;%s\7"):format(k, color[1]))
+      end
     else
       theme[k] = get_color(v)
     end
