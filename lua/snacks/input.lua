@@ -232,7 +232,10 @@ function M.input(opts, on_confirm)
   ctx = { opts = opts, win = win }
   vim.fn.prompt_setprompt(win.buf, "")
   if opts.default then
+    local initial_undolevels = vim.bo[win.buf].undolevels
+    vim.bo[win.buf].undolevels = -1
     vim.api.nvim_buf_set_lines(win.buf, 0, -1, false, { opts.default })
+    vim.bo[win.buf].undolevels = initial_undolevels
   end
 
   local function highlight()
