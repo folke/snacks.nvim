@@ -101,7 +101,7 @@ function M.file(ctx)
     vim.fn.bufload(ctx.item.buf)
   end
 
-  if ctx.item.buf and vim.api.nvim_buf_is_loaded(ctx.item.buf) then
+  if ctx.item.buf and vim.api.nvim_buf_is_loaded(ctx.item.buf) and ctx.picker.opts.previewers.file.use_real_buffer then
     if not title then
       local name = vim.api.nvim_buf_get_name(ctx.item.buf)
       title = uv.fs_stat(name) and vim.fn.fnamemodify(name, ":t") or name

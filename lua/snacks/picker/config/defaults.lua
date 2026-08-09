@@ -198,6 +198,7 @@ local defaults = {
       max_size = 1024 * 1024, -- 1MB
       max_line_length = 500, -- max line length
       ft = nil, ---@type string? filetype for highlighting. Use `nil` for auto detect
+      use_real_buffer = true ---@type boolean use actual buffer as preview when the file is already loaded (default: true)
     },
     man_pager = nil, ---@type string? MANPAGER env to use for `man` preview
   },
