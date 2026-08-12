@@ -138,6 +138,17 @@ function M.find(opts, ctx)
           installed = bins[cmd[1]] ~= nil
         end
         cmd[1] = vim.fs.basename(cmd[1])
+      elseif type(cmd) == "function" and item.enabled then
+        local ok, result = pcall(cmd)
+        ---@type any
+        local any = result
+        if ok and any and any.transport and any.transport.cmd and type(any.transport.cmd) == "table" then
+          if bins[any.transport.cmd[1]] then
+            cmd = any.transport.cmd
+            bin = bins[any.transport.cmd[1]]
+            installed = true
+          end
+        end
       end
       local want = (not opts.installed or installed) and (not opts.configured or item.enabled)
       if opts.attached == true and not item.attached then
