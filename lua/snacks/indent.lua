@@ -316,7 +316,8 @@ function M.render_scope(scope, state)
   if config.scope.underline and scope.from == from then
     local scope_first_line = vim.api.nvim_buf_get_lines(scope.buf, scope.from - 1, scope.from, false)[1]
     if scope_first_line ~= nil then
-      vim.api.nvim_buf_set_extmark(scope.buf, ns, scope.from - 1, math.max(col, 0), {
+      local col_eval = (vim.bo[scope.buf].expandtab and col or math.floor(col / state.shiftwidth))
+      vim.api.nvim_buf_set_extmark(scope.buf, ns, scope.from - 1, math.max(col_eval, 0), {
         end_col = #scope_first_line,
         hl_group = get_underline_hl(hl),
         hl_mode = "combine",
