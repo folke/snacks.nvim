@@ -146,7 +146,8 @@ function M.jump(picker, _, action)
     pos = picker.matcher:bufpos(vim.api.nvim_get_current_buf(), item) or pos
   end
   if pos and pos[1] > 0 then
-    vim.api.nvim_win_set_cursor(win, { pos[1], pos[2] })
+    local last_line = vim.api.nvim_buf_line_count(vim.api.nvim_win_get_buf(win))
+    vim.api.nvim_win_set_cursor(win, { math.min(pos[1], last_line), pos[2] })
     vim.cmd("norm! zzzv")
   elseif item.search then
     vim.cmd(item.search)
