@@ -1,4 +1,5 @@
 *snacks-keymap*                               snacks keymap docs
+                                        For Neovim    Last change: 2026 May 25
 
 ==============================================================================
 Table of Contents                       *snacks.nvim-keymap-table-of-contents*
