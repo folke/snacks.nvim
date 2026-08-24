@@ -26,7 +26,13 @@
 local uv = vim.uv or vim.loop
 
 local function norm(path)
-  return svim.fs.normalize(path):gsub("/$", ""):gsub("^$", "/")
+  path = svim.fs.normalize(path)
+  -- keep trailing slash for Windows drive roots (D:/), otherwise
+  -- scandir("D:") resolves to the drive's current dir, not its root
+  if not path:match("^%a:/$") then
+    path = path:gsub("/$", "")
+  end
+  return path:gsub("^$", "/")
 end
 
 local function assert_dir(path)
@@ -77,9 +83,18 @@ end
 ---@param name string
 ---@param type string
 function Tree:child(node, name, type)
+  -- skip empty segment from trailing slash (e.g. drive root "D:/")
+  if name == "" then
+    return node
+  end
   if not node.children[name] then
-    local path = node.path .. "/" .. name
-    path = node == self.root and name or path
+    -- strip trailing slash from parent so drive roots don't double up ("D://name")
+    local base = node.path:gsub("/$", "")
+    local path = base .. "/" .. name
+    -- drive-letter root ("D:") keeps its trailing slash, so scandir hits the root
+    if node == self.root then
+      path = name:match("^%a:$") and (name .. "/") or name
+    end
     node.children[name] = {
       name = name,
       path = path,
