@@ -10,6 +10,7 @@
 - Supports inline image rendering in:
   `markdown`, `html`, `norg`, `tsx`, `javascript`, `css`, `vue`, `svelte`, `scss`, `latex`, `typst`
 - LaTex math expressions in `markdown` and `latex` documents
+- Markdown wikilinks support per-image width with `[[image.png|150]]` and `[[image.png|150px]]`
 
 Terminal support:
 
@@ -106,6 +107,9 @@ In case of issues, make sure to run `:checkhealth snacks`.
     float = true,
     max_width = 80,
     max_height = 40,
+    -- markdown wikilinks can request a per-image width with
+    -- `[[image.png|150]]` or `[[image.png|150px]]`
+    -- the requested width is still clamped by max_width/max_height
     -- Set to `true`, to conceal the image text when rendering inline.
     -- (experimental)
     ---@param lang string tree-sitter language

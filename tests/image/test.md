@@ -10,6 +10,10 @@
 
 !![[test.png|options]]
 
+!![[test.png|150]]
+
+!![[test.png|150px]]
+
 ## Injected HTML
 
 <img src="test.png" alt="png" width="200" height="30" />

@@ -22,6 +22,7 @@ local M = {}
 ---@field id string
 ---@field pos snacks.image.Pos
 ---@field src? string
+---@field width_px? number
 ---@field content? string
 ---@field content_id? string
 ---@field ext? string
@@ -168,6 +169,46 @@ function M.url_decode(str)
   end)
 end
 
+---@param width_px? number
+function M.width(width_px)
+  if not width_px then
+    return
+  end
+  local cell_width = Snacks.image.terminal.size().cell_width
+  return math.max(1, math.floor(width_px / cell_width + 0.5))
+end
+
+---@param src string
+---@param kind? string
+---@return {src: string, width_px?: number}
+function M.parse(src, kind)
+  local ret = { src = src }
+  if kind == "link_text" then
+    local parts = vim.split(src, "|", { plain = true })
+    ret.src = vim.trim(table.remove(parts, 1) or src)
+    for _, part in ipairs(parts) do
+      part = vim.trim(part)
+      local width = part:match("^(%d+)$") or part:match("^(%d+)px$")
+      if width then
+        ret.width_px = tonumber(width)
+        break
+      end
+    end
+  else
+    ret.src = src:gsub("^<", ""):gsub(">$", "")
+  end
+  return ret
+end
+
+---@param img snacks.image.match
+---@param opts snacks.image.Opts
+function M.opts(img, opts)
+  opts = Snacks.config.merge({}, opts, {
+    width = M.width(img.width_px),
+  })
+  return opts
+end
+
 ---@param dir string
 function M.is_dir(dir)
   if dir_cache[dir] == nil then
@@ -305,6 +346,11 @@ function M._img(ctx)
   end
   if ctx.src then
     img.src = vim.treesitter.get_node_text(ctx.src.node, ctx.buf, { metadata = ctx.src.meta })
+    if ctx.lang == "markdown_inline" then
+      local ref = M.parse(img.src, ctx.src.node:type())
+      img.src = ref.src
+      img.width_px = ref.width_px
+    end
   end
   if ctx.content then
     img.content = vim.treesitter.get_node_text(ctx.content.node, ctx.buf, { metadata = ctx.content.meta })
@@ -347,7 +393,7 @@ function M.hover_close()
 end
 
 --- Get the image at the cursor (if any)
----@param cb fun(image_src?:string, image_pos?: snacks.image.Pos)
+---@param cb fun(image?:snacks.image.match)
 function M.at_cursor(cb)
   local cursor = vim.api.nvim_win_get_cursor(0)
   M.find(vim.api.nvim_get_current_buf(), function(imgs)
@@ -358,7 +404,7 @@ function M.at_cursor(cb)
           (range[1] == range[3] and cursor[2] >= range[2] and cursor[2] <= range[4])
           or (range[1] ~= range[3] and cursor[1] >= range[1] and cursor[1] <= range[3])
         then
-          return cb(img.src, img.pos)
+          return cb(img)
         end
       end
     end
@@ -382,14 +428,15 @@ function M.hover()
     M.hover_close()
   end
 
-  M.at_cursor(function(src)
-    if not src then
+  M.at_cursor(function(img)
+    if not img or not img.src then
       return M.hover_close()
     end
 
-    if hover and hover.img.img.src ~= src then
+    if hover and hover.img.img.src ~= img.src then
       M.hover_close()
     elseif hover then
+      hover.img.opts.width = M.width(img.width_px) or Snacks.image.config.doc.width
       hover.img:update()
       return
     end
@@ -401,7 +448,8 @@ function M.hover()
     }))
     win:open_buf()
     local updated = false
-    local o = Snacks.config.merge({}, Snacks.image.config.doc, {
+    local o = M.opts(img, Snacks.config.merge({}, Snacks.image.config.doc, {
+      match_id = img.id,
       on_update_pre = function()
         if hover and not updated then
           updated = true
@@ -412,11 +460,11 @@ function M.hover()
         end
       end,
       inline = false,
-    })
+    }))
     hover = {
       win = win,
       buf = current_buf,
-      img = Snacks.image.placement.new(win.buf, src, o),
+      img = Snacks.image.placement.new(win.buf, img.src, o),
     }
     vim.api.nvim_create_autocmd({ "BufWritePost", "CursorMoved", "ModeChanged", "BufLeave" }, {
       group = vim.api.nvim_create_augroup("snacks.image.hover", { clear = true }),
