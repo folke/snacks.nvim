@@ -314,14 +314,19 @@ function M:ns()
 end
 
 -- show the item location
-function M:loc()
+---@param pos? snacks.picker.Pos buffer-local position
+---@param end_pos? snacks.picker.Pos buffer-local end position
+function M:loc(pos, end_pos)
   vim.api.nvim_buf_clear_namespace(self.win.buf, ns_loc, 0, -1)
   if not self.item then
     return
   end
 
   local line_count = vim.api.nvim_buf_line_count(self.win.buf)
-  Snacks.picker.util.resolve_loc(self.item, self.win.buf)
+  if not pos then
+    Snacks.picker.util.resolve_loc(self.item, self.win.buf)
+    pos, end_pos = self.item.pos, self.item.end_pos
+  end
 
   local function show(pos)
     local center = true
@@ -344,34 +349,34 @@ function M:loc()
     end)
   end
 
-  if self.item.pos and self.item.pos[1] > 0 and self.item.pos[1] <= line_count then
-    show(self.item.pos)
+  if pos and pos[1] > 0 and pos[1] <= line_count then
+    show(pos)
     if self.item.positions then
       for _, extmark in ipairs(Snacks.picker.highlight.matches({}, self.item.positions)) do
-        local col, row = extmark.col, self.item.pos[1]
+        local col, row = extmark.col, pos[1]
         extmark.col = nil
         extmark.row = nil
         extmark.field = nil
         extmark.hl_group = "SnacksPickerSearch"
         pcall(vim.api.nvim_buf_set_extmark, self.win.buf, ns_loc, row - 1, col, extmark)
       end
-    elseif self.item.end_pos then
-      vim.api.nvim_buf_set_extmark(self.win.buf, ns_loc, self.item.pos[1] - 1, self.item.pos[2], {
-        end_row = self.item.end_pos[1] - 1,
-        end_col = self.item.end_pos[2],
+    elseif end_pos then
+      vim.api.nvim_buf_set_extmark(self.win.buf, ns_loc, pos[1] - 1, pos[2], {
+        end_row = end_pos[1] - 1,
+        end_col = end_pos[2],
         hl_group = "SnacksPickerSearch",
       })
     elseif self.filter and vim.trim(self.filter.search) ~= "" then
       local ok, re = pcall(vim.regex, vim.trim(self.filter.search))
       if ok and re then
-        local start = self.item.pos[2]
+        local start = pos[2]
         local from, to ---@type number?, number?
         pcall(function()
-          from, to = re:match_line(self.win.buf, self.item.pos[1] - 1, start)
+          from, to = re:match_line(self.win.buf, pos[1] - 1, start)
         end)
         if from and to then
-          show({ self.item.pos[1], start + to }) -- make sure the to column is visible
-          vim.api.nvim_buf_set_extmark(self.win.buf, ns_loc, self.item.pos[1] - 1, start + from, {
+          show({ pos[1], start + to }) -- make sure the to column is visible
+          vim.api.nvim_buf_set_extmark(self.win.buf, ns_loc, pos[1] - 1, start + from, {
             end_col = start + to,
             hl_group = "SnacksPickerSearch",
           })

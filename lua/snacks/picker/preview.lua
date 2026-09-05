@@ -4,6 +4,61 @@ local M = {}
 local uv = vim.uv or vim.loop
 local ns = vim.api.nvim_create_namespace("snacks.picker.preview")
 
+---@param path string
+---@param first number
+---@param last number
+---@return string[]?, string?
+local function read_slice(path, first, last)
+  local file, err = io.open(path, "r")
+  if not file then
+    return nil, err
+  end
+  local lines = {}
+  local lnum = 0
+  for line in file:lines() do
+    lnum = lnum + 1
+    if lnum >= first then
+      lines[#lines + 1] = line
+    end
+    if lnum >= last then
+      break
+    end
+  end
+  file:close()
+  return lines
+end
+
+---@param ctx snacks.picker.preview.ctx
+---@param pos snacks.picker.Pos
+---@param lsp_pos lsp.Position
+---@return snacks.picker.Pos
+local function byte_pos(ctx, pos, lsp_pos)
+  local line = vim.api.nvim_buf_get_lines(ctx.buf, pos[1] - 1, pos[1], false)[1]
+  local col = line and Snacks.picker.util.str_byteindex(line, lsp_pos.character, ctx.item.loc.encoding) or pos[2]
+  return { pos[1], col }
+end
+
+---@param ctx snacks.picker.preview.ctx
+---@param first number
+---@return snacks.picker.Pos, snacks.picker.Pos?
+local function slice_loc(ctx, first)
+  local item = ctx.item
+  local pos = { item.pos[1] - first + 1, item.pos[2] }
+  local last = first + vim.api.nvim_buf_line_count(ctx.buf) - 1
+  local end_pos = item.end_pos
+      and item.end_pos[1] >= first
+      and item.end_pos[1] <= last
+      and { item.end_pos[1] - first + 1, item.end_pos[2] }
+    or nil
+  if item.loc and not item.loc.resolved then
+    pos = byte_pos(ctx, pos, item.loc.range.start)
+    if end_pos then
+      end_pos = byte_pos(ctx, end_pos, item.loc.range["end"])
+    end
+  end
+  return pos, end_pos
+end
+
 ---@param ctx snacks.picker.preview.ctx
 function M.directory(ctx)
   ctx.preview:reset()
@@ -78,6 +133,8 @@ end
 
 ---@param ctx snacks.picker.preview.ctx
 function M.file(ctx)
+  -- sliced previews must not use the normal same-path reuse path
+  local sliced = ctx.preview.state.file_slice
   if ctx.item.buf and not ctx.item.file and not vim.api.nvim_buf_is_valid(ctx.item.buf) then
     ctx.preview:notify("Buffer no longer exists", "error")
     return
@@ -102,6 +159,10 @@ function M.file(ctx)
   end
 
   if ctx.item.buf and vim.api.nvim_buf_is_loaded(ctx.item.buf) then
+    if sliced then
+      ctx.preview:reset()
+      ctx.preview.state.file_slice = nil
+    end
     if not title then
       local name = vim.api.nvim_buf_get_name(ctx.item.buf)
       title = uv.fs_stat(name) and vim.fn.fnamemodify(name, ":t") or name
@@ -116,12 +177,19 @@ function M.file(ctx)
     end
 
     if Snacks.image.supports_file(path) and Snacks.image.config.enabled ~= false then
+      if sliced then
+        ctx.preview:reset()
+        ctx.preview.state.file_slice = nil
+      end
       return M.image(ctx)
     end
 
     -- re-use existing preview when path is the same
-    if path ~= Snacks.picker.util.path(ctx.prev) then
+    local target_line = ctx.item.pos and ctx.item.pos[1]
+    local reuse = not sliced and path == Snacks.picker.util.path(ctx.prev)
+    if not reuse then
       ctx.preview:reset()
+      ctx.preview.state.file_slice = nil
       vim.bo[ctx.buf].buftype = ""
 
       title = title or vim.fn.fnamemodify(path, ":t")
@@ -137,8 +205,47 @@ function M.file(ctx)
       end
       local max_size = ctx.picker.opts.previewers.file.max_size or (1024 * 1024)
       if stat.size > max_size then
-        ctx.preview:notify("large file > 1MB", "warn")
-        return false
+        if not target_line then
+          ctx.preview:notify("large file > 1MB", "warn")
+          return false
+        end
+        local count = math.max(10, vim.api.nvim_win_get_height(ctx.win) * 3)
+        local first = math.max(1, target_line - math.floor(count / 2))
+        local lines, err = read_slice(path, first, first + count - 1)
+        if not lines then
+          ctx.preview:notify(err or "failed to read file", "error")
+          return false
+        elseif #lines == 0 then
+          ctx.preview:notify("target line not found", "warn")
+          return false
+        end
+        local is_binary = false
+        local ft = ctx.picker.opts.previewers.file.ft or vim.filetype.match({ filename = path })
+        if ft == "bigfile" then
+          ft = nil
+        end
+        for i, text in ipairs(lines) do
+          if #text > ctx.picker.opts.previewers.file.max_line_length then
+            text = text:sub(1, ctx.picker.opts.previewers.file.max_line_length) .. "..."
+            lines[i] = text
+          end
+          if text:find("[%z\1-\8\11\12\14-\31]") then
+            is_binary = true
+            if not ft then
+              ctx.preview:notify("binary file", "warn")
+              return
+            end
+          end
+        end
+        if is_binary then
+          ctx.preview:wo({ number = false, relativenumber = false, cursorline = false, signcolumn = "no" })
+        end
+        ctx.preview:set_lines(lines)
+        ctx.preview.state.file_slice = true
+        ctx.preview:wo({ statuscolumn = "%=%{v:virtnum==0?v:lnum+" .. (first - 1) .. ":''} " })
+        ctx.preview:highlight({ file = path, ft = ctx.picker.opts.previewers.file.ft, buf = ctx.buf })
+        ctx.preview:loc(slice_loc(ctx, first))
+        return
       end
       if stat.size == 0 then
         ctx.preview:notify("empty file", "warn")
