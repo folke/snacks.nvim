@@ -28,6 +28,7 @@ end
 ---@field _fn fun()
 ---@field _suspended? boolean
 ---@field _aborted? boolean
+---@field _started? boolean
 ---@field _start number
 ---@field _on table<snacks.picker.AsyncEvent, fun(res:any, async:snacks.picker.Async)[]>
 local Async = {}
@@ -219,8 +220,17 @@ function Async:step()
   if not self._co then
     return false
   end
+  if self._aborted and not self._started then
+    -- Aborted before the coroutine ever ran: don't start it.
+    -- Resuming a never-started coroutine with "abort" would pass the value as
+    -- function arguments (ignored) and run the full body anyway, e.g. an
+    -- aborted finder would still emit all its items into the new run's table.
+    self:_done()
+    return false
+  end
   local status = coroutine.status(self._co)
   if status == "suspended" then
+    self._started = true
     local ok, res = coroutine.resume(self._co, self._aborted and "abort" or nil)
     if not ok then
       error(res)
