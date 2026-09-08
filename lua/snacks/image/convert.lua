@@ -202,6 +202,13 @@ local proc_queue = {} ---@type snacks.spawn.Proc[]
 local proc_running = 0 ---@type number
 local MAX_PROCS = 3
 
+local function has_magick()
+  if have.magick == nil then
+    have.magick = vim.fn.executable("magick") == 1 or (not Snacks.util.is_win and vim.fn.executable("convert") == 1)
+  end
+  return have.magick
+end
+
 ---@param proc? snacks.spawn.Proc
 local function schedule(proc)
   if proc then
@@ -329,7 +336,7 @@ function Convert:resolve()
     self:_resolve("url")
     self:_resolve("identify")
   end
-  while self:ft() ~= "png" do
+  while self:ft() ~= "png" or (#self.steps == 0 and has_magick()) do
     local ft = self:ft()
     local target = commands[ft] and ft or "convert"
     if self:_resolve(target) then
