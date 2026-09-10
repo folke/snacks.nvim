@@ -93,7 +93,7 @@ function M.get_repo(remote, opts)
   for _, pattern in ipairs(opts.remote_patterns) do
     ret = ret:gsub(pattern[1], pattern[2]) --[[@as string]]
   end
-  return ret:find("https://") == 1 and ret or ("https://%s"):format(ret)
+  return ret:find("https?://") == 1 and ret or ("https://%s"):format(ret)
 end
 
 ---@param repo string
