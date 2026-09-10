@@ -30,6 +30,8 @@ local git_remotes_cases = {
   ["https://git.sr.ht/~user/repo"]                                       = "https://git.sr.ht/~user/repo",
   ["git@git.sr.ht:~user/another-repo"]                                   = "https://git.sr.ht/~user/another-repo",
   ["https://git.sr.ht/~user/another-repo"]                               = "https://git.sr.ht/~user/another-repo",
+  ["http://git.example.com/group/subgroup/repo.git"]                     = "http://git.example.com/group/subgroup/repo",
+  ["http://git.example.com/group/subgroup/repo"]                         = "http://git.example.com/group/subgroup/repo",
 }
 
 describe("util.lazygit", function()
