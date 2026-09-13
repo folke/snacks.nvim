@@ -134,14 +134,19 @@ function M.log(opts, ctx)
   end
 
   local file ---@type string?
+  if opts.current_line or opts.current_file then
+    file = vim.api.nvim_buf_get_name(ctx.filter.current_buf)
+    if file == "" then
+      Snacks.notify.warn("Current buffer has no file")
+      return function() end
+    end
+  end
   if opts.current_line then
     local cursor = vim.api.nvim_win_get_cursor(ctx.filter.current_win)
-    file = vim.api.nvim_buf_get_name(ctx.filter.current_buf)
     local line = cursor[1]
     args[#args + 1] = "-L"
     args[#args + 1] = line .. ",+1:" .. file
   elseif opts.current_file then
-    file = vim.api.nvim_buf_get_name(ctx.filter.current_buf)
     if opts.follow then
       args[#args + 1] = "--follow"
     end
