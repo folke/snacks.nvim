@@ -235,7 +235,13 @@ function M.request(cb, opts)
     cb(proc, data and data:find("%S") and proc:json() or nil)
   end, {
     args = args,
-    input = opts.input and vim.json.encode(opts.input) or nil,
+    -- `vim.json.encode({})` serializes an empty Lua table as `[]`, since Lua
+    -- can't distinguish an empty array from an empty object. `gh api` then
+    -- sends `[]` as the request body, which GitHub rejects for endpoints that
+    -- require a JSON object (e.g. creating a PR review with no fields set).
+    -- Force empty input tables to encode as `{}` instead.
+    input = opts.input and vim.json.encode(vim.tbl_isempty(opts.input) and vim.empty_dict() or opts.input)
+      or nil,
     on_error = opts.on_error,
   })
 end
