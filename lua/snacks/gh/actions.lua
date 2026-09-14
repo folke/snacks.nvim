@@ -55,9 +55,22 @@ local function get_meta(item, ctx)
     return
   end
   local meta = Snacks.picker.highlight.meta(buf)
-  ---@type {comment_id?: number, diff?: snacks.diff.Meta}?
+  ---@type {comment_id?: number, edit_comment_id?: number, diff?: snacks.diff.Meta}?
   local m = meta and meta[vim.api.nvim_win_get_cursor(win)[1]] or nil
   return m, meta, buf, win
+end
+
+---@param item snacks.picker.gh.Item
+---@param id number
+---@return snacks.gh.Comment?
+local function find_comment(item, id)
+  for _, review in ipairs(item.reviews or {}) do
+    for _, comment in ipairs(review.comments or {}) do
+      if comment.databaseId == id then
+        return comment
+      end
+    end
+  end
 end
 
 ---@class snacks.gh.actions: {[string]:snacks.gh.Action}
@@ -290,6 +303,38 @@ M.actions.gh_reply_to_comment = {
     action.api = {
       endpoint = "/repos/{repo}/pulls/{number}/comments",
       input = { in_reply_to = m.comment_id },
+    }
+    M.run(item, action, ctx)
+  end,
+}
+
+M.actions.gh_edit_comment = {
+  desc = "Edit comment",
+  title = "Edit comment on {type} #{number}",
+  priority = 150,
+  icon = " ",
+  enabled = function(item, ctx)
+    local m = get_meta(item, ctx)
+    return m and m.edit_comment_id ~= nil or false
+  end,
+  action = function(item, ctx)
+    local m = get_meta(item, ctx)
+    if not (m and m.edit_comment_id) then
+      Snacks.notify.error("No comment found to edit")
+      return
+    end
+    local comment = find_comment(item, m.edit_comment_id)
+    if not comment then
+      Snacks.notify.error("Could not find comment to edit")
+      return
+    end
+    local action = vim.deepcopy(M.cli_actions.gh_comment)
+    action.title = "Edit comment on {type} #{number}"
+    action.success = "Edited comment on {type} #{number}"
+    action.template = comment.body
+    action.api = {
+      endpoint = "/repos/{repo}/pulls/comments/" .. m.edit_comment_id,
+      method = "PATCH",
     }
     M.run(item, action, ctx)
   end,

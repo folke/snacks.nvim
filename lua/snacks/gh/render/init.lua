@@ -534,6 +534,11 @@ function M.comment(comment, ctx)
   end
 
   vim.list_extend(ret, M.comment_body(comment, ctx))
+  -- lines belonging to this comment alone, before any replies get appended below.
+  -- comment_id (added further down) always resolves to the thread's root comment,
+  -- since replying requires anchoring to the root; edit_comment_id instead tags
+  -- only these lines, so editing targets the exact comment under the cursor.
+  local own_lines = #ret
   local replies = M.find_reply(comment.id, ctx)
   for _, reply in ipairs(replies) do
     ret[#ret + 1] = {} -- empty line between comment and reply
@@ -541,10 +546,13 @@ function M.comment(comment, ctx)
     ctx.comment_skip[reply.id] = true
   end
   if ctx.is_review then
-    for _, line in ipairs(ret) do
+    for i, line in ipairs(ret) do
       local reply_id = comment.replyTo and comment.replyTo.databaseId or comment.databaseId
       if reply_id then
         line[#line + 1] = { "", meta = { comment_id = reply_id } }
+      end
+      if i <= own_lines and comment.viewerDidAuthor and comment.databaseId then
+        line[#line + 1] = { "", meta = { edit_comment_id = comment.databaseId } }
       end
     end
   end
