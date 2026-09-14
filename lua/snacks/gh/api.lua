@@ -490,6 +490,7 @@ function M.comments(item, cb)
                     createdAt
                     subjectType
                     author { login }
+                    viewerDidAuthor
                     replyTo { id databaseId }
                     reactionGroups {
                       content
