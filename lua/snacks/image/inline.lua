@@ -88,10 +88,10 @@ function M:get(from, to)
 end
 
 function M:update()
-  local conceal = Snacks.image.config.doc.conceal
-  conceal = type(conceal) ~= "function" and function()
-    return conceal
-  end or conceal
+  local opt = Snacks.image.config.doc.conceal
+  local conceal = type(opt) == "function" and opt or function()
+    return opt
+  end
   Snacks.image.doc.find_visible(self.buf, function(imgs)
     local visible = self:visible()
     local stats = { new = 0, del = 0, update = 0 }
