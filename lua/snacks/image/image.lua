@@ -197,15 +197,25 @@ end
 
 ---@param pid? number
 function M:del(pid)
-  for id, p in ipairs(pid and { pid } or vim.tbl_keys(self.placements)) do
+  for _, p in ipairs(pid and { pid } or vim.tbl_keys(self.placements)) do
     if self.placements[p] then
-      terminal.request({ a = "d", d = "i", i = self.id, p = id })
+      terminal.request({ a = "d", d = "i", i = self.id, p = p })
       self.placements[p] = nil
     end
   end
 
   if not next(self.placements) then
-    terminal.request({ a = "d", d = "i", i = self.id })
+    -- Terminals free image data that has no placements left (e.g. on the next
+    -- screen clear), so free it now and re-send it on the next placement.
+    terminal.request({ a = "d", d = "I", i = self.id })
+    self.sent = false
+    for i, v in ipairs(lru) do
+      if v.img == self then
+        table.remove(lru, i)
+        lru_fsize = lru_fsize - (self.fsize or 0)
+        break
+      end
+    end
   end
 end
 

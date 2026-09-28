@@ -535,8 +535,15 @@ function M:update()
   self._state = state
 
   if #state.wins == 0 then
+    self.hidden_no_wins = self.hidden_no_wins or not self.hidden
     self:hide()
     return
+  end
+  -- the buffer is visible again, so undo the hide from when it had no windows
+  if self.hidden_no_wins then
+    self.hidden_no_wins = nil
+    self.hidden = false
+    state.hidden = false
   end
   self.img:place(self)
 
