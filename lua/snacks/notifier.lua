@@ -284,7 +284,6 @@ function N.new(opts)
   self.queue = {}
   self.history = {}
   self:init()
-  self:start()
   return self
 end
 
@@ -319,9 +318,17 @@ function N:init()
 end
 
 function N:start()
+  self.timer = self.timer or assert(uv.new_timer())
+  if self.timer:is_active() then
+    return
+  end
   local running = false
-  uv.new_timer():start(self.opts.refresh, self.opts.refresh, function()
-    if running or not next(self.queue) then
+  self.timer:start(self.opts.refresh, self.opts.refresh, function()
+    if not next(self.queue) then
+      self.timer:stop()
+      return
+    end
+    if running then
       return
     end
     running = true
@@ -411,6 +418,7 @@ function N:add(opts)
     return notif.id
   end
   self.queue[notif.id] = notif
+  self:start()
   if self:is_blocking() then
     pcall(function()
       self:process()
