@@ -34,6 +34,13 @@ local environments = {
     end,
   },
   { name = "zellij", env = { TERM = "zellij", ZELLIJ = true }, supported = false, placeholders = false },
+  {
+    name = "docker",
+    detect = function()
+      return vim.fn.filereadable("/.dockerenv") == 1 or vim.fn.filereadable("/run/.containerenv") == 1
+    end,
+    remote = true,
+  },
   { name = "ssh", env = { SSH_CLIENT = true, SSH_CONNECTION = true }, remote = true },
 }
 
@@ -88,6 +95,10 @@ function M.size()
     if ffi.C.ioctl(1, TIOCGWINSZ, sz) ~= 0 or sz.col == 0 or sz.row == 0 then
       return
     end
+    if sz.xpixel == 0 or sz.ypixel == 0 then
+      sz.xpixel = sz.col * dw
+      sz.ypixel = sz.row * dh
+    end
     size = {
       width = sz.xpixel,
       height = sz.ypixel,
@@ -125,6 +136,9 @@ function M.env()
     else
       if e.terminal and M._terminal and M._terminal.terminal then
         e.detected = M._terminal.terminal:lower():find(e.terminal:lower()) ~= nil
+      end
+      if not e.detected and e.detect then
+        e.detected = e.detect()
       end
       if not e.detected then
         for k, v in pairs(e.env or {}) do
