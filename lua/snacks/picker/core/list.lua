@@ -463,12 +463,22 @@ function M:unpause()
   self:update()
 end
 
+-- PERF: cache each row's formatted output; on scroll only the new row is rebuilt.
+-- Invalidated by the matcher ticks (search), self._width (resize) and the selection state.
 ---@param item snacks.picker.Item
 function M:format(item)
+  local sc = #self.selected > 0 or self.picker.opts.formatters.selected.show_always
+  local is_sel = sc and self:is_selected(item)
+  local mt, rt = self.matcher.tick, self.matcher_regex.tick
+  local c = item._fmt
+  if c and c.mt == mt and c.rt == rt and c.width == self._width and c.sc == sc and c.is_sel == is_sel then
+    return c.text, c.extmarks
+  end
+
   Snacks.picker.util.resolve(item)
   -- Add selected and debug info
   local prefix = {} ---@type snacks.picker.Highlight[]
-  if #self.selected > 0 or self.picker.opts.formatters.selected.show_always then
+  if sc then
     vim.list_extend(prefix, Snacks.picker.format.selected(item, self.picker))
   else
     prefix[#prefix + 1] = { " " }
@@ -481,7 +491,7 @@ function M:format(item)
   -- Add the formatted item
   local line = self.picker.format(item, self.picker)
 
-  line = Snacks.picker.highlight.resolve(line, vim.api.nvim_win_get_width(self.win.win))
+  line = Snacks.picker.highlight.resolve(line, self._width)
 
   while #line > 0 and type(line[#line][1]) == "string" and line[#line][1]:find("^%s*$") do
     table.remove(line)
@@ -515,6 +525,8 @@ function M:format(item)
     vim.list_extend(positions, self.matcher_regex:positions(it).text or {})
   end
   Snacks.picker.highlight.matches(extmarks, positions)
+
+  item._fmt = { mt = mt, rt = rt, width = self._width, sc = sc, is_sel = is_sel, text = text, extmarks = extmarks }
   return text, extmarks
 end
 
@@ -525,11 +537,11 @@ function M:_render(item, row)
   text = text:gsub("\n", " ")
   vim.api.nvim_buf_set_lines(self.win.buf, row - 1, row, false, { text })
   for _, extmark in ipairs(extmarks) do
-    local col = extmark.col
-    extmark.col = nil
-    extmark.row = nil
-    extmark.field = nil
+    -- save/restore so cached extmark tables survive the API call
+    local col, erow, field = extmark.col, extmark.row, extmark.field
+    extmark.col, extmark.row, extmark.field = nil, nil, nil
     local ok, err = pcall(vim.api.nvim_buf_set_extmark, self.win.buf, ns, row - 1, col, extmark)
+    extmark.col, extmark.row, extmark.field = col, erow, field
     if not ok and self.picker.opts.debug.extmarks then
       Snacks.notify.error("Failed to set extmark.\n" .. err .. "\n```lua\n" .. vim.inspect(extmark) .. "\n```")
     end
@@ -588,6 +600,7 @@ function M:render()
     end
 
     self.visible = {}
+    self._width = vim.api.nvim_win_get_width(self.win.win)
     -- render items
     for i = self.top, math.min(self:count(), self.top + height - 1) do
       local item = assert(self:get(i), "item not found")
