@@ -39,7 +39,8 @@ math.randomseed(os.time())
 ---@field title? string
 ---@field text? string|snacks.dashboard.Text[]
 ---@field path? string path to an image file (used by the image section)
----@field height? number height for image section
+---@field height? number reserved height in rows for image sections (default: 17)
+---@field width? number maximum image width in columns (default: pane width minus indent)
 
 ---@alias snacks.dashboard.Format.ctx {width?:number}
 ---@alias snacks.dashboard.Action string|fun(self:snacks.dashboard.Class)
@@ -74,6 +75,7 @@ math.randomseed(os.time())
 
 ---@class snacks.dashboard.Config
 ---@field enabled? boolean
+---@field pane_align? "top"|"center" vertical alignment of panes (default: "top")
 ---@field sections snacks.dashboard.Section
 ---@field formats table<string, snacks.dashboard.Text|fun(item:snacks.dashboard.Item, ctx:snacks.dashboard.Format.ctx):snacks.dashboard.Text>
 local defaults = {
@@ -81,6 +83,7 @@ local defaults = {
   row = nil, -- dashboard position. nil for center
   col = nil, -- dashboard position. nil for center
   pane_gap = 4, -- empty columns between vertical panes
+  pane_align = "top", -- vertical alignment of panes
   autokeys = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", -- autokey sequence
   -- These settings are used by some built-in sections
   preset = {
@@ -525,13 +528,13 @@ function D:resolve(item, results, parent)
         results[i].padding = item.gap
       end
     end
-    if item.padding then -- add padding to the first and last child items
+    if item.padding ~= nil then -- override the outer padding without discarding inner padding
       local padding = self:padding(item)
-      if padding[2] > 0 and results[first] then
-        results[first].padding = { 0, padding[2] }
+      if results[first] then
+        results[first].padding = { self:padding(results[first])[1], padding[2] }
       end
-      if padding[1] > 0 and results[last] then
-        results[last].padding = { padding[1], 0 }
+      if results[last] then
+        results[last].padding = { padding[1], self:padding(results[last])[2] }
       end
     end
   elseif type(item) ~= "table" then
@@ -554,6 +557,20 @@ end
 ---@param group? string|integer
 function D.on(event, cb, group)
   return vim.api.nvim_create_autocmd("User", { pattern = "SnacksDashboard" .. event, callback = cb, group = group })
+end
+
+---@param self snacks.dashboard.Class
+---@param cb fun()
+local function on_close(self, cb)
+  local autocmds = {} ---@type number[]
+  local function close()
+    for _, id in ipairs(autocmds) do
+      pcall(vim.api.nvim_del_autocmd, id)
+    end
+    cb()
+  end
+  autocmds[1] = self.on("UpdatePre", close, self.augroup)
+  autocmds[2] = self.on("Closed", close, self.augroup)
 end
 
 ---@param pos {[1]:number, [2]:number}
@@ -611,22 +628,39 @@ end
 function D:render()
   -- horizontal position
   self.col = self.opts.col
-    or math.floor(self._size.width - (self.opts.width * #self.panes + self.opts.pane_gap * (#self.panes - 1))) / 2
+    or math.max(
+      0,
+      math.floor((self._size.width - (self.opts.width * #self.panes + self.opts.pane_gap * (#self.panes - 1))) / 2)
+    )
+
+  local blocks = {} ---@type table<snacks.dashboard.Item, snacks.dashboard.Block>
+  local heights = {} ---@type number[]
+  local height = 0
+  for p, pane in ipairs(self.panes) do
+    heights[p] = 0
+    for _, item in ipairs(pane) do
+      blocks[item] = self:format(item)
+      heights[p] = heights[p] + #blocks[item]
+    end
+    height = math.max(height, heights[p])
+  end
 
   self.lines = {} ---@type string[]
+  for row = 1, height do
+    self.lines[row] = ""
+  end
   local extmarks = {} ---@type {row:number, col:number, opts:vim.api.keyset.set_extmark}[]
   for p, pane in ipairs(self.panes) do
-    local indent = (" "):rep(p == 1 and self.col or self.opts.pane_gap)
-    local row = 0
+    local col = self.col + (self.opts.width + self.opts.pane_gap) * (p - 1)
+    local row = self.opts.pane_align == "center" and math.floor((height - heights[p]) / 2) or 0
     for _, item in ipairs(pane or {}) do
-      for l, line in ipairs(self:format(item)) do
+      for l, line in ipairs(blocks[item]) do
         row = row + 1
-        if p > 1 and not self.lines[row] then -- add lines for empty panes
-          self.lines[row] = (" "):rep(self.col + (self.opts.width + self.opts.pane_gap) * (p - 1))
-        elseif p == 1 and line.width > self.opts.width then
+        if p == 1 and line.width > self.opts.width then
           self.lines[row] = (" "):rep(self.col - math.floor((line.width - self.opts.width) / 2))
         else
-          self.lines[row] = (self.lines[row] or "") .. indent
+          -- Earlier panes can be empty on this row when their content is vertically centered.
+          self.lines[row] = self.lines[row] .. (" "):rep(math.max(0, col - vim.api.nvim_strwidth(self.lines[row])))
         end
         if l == 1 then
           item._ = { pane = p, row = row, col = #self.lines[row] - 1 }
@@ -652,6 +686,9 @@ function D:render()
     table.insert(self.lines, 1, "")
   end
 
+  -- Render the buffer before opening windows anchored to its lines.
+  self:render_buf(extmarks)
+
   -- fix item positions
   for _, item in ipairs(self.items) do
     if item._ then
@@ -661,8 +698,6 @@ function D:render()
       end
     end
   end
-
-  self:render_buf(extmarks)
 end
 
 ---@param extmarks {row:number, col:number, opts:vim.api.keyset.set_extmark}[]
@@ -962,6 +997,7 @@ function M.sections.terminal(opts)
     local ttl = opts.ttl or 3600
     local height, width = opts.height or 10, opts.width or (self.opts.width - (opts.indent or 0))
     local pane_width = self.opts.width - (opts.indent or 0)
+    local align = opts.align or (opts.center and "center" or "left")
     local win_width = (opts.center and math.min(width, pane_width)) or width
     local hl = opts.hl and hl_groups[opts.hl] or opts.hl or "SnacksDashboardTerminal"
     local cache_buf, term_buf, win ---@type integer?, integer?, integer?
@@ -1047,7 +1083,8 @@ function M.sections.terminal(opts)
         })
       )
     end
-    return {
+    local item ---@type snacks.dashboard.Item
+    item = {
       action = not opts.title and opts.action or nil,
       key = not opts.title and opts.key or nil,
       label = not opts.title and opts.label or nil,
@@ -1056,8 +1093,15 @@ function M.sections.terminal(opts)
         -- open the window with the terminal buffer if available.
         -- This is to ensure it starts with the correct window size.
         win = vim.api.nvim_open_win(assert(term_buf or cache_buf), false, {
-          bufpos = { pos[1] - 1, pos[2] + 1 },
-          col = (opts.indent or 0) + ((opts.center and math.floor((pane_width - win_width) / 2)) or 0),
+          bufpos = { pos[1] - 1 + self:padding(item)[2], 0 },
+          col = self.col
+            + (self.opts.width + self.opts.pane_gap) * (item._.pane - 1)
+            + (opts.indent or 0)
+            + (
+              align == "center" and math.floor((pane_width - win_width) / 2)
+              or align == "right" and pane_width - win_width
+              or 0
+            ),
           focusable = false,
           height = height,
           noautocmd = true,
@@ -1073,21 +1117,19 @@ function M.sections.terminal(opts)
           job:start()
         end
         show(assert(cache_buf or term_buf)) -- set the correct buffer
-        local close = vim.schedule_wrap(function()
+        on_close(self, function()
           if job then
             job:stop()
           end
           pcall(vim.api.nvim_win_close, win, true)
           pcall(vim.api.nvim_buf_delete, cache_buf, { force = true })
           pcall(vim.api.nvim_buf_delete, term_buf, { force = true })
-          return true
         end)
-        self.on("UpdatePre", close, self.augroup)
-        self.on("Closed", close, self.augroup)
         self:trace()
       end,
       text = ("\n"):rep(height - 1),
     }
+    return item
   end
 end
 
@@ -1110,7 +1152,8 @@ function M.sections.startup(opts)
   }
 end
 
---- Add an image section using kitty protocol or chafa as fallback
+--- Add an image section using the Kitty graphics protocol or chafa as fallback.
+--- Images preserve their aspect ratio and are centered by default.
 ---@param opts? snacks.dashboard.Item
 ---@return snacks.dashboard.Section?
 function M.sections.image(opts)
@@ -1119,95 +1162,126 @@ function M.sections.image(opts)
     return { text = { { "No image path provided", hl = "error" } } }
   end
 
-  local height = opts.height or 17
-  local width = opts.width or 60
+  return function(self)
+    local path = Snacks.image.convert.norm(opts.path)
+    local indent = math.max(0, math.floor(opts.indent or 0))
+    local pane_width = math.max(1, math.min(self.opts.width, self._size.width) - indent)
+    local height = math.max(1, math.min(math.floor(opts.height or 17), vim.api.nvim_win_get_height(self.win)))
+    local width = math.max(1, math.min(math.floor(opts.width or pane_width), pane_width))
+    local align = opts.align or "center"
 
-  -- kitty protocol is not available
-  if not Snacks.image.supports(opts.path) then
-    local chafa_available = vim.fn.executable("chafa") == 1
-    if chafa_available then
-      local chafa_cmd = string.format(
-        "chafa %s --format symbols --symbols vhalf --size %dx%d --stretch; sleep .2",
-        vim.fn.fnameescape(opts.path),
-        width,
-        height
-      )
-
+    if not Snacks.image.supports(path) then
+      if vim.fn.executable("chafa") ~= 1 then
+        return { text = { { "Image format or terminal is not supported!", hl = "error" } } }
+      end
+      local cell = Snacks.image.terminal.size()
       return M.sections.terminal({
-        cmd = chafa_cmd,
+        cmd = {
+          "chafa",
+          "--format",
+          "symbols",
+          "--symbols",
+          "vhalf",
+          "--font-ratio",
+          ("%g/%g"):format(cell.cell_width, cell.cell_height),
+          "--size",
+          ("%dx%d"):format(width, height),
+          "--view-size",
+          ("%dx%d"):format(width, height),
+          "--align",
+          "center," .. align,
+          "--animate",
+          "off",
+          "--",
+          path,
+        },
         height = height,
         width = width,
         center = true,
-        indent = opts.indent,
-        action = opts.action,
-        key = opts.key,
-        label = opts.label,
-      })
-    else
-      -- Neither kitty protocol nor chafa is available
-      return { text = { { "Image format or terminal is not supported!", hl = "error" } } }
+        align = align,
+        indent = indent,
+        action = not opts.title and opts.action or nil,
+        key = not opts.title and opts.key or nil,
+        label = not opts.title and opts.label or nil,
+      })(self)
     end
-  end
 
-  return {
-    action = opts.action,
-    key = opts.key,
-    label = opts.label,
-    render = function(self, pos)
-      local buf = vim.api.nvim_create_buf(false, true)
+    local item ---@type snacks.dashboard.Item
+    item = {
+      action = not opts.title and opts.action or nil,
+      key = not opts.title and opts.key or nil,
+      label = not opts.title and opts.label or nil,
+      text = ("\n"):rep(height - 1),
+      render = function(_, pos)
+        local buf = vim.api.nvim_create_buf(false, true)
+        Snacks.util.bo(buf, {
+          buftype = "nofile",
+          bufhidden = "wipe",
+          filetype = "image",
+          modifiable = false,
+          modified = false,
+          swapfile = false,
+        })
 
-      Snacks.util.bo(buf, {
-        filetype = "image",
-        modifiable = false,
-        modified = false,
-        swapfile = false,
-      })
+        local col = self.col + (self.opts.width + self.opts.pane_gap) * (item._.pane - 1) + indent
+        local win = vim.api.nvim_open_win(buf, false, {
+          relative = "win",
+          win = self.win,
+          bufpos = { pos[1] - 1 + self:padding(item)[2], 0 },
+          row = 0,
+          col = col,
+          width = width,
+          height = height,
+          border = "none",
+          focusable = false,
+          noautocmd = true,
+          style = "minimal",
+          zindex = Snacks.config.styles.dashboard.zindex + 1,
+        })
+        Snacks.util.wo(win, {
+          winhighlight = "Normal:SnacksDashboardNormal,NormalFloat:SnacksDashboardNormal",
+        })
 
-      local img_opts = {
-        pos = { 1, 0 },
-        height = height,
-        auto_resize = true,
-      }
+        local placement = Snacks.image.placement.new(buf, path, {
+          pos = { 1, 0 },
+          conceal = true, -- overlay the first row instead of leaving an empty line above the image
+          width = width,
+          height = height,
+          auto_resize = true,
+          on_update_pre = function(p)
+            if not vim.api.nvim_win_is_valid(win) then
+              return
+            end
+            local size = Snacks.image.util.fit(p.img.file, { width = width, height = height }, { info = p.img.info })
+            -- Fit the float to the image itself. Centering a pane-wide float leaves the image at its left edge.
+            local offset = align == "center" and math.floor((pane_width - size.width) / 2)
+              or align == "right" and pane_width - size.width
+              or 0
+            vim.api.nvim_win_set_config(win, {
+              relative = "win",
+              win = self.win,
+              bufpos = { pos[1] - 1 + self:padding(item)[2], 0 },
+              row = math.floor((height - size.height) / 2),
+              col = col + offset,
+              width = size.width,
+              height = size.height,
+            })
+          end,
+        })
 
-      local placement = Snacks.image.placement.new(buf, opts.path, img_opts)
-
-      local pane_width = self.opts.width - (opts.indent or 0)
-      local win_width = math.min(width, pane_width)
-      local center_offset = math.floor((pane_width - win_width) / 2)
-
-      local win = vim.api.nvim_open_win(buf, false, {
-        relative = "win",
-        win = self.win,
-        bufpos = { pos[1] - 1, pos[2] + center_offset },
-        width = win_width,
-        height = height,
-        focusable = false,
-        style = "minimal",
-        zindex = Snacks.config.styles.dashboard.zindex + 1,
-      })
-
-      Snacks.util.wo(win, {
-        winhighlight = "Normal:SnacksDashboardNormal",
-      })
-
-      local close = vim.schedule_wrap(function()
-        if win and vim.api.nvim_win_is_valid(win) then
-          pcall(vim.api.nvim_win_close, win, true)
-        end
-        if buf and vim.api.nvim_buf_is_valid(buf) then
-          pcall(vim.api.nvim_buf_delete, buf, { force = true })
-        end
-        if placement then
+        on_close(self, function()
           placement:close()
-        end
-        return true
-      end)
-
-      self.on("UpdatePre", close, self.augroup)
-      self.on("Closed", close, self.augroup)
-    end,
-    text = ("\n"):rep(height - 1), -- Placeholder text for layout
-  }
+          if vim.api.nvim_win_is_valid(win) then
+            vim.api.nvim_win_close(win, true)
+          end
+          if vim.api.nvim_buf_is_valid(buf) then
+            vim.api.nvim_buf_delete(buf, { force = true })
+          end
+        end)
+      end,
+    }
+    return item
+  end
 end
 
 M.status = {
