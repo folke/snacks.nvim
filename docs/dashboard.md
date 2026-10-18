@@ -13,6 +13,7 @@
   - **session**: session support
   - **startup**: startup time (lazy.nvim)
   - **terminal**: colored terminal output
+  - **image**: display images using kitty graphics protocol
 - super fast `terminal` sections with automatic caching
 
 ## 🚀 Usage
@@ -121,6 +122,7 @@ In the example below, both sections are equivalent.
 ```lua
 ---@class snacks.dashboard.Config
 ---@field enabled? boolean
+---@field pane_align? "top"|"center" vertical alignment of panes (default: "top")
 ---@field sections snacks.dashboard.Section
 ---@field formats table<string, snacks.dashboard.Text|fun(item:snacks.dashboard.Item, ctx:snacks.dashboard.Format.ctx):snacks.dashboard.Text>
 {
@@ -128,6 +130,7 @@ In the example below, both sections are equivalent.
   row = nil, -- dashboard position. nil for center
   col = nil, -- dashboard position. nil for center
   pane_gap = 4, -- empty columns between vertical panes
+  pane_align = "top", -- vertical alignment of panes
   autokeys = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", -- autokey sequence
   -- These settings are used by some built-in sections
   preset = {
@@ -409,6 +412,44 @@ Pokemons, because why not?
 }
 ```
 
+### `image`
+
+Display an image using the Kitty graphics protocol, with `chafa` as a fallback.
+
+```lua
+{
+  pane_align = "center",
+  sections = {
+    { section = "header" },
+    {
+      pane = 2,
+      section = "image",
+      path = "/path/to/your/image.png",
+      height = 17,
+      align = "center",
+      padding = 1,
+    },
+    { section = "keys", gap = 1, padding = 1 },
+    { section = "startup" },
+  },
+}
+```
+
+`height` reserves rows for the image (default: `17`, limited to the window height).
+`width` limits its width in columns and defaults to the pane width minus `indent`.
+Both backends preserve the aspect ratio and fit the image within these bounds.
+The image is centered horizontally and vertically within its section; use
+`align = "left"` or `align = "right"` to change its horizontal alignment.
+An image does not change the dashboard's pane width (`dashboard.width`).
+`padding = 0` adds no space around the section; `{ bottom, top }` adds space
+outside the reserved image area. Paths beginning with `~` are expanded.
+
+Set `dashboard.pane_align = "center"` to vertically center shorter panes within
+the tallest pane. Pane heights include section padding, and this applies to
+both text and images. The default is `"top"`; a single pane keeps its normal
+position. This setting is separate from the image's `align`, which controls
+horizontal alignment within its pane.
+
 ### `startify`
 
 Similar to the Vim Startify dashboard
@@ -506,6 +547,9 @@ The other options are used with `:lua Snacks.dashboard()`
 ---@field icon? string
 ---@field title? string
 ---@field text? string|snacks.dashboard.Text[]
+---@field path? string path to an image file (used by the image section)
+---@field height? number reserved height in rows for image sections (default: 17)
+---@field width? number maximum image width in columns (default: pane width minus indent)
 ```
 
 ```lua
@@ -646,6 +690,17 @@ Add the startup section
 ---@param opts? {icon?:string}
 ---@return snacks.dashboard.Section?
 Snacks.dashboard.sections.startup(opts)
+```
+
+### `Snacks.dashboard.sections.image()`
+
+Add an image section using the Kitty graphics protocol or chafa as fallback.
+Images preserve their aspect ratio and are centered by default.
+
+```lua
+---@param opts? snacks.dashboard.Item
+---@return snacks.dashboard.Section?
+Snacks.dashboard.sections.image(opts)
 ```
 
 ### `Snacks.dashboard.sections.terminal()`

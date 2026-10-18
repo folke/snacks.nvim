@@ -89,6 +89,8 @@ end
 function M:on_send()
   use(self)
   for _, placement in pairs(self.placements) do
+    -- Transmitting image data replaces all of its placements in the terminal.
+    placement._state = nil
     placement:update()
   end
 end
@@ -197,15 +199,17 @@ end
 
 ---@param pid? number
 function M:del(pid)
-  for id, p in ipairs(pid and { pid } or vim.tbl_keys(self.placements)) do
+  for _, p in ipairs(pid and { pid } or vim.tbl_keys(self.placements)) do
     if self.placements[p] then
-      terminal.request({ a = "d", d = "i", i = self.id, p = id })
+      terminal.request({ a = "d", d = "i", i = self.id, p = p })
       self.placements[p] = nil
     end
   end
 
   if not next(self.placements) then
-    terminal.request({ a = "d", d = "i", i = self.id })
+    -- Release unused data and resend it on reuse instead of trusting the terminal's cache.
+    terminal.request({ a = "d", d = "I", i = self.id })
+    self.sent = false
   end
 end
 

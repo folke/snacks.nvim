@@ -206,4 +206,22 @@ M.examples.pokemon = {
   },
 }
 
+-- An example using the `image` section to display an image
+M.examples.image = {
+  pane_align = "center",
+  sections = {
+    {
+      pane = 1,
+      section = "image",
+      path = "~/.config/wall.png",
+      height = 17,
+      padding = 1,
+    },
+    { pane = 1, icon = " ", title = "Projects", section = "projects", indent = 2, padding = 1 },
+    { pane = 2, section = "keys", gap = 1, padding = 1 },
+    { pane = 2, icon = " ", title = "Recent Files", section = "recent_files", indent = 2, padding = 1 },
+    { pane = 2, section = "startup" },
+  },
+}
+
 return M
