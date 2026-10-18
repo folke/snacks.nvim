@@ -186,6 +186,102 @@ describe("dashboard image", function()
     assert.are.same({ 1, 16 }, vim.api.nvim_win_get_position(win))
   end)
 
+  it("refreshes the image on a terminal resize even when the cell count is unchanged", function()
+    local placement = open()
+    vim.api.nvim_exec_autocmds("VimResized", {})
+    assert.is_true(vim.wait(1000, function()
+      return placement.closed and placements[2] and placements[2]._state ~= nil
+    end, 10))
+  end)
+
+  it("coalesces rapid terminal resizes into one image redraw", function()
+    local placement = open()
+    for _, columns in ipairs({ 120, 60, 140, 100 }) do
+      vim.o.columns = columns
+      vim.api.nvim_exec_autocmds("VimResized", {})
+    end
+    assert.is_false(placement.closed or false)
+    assert.is_true(vim.wait(1000, function()
+      return placement.closed and placements[2] and placements[2]._state ~= nil
+    end, 10))
+    assert.are.equal(2, #placements)
+    assert.are.equal(100, instance._size.width)
+  end)
+
+  it("does not redraw a dashboard that closes while a resize is pending", function()
+    open()
+    vim.api.nvim_exec_autocmds("VimResized", {})
+    vim.api.nvim_buf_delete(instance.buf, { force = true })
+    vim.wait(100, function()
+      return false
+    end)
+    assert.are.equal(1, #placements)
+  end)
+
+  it("restores the image after a resize in another tab without drawing in that tab", function()
+    local placement = open()
+    vim.cmd.tabnew()
+    local hidden = vim.wait(1000, function()
+      return placement.hidden == true
+    end, 10)
+    vim.o.columns = 100
+    vim.api.nvim_exec_autocmds("VimResized", {})
+    vim.wait(100, function()
+      return false
+    end)
+    local count = #placements
+    vim.cmd.tabclose()
+    assert.is_true(hidden)
+    assert.are.equal(1, count)
+    assert.is_true(vim.wait(1000, function()
+      return placement.closed and placements[2] and placements[2]._state and not placements[2].hidden
+    end, 10))
+  end)
+
+  it("retransmits cached image data when a resize replaces its last placement", function()
+    local stored, missing, transmissions = false, false, 0
+    image.terminal.request = function(request)
+      if request.t == "f" then
+        stored = true
+        transmissions = transmissions + 1
+      elseif request.a == "d" and request.d == "I" then
+        stored = false
+      elseif request.a == "p" and not stored then
+        missing = true
+      end
+    end
+    local cached = setmetatable({
+      id = 42,
+      file = "tests/image/test.png",
+      info = { size = image_size, dpi = { width = 96, height = 96 } },
+      placements = {},
+      fsize = 0,
+      ready = function()
+        return true
+      end,
+      place = function(img, placement)
+        if not placement.id then
+          placements[#placements + 1] = placement
+        end
+        image.image.place(img, placement)
+      end,
+    }, image.image)
+    image.image.new = function()
+      return cached
+    end
+    local placement = open()
+    assert.are.equal(1, transmissions)
+    -- Kitty can discard unreferenced image data, independently of the Lua cache.
+    stored = false
+    vim.o.columns = 100
+    vim.api.nvim_exec_autocmds("VimResized", {})
+    assert.is_true(vim.wait(1000, function()
+      return placement.closed and placements[2] and placements[2]._state ~= nil
+    end, 10))
+    assert.are.equal(2, transmissions)
+    assert.is_false(missing)
+  end)
+
   it("does not crop an image larger than the window", function()
     image_size = { width = 1000, height = 20000 }
     local placement, win = open({ height = 200 })

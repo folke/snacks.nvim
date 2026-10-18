@@ -251,12 +251,26 @@ function D:init()
     vim.keymap.set("n", "<esc>", "<cmd>bd<cr>", { silent = true, buffer = self.buf })
   end
   vim.keymap.set("n", "q", "<cmd>bd<cr>", { silent = true, buffer = self.buf })
+
+  local function visible()
+    return vim.api.nvim_buf_is_valid(self.buf)
+      and self.win
+      and vim.api.nvim_win_is_valid(self.win)
+      and vim.api.nvim_win_get_buf(self.win) == self.buf
+      and vim.api.nvim_win_get_tabpage(self.win) == vim.api.nvim_get_current_tabpage()
+  end
+  -- Wait for the terminal's layout and pixel dimensions to settle before replacing images.
+  local update = Snacks.util.debounce(function()
+    if visible() then
+      self:update()
+    end
+  end, { ms = 50 })
   vim.api.nvim_create_autocmd({ "WinResized", "VimResized" }, {
     group = self.augroup,
-    callback = function()
-      -- only re-render if the size has changed
-      if not vim.deep_equal(self._size, self:size()) then
-        self:update()
+    callback = function(ev)
+      -- A terminal resize can change pixel dimensions without changing the cell count.
+      if visible() and (ev.event == "VimResized" or not vim.deep_equal(self._size, self:size())) then
+        update()
       end
     end,
   })
@@ -270,9 +284,12 @@ function D:init()
   vim.api.nvim_create_autocmd("WinEnter", {
     group = self.augroup,
     callback = function(ev)
-      if ev.buf == self.buf and not vim.api.nvim_win_is_valid(self.win) then
-        self.win = vim.fn.bufwinid(self.buf)
-        self:update()
+      if ev.buf == self.buf then
+        if not self.win or not vim.api.nvim_win_is_valid(self.win) then
+          self.win = vim.api.nvim_get_current_win()
+        end
+        -- Placements can become hidden while another tab is active.
+        update()
       end
     end,
   })
