@@ -42,7 +42,9 @@ function M.setup()
           if not path or not buf or vim.bo[buf].filetype == "bigfile" then
             return
           end
-          if path ~= vim.fs.normalize(vim.api.nvim_buf_get_name(buf)) then
+          local name = vim.fs.normalize(vim.api.nvim_buf_get_name(buf))
+          -- the buffer name has symlinks resolved, but the detected path does not
+          if path ~= name and vim.fs.normalize(vim.fn.resolve(path)) ~= name then
             return
           end
           local size = vim.fn.getfsize(path)
