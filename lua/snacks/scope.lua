@@ -330,8 +330,13 @@ end
 
 function TSScope:fix()
   self:fill()
-  self.from, _, self.to = self.node:range()
-  self.from, self.to = self.from + 1, self.to + 1
+  local from, _, to, to_col = self.node:range()
+  -- the end position is exclusive, so a node ending at column 0
+  -- actually ends on the previous line (e.g. markdown sections)
+  if to_col == 0 and to > from then
+    to = to - 1
+  end
+  self.from, self.to = from + 1, to + 1
   self.indent = math.min(vim.fn.indent(self.from), vim.fn.indent(self.to))
   return self
 end

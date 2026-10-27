@@ -91,6 +91,16 @@ describe("scope", function()
       end
     end
   end
+
+  -- treesitter nodes ending at column 0 must not extend past the last line
+  it("should select a scope at the end of the buffer", function()
+    M.set_lines({ "# T", "", "- a", "  - b", "  - c" }, { ft = "markdown", ts = true })
+    vim.api.nvim_win_set_cursor(0, { 5, 0 })
+    Snacks.scope.textobject({ min_size = 2, cursor = false, treesitter = { blocks = { enabled = false } } })
+    local from, to = vim.fn.line("v"), vim.fn.line(".")
+    vim.cmd("normal! \27")
+    assert.same({ 4, 5 }, { from, to })
+  end)
 end)
 
 local function foo()
