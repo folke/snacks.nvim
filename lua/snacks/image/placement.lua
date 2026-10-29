@@ -535,7 +535,8 @@ function M:update()
   self._state = state
 
   if #state.wins == 0 then
-    self:hide()
+    -- not `hide()`: `hidden` is only cleared by `show()`, which only inline images call
+    self:del()
     return
   end
   self.img:place(self)
