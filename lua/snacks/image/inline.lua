@@ -5,11 +5,29 @@
 local M = {}
 M.__index = M
 
+---Manager currently owning each buffer.
+---@type table<number, snacks.image.inline>
+M.current = {}
+
 function M.new(buf)
+  -- Retire any manager already attached to this buffer. The augroup below is
+  -- cleared on re-create, but nvim_buf_attach callbacks are not, so without
+  -- this every re-attach leaves a live manager behind and each one renders
+  -- its own copy of every image.
+  local prev = M.current[buf]
+  if prev then
+    prev.valid = false
+    for _, img in pairs(prev.imgs) do
+      img:close()
+    end
+  end
+
   local self = setmetatable({}, M)
   self.buf = buf
   self.imgs = {}
   self.idx = {}
+  self.valid = true
+  M.current[buf] = self
   local group = vim.api.nvim_create_augroup("snacks.image.inline." .. buf, { clear = true })
 
   local update = Snacks.util.debounce(function()
@@ -31,7 +49,12 @@ function M.new(buf)
     end,
   })
   vim.api.nvim_buf_attach(buf, false, {
-    on_lines = update,
+    on_lines = function()
+      if not self.valid then
+        return true -- detach: a newer manager owns this buffer
+      end
+      update()
+    end,
   })
   vim.schedule(update)
   return self
