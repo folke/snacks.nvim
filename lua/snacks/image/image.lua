@@ -197,9 +197,9 @@ end
 
 ---@param pid? number
 function M:del(pid)
-  for id, p in ipairs(pid and { pid } or vim.tbl_keys(self.placements)) do
+  for _, p in ipairs(pid and { pid } or vim.tbl_keys(self.placements)) do
     if self.placements[p] then
-      terminal.request({ a = "d", d = "i", i = self.id, p = id })
+      terminal.request({ a = "d", d = "i", i = self.id, p = p })
       self.placements[p] = nil
     end
   end
