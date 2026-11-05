@@ -241,7 +241,7 @@ function M.layout(opts)
   end
 
   -- Fix deprecated layout options
-  layout.hidden = layout.hidden or {}
+  layout.hidden = vim.deepcopy(layout.hidden or {})
   if layout.preview == false then
     table.insert(layout.hidden, "preview")
     layout.preview = nil
