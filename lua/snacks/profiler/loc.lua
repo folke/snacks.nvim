@@ -90,6 +90,10 @@ function M.loc(entry)
       ret = { file = info.source:sub(2), line = info.linedefined }
       if entry.fname and ret.file:sub(1, 4) == "vim/" then
         ret.file = M.user_runtime .. "/lua/" .. ret.file
+        -- embedded runtime modules have no `.lua` extension since Neovim 0.12.3
+        if not ret.file:find("%.lua$") then
+          ret.file = ret.file .. ".lua"
+        end
         local ts_loc = M.ts_locs(ret.file)[entry.fname]
         if ts_loc then
           ret.file, ret.line = ts_loc.file, ts_loc.line
