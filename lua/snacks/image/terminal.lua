@@ -18,6 +18,12 @@ local environments = {
     placeholders = true,
   },
   {
+    name = "tuios",
+    terminal = "tuios",
+    supported = true,
+    placeholders = true,
+  },
+  {
     name = "wezterm",
     terminal = "wezterm",
     supported = true,
