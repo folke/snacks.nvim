@@ -15,6 +15,7 @@ Terminal support:
 
 - [kitty](https://sw.kovidgoyal.net/kitty/)
 - [ghostty](https://ghostty.org/)
+- [tuios](https://github.com/Gaurav-Gosain/tuios)
 - [wezterm](https://wezfurlong.org/wezterm/)
   Wezterm has only limited support for the kitty graphics protocol.
   Inline image rendering is not supported.
