@@ -102,6 +102,14 @@ M.actions.gh_open = {
     if ctx.picker then
       return Snacks.picker.actions.jump(ctx.picker, item, ctx.action)
     end
+    if ctx.main then
+      for _, picker in ipairs(Snacks.picker.get()) do
+        if picker.preview.win.win == ctx.main then
+          picker:focus("preview")
+          return Snacks.picker.actions.jump(picker, item, ctx.action)
+        end
+      end
+    end
   end,
 }
 
