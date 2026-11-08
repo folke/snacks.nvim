@@ -192,16 +192,10 @@ end
 function M.get(cmd, opts)
   opts = opts or {}
   local id = M.tid(cmd, opts)
-  local created = false
-  if not (terminals[id] and terminals[id]:buf_valid()) and (opts.create ~= false) then
-    local ret = M.open(cmd, opts)
-    ret:on("BufWipeout", function()
-      terminals[id] = nil
-    end, { buf = true })
-    assert(terminals[id], "Terminal was not created")
-    created = true
+  if opts.create ~= false and (opts.override or not (terminals[id] and terminals[id]:buf_valid())) then
+    return M.open(cmd, opts), true
   end
-  return terminals[id], created
+  return terminals[id], false
 end
 
 ---@return snacks.win[]
@@ -217,7 +211,10 @@ end
 ---@param opts? snacks.terminal.Opts
 function M.toggle(cmd, opts)
   local terminal, created = M.get(cmd, opts)
-  return created and terminal or assert(terminal):toggle()
+  if created then
+    return terminal
+  end
+  return assert(terminal):toggle()
 end
 
 --- Focus a terminal window. If already focused, hide it.
@@ -226,11 +223,14 @@ end
 ---@param opts? snacks.terminal.Opts
 function M.focus(cmd, opts)
   local terminal, created = M.get(cmd, opts)
-  if terminal and not created and vim.api.nvim_get_current_buf() == terminal.buf then
+  if created then
+    return terminal
+  end
+  if terminal and vim.api.nvim_get_current_buf() == terminal.buf then
     terminal:hide()
     return terminal, created
   end
-  return created and terminal or assert(terminal):show():focus()
+  return assert(terminal):show():focus()
 end
 
 --- Parses a shell command into a table of arguments.

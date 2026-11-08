@@ -45,3 +45,57 @@ describe("terminal.open", function()
     term:close()
   end)
 end)
+
+describe("terminal override", function()
+  local entries = {
+    get = terminal.get,
+    open = terminal.open,
+    toggle = terminal.toggle,
+    focus = terminal.focus,
+    call = function(...)
+      return terminal(...)
+    end,
+  }
+
+  for name, invoke in pairs(entries) do
+    it("calls the override from " .. name .. " without requiring a return value", function()
+      local calls = 0
+      local cmd = { "custom-terminal" }
+      local cwd = vim.fn.getcwd()
+      local result, created = invoke(cmd, {
+        cwd = cwd,
+        override = function(actual_cmd, opts)
+          calls = calls + 1
+          assert.are.same(cmd, actual_cmd)
+          assert.are.equal(cwd, opts.cwd)
+        end,
+      })
+      assert.is_nil(result)
+      assert.are.equal(1, calls)
+      if name == "get" then
+        assert.is_true(created)
+      end
+    end)
+  end
+
+  it("leaves creation disabled when get is only looking for a terminal", function()
+    local result, created = terminal.get({ "custom-terminal" }, {
+      create = false,
+      override = function()
+        error("unexpected override call")
+      end,
+    })
+    assert.is_nil(result)
+    assert.is_false(created)
+  end)
+
+  it("returns the override result as-is", function()
+    local custom_terminal = {}
+    local result = terminal.toggle(nil, {
+      override = function()
+        return custom_terminal
+      end,
+    })
+    assert.are.equal(custom_terminal, result)
+  end)
+end)
