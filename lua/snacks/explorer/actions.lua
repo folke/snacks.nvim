@@ -213,7 +213,7 @@ function M.actions.explorer_add(picker)
     end
     vim.fn.mkdir(dir, "p")
     if is_file then
-      io.open(path, "w"):close()
+      local _f = io.open(path, "w"); if _f then _f:close() end
     end
     Tree:open(dir)
     Tree:refresh(dir)
