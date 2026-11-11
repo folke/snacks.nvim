@@ -327,20 +327,21 @@ function M.spelling()
   return items
 end
 
----@class snacks.picker.tags.Tag
----@field name string
----@field filename string
----@field cmd string
----@field kind? string
----@field static? string
-
 ---@param opts snacks.picker.tags.Config
 ---@type snacks.picker.finder
 function M.tags(opts, ctx)
   local buf = ctx.filter.current_buf
-  ---@type snacks.picker.tags.Tag[]
-  local tags = vim.fn.taglist(ctx.filter.search == "" and ".*" or ctx.filter.search, vim.api.nvim_buf_get_name(buf))
-  local ret = {} ---@type snacks.picker.finder.Item[]
+  -- `tagfiles()` depends on the buffer's 'tags' and can't be called in a fast event,
+  -- so resolve the tag files here and read them in the async finder
+  local tag_files = {} ---@type string[]
+  local seen = {} ---@type table<string, boolean>
+  for _, file in ipairs(vim.api.nvim_buf_call(buf, vim.fn.tagfiles)) do
+    file = vim.fs.normalize(vim.fn.fnamemodify(file, ":p"))
+    if not seen[file] then
+      seen[file] = true
+      tag_files[#tag_files + 1] = file
+    end
+  end
 
   local lsp_kinds = {
     c = "Class",
@@ -361,20 +362,35 @@ function M.tags(opts, ctx)
     T = "TypeParameter",
   }
 
-  for _, tag in ipairs(tags) do
-    ---@type snacks.picker.finder.Item
-    local item = {
-      text = tag.name,
-      name = tag.name,
-      file = tag.filename,
-      search = tag.cmd,
-      kind = tag.kind,
-      lsp_kind = lsp_kinds[tag.kind] or "Text",
-    }
-    ret[#ret + 1] = item
+  -- read the tag files directly instead of `taglist(".*")`, which blocks until
+  -- every tag is loaded. Same approach as the help picker, which also reads tags files.
+  ---@async
+  ---@param cb async fun(item: snacks.picker.finder.Item)
+  return function(cb)
+    for _, file in ipairs(tag_files) do
+      local dir = vim.fs.dirname(file)
+      for line in io.lines(file) do
+        -- {name}<Tab>{file}<Tab>{cmd};"<Tab>{kind}<Tab>{fields...}
+        local name, filename, rest = line:match("^([^\t]+)\t([^\t]+)\t(.*)$")
+        if name and not line:match("^!_TAG_") then
+          local cmd, fields = rest:match('^(.-);"\t?(.*)$')
+          cmd = cmd or rest
+          -- kind is either the first field without a key or a `kind:` field
+          local kind = fields and (fields:match("^(%a+)\t") or fields:match("^(%a+)$") or fields:match("kind:(%a+)"))
+          ---@type snacks.picker.finder.Item
+          local item = {
+            text = name,
+            name = name,
+            file = filename:sub(1, 1) == "/" and filename or dir .. "/" .. filename,
+            search = cmd,
+            kind = kind,
+            lsp_kind = lsp_kinds[kind] or "Text",
+          }
+          cb(item)
+        end
+      end
+    end
   end
-
-  return ret
 end
 
 ---@param opts snacks.picker.undo.Config
