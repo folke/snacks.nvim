@@ -327,6 +327,46 @@ function M.spelling()
   return items
 end
 
+-- Splits the part of a tags line after `{name}<Tab>{file}<Tab>` into the
+-- tag address (the Ex command that finds the tag) and the extension fields:
+--
+--   /^x = 1$/;"<Tab>v<Tab>line:1   ->  `/^x = 1$/`, `v<Tab>line:1`
+--   12;"<Tab>v                     ->  `12`, `v`
+--
+-- A search pattern can itself contain `;"`, so splitting at the first `;"`
+-- would cut it short:
+--
+--   /^sep = ";"$/;"<Tab>v          ->  `/^sep = ";"$/`, `v`  (not `/^sep = "`)
+--
+-- So when the address is a `/` or `?` search, skip past its closing delimiter
+-- first, ignoring characters escaped with `\`. This copies `find_extra()` in
+-- Neovim's tag.c, which `taglist()` uses for the `cmd` field.
+---@param rest string
+---@return string cmd, string? fields
+local function split_tag_address(rest)
+  local cmd_end = 0
+  local delim = rest:sub(1, 1)
+  if delim == "/" or delim == "?" then
+    local i = 2
+    while true do
+      local j = rest:find(delim == "/" and "[\\/]" or "[\\?]", i)
+      if not j then
+        break
+      elseif rest:byte(j) == 92 then -- skip the escaped character after `\`
+        i = j + 2
+      else
+        cmd_end = j
+        break
+      end
+    end
+  end
+  local term = rest:find(';"', cmd_end + 1, true)
+  if not term then
+    return rest
+  end
+  return rest:sub(1, term - 1), (rest:sub(term + 2):gsub("^\t", ""))
+end
+
 ---@param opts snacks.picker.tags.Config
 ---@type snacks.picker.finder
 function M.tags(opts, ctx)
@@ -373,8 +413,7 @@ function M.tags(opts, ctx)
         -- {name}<Tab>{file}<Tab>{cmd};"<Tab>{kind}<Tab>{fields...}
         local name, filename, rest = line:match("^([^\t]+)\t([^\t]+)\t(.*)$")
         if name and not line:match("^!_TAG_") then
-          local cmd, fields = rest:match('^(.-);"\t?(.*)$')
-          cmd = cmd or rest
+          local cmd, fields = split_tag_address(rest)
           -- kind is either the first field without a key or a `kind:` field
           local kind = fields and (fields:match("^(%a+)\t") or fields:match("^(%a+)$") or fields:match("kind:(%a+)"))
           ---@type snacks.picker.finder.Item
