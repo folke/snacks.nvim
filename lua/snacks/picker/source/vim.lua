@@ -213,7 +213,8 @@ function M.colorschemes()
 end
 
 ---@param opts snacks.picker.keymaps.Config
-function M.keymaps(opts)
+---@type snacks.picker.finder
+function M.keymaps(opts, ctx)
   local items = {} ---@type snacks.picker.finder.Item[]
   local maps = {} ---@type vim.api.keyset.get_keymap[]
   for _, mode in ipairs(opts.modes) do
@@ -221,7 +222,7 @@ function M.keymaps(opts)
       vim.list_extend(maps, vim.api.nvim_get_keymap(mode))
     end
     if opts["local"] then
-      vim.list_extend(maps, vim.api.nvim_buf_get_keymap(0, mode))
+      vim.list_extend(maps, vim.api.nvim_buf_get_keymap(ctx.filter.current_buf, mode))
     end
   end
   local done = {} ---@type table<string, boolean>
