@@ -44,7 +44,8 @@ function M.help(opts, ctx)
             text = tag,
             tag = tag,
             file = dir .. "/" .. fields[2],
-            search = "/\\V" .. fields[3]:sub(2),
+            -- match case, so with 'ignorecase' the preview of `gi` doesn't land on `*gI*`
+            search = "/\\V\\C" .. fields[3]:sub(2),
           }
           if tag:find("^[vbg]?:") or tag:find("^/") then
             item.ft = "vim"
