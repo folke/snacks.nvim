@@ -367,7 +367,8 @@ function M.tags(opts, ctx)
       text = tag.name,
       name = tag.name,
       file = tag.filename,
-      search = tag.cmd,
+      -- tag patterns are meant to be searched with 'magic' off, like `:tag` does
+      search = (tag.cmd:gsub("^([/?])", "%1\\M\\C")),
       kind = tag.kind,
       lsp_kind = lsp_kinds[tag.kind] or "Text",
     }
