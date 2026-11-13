@@ -31,11 +31,13 @@ Better `vim.ui.input`.
 ---@field win? snacks.win.Config|{}
 ---@field icon? string
 ---@field icon_pos? snacks.input.Pos
+---@field prompt? string
 ---@field prompt_pos? snacks.input.Pos
 {
   icon = " ",
   icon_hl = "SnacksInputIcon",
   icon_pos = "left",
+  prompt = "Input",
   prompt_pos = "title",
   win = { style = "input" },
   expand = true,
