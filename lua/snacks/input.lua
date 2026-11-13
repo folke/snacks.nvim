@@ -18,11 +18,13 @@ M.meta = {
 ---@field win? snacks.win.Config|{}
 ---@field icon? string
 ---@field icon_pos? snacks.input.Pos
+---@field prompt? string
 ---@field prompt_pos? snacks.input.Pos
 local defaults = {
   icon = " ",
   icon_hl = "SnacksInputIcon",
   icon_pos = "left",
+  prompt = "Input",
   prompt_pos = "title",
   win = { style = "input" },
   expand = true,
@@ -136,7 +138,6 @@ function M.input(opts, on_confirm)
   end
 
   opts = Snacks.config.get("input", defaults, opts) --[[@as snacks.input.Opts]]
-  opts.prompt = opts.prompt or "Input"
   opts.prompt = vim.trim(opts.prompt)
   opts.prompt = opts.prompt_pos == "title" and opts.prompt:gsub(":$", "") or opts.prompt
 
@@ -152,7 +153,9 @@ function M.input(opts, on_confirm)
   if opts.icon_pos and (opts.icon or "") ~= "" then
     add(opts.icon, "SnacksInputIcon", opts.icon_pos)
   end
-  add(opts.prompt, "SnacksInputTitle", opts.prompt_pos)
+  if opts.prompt_pos and (opts.prompt or "") ~= "" then
+    add(opts.prompt, "SnacksInputTitle", opts.prompt_pos)
+  end
 
   if next(title) then
     table.insert(title, { " ", "SnacksInputTitle" })
