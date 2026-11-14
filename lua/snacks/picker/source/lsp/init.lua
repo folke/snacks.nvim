@@ -1,4 +1,3 @@
----@diagnostic disable: await-in-sync
 local Async = require("snacks.picker.util.async")
 
 ---@module 'uv'
@@ -225,19 +224,49 @@ function R:request(buf, method, params, cb)
   return self
 end
 
-function R:wait()
+---@param flush? async fun()
+---@async
+function R:wait(flush)
   while self.pending > 0 do
     self.async:suspend()
+    if flush then
+      flush()
+    end
   end
+  if flush then
+    flush()
+  end
+end
+
+---@param cb async fun(item: snacks.picker.finder.Item)
+---@return fun(item: snacks.picker.finder.Item), async fun()
+local function wrap_cb(cb)
+  local queue = {} ---@type snacks.picker.finder.Item[]
+  ---@param item snacks.picker.finder.Item
+  local function add(item)
+    queue[#queue + 1] = item
+  end
+  ---@async
+  local function flush()
+    while #queue > 0 do
+      local batch = queue
+      queue = {}
+      for _, item in ipairs(batch) do
+        cb(item)
+      end
+    end
+  end
+  return add, flush
 end
 
 ---@param buf number
 ---@param method string
 ---@param params fun(client:vim.lsp.Client):table
 ---@param cb fun(client:vim.lsp.Client, result:table, params:table)
+---@param flush? async fun()
 ---@async
-function M.request(buf, method, params, cb)
-  R.new():request(buf, method, params, cb):wait()
+function M.request(buf, method, params, cb, flush)
+  R.new():request(buf, method, params, cb):wait(flush)
 end
 
 -- Support for older versions of neovim
@@ -283,6 +312,8 @@ function M.get_locations(method, opts, filter)
   ---@async
   ---@param cb async fun(item: snacks.picker.finder.Item)
   return function(cb)
+    local add, flush = wrap_cb(cb)
+    local done = {} ---@type table<string, boolean>
     M.request(buf, method, function(client)
       local params = vim.lsp.util.make_position_params(win, client.offset_encoding)
       ---@diagnostic disable-next-line: inject-field
@@ -315,7 +346,6 @@ function M.get_locations(method, opts, filter)
         end, items)
       end
 
-      local done = {} ---@type table<string, boolean>
       for _, loc in ipairs(items) do
         ---@type snacks.picker.finder.Item
         local item = {
@@ -328,12 +358,11 @@ function M.get_locations(method, opts, filter)
         }
         local loc_key = loc.filename .. ":" .. loc.lnum
         if filter:match(item) and not (done[loc_key] and opts.unique_lines) then
-          ---@diagnostic disable-next-line: await-in-sync
-          cb(item)
+          add(item)
           done[loc_key] = true
         end
       end
-    end)
+    end, flush)
   end
 end
 
@@ -446,6 +475,7 @@ function M.symbols(opts, ctx)
   ---@async
   ---@param cb async fun(item: snacks.picker.finder.Item)
   return function(cb)
+    local add, flush = wrap_cb(cb)
     M.request(buf, method, function()
       return p
     end, function(client, result, params)
@@ -484,10 +514,9 @@ function M.symbols(opts, ctx)
       for _, item in ipairs(items) do
         item.tree = opts.tree
         item.buf = bufmap[item.file]
-        ---@diagnostic disable-next-line: await-in-sync
-        cb(item)
+        add(item)
       end
-    end)
+    end, flush)
   end
 end
 
@@ -502,6 +531,7 @@ function M.call_hierarchy(opts, filter, incoming)
   ---@async
   ---@param cb async fun(item: snacks.picker.finder.Item)
   return function(cb)
+    local add, flush = wrap_cb(cb)
     local requester = R.new()
     requester:request(buf, "textDocument/prepareCallHierarchy", function(client)
       return vim.lsp.util.make_position_params(win, client.offset_encoding)
@@ -528,11 +558,11 @@ function M.call_hierarchy(opts, filter, incoming)
           end
 
           local items = M.results_to_items(client, call_items, { default_uri = res.uri })
-          vim.tbl_map(cb, items)
+          vim.tbl_map(add, items)
         end)
       end
     end)
-    requester:wait()
+    requester:wait(flush)
   end
 end
 
