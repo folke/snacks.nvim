@@ -498,6 +498,7 @@ function M.call_hierarchy(opts, filter, incoming)
   local method = ("callHierarchy/%sCalls"):format(incoming and "incoming" or "outgoing")
   local buf = filter.current_buf
   local win = filter.current_win
+  local bufmap = M.bufmap()
 
   ---@async
   ---@param cb async fun(item: snacks.picker.finder.Item)
@@ -528,6 +529,9 @@ function M.call_hierarchy(opts, filter, incoming)
           end
 
           local items = M.results_to_items(client, call_items, { default_uri = res.uri })
+          for _, item in ipairs(items) do
+            item.buf = bufmap[item.file]
+          end
           vim.tbl_map(cb, items)
         end)
       end
