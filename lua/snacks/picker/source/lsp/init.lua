@@ -1,9 +1,11 @@
----@diagnostic disable: await-in-sync
 local Async = require("snacks.picker.util.async")
 
 ---@module 'uv'
 
 local M = {}
+
+---@diagnostic disable-next-line: deprecated
+local lsp_get_clients = vim.lsp.get_clients or vim.lsp.get_active_clients
 
 ---@alias lsp.Symbol lsp.SymbolInformation|lsp.DocumentSymbol
 ---@alias lsp.Loc lsp.LocationLink|lsp.Location
@@ -87,13 +89,26 @@ function M.get_clients(buf, method)
   ---@param client vim.lsp.Client
   local clients = vim.tbl_map(function(client)
     return wrap(client)
-    ---@diagnostic disable-next-line: deprecated
-  end, (vim.lsp.get_clients or vim.lsp.get_active_clients)({ bufnr = buf }))
+  end, lsp_get_clients({ bufnr = buf }))
   ---@param client vim.lsp.Client
-  return vim.tbl_filter(function(client)
+  clients = vim.tbl_filter(function(client)
     return client:supports_method(method, buf)
-    ---@diagnostic disable-next-line: deprecated
   end, clients)
+  if #clients == 0 and method == "workspace/symbol" then
+    ---@param client vim.lsp.Client
+    local all_clients = vim.tbl_map(function(client)
+      return wrap(client)
+    end, lsp_get_clients({ method = method }))
+    local cwd = svim.fs.normalize((vim.uv or vim.loop).cwd() or ".")
+    ---@param client vim.lsp.Client
+    local matching = vim.tbl_filter(function(client)
+      local root = client.root_dir or (client.config and client.config.root_dir)
+      root = root and svim.fs.normalize(root)
+      return root ~= nil and (root == cwd or vim.startswith(cwd, root .. "/"))
+    end, all_clients)
+    return #matching > 0 and matching or all_clients
+  end
+  return clients
 end
 
 ---@class snacks.picker.lsp.Requester
@@ -225,9 +240,66 @@ function R:request(buf, method, params, cb)
   return self
 end
 
-function R:wait()
+---@param flush? async fun()
+---@async
+function R:wait(flush)
   while self.pending > 0 do
     self.async:suspend()
+    if flush then
+      flush()
+    end
+  end
+  if flush then
+    flush()
+  end
+end
+
+---@param cb async fun(item: snacks.picker.finder.Item)
+---@return fun(item: snacks.picker.finder.Item), async fun()
+local function wrap_cb(cb)
+  local queue = {} ---@type snacks.picker.finder.Item[]
+  ---@param item snacks.picker.finder.Item
+  local function add(item)
+    queue[#queue + 1] = item
+  end
+  ---@async
+  local function flush()
+    while #queue > 0 do
+      local batch = queue
+      queue = {}
+      for _, item in ipairs(batch) do
+        cb(item)
+      end
+    end
+  end
+  return add, flush
+end
+
+---@return boolean
+local function has_uninitialized_clients()
+  for _, client in ipairs(lsp_get_clients({ _uninitialized = true })) do
+    if not client.initialized then
+      return true
+    end
+  end
+  return false
+end
+
+---@param buf number
+---@param method string
+---@async
+local function wait_for_clients(buf, method)
+  local async = Async.running()
+  local function ready()
+    return #M.get_clients(buf, method) > 0 or not has_uninitialized_clients()
+  end
+  if async:schedule(ready) then
+    return
+  end
+  for _ = 1, 50 do
+    if async:aborted() or async:defer(100, ready) then
+      break
+    end
   end
 end
 
@@ -235,9 +307,11 @@ end
 ---@param method string
 ---@param params fun(client:vim.lsp.Client):table
 ---@param cb fun(client:vim.lsp.Client, result:table, params:table)
+---@param flush? async fun()
 ---@async
-function M.request(buf, method, params, cb)
-  R.new():request(buf, method, params, cb):wait()
+function M.request(buf, method, params, cb, flush)
+  wait_for_clients(buf, method)
+  R.new():request(buf, method, params, cb):wait(flush)
 end
 
 -- Support for older versions of neovim
@@ -283,6 +357,8 @@ function M.get_locations(method, opts, filter)
   ---@async
   ---@param cb async fun(item: snacks.picker.finder.Item)
   return function(cb)
+    local add, flush = wrap_cb(cb)
+    local done = {} ---@type table<string, boolean>
     M.request(buf, method, function(client)
       local params = vim.lsp.util.make_position_params(win, client.offset_encoding)
       ---@diagnostic disable-next-line: inject-field
@@ -315,7 +391,6 @@ function M.get_locations(method, opts, filter)
         end, items)
       end
 
-      local done = {} ---@type table<string, boolean>
       for _, loc in ipairs(items) do
         ---@type snacks.picker.finder.Item
         local item = {
@@ -328,12 +403,11 @@ function M.get_locations(method, opts, filter)
         }
         local loc_key = loc.filename .. ":" .. loc.lnum
         if filter:match(item) and not (done[loc_key] and opts.unique_lines) then
-          ---@diagnostic disable-next-line: await-in-sync
-          cb(item)
+          add(item)
           done[loc_key] = true
         end
       end
-    end)
+    end, flush)
   end
 end
 
@@ -393,6 +467,21 @@ function M.results_to_items(client, results, opts)
   return items
 end
 
+---@return boolean
+local function has_pending_workspace_index()
+  if has_uninitialized_clients() then
+    return true
+  end
+  for _, client in ipairs(lsp_get_clients({ method = "workspace/symbol" })) do
+    if client.progress and client.progress.pending and next(client.progress.pending) ~= nil then
+      return true
+    end
+  end
+  return false
+end
+
+local progress_watched = setmetatable({}, { __mode = "k" }) ---@type table<snacks.Picker, boolean>
+
 ---@param opts snacks.picker.lsp.symbols.Config
 ---@type snacks.picker.finder
 function M.symbols(opts, ctx)
@@ -428,6 +517,28 @@ function M.symbols(opts, ctx)
     end
   end
 
+  if opts.workspace and not progress_watched[ctx.picker] then
+    progress_watched[ctx.picker] = true
+    local id = vim.api.nvim_create_autocmd("LspProgress", {
+      pattern = { "begin", "report", "end" },
+      callback = function()
+        if ctx.picker.closed then
+          return true
+        end
+        if not ctx.picker.finder:running() and ctx.picker:count() == 0 then
+          ctx.picker:find({ refresh = true })
+        end
+      end,
+    })
+    local on_close = ctx.picker.opts.on_close
+    ctx.picker.opts.on_close = function(p)
+      pcall(vim.api.nvim_del_autocmd, id)
+      if on_close then
+        on_close(p)
+      end
+    end
+  end
+
   local bufmap = M.bufmap()
   local filter = opts.filter[vim.bo[buf].filetype]
   if filter == nil then
@@ -445,7 +556,8 @@ function M.symbols(opts, ctx)
 
   ---@async
   ---@param cb async fun(item: snacks.picker.finder.Item)
-  return function(cb)
+  local function request_items(cb)
+    local add, flush = wrap_cb(cb)
     M.request(buf, method, function()
       return p
     end, function(client, result, params)
@@ -484,10 +596,93 @@ function M.symbols(opts, ctx)
       for _, item in ipairs(items) do
         item.tree = opts.tree
         item.buf = bufmap[item.file]
-        ---@diagnostic disable-next-line: await-in-sync
+        add(item)
+      end
+    end, flush)
+  end
+
+  if not opts.workspace then
+    return request_items
+  end
+
+  ---@async
+  ---@param cb async fun(item: snacks.picker.finder.Item)
+  return function(cb)
+    local seen = {} ---@type table<string, boolean>
+    local emitted = 0
+
+    ---@async
+    ---@param item snacks.picker.finder.Item
+    local function emit_new(item)
+      local key = ("%s:%d:%d:%s:%s"):format(
+        item.file or "",
+        item.pos and item.pos[1] or 0,
+        item.pos and item.pos[2] or 0,
+        item.kind or "",
+        item.name or ""
+      )
+      if not seen[key] then
+        seen[key] = true
+        emitted = emitted + 1
         cb(item)
       end
+    end
+
+    local dirty = false
+    local autocmd_id ---@type number?
+    local function cleanup()
+      if autocmd_id then
+        pcall(vim.api.nvim_del_autocmd, autocmd_id)
+        autocmd_id = nil
+      end
+    end
+    ctx.async:on("done", vim.schedule_wrap(cleanup))
+
+    local pending = ctx.async:schedule(function()
+      autocmd_id = vim.api.nvim_create_autocmd({ "LspProgress", "LspAttach" }, {
+        callback = function()
+          dirty = true
+        end,
+      })
+      return has_pending_workspace_index()
     end)
+
+    request_items(emit_new)
+
+    local grace = (emitted == 0 and vim.trim(ctx.filter.search or "") == "") and 4 or 0
+    if pending or emitted > 0 then
+      grace = 0
+    end
+    local idle_ticks = 0
+    local ticks = 0
+    while (pending or grace > 0) and ticks < 120 and not ctx.async:aborted() do
+      if not pending then
+        grace = grace - 1
+      end
+      local was_pending = pending
+      pending = ctx.async:defer(250, has_pending_workspace_index)
+      ticks = ticks + 1
+      if ctx.async:aborted() then
+        break
+      end
+      if pending or emitted > 0 then
+        grace = 0
+      end
+      if dirty or idle_ticks >= 4 or (was_pending and not pending) then
+        dirty = false
+        idle_ticks = 0
+        request_items(emit_new)
+        if emitted > 0 then
+          grace = 0
+        end
+      else
+        idle_ticks = idle_ticks + 1
+      end
+    end
+
+    if dirty and not ctx.async:aborted() then
+      request_items(emit_new)
+    end
   end
 end
 
@@ -502,6 +697,8 @@ function M.call_hierarchy(opts, filter, incoming)
   ---@async
   ---@param cb async fun(item: snacks.picker.finder.Item)
   return function(cb)
+    local add, flush = wrap_cb(cb)
+    wait_for_clients(buf, "textDocument/prepareCallHierarchy")
     local requester = R.new()
     requester:request(buf, "textDocument/prepareCallHierarchy", function(client)
       return vim.lsp.util.make_position_params(win, client.offset_encoding)
@@ -528,11 +725,11 @@ function M.call_hierarchy(opts, filter, incoming)
           end
 
           local items = M.results_to_items(client, call_items, { default_uri = res.uri })
-          vim.tbl_map(cb, items)
+          vim.tbl_map(add, items)
         end)
       end
     end)
-    requester:wait()
+    requester:wait(flush)
   end
 end
 
